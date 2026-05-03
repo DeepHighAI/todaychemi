@@ -1,23 +1,30 @@
-import type { Mode } from './mode';
+import type { LlmModel } from './hapcard';
 
+// db_schema.md §12 prompt_versions.status 허용값
 export type PromptStatus = 'active' | 'canary' | 'rolled_back';
 
+// db_schema.md §12 prompt_versions 테이블 1:1 매핑
+// PK: (prompt_name, version)
 export interface PromptVersion {
-  id: string;
-  mode: Mode;
-  model_name: 'gpt-5' | 'gpt-5o' | 'gpt-5-mini' | 'claude-sonnet-4-6' | 'claude-haiku-4-5-20251001';
-  version_label: string;
-  prompt_text: string;
-  banned_phrases_version: string;
-  canary_pct: number;
+  prompt_name: string;
+  version: string;
+  content: string;
   status: PromptStatus;
+  // canary_ratio: 0~1 (DDL check constraint)
+  canary_ratio: number | null;
+  notes: string | null;
   created_at: string;
 }
 
+// db_schema.md §14 banned_phrase_hits 테이블 1:1 매핑
 export interface BannedPhraseHit {
-  id: string;
-  prompt_version_id: string;
-  phrase: string;
-  raw_output_excerpt: string;
+  hit_id: string;
+  prompt_version: string;
+  phrase_category: string;
+  phrase_matched: string;
+  hapcard_id: string | null;
   created_at: string;
 }
+
+// 모델 사용처 매핑 (참고용 — 실제 검증은 LlmModel 타입에 의존)
+export type PromptModelMap = Record<string, LlmModel>;
