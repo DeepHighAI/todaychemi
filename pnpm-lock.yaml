@@ -56,6 +56,9 @@ importers:
       shadcn:
         specifier: ^4.6.0
         version: 4.6.0(@types/node@20.19.39)(typescript@5.9.3)
+      ssaju:
+        specifier: ^0.2.0
+        version: 0.2.0
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
@@ -3750,6 +3753,10 @@ packages:
   source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
+
+  ssaju@0.2.0:
+    resolution: {integrity: sha512-2QnxbIyqnoCFxYl/QxpWmUz3BXKsalMceToh5d2OJRhY9KF+TZFSS0lKwOdwhWwSuCNCQb0OQQCO78XJja6Brw==}
+    engines: {node: '>=18'}
 
   stable-hash@0.0.5:
     resolution: {integrity: sha512-+L3ccpzibovGXFK+Ap/f8LOS0ahMrHTf3xu7mMLSpEGU0EO9ucaysSylKo9eRDFNhWve/y275iPmIZ4z39a9iA==}
@@ -7874,6 +7881,8 @@ snapshots:
   source-map-js@1.2.1: {}
 
   source-map@0.6.1: {}
+
+  ssaju@0.2.0: {}
 
   stable-hash@0.0.5: {}
 

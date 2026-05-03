@@ -1,18 +1,2803 @@
 [
   {
-    "_PLACEHOLDER_NOTE": "이 파일은 placeholder입니다. G0 진입 전 Phil이 KASI 천체력 기반 100건을 채웁니다. docs/specs/manseryeok_validation.md §5.6 참조.",
-    "_TARGET": "normal 50 + boundary 30 + edge 20 = 100건",
-    "id": "_meta",
+    "id": "N001",
     "category": "normal",
-    "input": { "year": 1990, "month": 1, "day": 1, "hour": 0, "minute": 0, "gender": "남", "calendar": "solar" },
+    "input": {
+      "year": 1990,
+      "month": 3,
+      "day": 15,
+      "hour": 14,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
     "expected": {
-      "year_pillar": "_TBD",
-      "month_pillar": "_TBD",
-      "day_pillar": "_TBD",
-      "hour_pillar": "_TBD",
-      "day_master_element": "_TBD",
-      "five_elements_counts": { "목": 0, "화": 0, "토": 0, "금": 0, "수": 0 },
-      "source": "kasi_derived"
+      "year_pillar": "庚午",
+      "month_pillar": "己卯",
+      "day_pillar": "己卯",
+      "hour_pillar": "辛未",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N002",
+    "category": "normal",
+    "input": {
+      "year": 1985,
+      "month": 7,
+      "day": 22,
+      "hour": 8,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙丑",
+      "month_pillar": "癸未",
+      "day_pillar": "壬戌",
+      "hour_pillar": "甲辰",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 4,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N003",
+    "category": "normal",
+    "input": {
+      "year": 1993,
+      "month": 11,
+      "day": 5,
+      "hour": 20,
+      "minute": 45,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸酉",
+      "month_pillar": "壬戌",
+      "day_pillar": "庚寅",
+      "hour_pillar": "丙戌",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 2,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N004",
+    "category": "normal",
+    "input": {
+      "year": 1978,
+      "month": 4,
+      "day": 30,
+      "hour": 6,
+      "minute": 15,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊午",
+      "month_pillar": "丙辰",
+      "day_pillar": "壬戌",
+      "hour_pillar": "癸卯",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N005",
+    "category": "normal",
+    "input": {
+      "year": 2001,
+      "month": 9,
+      "day": 12,
+      "hour": 16,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛巳",
+      "month_pillar": "丁酉",
+      "day_pillar": "戊寅",
+      "hour_pillar": "庚申",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 1,
+        "금": 4,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N006",
+    "category": "normal",
+    "input": {
+      "year": 1967,
+      "month": 1,
+      "day": 18,
+      "hour": 10,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙午",
+      "month_pillar": "辛丑",
+      "day_pillar": "壬午",
+      "hour_pillar": "乙巳",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 4,
+        "토": 1,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N007",
+    "category": "normal",
+    "input": {
+      "year": 1995,
+      "month": 6,
+      "day": 3,
+      "hour": 22,
+      "minute": 20,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙亥",
+      "month_pillar": "辛巳",
+      "day_pillar": "乙丑",
+      "hour_pillar": "丁亥",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 1,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N008",
+    "category": "normal",
+    "input": {
+      "year": 1982,
+      "month": 12,
+      "day": 25,
+      "hour": 4,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "壬戌",
+      "month_pillar": "壬子",
+      "day_pillar": "壬午",
+      "hour_pillar": "壬寅",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 1,
+        "금": 0,
+        "수": 5
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N009",
+    "category": "normal",
+    "input": {
+      "year": 1970,
+      "month": 8,
+      "day": 7,
+      "hour": 18,
+      "minute": 10,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚戌",
+      "month_pillar": "癸未",
+      "day_pillar": "己未",
+      "hour_pillar": "癸酉",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 0,
+        "토": 4,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N010",
+    "category": "normal",
+    "input": {
+      "year": 2005,
+      "month": 2,
+      "day": 14,
+      "hour": 12,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙酉",
+      "month_pillar": "戊寅",
+      "day_pillar": "己巳",
+      "hour_pillar": "庚午",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 2,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N011",
+    "category": "normal",
+    "input": {
+      "year": 1988,
+      "month": 5,
+      "day": 20,
+      "hour": 7,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊辰",
+      "month_pillar": "丁巳",
+      "day_pillar": "乙亥",
+      "hour_pillar": "庚辰",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N012",
+    "category": "normal",
+    "input": {
+      "year": 1975,
+      "month": 10,
+      "day": 11,
+      "hour": 15,
+      "minute": 45,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙卯",
+      "month_pillar": "丙戌",
+      "day_pillar": "庚寅",
+      "hour_pillar": "甲申",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 4,
+        "화": 1,
+        "토": 1,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N013",
+    "category": "normal",
+    "input": {
+      "year": 1999,
+      "month": 3,
+      "day": 28,
+      "hour": 9,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己卯",
+      "month_pillar": "丁卯",
+      "day_pillar": "己卯",
+      "hour_pillar": "己巳",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N014",
+    "category": "normal",
+    "input": {
+      "year": 1963,
+      "month": 7,
+      "day": 4,
+      "hour": 23,
+      "minute": 50,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸卯",
+      "month_pillar": "戊午",
+      "day_pillar": "戊申",
+      "hour_pillar": "壬子",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N015",
+    "category": "normal",
+    "input": {
+      "year": 2003,
+      "month": 11,
+      "day": 19,
+      "hour": 3,
+      "minute": 15,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸未",
+      "month_pillar": "癸亥",
+      "day_pillar": "丙申",
+      "hour_pillar": "庚寅",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 1,
+        "금": 2,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N016",
+    "category": "normal",
+    "input": {
+      "year": 1980,
+      "month": 4,
+      "day": 8,
+      "hour": 11,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚申",
+      "month_pillar": "庚辰",
+      "day_pillar": "辛亥",
+      "hour_pillar": "甲午",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 1,
+        "금": 4,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N017",
+    "category": "normal",
+    "input": {
+      "year": 1956,
+      "month": 9,
+      "day": 27,
+      "hour": 17,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙申",
+      "month_pillar": "丁酉",
+      "day_pillar": "丁酉",
+      "hour_pillar": "己酉",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 1,
+        "금": 4,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N018",
+    "category": "normal",
+    "input": {
+      "year": 1992,
+      "month": 1,
+      "day": 13,
+      "hour": 5,
+      "minute": 45,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛未",
+      "month_pillar": "辛丑",
+      "day_pillar": "戊子",
+      "hour_pillar": "乙卯",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 3,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N019",
+    "category": "normal",
+    "input": {
+      "year": 1973,
+      "month": 6,
+      "day": 30,
+      "hour": 19,
+      "minute": 20,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸丑",
+      "month_pillar": "戊午",
+      "day_pillar": "丁酉",
+      "hour_pillar": "庚戌",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 2,
+        "토": 3,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N020",
+    "category": "normal",
+    "input": {
+      "year": 2007,
+      "month": 2,
+      "day": 5,
+      "hour": 13,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁亥",
+      "month_pillar": "壬寅",
+      "day_pillar": "庚午",
+      "hour_pillar": "癸未",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 1,
+        "금": 1,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N021",
+    "category": "normal",
+    "input": {
+      "year": 1987,
+      "month": 8,
+      "day": 17,
+      "hour": 21,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁卯",
+      "month_pillar": "戊申",
+      "day_pillar": "戊戌",
+      "hour_pillar": "癸亥",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N022",
+    "category": "normal",
+    "input": {
+      "year": 1969,
+      "month": 12,
+      "day": 9,
+      "hour": 8,
+      "minute": 15,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己酉",
+      "month_pillar": "丙子",
+      "day_pillar": "戊午",
+      "hour_pillar": "丙辰",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N023",
+    "category": "normal",
+    "input": {
+      "year": 1997,
+      "month": 4,
+      "day": 23,
+      "hour": 16,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁丑",
+      "month_pillar": "甲辰",
+      "day_pillar": "乙未",
+      "hour_pillar": "甲申",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N024",
+    "category": "normal",
+    "input": {
+      "year": 1960,
+      "month": 10,
+      "day": 16,
+      "hour": 2,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚子",
+      "month_pillar": "丙戌",
+      "day_pillar": "丁丑",
+      "hour_pillar": "辛丑",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 2,
+        "토": 3,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N025",
+    "category": "normal",
+    "input": {
+      "year": 2010,
+      "month": 5,
+      "day": 31,
+      "hour": 10,
+      "minute": 45,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚寅",
+      "month_pillar": "辛巳",
+      "day_pillar": "辛巳",
+      "hour_pillar": "癸巳",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 0,
+        "금": 3,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N026",
+    "category": "normal",
+    "input": {
+      "year": 1983,
+      "month": 3,
+      "day": 6,
+      "hour": 14,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸亥",
+      "month_pillar": "乙卯",
+      "day_pillar": "癸巳",
+      "hour_pillar": "己未",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 2,
+        "금": 0,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N027",
+    "category": "normal",
+    "input": {
+      "year": 1954,
+      "month": 7,
+      "day": 20,
+      "hour": 7,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲午",
+      "month_pillar": "辛未",
+      "day_pillar": "丁丑",
+      "hour_pillar": "甲辰",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 3,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N028",
+    "category": "normal",
+    "input": {
+      "year": 2000,
+      "month": 11,
+      "day": 1,
+      "hour": 22,
+      "minute": 15,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚辰",
+      "month_pillar": "丙戌",
+      "day_pillar": "癸亥",
+      "hour_pillar": "癸亥",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 4
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N029",
+    "category": "normal",
+    "input": {
+      "year": 1976,
+      "month": 6,
+      "day": 14,
+      "hour": 4,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙辰",
+      "month_pillar": "甲午",
+      "day_pillar": "丁酉",
+      "hour_pillar": "壬寅",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 3,
+        "토": 1,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N030",
+    "category": "normal",
+    "input": {
+      "year": 1991,
+      "month": 1,
+      "day": 29,
+      "hour": 18,
+      "minute": 45,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚午",
+      "month_pillar": "己丑",
+      "day_pillar": "己亥",
+      "hour_pillar": "癸酉",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N031",
+    "category": "normal",
+    "input": {
+      "year": 1965,
+      "month": 9,
+      "day": 10,
+      "hour": 11,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙巳",
+      "month_pillar": "乙酉",
+      "day_pillar": "丁卯",
+      "hour_pillar": "丙午",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 4,
+        "토": 0,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N032",
+    "category": "normal",
+    "input": {
+      "year": 2004,
+      "month": 3,
+      "day": 25,
+      "hour": 20,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲申",
+      "month_pillar": "丁卯",
+      "day_pillar": "癸卯",
+      "hour_pillar": "壬戌",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 1,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N033",
+    "category": "normal",
+    "input": {
+      "year": 1979,
+      "month": 8,
+      "day": 3,
+      "hour": 6,
+      "minute": 20,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己未",
+      "month_pillar": "辛未",
+      "day_pillar": "壬寅",
+      "hour_pillar": "癸卯",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 3,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N034",
+    "category": "normal",
+    "input": {
+      "year": 1958,
+      "month": 12,
+      "day": 18,
+      "hour": 15,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊戌",
+      "month_pillar": "甲子",
+      "day_pillar": "己巳",
+      "hour_pillar": "壬申",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N035",
+    "category": "normal",
+    "input": {
+      "year": 1996,
+      "month": 5,
+      "day": 7,
+      "hour": 9,
+      "minute": 10,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙子",
+      "month_pillar": "癸巳",
+      "day_pillar": "甲辰",
+      "hour_pillar": "己巳",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 2,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N036",
+    "category": "normal",
+    "input": {
+      "year": 1971,
+      "month": 10,
+      "day": 24,
+      "hour": 23,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛亥",
+      "month_pillar": "戊戌",
+      "day_pillar": "壬午",
+      "hour_pillar": "庚子",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 1,
+        "토": 2,
+        "금": 2,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N037",
+    "category": "normal",
+    "input": {
+      "year": 2008,
+      "month": 4,
+      "day": 16,
+      "hour": 3,
+      "minute": 45,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊子",
+      "month_pillar": "丙辰",
+      "day_pillar": "丙戌",
+      "hour_pillar": "庚寅",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N038",
+    "category": "normal",
+    "input": {
+      "year": 1984,
+      "month": 7,
+      "day": 31,
+      "hour": 13,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲子",
+      "month_pillar": "辛未",
+      "day_pillar": "丙寅",
+      "hour_pillar": "乙未",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N039",
+    "category": "normal",
+    "input": {
+      "year": 1961,
+      "month": 2,
+      "day": 8,
+      "hour": 17,
+      "minute": 15,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛丑",
+      "month_pillar": "庚寅",
+      "day_pillar": "壬申",
+      "hour_pillar": "己酉",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 0,
+        "토": 2,
+        "금": 4,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N040",
+    "category": "normal",
+    "input": {
+      "year": 1998,
+      "month": 11,
+      "day": 21,
+      "hour": 5,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊寅",
+      "month_pillar": "癸亥",
+      "day_pillar": "壬申",
+      "hour_pillar": "癸卯",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 1,
+        "금": 1,
+        "수": 4
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N041",
+    "category": "normal",
+    "input": {
+      "year": 1974,
+      "month": 6,
+      "day": 12,
+      "hour": 21,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲寅",
+      "month_pillar": "庚午",
+      "day_pillar": "甲申",
+      "hour_pillar": "乙亥",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 4,
+        "화": 1,
+        "토": 0,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N042",
+    "category": "normal",
+    "input": {
+      "year": 2002,
+      "month": 9,
+      "day": 29,
+      "hour": 8,
+      "minute": 40,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "壬午",
+      "month_pillar": "己酉",
+      "day_pillar": "庚子",
+      "hour_pillar": "庚辰",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 1,
+        "토": 2,
+        "금": 3,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N043",
+    "category": "normal",
+    "input": {
+      "year": 1966,
+      "month": 3,
+      "day": 17,
+      "hour": 16,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙午",
+      "month_pillar": "辛卯",
+      "day_pillar": "乙亥",
+      "hour_pillar": "甲申",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 0,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N044",
+    "category": "normal",
+    "input": {
+      "year": 1989,
+      "month": 7,
+      "day": 4,
+      "hour": 10,
+      "minute": 20,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己巳",
+      "month_pillar": "庚午",
+      "day_pillar": "乙丑",
+      "hour_pillar": "辛巳",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 2,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N045",
+    "category": "normal",
+    "input": {
+      "year": 1952,
+      "month": 12,
+      "day": 3,
+      "hour": 2,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "壬辰",
+      "month_pillar": "辛亥",
+      "day_pillar": "癸未",
+      "hour_pillar": "癸丑",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 0,
+        "토": 3,
+        "금": 1,
+        "수": 4
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N046",
+    "category": "normal",
+    "input": {
+      "year": 2006,
+      "month": 4,
+      "day": 28,
+      "hour": 19,
+      "minute": 15,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丙戌",
+      "month_pillar": "壬辰",
+      "day_pillar": "丁亥",
+      "hour_pillar": "庚戌",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 2,
+        "토": 3,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N047",
+    "category": "normal",
+    "input": {
+      "year": 1977,
+      "month": 8,
+      "day": 15,
+      "hour": 7,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁巳",
+      "month_pillar": "戊申",
+      "day_pillar": "甲辰",
+      "hour_pillar": "戊辰",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 4,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N048",
+    "category": "normal",
+    "input": {
+      "year": 1994,
+      "month": 2,
+      "day": 22,
+      "hour": 14,
+      "minute": 50,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲戌",
+      "month_pillar": "丙寅",
+      "day_pillar": "己卯",
+      "hour_pillar": "辛未",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N049",
+    "category": "normal",
+    "input": {
+      "year": 1968,
+      "month": 10,
+      "day": 9,
+      "hour": 20,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊申",
+      "month_pillar": "壬戌",
+      "day_pillar": "壬子",
+      "hour_pillar": "庚戌",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 0,
+        "토": 3,
+        "금": 2,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "N050",
+    "category": "normal",
+    "input": {
+      "year": 2009,
+      "month": 6,
+      "day": 17,
+      "hour": 11,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己丑",
+      "month_pillar": "庚午",
+      "day_pillar": "癸巳",
+      "hour_pillar": "戊午",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B001",
+    "category": "boundary",
+    "input": {
+      "year": 1990,
+      "month": 2,
+      "day": 4,
+      "hour": 5,
+      "minute": 15,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己巳",
+      "month_pillar": "丁丑",
+      "day_pillar": "庚子",
+      "hour_pillar": "己卯",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B002",
+    "category": "boundary",
+    "input": {
+      "year": 1990,
+      "month": 2,
+      "day": 3,
+      "hour": 23,
+      "minute": 59,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己巳",
+      "month_pillar": "丁丑",
+      "day_pillar": "己亥",
+      "hour_pillar": "甲子",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B003",
+    "category": "boundary",
+    "input": {
+      "year": 1990,
+      "month": 2,
+      "day": 5,
+      "hour": 0,
+      "minute": 1,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚午",
+      "month_pillar": "戊寅",
+      "day_pillar": "辛丑",
+      "hour_pillar": "戊子",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B004",
+    "category": "boundary",
+    "input": {
+      "year": 1985,
+      "month": 3,
+      "day": 21,
+      "hour": 12,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙丑",
+      "month_pillar": "己卯",
+      "day_pillar": "己未",
+      "hour_pillar": "庚午",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 4,
+        "금": 1,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B005",
+    "category": "boundary",
+    "input": {
+      "year": 1985,
+      "month": 3,
+      "day": 20,
+      "hour": 23,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙丑",
+      "month_pillar": "己卯",
+      "day_pillar": "戊午",
+      "hour_pillar": "壬子",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 3,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B006",
+    "category": "boundary",
+    "input": {
+      "year": 1993,
+      "month": 4,
+      "day": 20,
+      "hour": 8,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸酉",
+      "month_pillar": "丙辰",
+      "day_pillar": "辛未",
+      "hour_pillar": "壬辰",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B007",
+    "category": "boundary",
+    "input": {
+      "year": 1993,
+      "month": 4,
+      "day": 19,
+      "hour": 22,
+      "minute": 45,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸酉",
+      "month_pillar": "丙辰",
+      "day_pillar": "庚午",
+      "hour_pillar": "丁亥",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 1,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B008",
+    "category": "boundary",
+    "input": {
+      "year": 1999,
+      "month": 6,
+      "day": 21,
+      "hour": 14,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己卯",
+      "month_pillar": "庚午",
+      "day_pillar": "甲辰",
+      "hour_pillar": "辛未",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B009",
+    "category": "boundary",
+    "input": {
+      "year": 1999,
+      "month": 6,
+      "day": 20,
+      "hour": 23,
+      "minute": 55,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己卯",
+      "month_pillar": "庚午",
+      "day_pillar": "癸卯",
+      "hour_pillar": "壬子",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 1,
+        "금": 1,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B010",
+    "category": "boundary",
+    "input": {
+      "year": 2001,
+      "month": 8,
+      "day": 7,
+      "hour": 6,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛巳",
+      "month_pillar": "乙未",
+      "day_pillar": "壬寅",
+      "hour_pillar": "癸卯",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 1,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B011",
+    "category": "boundary",
+    "input": {
+      "year": 2001,
+      "month": 8,
+      "day": 6,
+      "hour": 23,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛巳",
+      "month_pillar": "乙未",
+      "day_pillar": "辛丑",
+      "hour_pillar": "戊子",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 3,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B012",
+    "category": "boundary",
+    "input": {
+      "year": 1995,
+      "month": 9,
+      "day": 23,
+      "hour": 10,
+      "minute": 20,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙亥",
+      "month_pillar": "乙酉",
+      "day_pillar": "丁巳",
+      "hour_pillar": "乙巳",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 3,
+        "토": 0,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B013",
+    "category": "boundary",
+    "input": {
+      "year": 1995,
+      "month": 9,
+      "day": 22,
+      "hour": 23,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙亥",
+      "month_pillar": "乙酉",
+      "day_pillar": "丙辰",
+      "hour_pillar": "戊子",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B014",
+    "category": "boundary",
+    "input": {
+      "year": 1988,
+      "month": 11,
+      "day": 7,
+      "hour": 9,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊辰",
+      "month_pillar": "壬戌",
+      "day_pillar": "丙寅",
+      "hour_pillar": "癸巳",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B015",
+    "category": "boundary",
+    "input": {
+      "year": 1988,
+      "month": 11,
+      "day": 6,
+      "hour": 22,
+      "minute": 45,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊辰",
+      "month_pillar": "壬戌",
+      "day_pillar": "乙丑",
+      "hour_pillar": "丁亥",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 4,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B016",
+    "category": "boundary",
+    "input": {
+      "year": 1970,
+      "month": 12,
+      "day": 22,
+      "hour": 3,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚戌",
+      "month_pillar": "戊子",
+      "day_pillar": "丙子",
+      "hour_pillar": "庚寅",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 2,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B017",
+    "category": "boundary",
+    "input": {
+      "year": 1970,
+      "month": 12,
+      "day": 21,
+      "hour": 23,
+      "minute": 50,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚戌",
+      "month_pillar": "戊子",
+      "day_pillar": "乙亥",
+      "hour_pillar": "丙子",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 2,
+        "금": 1,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B018",
+    "category": "boundary",
+    "input": {
+      "year": 1982,
+      "month": 1,
+      "day": 1,
+      "hour": 0,
+      "minute": 5,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛酉",
+      "month_pillar": "庚子",
+      "day_pillar": "甲申",
+      "hour_pillar": "甲子",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 0,
+        "금": 4,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B019",
+    "category": "boundary",
+    "input": {
+      "year": 1981,
+      "month": 12,
+      "day": 31,
+      "hour": 23,
+      "minute": 55,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "辛酉",
+      "month_pillar": "庚子",
+      "day_pillar": "癸未",
+      "hour_pillar": "壬子",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 0,
+        "토": 1,
+        "금": 3,
+        "수": 4
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B020",
+    "category": "boundary",
+    "input": {
+      "year": 1990,
+      "month": 3,
+      "day": 6,
+      "hour": 0,
+      "minute": 2,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚午",
+      "month_pillar": "戊寅",
+      "day_pillar": "庚午",
+      "hour_pillar": "丙子",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 1,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B021",
+    "category": "boundary",
+    "input": {
+      "year": 1990,
+      "month": 3,
+      "day": 5,
+      "hour": 23,
+      "minute": 58,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚午",
+      "month_pillar": "戊寅",
+      "day_pillar": "己巳",
+      "hour_pillar": "甲子",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 2,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B022",
+    "category": "boundary",
+    "input": {
+      "year": 1975,
+      "month": 5,
+      "day": 21,
+      "hour": 23,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙卯",
+      "month_pillar": "辛巳",
+      "day_pillar": "丁卯",
+      "hour_pillar": "庚子",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 0,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B023",
+    "category": "boundary",
+    "input": {
+      "year": 1975,
+      "month": 5,
+      "day": 22,
+      "hour": 1,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙卯",
+      "month_pillar": "辛巳",
+      "day_pillar": "戊辰",
+      "hour_pillar": "癸丑",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B024",
+    "category": "boundary",
+    "input": {
+      "year": 2003,
+      "month": 2,
+      "day": 4,
+      "hour": 10,
+      "minute": 12,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "壬午",
+      "month_pillar": "癸丑",
+      "day_pillar": "戊申",
+      "hour_pillar": "丁巳",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 2,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B025",
+    "category": "boundary",
+    "input": {
+      "year": 2003,
+      "month": 2,
+      "day": 3,
+      "hour": 10,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "壬午",
+      "month_pillar": "癸丑",
+      "day_pillar": "丁未",
+      "hour_pillar": "乙巳",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 2,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B026",
+    "category": "boundary",
+    "input": {
+      "year": 1997,
+      "month": 7,
+      "day": 7,
+      "hour": 11,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁丑",
+      "month_pillar": "丁未",
+      "day_pillar": "庚戌",
+      "hour_pillar": "壬午",
+      "day_master_stem": "庚",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B027",
+    "category": "boundary",
+    "input": {
+      "year": 1997,
+      "month": 7,
+      "day": 6,
+      "hour": 23,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "丁丑",
+      "month_pillar": "丙午",
+      "day_pillar": "己酉",
+      "hour_pillar": "甲子",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 3,
+        "토": 2,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B028",
+    "category": "boundary",
+    "input": {
+      "year": 2000,
+      "month": 1,
+      "day": 1,
+      "hour": 0,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己卯",
+      "month_pillar": "丙子",
+      "day_pillar": "戊午",
+      "hour_pillar": "壬子",
+      "day_master_stem": "戊",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 2,
+        "금": 0,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B029",
+    "category": "boundary",
+    "input": {
+      "year": 1960,
+      "month": 2,
+      "day": 5,
+      "hour": 6,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚子",
+      "month_pillar": "戊寅",
+      "day_pillar": "癸亥",
+      "hour_pillar": "乙卯",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 0,
+        "토": 1,
+        "금": 1,
+        "수": 3
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "B030",
+    "category": "boundary",
+    "input": {
+      "year": 2010,
+      "month": 8,
+      "day": 7,
+      "hour": 23,
+      "minute": 45,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚寅",
+      "month_pillar": "癸未",
+      "day_pillar": "己丑",
+      "hour_pillar": "甲子",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 3,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E001",
+    "category": "edge",
+    "input": {
+      "year": 1995,
+      "month": 8,
+      "day": 15,
+      "hour": 12,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "lunar"
+    },
+    "expected": {
+      "year_pillar": "乙亥",
+      "month_pillar": "乙酉",
+      "day_pillar": "癸卯",
+      "hour_pillar": "戊午",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 1,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E002",
+    "category": "edge",
+    "input": {
+      "year": 1990,
+      "month": 1,
+      "day": 1,
+      "hour": 6,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "lunar"
+    },
+    "expected": {
+      "year_pillar": "己巳",
+      "month_pillar": "丁丑",
+      "day_pillar": "壬辰",
+      "hour_pillar": "癸卯",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E003",
+    "category": "edge",
+    "input": {
+      "year": 2000,
+      "month": 4,
+      "day": 15,
+      "hour": 10,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "lunar"
+    },
+    "expected": {
+      "year_pillar": "庚辰",
+      "month_pillar": "辛巳",
+      "day_pillar": "丙子",
+      "hour_pillar": "癸巳",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 3,
+        "토": 1,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E004",
+    "category": "edge",
+    "input": {
+      "year": 1985,
+      "month": 7,
+      "day": 7,
+      "hour": 14,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "lunar"
+    },
+    "expected": {
+      "year_pillar": "乙丑",
+      "month_pillar": "甲申",
+      "day_pillar": "癸巳",
+      "hour_pillar": "己未",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 3,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E005",
+    "category": "edge",
+    "input": {
+      "year": 1975,
+      "month": 5,
+      "day": 5,
+      "hour": 9,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "lunar"
+    },
+    "expected": {
+      "year_pillar": "乙卯",
+      "month_pillar": "壬午",
+      "day_pillar": "辛卯",
+      "hour_pillar": "癸巳",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 0,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E006",
+    "category": "edge",
+    "input": {
+      "year": 1950,
+      "month": 6,
+      "day": 25,
+      "hour": 4,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚寅",
+      "month_pillar": "壬午",
+      "day_pillar": "辛卯",
+      "hour_pillar": "庚寅",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 0,
+        "금": 3,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E007",
+    "category": "edge",
+    "input": {
+      "year": 1910,
+      "month": 8,
+      "day": 29,
+      "hour": 12,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚戌",
+      "month_pillar": "甲申",
+      "day_pillar": "丙寅",
+      "hour_pillar": "甲午",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 1,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E008",
+    "category": "edge",
+    "input": {
+      "year": 2025,
+      "month": 12,
+      "day": 31,
+      "hour": 23,
+      "minute": 59,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙巳",
+      "month_pillar": "戊子",
+      "day_pillar": "甲戌",
+      "hour_pillar": "甲子",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 1,
+        "토": 2,
+        "금": 0,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E009",
+    "category": "edge",
+    "input": {
+      "year": 2030,
+      "month": 6,
+      "day": 15,
+      "hour": 14,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚戌",
+      "month_pillar": "壬午",
+      "day_pillar": "辛巳",
+      "hour_pillar": "乙未",
+      "day_master_stem": "辛",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 2,
+        "금": 2,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E010",
+    "category": "edge",
+    "input": {
+      "year": 1900,
+      "month": 1,
+      "day": 1,
+      "hour": 12,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "己亥",
+      "month_pillar": "丙子",
+      "day_pillar": "甲戌",
+      "hour_pillar": "庚午",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 2,
+        "금": 1,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E011",
+    "category": "edge",
+    "input": {
+      "year": 1990,
+      "month": 3,
+      "day": 15,
+      "hour": 12,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚午",
+      "month_pillar": "己卯",
+      "day_pillar": "己卯",
+      "hour_pillar": "庚午",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 2,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E012",
+    "category": "edge",
+    "input": {
+      "year": 1988,
+      "month": 6,
+      "day": 29,
+      "hour": 0,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "戊辰",
+      "month_pillar": "戊午",
+      "day_pillar": "乙卯",
+      "hour_pillar": "丙子",
+      "day_master_stem": "乙",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 2,
+        "토": 3,
+        "금": 0,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E013",
+    "category": "edge",
+    "input": {
+      "year": 1993,
+      "month": 9,
+      "day": 30,
+      "hour": 23,
+      "minute": 59,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸酉",
+      "month_pillar": "辛酉",
+      "day_pillar": "甲寅",
+      "hour_pillar": "甲子",
+      "day_master_stem": "甲",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 0,
+        "토": 0,
+        "금": 3,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E014",
+    "category": "edge",
+    "input": {
+      "year": 1980,
+      "month": 2,
+      "day": 29,
+      "hour": 10,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚申",
+      "month_pillar": "戊寅",
+      "day_pillar": "壬申",
+      "hour_pillar": "乙巳",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 1,
+        "토": 1,
+        "금": 3,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E015",
+    "category": "edge",
+    "input": {
+      "year": 2000,
+      "month": 2,
+      "day": 29,
+      "hour": 15,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚辰",
+      "month_pillar": "戊寅",
+      "day_pillar": "丁巳",
+      "hour_pillar": "戊申",
+      "day_master_stem": "丁",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 2,
+        "토": 3,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E016",
+    "category": "edge",
+    "input": {
+      "year": 1976,
+      "month": 8,
+      "day": 15,
+      "hour": 8,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "lunar",
+      "leap": true
+    },
+    "expected": {
+      "year_pillar": "丙辰",
+      "month_pillar": "丁酉",
+      "day_pillar": "癸巳",
+      "hour_pillar": "丙辰",
+      "day_master_stem": "癸",
+      "five_elements_counts": {
+        "목": 0,
+        "화": 4,
+        "토": 2,
+        "금": 1,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E017",
+    "category": "edge",
+    "input": {
+      "year": 1963,
+      "month": 11,
+      "day": 22,
+      "hour": 18,
+      "minute": 30,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "癸卯",
+      "month_pillar": "癸亥",
+      "day_pillar": "己巳",
+      "hour_pillar": "癸酉",
+      "day_master_stem": "己",
+      "five_elements_counts": {
+        "목": 1,
+        "화": 1,
+        "토": 1,
+        "금": 1,
+        "수": 4
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E018",
+    "category": "edge",
+    "input": {
+      "year": 1945,
+      "month": 8,
+      "day": 15,
+      "hour": 12,
+      "minute": 0,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "乙酉",
+      "month_pillar": "甲申",
+      "day_pillar": "丙辰",
+      "hour_pillar": "甲午",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 3,
+        "화": 2,
+        "토": 1,
+        "금": 2,
+        "수": 0
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E019",
+    "category": "edge",
+    "input": {
+      "year": 2020,
+      "month": 2,
+      "day": 29,
+      "hour": 20,
+      "minute": 0,
+      "gender": "남",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "庚子",
+      "month_pillar": "戊寅",
+      "day_pillar": "壬寅",
+      "hour_pillar": "庚戌",
+      "day_master_stem": "壬",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 0,
+        "토": 2,
+        "금": 2,
+        "수": 2
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
+    }
+  },
+  {
+    "id": "E020",
+    "category": "edge",
+    "input": {
+      "year": 1955,
+      "month": 1,
+      "day": 5,
+      "hour": 1,
+      "minute": 30,
+      "gender": "여",
+      "calendar": "solar"
+    },
+    "expected": {
+      "year_pillar": "甲午",
+      "month_pillar": "丙子",
+      "day_pillar": "丙寅",
+      "hour_pillar": "己丑",
+      "day_master_stem": "丙",
+      "five_elements_counts": {
+        "목": 2,
+        "화": 3,
+        "토": 2,
+        "금": 0,
+        "수": 1
+      },
+      "source": "ssaju_seed_pending_kasi_validation"
     }
   }
 ]

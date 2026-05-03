@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { calculateSaju } from 'ssaju';
 
 interface ReferenceSample {
   id: string;
@@ -22,35 +23,37 @@ interface ReferenceSample {
     month_pillar: string;
     day_pillar: string;
     hour_pillar: string;
-    day_master_element: string;
+    day_master_stem: string;
     five_elements_counts: Record<string, number>;
-    source: 'kasi_derived';
-  };
-  agreements?: {
-    forceteller?: { year_pillar: string; month_pillar: string; day_pillar: string; hour_pillar: string };
-    naver?: { year_pillar: string; month_pillar: string; day_pillar: string; hour_pillar: string };
+    source: 'kasi_derived' | 'ssaju_seed_pending_kasi_validation';
   };
 }
 
 const FIXTURES = path.join(__dirname, '..', 'tests', 'fixtures', 'kasi_reference_100.json');
 const samples: ReferenceSample[] = JSON.parse(fs.readFileSync(FIXTURES, 'utf-8'));
 
-// 실제 ssaju 라이브러리는 PR-1 이후 import 가능
-// import { calculateSaju } from 'ssaju';
-
-function mockCalculateSaju(input: ReferenceSample['input']) {
-  // placeholder: PR-1 이후 실제 ssaju 호출로 교체
-  return { year_pillar: '_TBD', month_pillar: '_TBD', day_pillar: '_TBD', hour_pillar: '_TBD' };
-}
-
 const results = samples.map((s) => {
-  const computed = mockCalculateSaju(s.input);
-  const overall_match =
-    computed.year_pillar === s.expected.year_pillar &&
-    computed.month_pillar === s.expected.month_pillar &&
-    computed.day_pillar === s.expected.day_pillar &&
-    computed.hour_pillar === s.expected.hour_pillar;
-  return { id: s.id, category: s.category, overall_match, computed, expected: s.expected };
+  try {
+    const r = calculateSaju(s.input);
+    const computed = {
+      year_pillar: r.pillars.year,
+      month_pillar: r.pillars.month,
+      day_pillar: r.pillars.day,
+      hour_pillar: r.pillars.hour,
+      day_master_stem: r.dayStem,
+      five_elements_counts: r.fiveElements,
+    };
+    const overall_match =
+      s.expected.year_pillar !== '_ERROR' &&
+      computed.year_pillar === s.expected.year_pillar &&
+      computed.month_pillar === s.expected.month_pillar &&
+      computed.day_pillar === s.expected.day_pillar &&
+      computed.hour_pillar === s.expected.hour_pillar;
+    return { id: s.id, category: s.category, overall_match, computed, expected: s.expected };
+  } catch (err) {
+    console.warn(`WARN: ${s.id} calculation failed: ${(err as Error).message}`);
+    return { id: s.id, category: s.category, overall_match: false, computed: null, expected: s.expected };
+  }
 });
 
 const report = {
@@ -70,7 +73,12 @@ const report = {
       passed: results.filter((r) => r.category === 'edge' && r.overall_match).length,
     },
   },
-  failed_samples: results.filter((r) => !r.overall_match),
+  failed_samples: results.filter((r) => !r.overall_match).map((r) => ({
+    id: r.id,
+    category: r.category,
+    computed: r.computed,
+    expected: r.expected,
+  })),
   generated_at: new Date().toISOString(),
 };
 
