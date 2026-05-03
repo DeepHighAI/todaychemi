@@ -1,0 +1,60 @@
+# 운세 단정 표현 회귀 테스트용 사전 (ADR-009)
+# LLM 출력에서 grep으로 차단할 표현. 위반 시 자동 톤 보정 재호출.
+# 변경 시 docs/specs/llm_quality_regression.md §2.3 동시 갱신.
+
+version: "1.0"
+updated_at: "2026-05-03"
+
+categories:
+  fortune_assertion:
+    description: "단정적 운세 표현 — 결정론적 표현 금지"
+    phrases:
+      - "반드시"
+      - "100%"
+      - "확실히 ~할 것"
+      - "절대 ~한다"
+      - "운명적으로"
+      - "팔자에"
+      - "정해져 있"
+
+  date_prediction:
+    description: "구체 날짜 예측 — 명리는 흐름이지 일자가 아님"
+    phrases:
+      - "월에 결혼"
+      - "년에 합격"
+      - "일에 만남"
+
+  health_medical:
+    description: "건강·의료 단정 — 면책 + 전문가 상담 권유 의무"
+    phrases:
+      - "병이 생긴다"
+      - "수술하"
+      - "사고가 난다"
+      - "건강이 나빠진"
+
+  legal_financial:
+    description: "법·재무 단정"
+    phrases:
+      - "소송에 진다"
+      - "파산"
+      - "주식이 오른다"
+      - "복권"
+
+  relationship_definitive:
+    description: "관계 단정 — 합플 핵심 정책 위반"
+    phrases:
+      - "결혼 못한다"
+      - "이혼한다"
+      - "헤어진다"
+      - "절대 만나면 안"
+
+soft_replacements:
+  "반드시": "~하는 흐름"
+  "100%": "강한 가능성"
+  "확실히": "기운이 큰"
+  "운명적으로": "성향적으로"
+  "절대": "대체로"
+
+# Phase 0 G2 회귀 테스트
+# scripts/test-banned-phrases.ts에서 prompt_versions의 sample 출력 100건을 grep
+# 1건 hit 시 PR 차단

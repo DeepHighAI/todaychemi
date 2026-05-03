@@ -1,0 +1,18 @@
+[
+  {
+    "_PLACEHOLDER_NOTE": "이 파일은 placeholder입니다. G0 진입 전 Phil이 KASI 천체력 기반 100건을 채웁니다. docs/specs/manseryeok_validation.md §5.6 참조.",
+    "_TARGET": "normal 50 + boundary 30 + edge 20 = 100건",
+    "id": "_meta",
+    "category": "normal",
+    "input": { "year": 1990, "month": 1, "day": 1, "hour": 0, "minute": 0, "gender": "남", "calendar": "solar" },
+    "expected": {
+      "year_pillar": "_TBD",
+      "month_pillar": "_TBD",
+      "day_pillar": "_TBD",
+      "hour_pillar": "_TBD",
+      "day_master_element": "_TBD",
+      "five_elements_counts": { "목": 0, "화": 0, "토": 0, "금": 0, "수": 0 },
+      "source": "kasi_derived"
+    }
+  }
+]
