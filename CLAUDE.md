@@ -72,15 +72,19 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-05-03 기준)
+## 2. 프로젝트 상태 (2026-05-04 기준)
 
-- **Phase 0 G0 게이트 준비 중** — ssaju 100건 검증 통과(100%). KASI 진본 검증은 PR-3에서 진행.
-- **PR-1 완료** — Next.js 16.2.4 스캐폴드 생성됨. `package.json` 존재. `pnpm dev` 정상 동작.
-- **코드 아티팩트 완료** — `src/types/` 7 stubs, `.env.example`, `.github/workflows/ci.yml`, `scripts/`, `tests/fixtures/kasi_reference_100.json`
-- **진행 중** — `prompts/system/` 6모드 system prompt 본문 작성 미완료 (F3 태스크)
+- **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
+- **PR-1 완료** — Next.js 16.2.4 스캐폴드 생성됨. `pnpm dev` 정상 동작.
+- **PR-3 완료** — KASI 진본 검증 라이브러리 + 100건 픽스처 + G0 verify 100% PASS.
+- **PR-2 완료 ✅** — C-4(SQL 20개) + C-7(RLS 통합 39개) + C-5(Auth 전체 구현) + C-6(prompt_versions 시드 6건) 전체 완료. **154/154 tests PASS** (17 files). tsc 0 errors. Supabase Free `jamhkucluhiibqpjsiov` 적용 완료.
+  - C-5: `src/lib/auth/kakao.ts` + `src/app/auth/callback/route.ts` + `src/app/login/page.tsx` 완료.
+  - C-6: `scripts/seed-prompts.ts` + `pnpm seed:prompts` → 6모드 v0.2 active 시드 완료.
+- **F3 완료** — `prompts/system/` 6모드 system prompt v0.2 작성 완료 (commit `5f9625e`). 명리 specialist 검수 대기.
+- **`.env.local` 완성** — KASI_SERVICE_KEY, OPENAI_API_KEY, Supabase 키 6개, KAKAO 3개 모두 입력 완료. `KAKAO_REDIRECT_URI` = `jamhkucluhiibqpjsiov` (2026-05-04 수정).
 - `UIDesign/` 는 Babel CDN 기반 참조 프로토타입 — **수정 금지**, 프로덕션 코드는 `src/app/`에 작성
 
-다음 주요 작업: F3 6모드 prompt 본문 → PR-2 Supabase 마이그레이션 → PR-3 KASI 진본 검증.
+**F4 Step 1~13 완료 ✅ (2026-05-05)** — **506/507 PASS** (1 RLS 통합 실패 — `supabase db push 0021_classics` 필요), 0 TS errors. 완료: Step 1~10 (이전 세션), Step 11(builder.ts 060e74f), Step 12(/api/hapcards route + clients + query-text 335bb68), **Step 13(seed-classics 스크립트 d922182)**. 미완: Step 14(docs), G4 도메인 작업(YAML 고전 20건). §1.3 별도 이슈: `package.json` `lint` 스크립트 broken, `supabase db push 0021_classics` 필요(사용자 supabase CLI 미설치 — 직접 처리), Supabase/Kakao redirect_uri 동기화(사용자 직접 처리).
 
 ---
 
@@ -114,7 +118,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **State**: TanStack Query v5 (서버) + Zustand (UI)
 - **Backend**: Next.js Route Handlers (별도 서버 X) + Supabase Free (Postgres + Auth + RLS + Storage)
 - **i18n**: next-intl (KO 1차, EN/VI/TH/MS/ID Phase별)
-- **만세력**: ssaju + manseryeok-js + KASI precompute (다중 검증)
+- **만세력**: ssaju (年/月/時柱 절기·입춘 기준 source + day_pillar cross-validator) + KASI (day_pillar 진본) + manseryeok-js (보조 cross-validator) — 2026-05-03 §1.1: ssaju 역할 年/月/時柱 프로덕션 source로 확대. 야자시 = 조자시 통합 학파 (ADR-037)
 - **사주 엔진**: 자체 TypeScript `fortune-core` (monorepo 패키지) — 결정형
 - **LLM**: OpenAI 4단 (GPT-5o 핵심 / GPT-5 딥합 / GPT-5 mini 오늘합 / Anthropic Claude fallback)
 - **결제**: 토스페이먼츠 (KR Phase 1) / Stripe (Phase 3 SEA)

@@ -13,7 +13,8 @@
     "seed-kasi": "tsx scripts/fetch-kasi-reference.ts",
     "verify-kasi": "tsx scripts/verify-kasi-vs-ssaju.ts",
     "analyze-month-pillar": "tsx scripts/analyze-month-pillar-failures.ts",
-    "seed:prompts": "tsx scripts/seed-prompts.ts"
+    "seed:prompts": "tsx scripts/seed-prompts.ts",
+    "seed:classics": "tsx scripts/seed-classics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
