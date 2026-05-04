@@ -153,11 +153,11 @@ function makeMockUserClient(opts: {
   const cachedRow = opts.cachedRow ?? null;
   const insertedRow = opts.insertedRow ?? makeInsertedRow(EXPECTED_CACHE_KEY);
 
-  const maybySingle = vi.fn().mockResolvedValue({ data: cachedRow, error: null });
+  const maybeSingle = vi.fn().mockResolvedValue({ data: cachedRow, error: null });
   const single = vi.fn().mockResolvedValue({ data: insertedRow, error: null });
   const selectAfterInsert = vi.fn().mockReturnValue({ single });
   const insert = vi.fn().mockReturnValue({ select: selectAfterInsert });
-  const eqForCache = vi.fn().mockReturnValue({ maybySingle });
+  const eqForCache = vi.fn().mockReturnValue({ maybeSingle });
   const selectForCache = vi.fn().mockReturnValue({ eq: eqForCache });
   const from = vi.fn().mockReturnValue({
     select: selectForCache,
@@ -168,7 +168,7 @@ function makeMockUserClient(opts: {
     client: { from } as unknown as SupabaseClient,
     from,
     insert,
-    maybySingle,
+    maybeSingle,
     single,
   };
 }
