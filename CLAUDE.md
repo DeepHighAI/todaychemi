@@ -84,7 +84,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **`.env.local` 완성** — KASI_SERVICE_KEY, OPENAI_API_KEY, Supabase 키 6개, KAKAO 3개 모두 입력 완료. `KAKAO_REDIRECT_URI` = `jamhkucluhiibqpjsiov` (2026-05-04 수정).
 - `UIDesign/` 는 Babel CDN 기반 참조 프로토타입 — **수정 금지**, 프로덕션 코드는 `src/app/`에 작성
 
-**F4 완료 ✅ (2026-05-05)** — **506/507 PASS** (1 RLS 통합 실패 — `supabase db push 0021_classics` 필요), 0 TS errors. Step 1~14 전체 완료. 주요 커밋: Step 11(`060e74f`) · Step 12(`335bb68`) · Step 13(`d922182`). `pnpm seed:classics` 추가. 사용자 수동 잔여: `supabase db push 0021_classics` + `rag_content/classics/` YAML 20건(G4 도메인 작업) → 후속 세션에서 실데이터 시드 검증. §1.3 별도 이슈: `package.json` `lint` broken (Next.js 16 `next lint` 제거), `fluttering-gathering-island.md` §3.2 line 85 LLM 모델 stale 표기(§1.1 승인 필요 — 별도 PR), Supabase/Kakao redirect_uri 동기화(사용자 수동).
+**F4 완료 ✅ (2026-05-05)** — **507/508 PASS** (1 RLS 통합 실패 — `supabase db push 0021_classics` 필요), 0 TS errors. Step 1~14 전체 완료. 주요 커밋: Step 11(`060e74f`) · Step 12(`335bb68`) · Step 13(`d922182`) · 이슈 수정(`ac0885e`). `pnpm seed:classics` 추가 (`rag_content/classics/` 미존재 시 friendly message 반환 ✅). §3.2 LLM stale 정정 완료 (`ac0885e`). 사용자 수동 잔여: `supabase db push 0021_classics` + `rag_content/classics/` YAML 20건(G4 도메인 작업) → 후속 세션에서 실데이터 시드 검증. §1.3 별도 이슈 잔여: `package.json` `lint` broken — ESLint 10/plugin-react@7 비호환, ESLint 9 다운그레이드 별도 PR 필요(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류 — 빌드 개발 완료 후).
 
 ---
 
