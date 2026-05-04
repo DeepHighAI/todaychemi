@@ -1,0 +1,421 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_돈합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 82,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_썸합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 63.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 70,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_오래합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 63.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 70,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_일합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 96.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 82,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_첫합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 63.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 71,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mode_친구합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 73,
+    "ohaeng": 72.5,
+    "sipsin": 63.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 70,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_돈합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 76.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 74,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_썸합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 78.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 74,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_오래합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 78.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 74,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_일합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 85,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 77,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_첫합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 78.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 73,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mode_친구합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 72,
+    "ohaeng": 72.5,
+    "sipsin": 78.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 74,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_돈합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 88.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 88,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_썸합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 76.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_오래합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 76.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_일합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 88.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 89,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_첫합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 76.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 87,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mode_친구합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 97,
+    "ohaeng": 78.75,
+    "sipsin": 76.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_돈합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 83.33333333333334,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 76,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_썸합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 80,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_오래합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 79,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_일합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 84,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_첫합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 79,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mode_친구합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 82,
+    "ohaeng": 61.25,
+    "sipsin": 100,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 80,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_돈합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 60,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 80,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_썸합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 71.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_오래합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 71.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_일합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 68.33333333333333,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 82,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_첫합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 71.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 87,
+  "scoring_version": 1,
+}
+`;
+
+exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mode_친구합 1`] = `
+{
+  "components": {
+    "hap_chung_hyung_hae": 92,
+    "ohaeng": 90,
+    "sipsin": 71.66666666666667,
+  },
+  "mode_adjustment": 0,
+  "scenario_estimate": null,
+  "score": 86,
+  "scoring_version": 1,
+}
+`;
