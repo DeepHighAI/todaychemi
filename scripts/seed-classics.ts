@@ -44,6 +44,7 @@ export interface EmbedClassicsDeps {
 }
 
 export function loadClassicYamls(dir: string): ClassicYamlInput[] {
+  if (!existsSync(dir)) return [];
   const files = readdirSync(dir)
     .filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
     .sort();
@@ -112,6 +113,15 @@ async function main() {
   const { createEmbeddingsClient } = await import('@/lib/llm/clients');
   const dir = join(process.cwd(), 'rag_content', 'classics');
   const inputs = loadClassicYamls(dir);
+  if (inputs.length === 0) {
+    console.log(
+      `ℹ️  rag_content/classics/ 에 YAML 파일이 없습니다 (G4 명리 specialist 작업 영역).`,
+    );
+    console.log(
+      `   디렉토리를 만들고 YAML 1건 이상 작성한 후 다시 실행해주세요.`,
+    );
+    return;
+  }
   const rows = await embedClassics(inputs, {
     embeddings: createEmbeddingsClient(),
   });

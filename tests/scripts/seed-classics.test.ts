@@ -114,6 +114,11 @@ review_status: draft
     expect(rows[0].topic_tags).toEqual([]);
   });
 
+  it('디렉토리 미존재 시 빈 배열 반환 (G4 YAML 미작성 시나리오)', () => {
+    const nonexistent = join(tmpdir(), `classics-missing-${Date.now()}`);
+    expect(loadClassicYamls(nonexistent)).toEqual([]);
+  });
+
   it('original_reading 은 선택 — 없으면 null', () => {
     const noReading = `asset_id: classic_noreading
 source_title: "T"
