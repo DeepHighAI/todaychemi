@@ -244,8 +244,8 @@ export function validateClassicCitation(
 - [ ] **게이트 2** 명리 커뮤니티 섭외 (최소 1명) + Google Form 배포
 - [ ] 크라우드 평점 집계 → 재작성 필요 항목 반영
 - [ ] `review_status: "approved_ai_and_crowd"` 부여
-- [ ] `rag_content/classics/` 20건 YAML 파일
-- [ ] knowledge_assets 테이블 20건 insert
+- [ ] `rag_content/classics/` 20건 YAML 파일 — *(시드 인프라 완료: `scripts/seed-classics.ts` + `pnpm seed:classics`, commit `d922182`. YAML 20건은 명리 specialist 도메인 작업으로 별도 진행)*
+- [ ] knowledge_assets 테이블 20건 insert — *(`supabase db push 0021_classics` 사용자 수동 완료 후 `pnpm seed:classics` 실행)*
 - [ ] pgvector 임베딩 생성 (Supabase Edge Function)
 - [ ] 프롬프트 템플릿 `classic_citation` 섹션 추가
 - [ ] `validateClassicCitation()` 함수 + 단위 테스트

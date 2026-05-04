@@ -72,7 +72,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-05-04 기준)
+## 2. 프로젝트 상태 (2026-05-05 기준)
 
 - **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
 - **PR-1 완료** — Next.js 16.2.4 스캐폴드 생성됨. `pnpm dev` 정상 동작.
@@ -84,7 +84,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **`.env.local` 완성** — KASI_SERVICE_KEY, OPENAI_API_KEY, Supabase 키 6개, KAKAO 3개 모두 입력 완료. `KAKAO_REDIRECT_URI` = `jamhkucluhiibqpjsiov` (2026-05-04 수정).
 - `UIDesign/` 는 Babel CDN 기반 참조 프로토타입 — **수정 금지**, 프로덕션 코드는 `src/app/`에 작성
 
-**F4 Step 1~13 완료 ✅ (2026-05-05)** — **506/507 PASS** (1 RLS 통합 실패 — `supabase db push 0021_classics` 필요), 0 TS errors. 완료: Step 1~10 (이전 세션), Step 11(builder.ts 060e74f), Step 12(/api/hapcards route + clients + query-text 335bb68), **Step 13(seed-classics 스크립트 d922182)**. 미완: Step 14(docs), G4 도메인 작업(YAML 고전 20건). §1.3 별도 이슈: `package.json` `lint` 스크립트 broken, `supabase db push 0021_classics` 필요(사용자 supabase CLI 미설치 — 직접 처리), Supabase/Kakao redirect_uri 동기화(사용자 직접 처리).
+**F4 완료 ✅ (2026-05-05)** — **506/507 PASS** (1 RLS 통합 실패 — `supabase db push 0021_classics` 필요), 0 TS errors. Step 1~14 전체 완료. 주요 커밋: Step 11(`060e74f`) · Step 12(`335bb68`) · Step 13(`d922182`). `pnpm seed:classics` 추가. 사용자 수동 잔여: `supabase db push 0021_classics` + `rag_content/classics/` YAML 20건(G4 도메인 작업) → 후속 세션에서 실데이터 시드 검증. §1.3 별도 이슈: `package.json` `lint` broken (Next.js 16 `next lint` 제거), `fluttering-gathering-island.md` §3.2 line 85 LLM 모델 stale 표기(§1.1 승인 필요 — 별도 PR), Supabase/Kakao redirect_uri 동기화(사용자 수동).
 
 ---
 
