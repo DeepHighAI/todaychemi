@@ -62,10 +62,37 @@
   },
   "relations": {
     "new": {
+      "eyebrow": "인연 본명식",
+      "headline": "인연의 사주를\n입력해주세요",
+      "body": "합카드 계산에 사용돼요.",
       "title": "인연 등록",
-      "nickname": "인연 별명",
-      "birth": "생년월일",
-      "gender": "성별",
+      "sections": {
+        "basic": "인연 정보",
+        "birth": "생년월일",
+        "time": "출생 시간"
+      },
+      "nickname": {
+        "label": "인연 별명",
+        "placeholder": "인연을 부를 별명"
+      },
+      "gender": {
+        "label": "성별",
+        "male": "남",
+        "female": "여"
+      },
+      "birth": {
+        "date": "생년월일",
+        "timeOptional": "시간 입력",
+        "timeUnknownHint": "정오 12:00로 가정해 추정해요",
+        "calendar": "달력 종류",
+        "calendarSolar": "양력",
+        "calendarLunar": "음력",
+        "timeAccuracy": {
+          "exact": "정확해요",
+          "estimated": "대략 알아요",
+          "unknown": "몰라요"
+        }
+      },
       "mode": {
         "label": "어떤 사이예요?",
         "일합": "일 동료",
@@ -75,7 +102,21 @@
         "썸합": "썸",
         "오래합": "오래된 사이"
       },
-      "submit": "등록하기"
+      "consent": {
+        "label": "인연의 정보를 저장하는 데 동의합니다",
+        "requiredError": "동의가 필요해요"
+      },
+      "errors": {
+        "nicknameRequired": "별명을 입력해주세요.",
+        "modeRequired": "관계 유형을 선택해주세요.",
+        "dobRequired": "생년월일을 입력해주세요.",
+        "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
+        "genderRequired": "성별을 선택해주세요.",
+        "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요."
+      },
+      "submitting": "저장 중...",
+      "submit": "등록하기",
+      "privacy": "저장만 하고 공유하지 않아요"
     }
   },
   "feed": {

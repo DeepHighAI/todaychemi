@@ -1,0 +1,282 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
+import { Button } from '@/components/ui/button';
+import type { RelationCreate } from '@/types/relation';
+
+type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
+type Gender = 'M' | 'F' | '';
+type Calendar = 'solar' | 'lunar';
+type Mode = '' | '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
+
+const MODES = [
+  { value: '일합', key: '일합' },
+  { value: '친구합', key: '친구합' },
+  { value: '돈합', key: '돈합' },
+  { value: '첫합', key: '첫합' },
+  { value: '썸합', key: '썸합' },
+  { value: '오래합', key: '오래합' },
+] as const;
+
+export default function RelationsNewPage() {
+  const t = useTranslations('relations.new');
+  const router = useRouter();
+
+  const [nickname, setNickname] = useState('');
+  const [mode, setMode] = useState<Mode>('');
+  const [gender, setGender] = useState<Gender>('');
+  const [birthDate, setBirthDate] = useState('');
+  const [calendar, setCalendar] = useState<Calendar>('solar');
+  const [knowledge, setKnowledge] = useState<TimeAccuracy>('exact');
+  const [birthTime, setBirthTime] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    if (!nickname.trim()) { setError(t('errors.nicknameRequired')); return; }
+    if (!mode) { setError(t('errors.modeRequired')); return; }
+    if (!birthDate) { setError(t('errors.dobRequired')); return; }
+    if (knowledge !== 'unknown' && !birthTime) { setError(t('errors.timeRequiredWhenKnown')); return; }
+    if (!gender) { setError(t('errors.genderRequired')); return; }
+    if (!consent) { setError(t('consent.requiredError')); return; }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const body: RelationCreate = {
+        nickname: nickname.trim(),
+        mode: mode as RelationCreate['mode'],
+        gender: gender as 'M' | 'F',
+        birth_date: birthDate,
+        birth_date_calendar: calendar,
+        is_lunar_leap: false,
+        birth_time_knowledge: knowledge,
+        birth_time: knowledge === 'unknown' ? null : birthTime,
+        birth_longitude: null,
+        consent_confirmed: consent,
+        is_primary: false,
+      };
+      const res = await fetch('/api/relations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        setError(t('errors.generic'));
+        setSubmitting(false);
+        return;
+      }
+      router.push('/feed');
+    } catch {
+      setError(t('errors.generic'));
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="bg-background min-h-screen pb-32 px-4">
+      <header className="pt-8 pb-6">
+        <p className="text-xs font-bold uppercase tracking-wide text-primary mb-2">
+          {t('eyebrow')}
+        </p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground whitespace-pre-line">
+          {t('headline')}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-2">{t('body')}</p>
+      </header>
+
+      {/* 섹션 1: 인연 정보 */}
+      <section className="rounded-2xl bg-card p-4 mb-4">
+        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.basic')}</h2>
+
+        {/* 별명 */}
+        <div className="mb-4">
+          <label htmlFor="nickname" className="block text-xs text-muted-foreground mb-1">
+            {t('nickname.label')}
+          </label>
+          <input
+            id="nickname"
+            type="text"
+            placeholder={t('nickname.placeholder')}
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={20}
+            className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        {/* 관계 모드 (6분기) */}
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-1">{t('mode.label')}</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup">
+            {MODES.map(({ value, key }) => (
+              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="mode"
+                  value={value}
+                  checked={mode === value}
+                  onChange={() => setMode(value)}
+                  aria-label={t(`mode.${key}`)}
+                  className="accent-primary"
+                />
+                <span className="text-sm text-foreground">{t(`mode.${key}`)}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 성별 */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">{t('gender.label')}</p>
+          <div className="flex gap-3" role="radiogroup">
+            {(['M', 'F'] as const).map((g) => (
+              <label key={g} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="gender"
+                  value={g}
+                  checked={gender === g}
+                  onChange={() => setGender(g)}
+                  aria-label={g === 'M' ? t('gender.male') : t('gender.female')}
+                  className="accent-primary"
+                />
+                <span className="text-sm text-foreground">
+                  {g === 'M' ? t('gender.male') : t('gender.female')}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 섹션 2: 생년월일 */}
+      <section className="rounded-2xl bg-card p-4 mb-4">
+        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.birth')}</h2>
+
+        {/* 생년월일 */}
+        <div className="mb-4">
+          <label htmlFor="birth-date" className="block text-xs text-muted-foreground mb-1">
+            {t('birth.date')}
+          </label>
+          <input
+            id="birth-date"
+            aria-label={t('birth.date')}
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        {/* 양/음력 */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">{t('birth.calendar')}</p>
+          <div className="flex gap-3" role="radiogroup">
+            {([
+              { value: 'solar', label: t('birth.calendarSolar') },
+              { value: 'lunar', label: t('birth.calendarLunar') },
+            ] as { value: Calendar; label: string }[]).map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="birth-calendar"
+                  value={value}
+                  checked={calendar === value}
+                  onChange={() => setCalendar(value)}
+                  className="accent-primary"
+                />
+                <span className="text-sm text-foreground">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 섹션 3: 출생 시간 */}
+      <section className="rounded-2xl bg-card p-4 mb-4">
+        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.time')}</h2>
+
+        {/* 시간 정확도 3분기 */}
+        <div className="mb-4">
+          <div className="flex gap-3" role="radiogroup">
+            {([
+              { value: 'exact', label: t('birth.timeAccuracy.exact') },
+              { value: 'approximate', label: t('birth.timeAccuracy.estimated') },
+              { value: 'unknown', label: t('birth.timeAccuracy.unknown') },
+            ] as { value: TimeAccuracy; label: string }[]).map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="birth-time-knowledge"
+                  value={value}
+                  checked={knowledge === value}
+                  onChange={() => setKnowledge(value)}
+                  aria-label={label}
+                  className="accent-primary"
+                />
+                <span className="text-sm text-foreground">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 시간 입력 (unknown 아닐 때만) */}
+        {knowledge !== 'unknown' ? (
+          <div>
+            <label htmlFor="birth-time" className="block text-xs text-muted-foreground mb-1">
+              {t('birth.timeOptional')}
+            </label>
+            <input
+              id="birth-time"
+              aria-label={t('birth.timeOptional')}
+              type="time"
+              value={birthTime}
+              onChange={(e) => setBirthTime(e.target.value)}
+              className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">{t('birth.timeUnknownHint')}</p>
+        )}
+      </section>
+
+      {/* 동의 체크박스 */}
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <input
+          id="consent"
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="h-4 w-4 accent-primary"
+        />
+        <label htmlFor="consent" className="text-xs text-muted-foreground">
+          {t('consent.label')}
+        </label>
+      </div>
+
+      {/* 인라인 에러 */}
+      {error && <p className="mb-4 text-center text-sm text-destructive">{error}</p>}
+
+      {/* 개인정보 안내 */}
+      <p className="text-center text-xs text-muted-foreground mb-6">{t('privacy')}</p>
+
+      {/* 제출 버튼 (sticky) */}
+      <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!consent || submitting}
+          variant="default"
+          className="h-11 w-full"
+        >
+          {submitting ? t('submitting') : t('submit')}
+        </Button>
+      </div>
+    </main>
+  );
+}
