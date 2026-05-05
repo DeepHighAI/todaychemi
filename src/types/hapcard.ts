@@ -1,4 +1,5 @@
-import type { Mode } from './mode';
+import { z } from 'zod';
+import { ModeSchema, type Mode } from './mode';
 
 // 결과 카드 6 컴포넌트 (ADR-016: Phase 1 잠금)
 export type HapcardComponent =
@@ -48,3 +49,29 @@ export interface HapcardResult {
   // 클라이언트 렌더 우선순위 — DB 컬럼은 아니지만 ADR-016 컴포넌트 잠금 표현
   viewport_priority?: HapcardComponent[];
 }
+
+// POST /api/hapcards 요청 스키마 — .strict()로 PII 등 불명 필드 거부 (ADR-004)
+export const HapcardRequestSchema = z
+  .object({
+    relation_id: z.string().uuid(),
+    mode: ModeSchema,
+    theory_profile_version: z.string().min(1),
+    question_slot: z.string().optional(),
+  })
+  .strict();
+
+export type HapcardRequest = z.infer<typeof HapcardRequestSchema>;
+
+// route.ts 에러 응답 code 허용값 — 8가지 (exhaustive)
+export const HAPCARD_ERROR_CODES = [
+  'INVALID_BODY',
+  'UNAUTHORIZED',
+  'USER_CHART_LOOKUP_FAILED',
+  'USER_CHART_NOT_FOUND',
+  'RELATION_CHART_LOOKUP_FAILED',
+  'RELATION_CHART_NOT_FOUND',
+  'GROUNDING_FAILED',
+  'INTERNAL_ERROR',
+] as const;
+
+export type HapcardErrorCode = (typeof HAPCARD_ERROR_CODES)[number];

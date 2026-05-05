@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { expect, test } from 'vitest';
 import { render } from '@testing-library/react';
 
 // jsdom 환경 동작 확인용 smoke test

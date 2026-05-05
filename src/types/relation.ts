@@ -6,6 +6,9 @@ import { ModeSchema, type Mode } from './mode';
 export const BirthTimeKnowledgeSchema = z.enum(['exact', 'approximate', 'unknown']);
 export type BirthTimeKnowledge = z.infer<typeof BirthTimeKnowledgeSchema>;
 
+// S-02 시간 정확도 UI 별칭 (BirthTimeKnowledge 와 동일)
+export type TimeAccuracyMode = BirthTimeKnowledge;
+
 // 음/양력
 export const BirthCalendarSchema = z.enum(['solar', 'lunar']);
 export type BirthCalendar = z.infer<typeof BirthCalendarSchema>;

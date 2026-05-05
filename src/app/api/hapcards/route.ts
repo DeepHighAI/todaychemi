@@ -1,25 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { buildHapcard, type BuildHapcardInput, type BuildHapcardDeps } from '@/lib/hapcard/builder';
 import { buildRagQueryText } from '@/lib/rag/query-text';
-import { ModeSchema } from '@/types/mode';
+import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
-
-// 요청 바디 스키마. .strict() = PII 등 알 수 없는 필드 거부.
-const RequestBodySchema = z
-  .object({
-    relation_id: z.string().uuid(),
-    mode: ModeSchema,
-    theory_profile_version: z.string().min(1),
-    question_slot: z.string().optional(),
-  })
-  .strict();
-
-type RequestBody = z.infer<typeof RequestBodySchema>;
 
 interface ChartRow {
   chart_core: ChartCore;
@@ -27,16 +14,16 @@ interface ChartRow {
 }
 
 // 통일된 에러 응답 — { error: { code, message } }, code 는 UPPER_SNAKE.
-function errorResponse(code: string, message: string, status: number): NextResponse {
+function errorResponse(code: HapcardErrorCode, message: string, status: number): NextResponse {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
 export async function POST(request: NextRequest) {
   // 1. body parse + validate
-  let body: RequestBody;
+  let body: HapcardRequest;
   try {
     const raw = await request.json();
-    const parsed = RequestBodySchema.safeParse(raw);
+    const parsed = HapcardRequestSchema.safeParse(raw);
     if (!parsed.success) {
       return errorResponse('INVALID_BODY', parsed.error.message, 400);
     }
