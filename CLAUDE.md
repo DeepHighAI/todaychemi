@@ -88,8 +88,12 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - Step 1~14 전체 완료. 주요 커밋: Step 11(`060e74f`) · Step 12(`335bb68`) · Step 13(`d922182`) · 이슈 수정(`ac0885e`) · docs 메모리 갱신(`daf7e1e`).
 - `supabase db push 0021_classics` ✅ — RLS 통합 41/41 PASS.
 - `rag_content/classics/` YAML 20건 시드 완료 (`approved_ai_pending_human`) — §7.2 명리 specialist 크라우드 검수 미수행, 향후 필요.
-- §1.3 별도 이슈 잔여: `package.json` `lint` broken — ESLint 10/plugin-react@7 비호환, ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류 — 빌드 개발 완료 후).
-- **다음**: F5 프론트엔드 부트스트랩(토큰·프리미티브·레이아웃·i18n·계약) → S-01-A~S-07 등록 플로우 + 합카드 페이지. 큐: `memory/session_f5_sprint_queue_2026_05_05.md`.
+
+**F5 Sprint 진행 중 (2026-05-05)** — **625/625 PASS**, 0 TS errors.
+- B1+B3 완료(jsdom+testing-library, route groups). B5(타입 리프트) + S-00(Kakao→Google OAuth) + S-01-A(로그인 polish) 완료. S-01-B+S-02(온보딩 단일 페이지) 완료. S-03(인연 등록 단일 페이지) 완료. S-04(합피드 페이지) 완료. S-05(합카드 호출 + 에러 UX) 완료.
+- 완료 커밋: `6abc2a4`(B5 types) · `ab1c87e`(S-00 Google OAuth) · `199b89f`(S-01-A 로그인) · `7e21788`(onboarding types) · `0731125`(onboarding page+route) · `c44059b`(relation types) · `9935f32`(relations page+route) · `b6bb288`(GET /api/relations) · `e707d11`(feed page+grid) · `c3e07bf`(theory version const) · `ef30b5a`(feed mode query) · `dd10783`(hapcard page S-05).
+- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요).
+- **다음**: S-06 합카드 8컴포넌트 (hapcard-placeholder → header·gauge·body_3section·evidence·actions·classic_citation·footer·share).
 
 ---
 

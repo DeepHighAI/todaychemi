@@ -16,6 +16,7 @@ import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardFooter } from '@/components/hapcard/footer';
 import { HapcardShare } from '@/components/hapcard/share';
+import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 
 const CHART_PENDING_CODES: HapcardErrorCode[] = [
   'RELATION_CHART_NOT_FOUND',
@@ -107,6 +108,7 @@ export default function HapcardPage() {
   const { visuals } = data;
 
   return (
+    <GlossaryProvider>
     <main className="bg-background min-h-screen px-4 pt-8 pb-16 space-y-3">
       <HapcardHeader
         mode={mode!}
@@ -127,5 +129,6 @@ export default function HapcardPage() {
       <HapcardFooter />
       <HapcardShare />
     </main>
+    </GlossaryProvider>
   );
 }
