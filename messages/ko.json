@@ -13,15 +13,29 @@
     }
   },
   "onboarding": {
+    "eyebrow": "본명식 입력",
+    "headline": "오늘의 합을\n계산하려면",
+    "body": "본인 사주가 필요해요. 1분이면 끝납니다.",
+    "sections": {
+      "basic": "기본 정보",
+      "time": "출생 시간"
+    },
     "title": "반가워요, 처음이시군요",
     "nickname": {
       "label": "별명",
       "placeholder": "나를 부를 별명",
       "hint": "본명 대신 별명으로 저장돼요"
     },
+    "gender": {
+      "label": "성별",
+      "male": "남",
+      "female": "여"
+    },
     "birth": {
       "date": "생년월일",
       "time": "태어난 시간",
+      "timeOptional": "시간 입력",
+      "timeUnknownHint": "정오 12:00로 가정해 추정해요",
       "calendar": "달력 종류",
       "calendarSolar": "양력",
       "calendarLunar": "음력",
@@ -31,7 +45,20 @@
         "unknown": "몰라요"
       }
     },
-    "submit": "시작하기"
+    "tos": {
+      "label": "개인정보 처리방침에 동의합니다",
+      "requiredError": "동의가 필요해요"
+    },
+    "errors": {
+      "nicknameRequired": "별명을 입력해주세요.",
+      "dobRequired": "생년월일을 입력해주세요.",
+      "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
+      "genderRequired": "성별을 선택해주세요.",
+      "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요."
+    },
+    "submitting": "저장 중...",
+    "submit": "시작하기",
+    "privacy": "저장만 하고 공유하지 않아요"
   },
   "relations": {
     "new": {
