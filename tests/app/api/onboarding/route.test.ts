@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/chart/compute');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { computeChart } from '@/lib/chart/compute';
 import { POST } from '@/app/api/onboarding/route';
+import type { ChartCore } from '@/types/chart';
 
 const VALID_BODY = {
   nickname: '하늘달',
@@ -16,9 +19,22 @@ const VALID_BODY = {
   consented_tos_version: 'v0.1',
 };
 
+const MOCK_CHART_CORE: ChartCore = {
+  year_pillar: '辛未',
+  month_pillar: '癸卯',
+  day_pillar: '甲戌',
+  hour_pillar: '甲申',
+  day_master_element: '목',
+  five_elements_counts: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+  gender_normalized: 'F',
+};
+
+const MOCK_CHART_HASH = 'a'.repeat(64);
+
 function makeClient(opts: {
   userId?: string | null;
   insertError?: { code: string; message: string } | null;
+  upsertChartError?: { code: string; message: string } | null;
 }) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
 
@@ -27,14 +43,23 @@ function makeClient(opts: {
     error: null,
   });
 
-  const insert = vi.fn().mockResolvedValue({
+  const insertUsers = vi.fn().mockResolvedValue({
     data: null,
     error: opts.insertError ?? null,
   });
 
-  const from = vi.fn().mockReturnValue({ insert });
+  const upsertCharts = vi.fn().mockResolvedValue({
+    data: null,
+    error: opts.upsertChartError ?? null,
+  });
 
-  return { auth: { getUser }, from, _insert: insert };
+  const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'users') return { insert: insertUsers };
+    if (table === 'user_charts') return { upsert: upsertCharts };
+    return { insert: vi.fn(), upsert: vi.fn() };
+  });
+
+  return { auth: { getUser }, from, _insert: insertUsers, _upsertCharts: upsertCharts };
 }
 
 function makeRequest(body: unknown) {
@@ -47,6 +72,7 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(computeChart).mockResolvedValue({ chart_core: MOCK_CHART_CORE, chart_hash: MOCK_CHART_HASH });
 });
 
 describe('POST /api/onboarding', () => {
@@ -152,5 +178,42 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe('INVALID_BODY');
+  });
+
+  it('200 성공 시 user_charts upsert 호출 (chart_hash, chart_core, user_id, theory_profile_version)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    expect(client._upsertCharts).toHaveBeenCalledOnce();
+    const upserted = client._upsertCharts.mock.calls[0][0];
+    expect(upserted.user_id).toBe('user-uuid-001');
+    expect(upserted.chart_hash).toBe(MOCK_CHART_HASH);
+    expect(upserted.chart_core).toEqual(MOCK_CHART_CORE);
+    expect(upserted.theory_profile_version).toBeDefined();
+  });
+
+  it('computeChart 실패 → 500, users INSERT 미호출', async () => {
+    vi.mocked(computeChart).mockRejectedValue(new Error('KASI timeout'));
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    expect(client._insert).not.toHaveBeenCalled();
+  });
+
+  it('user_charts upsert 실패 → 500', async () => {
+    const client = makeClient({ upsertChartError: { code: 'PGRST000', message: 'upsert fail' } });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.code).toBe('INTERNAL_ERROR');
   });
 });
