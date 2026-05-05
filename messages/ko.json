@@ -135,6 +135,26 @@
     "share": "공유하기",
     "replay": "다시 해석하기",
     "placeholder": "합카드 본문은 곧 준비됩니다.",
+    "header": { "vs": "↔" },
+    "gauge": {
+      "tier": { "weak": "약함", "fair": "보통", "good": "좋음", "great": "매우 좋음" },
+      "unit": "점",
+      "breakdown": "합·형·충·해 {h} · 십신 {s} · 오행 {o} · 모드 {m}"
+    },
+    "body": { "eyebrow": "한 줄 결론" },
+    "ohaeng": {
+      "title": "오행 흐름",
+      "labelMe": "본인",
+      "labelRelation": "인연",
+      "elements": { "목": "목", "화": "화", "토": "토", "금": "금", "수": "수" }
+    },
+    "evidence": { "title": "합의 이유", "empty": "근거가 아직 준비되지 않았어요." },
+    "actionsList": { "title": "오늘의 조언", "empty": "조언이 아직 준비되지 않았어요." },
+    "classicList": { "title": "고전에서 찾은 지혜", "empty": "관련 고전이 아직 준비되지 않았어요." },
+    "footer": {
+      "disclaimer": "본 콘텐츠는 참고용이며, 의료·재정·법적 결정의 근거가 될 수 없습니다.",
+      "replayHint": "D+1 다시합 알림은 다음 단계에서 설정할 수 있어요."
+    },
     "errors": {
       "chartPending": {
         "title": "합카드 준비 중",
