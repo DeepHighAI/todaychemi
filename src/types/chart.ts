@@ -41,3 +41,5 @@ export interface TheoryProfile {
   ja_si_mode: 'late_zi' | 'early_zi';
   longitude_correction: boolean;
 }
+
+export const DEFAULT_THEORY_PROFILE_VERSION = 'v1';
