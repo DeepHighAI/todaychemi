@@ -148,6 +148,11 @@
       "labelRelation": "인연",
       "elements": { "목": "목", "화": "화", "토": "토", "금": "금", "수": "수" }
     },
+    "miniRadar": {
+      "title": "오행 비교",
+      "labelMe": "본인",
+      "labelRelation": "인연"
+    },
     "evidence": { "title": "합의 이유", "empty": "근거가 아직 준비되지 않았어요." },
     "actionsList": { "title": "오늘의 조언", "empty": "조언이 아직 준비되지 않았어요." },
     "classicList": { "title": "고전에서 찾은 지혜", "empty": "관련 고전이 아직 준비되지 않았어요." },

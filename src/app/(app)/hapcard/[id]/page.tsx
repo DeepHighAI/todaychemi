@@ -11,6 +11,7 @@ import { HapcardHeader } from '@/components/hapcard/header';
 import { HapcardGauge } from '@/components/hapcard/gauge';
 import { HapcardBody } from '@/components/hapcard/body';
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
+import { HapcardMiniRadar } from '@/components/hapcard/mini-radar';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
@@ -123,6 +124,10 @@ export default function HapcardPage() {
       <HapcardOhaeng
         userCounts={visuals.user.five_elements_counts}
         relationCounts={visuals.relation.five_elements_counts}
+      />
+      <HapcardMiniRadar
+        user={visuals.user.five_elements_counts}
+        relation={visuals.relation.five_elements_counts}
       />
       <HapcardEvidence cards={data.content.why_cards} />
       <HapcardActions actions={data.content.actions} />
