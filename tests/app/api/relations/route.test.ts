@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/chart/compute');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { computeChart } from '@/lib/chart/compute';
 import { GET, POST } from '@/app/api/relations/route';
+import type { ChartCore } from '@/types/chart';
 
 const VALID_BODY = {
   nickname: '봄달',
@@ -19,9 +22,18 @@ const VALID_BODY = {
   is_primary: false,
 };
 
+const MOCK_CHART_CORE: ChartCore = {
+  year_pillar: '辛未', month_pillar: '癸卯', day_pillar: '甲戌', hour_pillar: null,
+  day_master_element: '목',
+  five_elements_counts: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+  gender_normalized: 'F',
+};
+const MOCK_CHART_HASH = 'b'.repeat(64);
+
 function makeClient(opts: {
   userId?: string | null;
   insertError?: { code: string; message: string } | null;
+  upsertChartError?: { code: string; message: string } | null;
   selectRows?: unknown[] | null;
   selectError?: { code: string; message: string } | null;
 }) {
@@ -32,9 +44,9 @@ function makeClient(opts: {
     error: null,
   });
 
-  const insert = vi.fn().mockResolvedValue({
+  const upsertCharts = vi.fn().mockResolvedValue({
     data: null,
-    error: opts.insertError ?? null,
+    error: opts.upsertChartError ?? null,
   });
 
   const order = vi.fn().mockResolvedValue({
@@ -43,9 +55,20 @@ function makeClient(opts: {
   });
   const select = vi.fn().mockReturnValue({ order });
 
-  const from = vi.fn().mockReturnValue({ insert, select });
+  // relations INSERT chains .select('relation_id') → returns {data, error}
+  const selectAfterInsert = vi.fn().mockResolvedValue({
+    data: opts.insertError ? null : [{ relation_id: 'rel-uuid-001' }],
+    error: opts.insertError ?? null,
+  });
+  const insertRelations = vi.fn().mockReturnValue({ select: selectAfterInsert });
 
-  return { auth: { getUser }, from, _insert: insert, _select: select, _order: order };
+  const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'relations') return { insert: insertRelations, select };
+    if (table === 'relation_charts') return { upsert: upsertCharts };
+    return { insert: vi.fn(), upsert: vi.fn(), select };
+  });
+
+  return { auth: { getUser }, from, _insert: insertRelations, _upsertCharts: upsertCharts, _select: select, _order: order };
 }
 
 function makeRequest(body: unknown) {
@@ -58,6 +81,7 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(computeChart).mockResolvedValue({ chart_core: MOCK_CHART_CORE, chart_hash: MOCK_CHART_HASH });
 });
 
 describe('POST /api/relations', () => {
@@ -164,6 +188,45 @@ describe('POST /api/relations', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe('INVALID_BODY');
+  });
+
+  it('200 성공 시 relation_charts upsert 호출 (chart_hash, chart_core, user_id, relation_id)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    expect(client._upsertCharts).toHaveBeenCalledOnce();
+    const upserted = client._upsertCharts.mock.calls[0][0];
+    expect(upserted.user_id).toBe('user-uuid-001');
+    expect(upserted.chart_hash).toBe(MOCK_CHART_HASH);
+    expect(upserted.chart_core).toEqual(MOCK_CHART_CORE);
+    expect(upserted.theory_profile_version).toBeDefined();
+  });
+
+  it('computeChart 실패 → 200 (relation 등록 완료, chartPending UX)', async () => {
+    vi.mocked(computeChart).mockRejectedValue(new Error('KASI timeout'));
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    // relation은 등록됨 (chartPending은 기존 UX), chart upsert는 skip
+    expect(res.status).toBe(200);
+    expect(client._insert).toHaveBeenCalledOnce();
+    expect(client._upsertCharts).not.toHaveBeenCalled();
+  });
+
+  it('relation_charts upsert 실패 → 500', async () => {
+    const client = makeClient({ upsertChartError: { code: 'PGRST000', message: 'upsert fail' } });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.code).toBe('INTERNAL_ERROR');
   });
 });
 

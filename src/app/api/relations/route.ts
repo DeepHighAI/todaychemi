@@ -7,6 +7,8 @@ import {
   type FeedListItem,
   type RelationErrorCode,
 } from '@/types/relation';
+import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
+import { computeChart } from '@/lib/chart/compute';
 
 function errorResponse(code: RelationErrorCode, status: number) {
   return NextResponse.json({ code }, { status });
@@ -43,8 +45,9 @@ export async function POST(request: Request) {
   if (!user) return errorResponse('UNAUTHORIZED', 401);
 
   // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 INSERT
+  // relation_id가 INSERT 후 확정되므로 relations 먼저 INSERT
   const db = supabase as unknown as SupabaseClient;
-  const { error } = await db.from('relations').insert({
+  const { data: insertedRows, error } = await db.from('relations').insert({
     user_id: user.id,
     nickname: parsed.data.nickname,
     mode: parsed.data.mode,
@@ -57,8 +60,41 @@ export async function POST(request: Request) {
     birth_longitude: parsed.data.birth_longitude ?? null,
     consent_confirmed: parsed.data.consent_confirmed,
     is_primary: parsed.data.is_primary,
-  });
+  }).select('relation_id');
 
   if (error) return errorResponse('INTERNAL_ERROR', 500);
+
+  // chart compute — 실패 시 relation은 등록 완료 (chartPending UX), chart는 추후 재시도 가능
+  const relationId = (insertedRows as Array<{ relation_id: string }>)?.[0]?.relation_id ?? '';
+  try {
+    const computeResult = await computeChart(
+      {
+        entity_id: relationId,
+        birth_date: parsed.data.birth_date,
+        birth_date_calendar: parsed.data.birth_date_calendar,
+        is_lunar_leap: parsed.data.is_lunar_leap,
+        birth_time_knowledge: parsed.data.birth_time_knowledge,
+        birth_time: parsed.data.birth_time,
+        gender: parsed.data.gender,
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      process.env.KASI_SERVICE_KEY!,
+    );
+
+    const { error: chartError } = await db.from('relation_charts').upsert(
+      {
+        relation_id: relationId,
+        user_id: user.id,
+        chart_hash: computeResult.chart_hash,
+        chart_core: computeResult.chart_core,
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      { onConflict: 'chart_hash' },
+    );
+    if (chartError) return errorResponse('INTERNAL_ERROR', 500);
+  } catch {
+    // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
+  }
+
   return NextResponse.json({ ok: true });
 }
