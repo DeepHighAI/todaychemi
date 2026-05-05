@@ -1,0 +1,16 @@
+asset_id: classic_smth_003
+source_title: "삼명통회 (三命通會)"
+source_chapter: "神煞論"
+original_text: "驛馬逢沖, 動而不安"
+original_reading: "역마봉충, 동이불안"
+modern_translation: >
+  역마(이동·변화 기운)가 충(충돌)을 만나면,
+  끊임없이 움직이지만 쉽게 정착하지 못하는 불안이 따른다.
+topic_tags:
+  - traveling_horse
+  - restlessness
+  - instability_of_movement
+  - 첫합
+  - 오래합
+version: v1.0
+review_status: approved_ai_pending_human
