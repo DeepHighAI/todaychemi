@@ -2,10 +2,33 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
-import { RelationCreateSchema, type RelationErrorCode } from '@/types/relation';
+import {
+  RelationCreateSchema,
+  type FeedListItem,
+  type RelationErrorCode,
+} from '@/types/relation';
 
 function errorResponse(code: RelationErrorCode, status: number) {
   return NextResponse.json({ code }, { status });
+}
+
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return errorResponse('UNAUTHORIZED', 401);
+
+  const db = supabase as unknown as SupabaseClient;
+  const { data, error } = await db
+    .from('relations')
+    .select('relation_id, nickname, mode, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) return errorResponse('INTERNAL_ERROR', 500);
+
+  const items = (data ?? []) as FeedListItem[];
+  return NextResponse.json({ items });
 }
 
 export async function POST(request: Request) {

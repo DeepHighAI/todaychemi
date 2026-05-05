@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { POST } from '@/app/api/relations/route';
+import { GET, POST } from '@/app/api/relations/route';
 
 const VALID_BODY = {
   nickname: '봄달',
@@ -22,6 +22,8 @@ const VALID_BODY = {
 function makeClient(opts: {
   userId?: string | null;
   insertError?: { code: string; message: string } | null;
+  selectRows?: unknown[] | null;
+  selectError?: { code: string; message: string } | null;
 }) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
 
@@ -35,9 +37,15 @@ function makeClient(opts: {
     error: opts.insertError ?? null,
   });
 
-  const from = vi.fn().mockReturnValue({ insert });
+  const order = vi.fn().mockResolvedValue({
+    data: opts.selectRows ?? [],
+    error: opts.selectError ?? null,
+  });
+  const select = vi.fn().mockReturnValue({ order });
 
-  return { auth: { getUser }, from, _insert: insert };
+  const from = vi.fn().mockReturnValue({ insert, select });
+
+  return { auth: { getUser }, from, _insert: insert, _select: select, _order: order };
 }
 
 function makeRequest(body: unknown) {
@@ -156,5 +164,70 @@ describe('POST /api/relations', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe('INVALID_BODY');
+  });
+});
+
+describe('GET /api/relations', () => {
+  it('200 → relations 목록 반환 (FeedListItem subset)', async () => {
+    const rows = [
+      { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r2', nickname: '여름새', mode: '오래합', created_at: '2026-05-04T08:00:00Z' },
+    ];
+    const client = makeClient({ selectRows: rows });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toHaveLength(2);
+    expect(body.items[0].relation_id).toBe('r1');
+    expect(body.items[0].nickname).toBe('봄달');
+    expect(body.items[0].mode).toBe('친구합');
+  });
+
+  it('200 → 빈 목록 (relation 0건)', async () => {
+    const client = makeClient({ selectRows: [] });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items).toEqual([]);
+  });
+
+  it('GET 은 created_at 기준 내림차순 정렬을 요청한다', async () => {
+    const client = makeClient({ selectRows: [] });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    await GET();
+
+    expect(client._order).toHaveBeenCalledWith('created_at', { ascending: false });
+  });
+
+  it('401 → UNAUTHORIZED (미인증)', async () => {
+    const client = makeClient({ userId: null });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.code).toBe('UNAUTHORIZED');
+    expect(client._select).not.toHaveBeenCalled();
+  });
+
+  it('500 → INTERNAL_ERROR (DB select 실패)', async () => {
+    const client = makeClient({
+      selectError: { code: 'PGRST000', message: 'DB down' },
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.code).toBe('INTERNAL_ERROR');
   });
 });
