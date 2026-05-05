@@ -133,6 +133,17 @@
     "actions": "오늘의 조언",
     "classic": "고전에서 찾은 지혜",
     "share": "공유하기",
+    "shareSheet": {
+      "title": "공유 범위 선택",
+      "range": {
+        "nicknameOnly": "별명만",
+        "withOhaeng": "별명 + 오행",
+        "withGender": "별명 + 성별"
+      },
+      "preview": "미리보기",
+      "cta": "공유하기",
+      "cancel": "취소"
+    },
     "replay": "다시 해석하기",
     "placeholder": "합카드 본문은 곧 준비됩니다.",
     "header": { "vs": "↔" },
