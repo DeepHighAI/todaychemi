@@ -10,6 +10,7 @@ import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
+import { deriveVisuals } from '@/lib/hapcard/visuals';
 
 export interface BuildHapcardInput {
   user_id: string;
@@ -67,7 +68,9 @@ export async function buildHapcard(
   if (cacheRes.error) {
     throw new Error(`HAPCARD_CACHE_LOOKUP_FAILED: ${cacheRes.error.message}`);
   }
-  if (cacheRes.data) return cacheRes.data as HapcardResult;
+  if (cacheRes.data) {
+    return { ...(cacheRes.data as HapcardResult), visuals: deriveVisuals(input.self, input.relation) };
+  }
 
   // 5. LLM payload 빌드 (PII 5필드 제외 — CLAUDE.md §5)
   const payload = buildLlmPayload({
@@ -149,5 +152,5 @@ export async function buildHapcard(
   if (insertRes.error) {
     throw new Error(`HAPCARD_INSERT_FAILED: ${insertRes.error.message}`);
   }
-  return insertRes.data as HapcardResult;
+  return { ...(insertRes.data as HapcardResult), visuals: deriveVisuals(input.self, input.relation) };
 }

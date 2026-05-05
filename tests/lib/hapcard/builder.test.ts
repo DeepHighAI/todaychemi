@@ -355,4 +355,27 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(row.user_chart_hash).toBe(BASE_INPUT.self_chart_hash);
     expect(row.relation_chart_hash).toBe(BASE_INPUT.relation_chart_hash);
   });
+
+  it('cache miss → 반환된 HapcardResult에 visuals 첨부 (user/relation 슬라이스)', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.visuals).toBeDefined();
+    expect(result.visuals?.user.day_pillar).toBe(SELF.day_pillar);
+    expect(result.visuals?.user.day_master_element).toBe(SELF.day_master_element);
+    expect(result.visuals?.relation.day_pillar).toBe(RELATION.day_pillar);
+    expect(result.visuals?.relation.day_master_element).toBe(RELATION.day_master_element);
+  });
+
+  it('cache hit → 반환된 HapcardResult에 visuals 첨부 (DB 데이터 + visuals 병합)', async () => {
+    const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
+    const { client } = makeMockUserClient({ cachedRow: existingRow });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.visuals).toBeDefined();
+    expect(result.visuals?.user.day_pillar).toBe(SELF.day_pillar);
+    expect(result.visuals?.relation.day_pillar).toBe(RELATION.day_pillar);
+  });
 });
