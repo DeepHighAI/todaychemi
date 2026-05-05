@@ -4,41 +4,78 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* =========================================================================
+ * 합플 디자인 토큰 — PRD §7.2 (라이트/다크) + FRONTEND-PREP §디자인 토큰
+ *
+ * shadcn/ui 호환을 위해 표준 변수(--background, --primary 등)와
+ * 합플 브랜드 토큰(--bg-canvas, --accent-water 등)을 양립.
+ * 무드: Notion × Apple Notes (PRD §7.1) — 따뜻하고 모던.
+ * ========================================================================= */
+
 @theme inline {
+  /* shadcn 표준 매핑 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* 합플 PRD §7.2 직접 매핑 — Tailwind 유틸리티에서 bg-canvas, text-primary 등으로 사용 */
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-card: var(--bg-card);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-hairline: var(--hairline);
+
+  /* 오행(五行) 컬러 — 일주 chip · 오행맵 · 합카드 reasons 강조 */
+  --color-element-wood: var(--accent-wood);
+  --color-element-fire: var(--accent-fire);
+  --color-element-earth: var(--accent-earth);
+  --color-element-metal: var(--accent-metal);
+  --color-element-water: var(--accent-water);
+
+  /* Semantic — 시스템 화면(S-99) 에러·경고·정보 */
+  --color-semantic-ok: var(--ok);
+  --color-semantic-ok-bg: var(--ok-bg);
+  --color-semantic-warn: var(--warn);
+  --color-semantic-warn-bg: var(--warn-bg);
+  --color-semantic-info: var(--info);
+  --color-semantic-info-bg: var(--info-bg);
+
+  /* sidebar — shadcn dashboard 호환 */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* 폰트 */
+  --font-sans: var(--font-noto-sans-kr), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-heading: var(--font-noto-sans-kr), ui-sans-serif, system-ui, sans-serif;
+
+  /* radius (PRD 토큰 시트와 일관) */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,85 +83,187 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Liquid Glass 그라디언트 (FRONTEND-PREP §디자인 토큰 #lg-1~4) */
+  --background-image-liquid-hero: linear-gradient(
+    135deg,
+    var(--lg-1),
+    var(--lg-2),
+    var(--lg-3),
+    var(--lg-4)
+  );
 }
 
+/* =========================================================================
+ * 라이트 모드 — PRD §7.2
+ * ========================================================================= */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* PRD §7.2 합플 브랜드 surface */
+  --bg-canvas: #fbf8f3;
+  --bg-card: #ffffff;
+  --text-primary: #1a1b23;
+  --text-secondary: #5a5b66;
+  --hairline: #e8e4db;
+
+  /* PRD §7.2 5 오행 */
+  --accent-wood: #6fb59a;
+  --accent-fire: #e07a5f;
+  --accent-earth: #c9a47a;
+  --accent-metal: #c0c5ce;
+  --accent-water: #5b7db1;
+
+  /* M3 purple — 브랜드 primary (FRONTEND-PREP §디자인 토큰 #--p-40) */
+  --p-40: #6750a4;
+  --p-90: #eaddff;
+  --p-95: #f6edff;
+
+  /* shadcn 호환 — PRD §7.2 + M3 purple 매핑 */
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--p-40);
+  --primary-foreground: #ffffff;
+  --secondary: var(--p-95);
+  --secondary-foreground: var(--p-40);
+  --muted: #f4f1ec;
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--p-90);
+  --accent-foreground: var(--p-40);
+  --destructive: #b3261e;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--p-40);
+
+  /* chart-* → 5 오행 매핑 (recharts 등에서 자동 사용) */
+  --chart-1: var(--accent-wood);
+  --chart-2: var(--accent-fire);
+  --chart-3: var(--accent-earth);
+  --chart-4: var(--accent-metal);
+  --chart-5: var(--accent-water);
+
+  /* Semantic */
+  --ok: #386a20;
+  --ok-bg: #d7e8da;
+  --warn: #b3261e;
+  --warn-bg: #ffdad6;
+  --info: #0066ff;
+  --info-bg: #eaf2fe;
+
+  /* Liquid Glass */
+  --lg-1: #4f46e5;
+  --lg-2: #6541f2;
+  --lg-3: #9333ea;
+  --lg-4: #ff5e00;
+
+  --radius: 0.75rem;
+
+  /* sidebar (shadcn dashboard 추후 사용) */
+  --sidebar: var(--bg-card);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--p-40);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--p-95);
+  --sidebar-accent-foreground: var(--p-40);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--p-40);
 }
 
+/* =========================================================================
+ * 다크 모드 — PRD §7.2
+ * ========================================================================= */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* PRD §7.2 합플 브랜드 surface (다크) */
+  --bg-canvas: #14151c;
+  --bg-card: #1c1d26;
+  --text-primary: #ece6d6;
+  --text-secondary: #a8a8b5;
+  --hairline: #2a2b36;
+
+  /* PRD §7.2 5 오행 (다크) */
+  --accent-wood: #5a9580;
+  --accent-fire: #bd6650;
+  --accent-earth: #a88862;
+  --accent-metal: #9da3ac;
+  --accent-water: #4a6896;
+
+  /* M3 purple (다크 — primary 명도 상승) */
+  --p-40: #cfbcff;
+  --p-90: #381e72;
+  --p-95: #2b1761;
+
+  /* shadcn 호환 (다크) */
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--p-40);
+  --primary-foreground: #1a1b23;
+  --secondary: var(--p-95);
+  --secondary-foreground: var(--text-primary);
+  --muted: #232430;
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--p-90);
+  --accent-foreground: var(--p-40);
+  --destructive: #f2b8b5;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--p-40);
+
+  --chart-1: var(--accent-wood);
+  --chart-2: var(--accent-fire);
+  --chart-3: var(--accent-earth);
+  --chart-4: var(--accent-metal);
+  --chart-5: var(--accent-water);
+
+  /* Semantic (다크) */
+  --ok: #91d29e;
+  --ok-bg: #1f3a24;
+  --warn: #f2b8b5;
+  --warn-bg: #4a1e1b;
+  --info: #a8c7ff;
+  --info-bg: #1b2841;
+
+  /* Liquid Glass (다크) */
+  --lg-1: #6b5be5;
+  --lg-2: #7b5bf2;
+  --lg-3: #a93bea;
+  --lg-4: #ff6b1a;
+
+  --sidebar: var(--bg-card);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--p-40);
+  --sidebar-primary-foreground: #1a1b23;
+  --sidebar-accent: var(--p-95);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--p-40);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "kern", "liga", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  /* PRD §7.5 — prefers-reduced-motion 시 즉시 표시 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

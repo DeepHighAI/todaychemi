@@ -19,7 +19,7 @@ export type BirthData = z.infer<typeof BirthDataSchema>;
 // PII: birth_date / gender 원본은 포함 금지 (docs/legal/pii_minimization.md)
 export interface ChartCore {
   year_pillar: string;
-  month_pillar: string;
+  month_pillar: string | null;
   day_pillar: string;
   hour_pillar: string | null;
   day_master_element: '목' | '화' | '토' | '금' | '수';
@@ -29,6 +29,12 @@ export interface ChartCore {
 }
 
 export type ChartHash = string;
+
+// 온보딩 폼 입력 — S-01-B 가입 후 자신의 사주 정보 등록 (별명 + 생년월일)
+export interface OnboardingFormInput {
+  nickname: string;
+  birth: BirthData;
+}
 
 export interface TheoryProfile {
   profile_version: string;

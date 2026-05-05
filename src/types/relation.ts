@@ -32,6 +32,9 @@ export const RelationCreateSchema = z.object({
 });
 export type RelationCreate = z.infer<typeof RelationCreateSchema>;
 
+// 합피드 카드 항목 — S-04 인연 목록 그리드 표시용 subset
+export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'>;
+
 // DB Row (db_schema.md §3 relations 테이블 1:1 매핑)
 // ADR-011: name / display_name / real_name 컬럼은 절대 추가 금지.
 export interface RelationRow {

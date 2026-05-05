@@ -1,0 +1,70 @@
+{
+  "app": {
+    "title": "합플",
+    "tagline": "인연을 사주로 풀어보다"
+  },
+  "auth": {
+    "login": {
+      "title": "합플 로그인",
+      "kakaoButton": "카카오로 시작하기",
+      "privacy": "로그인 시 개인정보 처리방침에 동의합니다"
+    }
+  },
+  "onboarding": {
+    "title": "반가워요, 처음이시군요",
+    "nickname": {
+      "label": "별명",
+      "placeholder": "나를 부를 별명",
+      "hint": "본명 대신 별명으로 저장돼요"
+    },
+    "birth": {
+      "date": "생년월일",
+      "time": "태어난 시간",
+      "calendar": "달력 종류",
+      "calendarSolar": "양력",
+      "calendarLunar": "음력",
+      "timeAccuracy": {
+        "exact": "정확해요",
+        "estimated": "대략 알아요",
+        "unknown": "몰라요"
+      }
+    },
+    "submit": "시작하기"
+  },
+  "relations": {
+    "new": {
+      "title": "인연 등록",
+      "nickname": "인연 별명",
+      "birth": "생년월일",
+      "gender": "성별",
+      "mode": {
+        "label": "어떤 사이예요?",
+        "일합": "일 동료",
+        "친구합": "친구",
+        "돈합": "돈 거래",
+        "첫합": "첫만남",
+        "썸합": "썸",
+        "오래합": "오래된 사이"
+      },
+      "submit": "등록하기"
+    }
+  },
+  "feed": {
+    "title": "내 인연",
+    "empty": "아직 등록된 인연이 없어요. 첫 인연을 추가해보세요."
+  },
+  "hapcard": {
+    "loading": "합카드를 불러오는 중...",
+    "score": "합게이지",
+    "reasons": "합의 이유",
+    "actions": "오늘의 조언",
+    "classic": "고전에서 찾은 지혜",
+    "share": "공유하기",
+    "replay": "다시 해석하기"
+  },
+  "errors": {
+    "generic": "오류가 발생했어요. 잠시 후 다시 시도해주세요.",
+    "network": "네트워크 오류가 발생했어요. 연결을 확인해주세요.",
+    "unauthorized": "로그인이 필요해요."
+  }
+}
