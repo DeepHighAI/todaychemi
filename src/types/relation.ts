@@ -32,11 +32,18 @@ export const RelationCreateSchema = z.object({
   birth_longitude: z.number().min(-180).max(180).nullable().optional(), // Expert Mode 경도 보정용만
   consent_confirmed: z.boolean().default(false),
   is_primary: z.boolean().default(false),
-});
+}).strict();
 export type RelationCreate = z.infer<typeof RelationCreateSchema>;
 
 // 합피드 카드 항목 — S-04 인연 목록 그리드 표시용 subset
 export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'>;
+
+export const RELATION_ERROR_CODES = [
+  'INVALID_BODY',
+  'UNAUTHORIZED',
+  'INTERNAL_ERROR',
+] as const;
+export type RelationErrorCode = (typeof RELATION_ERROR_CODES)[number];
 
 // DB Row (db_schema.md §3 relations 테이블 1:1 매핑)
 // ADR-011: name / display_name / real_name 컬럼은 절대 추가 금지.
