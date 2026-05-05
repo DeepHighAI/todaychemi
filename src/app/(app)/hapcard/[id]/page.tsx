@@ -17,6 +17,7 @@ import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardFooter } from '@/components/hapcard/footer';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
+import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 
 const CHART_PENDING_CODES: HapcardErrorCode[] = [
   'RELATION_CHART_NOT_FOUND',
@@ -129,6 +130,7 @@ export default function HapcardPage() {
       <HapcardFooter />
       <HapcardShare />
     </main>
+    <GlossarySheet />
     </GlossaryProvider>
   );
 }

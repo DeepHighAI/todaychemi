@@ -40,4 +40,30 @@ describe('GLOSSARY_TERMS', () => {
     expect(GLOSSARY_TERMS['합'].classic_quote).not.toBeNull();
     expect(GLOSSARY_TERMS['충'].classic_quote).not.toBeNull();
   });
+
+  it('각 용어가 extended_definition(short definition보다 긴 본문)을 가진다', () => {
+    for (const term of REQUIRED_TERMS) {
+      const entry = GLOSSARY_TERMS[term];
+      expect(typeof entry.extended_definition).toBe('string');
+      expect(entry.extended_definition!.length).toBeGreaterThan(entry.definition.length);
+    }
+  });
+
+  it('각 용어가 related_terms(다른 용어 키 ≥ 1개)을 가진다', () => {
+    for (const term of REQUIRED_TERMS) {
+      const entry = GLOSSARY_TERMS[term];
+      expect(Array.isArray(entry.related_terms)).toBe(true);
+      expect(entry.related_terms!.length).toBeGreaterThanOrEqual(1);
+      for (const related of entry.related_terms!) {
+        expect(REQUIRED_TERMS).toContain(related);
+      }
+    }
+  });
+
+  it('related_terms에 자기 자신은 포함되지 않는다', () => {
+    for (const term of REQUIRED_TERMS) {
+      const entry = GLOSSARY_TERMS[term];
+      expect(entry.related_terms!).not.toContain(term);
+    }
+  });
 });

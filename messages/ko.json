@@ -168,7 +168,12 @@
     "definition_label": "뜻",
     "classic_label": "고전",
     "dismiss": "닫기",
-    "learn_more": "더 알아보기"
+    "learn_more": "더 알아보기",
+    "sheet": {
+      "title": "용어 설명",
+      "learn_more_cta": "더 자세히 보기",
+      "related_terms_label": "관련 용어"
+    }
   },
   "errors": {
     "generic": "오류가 발생했어요. 잠시 후 다시 시도해주세요.",

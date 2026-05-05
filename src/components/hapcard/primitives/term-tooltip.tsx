@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useOptionalGlossaryContext } from '@/components/hapcard/glossary-provider';
 import { GLOSSARY_TERMS } from '@/lib/glossary/terms';
 import type { GlossaryKey } from '@/types/glossary';
 
@@ -17,6 +19,8 @@ interface TermTooltipProps {
 
 export function TermTooltip({ term, children, defaultOpen = false }: TermTooltipProps) {
   const entry = GLOSSARY_TERMS[term as GlossaryKey];
+  const glossary = useOptionalGlossaryContext();
+  const t = useTranslations('glossary');
 
   if (!entry) {
     return <span>{children}</span>;
@@ -45,6 +49,15 @@ export function TermTooltip({ term, children, defaultOpen = false }: TermTooltip
             <p className="text-[10px] text-muted-foreground border-t pt-1 mt-1 italic">
               &ldquo;{entry.classic_quote.original}&rdquo; — {entry.classic_quote.source}
             </p>
+          )}
+          {glossary && (
+            <button
+              type="button"
+              onClick={() => glossary.openSheet(term)}
+              className="mt-1 inline-flex items-center text-[10px] font-medium underline underline-offset-2 text-background/90 hover:text-background"
+            >
+              {t('learn_more')}
+            </button>
           )}
         </TooltipContent>
       </Tooltip>
