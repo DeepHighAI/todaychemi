@@ -6,7 +6,9 @@
   "auth": {
     "login": {
       "title": "합플 로그인",
-      "kakaoButton": "카카오로 시작하기",
+      "googleButton": "Google로 시작하기",
+      "loading": "연결 중...",
+      "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
       "privacy": "로그인 시 개인정보 처리방침에 동의합니다"
     }
   },
