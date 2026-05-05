@@ -47,6 +47,17 @@ describe('FeedPage', () => {
     expect(screen.getByText('여름새')).toBeInTheDocument();
   });
 
+  it('card link includes mode query param', async () => {
+    const items = [
+      { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    const link = await screen.findByRole('link', { name: /봄달/ });
+    expect(link).toHaveAttribute('href', `/hapcard/r1?mode=${encodeURIComponent('친구합')}`);
+  });
+
   it('renders mode badge label translated for each card', async () => {
     const items = [
       { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },

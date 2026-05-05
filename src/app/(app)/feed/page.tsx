@@ -52,7 +52,7 @@ export default function FeedPage() {
           {data.map((item) => (
             <li key={item.relation_id}>
               <Link
-                href={`/hapcard/${item.relation_id}`}
+                href={`/hapcard/${item.relation_id}?mode=${encodeURIComponent(item.mode)}`}
                 className="block rounded-2xl bg-card p-4 hover:bg-accent transition"
               >
                 <div className="flex items-center justify-between mb-2">
