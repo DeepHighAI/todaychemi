@@ -5,7 +5,6 @@ export interface SharePayloadInput {
   mode: string;
   nickname: string;
   score: number;
-  range: ShareRange;
   gender_normalized: 'F' | 'M';
   ohaeng_counts: Record<string, number>;
   origin: string;
@@ -32,7 +31,7 @@ function ohaengSummary(counts: Record<string, number>): string {
   return OHAENG_ORDER.map((k) => `${k}${counts[k] ?? 0}`).join(' ');
 }
 
-export function buildSharePayload(input: SharePayloadInput): SharePayload {
+export function buildSharePayload(input: SharePayloadInput & { range: ShareRange }): SharePayload {
   const { hapcard_id, mode, nickname, score, range, gender_normalized, ohaeng_counts, origin } = input;
   const nick = truncateNickname(nickname);
   const url = `${origin}/h/${hapcard_id}?mode=${mode}`;
