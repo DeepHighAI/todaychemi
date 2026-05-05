@@ -65,6 +65,10 @@ export interface HapcardResult {
   viewport_priority?: HapcardComponent[];
   // 런타임 시각 보조 데이터 — DB 컬럼 X, builder.ts가 ChartCore에서 파생해 첨부
   visuals?: HapcardVisuals;
+  // 공유 UX용 인연 별명 — builder.ts가 relation JOIN 후 첨부 (선택)
+  relation_nickname?: string;
+  // 공유 UX용 성별 — builder.ts가 relation_charts.chart_core에서 파생 (선택)
+  relation_gender_normalized?: 'F' | 'M';
 }
 
 // POST /api/hapcards 요청 스키마 — .strict()로 PII 등 불명 필드 거부 (ADR-004)

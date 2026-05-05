@@ -133,7 +133,14 @@ export default function HapcardPage() {
       <HapcardActions actions={data.content.actions} />
       <HapcardClassic citations={data.content.classic_citation} />
       <HapcardFooter />
-      <HapcardShare />
+      <HapcardShare
+        hapcardId={data.hapcard_id}
+        mode={mode!}
+        nickname={data.relation_nickname}
+        score={data.compat_score}
+        genderNormalized={data.relation_gender_normalized}
+        visuals={visuals}
+      />
     </main>
     <GlossarySheet />
     </GlossaryProvider>
