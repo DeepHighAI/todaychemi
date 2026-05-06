@@ -12,7 +12,7 @@
 | `POST /api/hapcard` | Route Handler (streaming) | required | `{relationId, mode}` | SSE `HapcardBody` chunks | LLM 진입점, GPT-5o 우선 |
 | `GET /api/today` | Route Handler | required | — | `DailyHap` JSON | lazy-first 캐시 (자정 만료) |
 | `POST /actions/createRelation` | Server Action | required | `RelationCreate` | `RelationRow` | Zod validated, 닉네임만 저장 |
-| `POST /actions/replay` | Server Action | required | `{hapcardId, kind}` | `HapcardReplay` | 4p 차감 (token_ledger INSERT) |
+| `POST /api/hapcards/[id]/replay` | Route Handler | required | `{replay_reason?}` | `HapcardReplayResult` | 4p 차감, idempotency(jinjin_date UNIQUE), 보상 트랜잭션 |
 | `POST /actions/archiveRelation` | Server Action | required | `{relationId}` | `{ok: true}` | soft delete (archived_at 설정) |
 | `POST /api/payments/webhook` | Route Handler | toss signature | toss payload | `200 OK` | Toss Payments 결제 승인 |
 | `POST /api/push/subscribe` | Route Handler | required | `PushSubscription` | `201` | FCM/Web Push 구독 등록 |
@@ -28,7 +28,7 @@
 - 폼 제출 또는 뮤테이션 (데이터 변경)
 - Next.js `revalidatePath` / `revalidateTag` 호출이 필요한 경우
 - 응답이 JSON이 아닌 redirect 또는 void
-- 예: `createRelation`, `replay`, `archiveRelation`
+- 예: `createRelation`, `archiveRelation`
 
 ### Route Handler 사용 조건
 
