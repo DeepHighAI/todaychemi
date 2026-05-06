@@ -6,6 +6,7 @@ import { GlossaryProvider, useGlossaryContext } from '@/components/hapcard/gloss
 
 function SingleConsumer({ term, resultRef }: { term: string; resultRef: { current: boolean | null } }) {
   const { consume } = useGlossaryContext();
+  // eslint-disable-next-line react-hooks/refs
   resultRef.current = consume(term);
   return null;
 }
