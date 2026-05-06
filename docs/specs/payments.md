@@ -268,7 +268,7 @@ CREATE TABLE token_ledger (
   user_id     uuid NOT NULL REFERENCES auth.users(id),
   order_id    text REFERENCES payments(order_id),
   delta       integer NOT NULL,         -- 양수: 충전, 음수: 사용
-  reason      text NOT NULL,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'refund'
+  reason      text NOT NULL,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'refund' | 'bonus'
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
