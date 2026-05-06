@@ -98,7 +98,12 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결(§1.1 결정 대기).
 - **S-07b Replay 완료 ✅ (2026-05-06)** — buildReplay async 함수 + POST /api/hapcards/[id]/replay route handler GREEN. 커밋 `c69acff`. **805/805 PASS**, 0 TS errors.
 - **`supabase db push 0022+0023` 적용 완료 ✅ (2026-05-06)** — `deduct_tokens` / `refund_tokens` RPC + `hapcard_replays_idempotency` UNIQUE 제약 라이브 반영. 검증 스크립트 `scripts/verify-replay-migrations.ts`.
-- **다음**: `database.types.ts` 재생성 → route.ts `as unknown as` 캐스트 제거(§1.1 결정 대기). F5 sprint 이후 작업 §1.1 결정 대기.
+- **후속 작업 완료 ✅ (2026-05-06)**:
+  - Task 1 (`b9e4e72`): `database.types.ts` 재생성 → route.ts tokenRpc 캐스트 제거.
+  - Task 2 (`7a0cb8c`): `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결 + vitest testTimeout 15s 상향 (jsdom cold-load 회귀 해소). **810/810 PASS**, 0 TS errors.
+  - Task 4 (`aa729ff`): `docs/specs/payments.md:271` `'hapcard'` → `'hapcard_use'` 정정.
+- **§1.3 별도 이슈 잔여**: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). `payments.md:271` `'refund'` ↔ `'bonus'` 불일치(§1.1). 라우트 `'replay_refund'` reason 표준화(§1.1).
+- **다음**: F5 sprint 이후 작업 §1.1 결정 대기.
 
 ---
 
