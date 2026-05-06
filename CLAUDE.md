@@ -70,6 +70,15 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 기록 → 다음 작업 진입 전 해당 메모 확인이 의무.
 
+### 1.6 모든 UI 작업은 UIDesign/ 와이어·디자인 시스템 준수 (비협상, 2026-05-06 확정)
+
+- **시각적 단일 진실**: `UIDesign/system.css`(토큰), `UIDesign/primitives.jsx`(공용 컴포넌트), `UIDesign/screens-*.jsx`(화면)
+- `UIDesign/` 자체는 **수정 금지**(§2와 동일). 프로덕션 구현은 반드시 `src/`에 작성.
+- 화면 신규·수정 시 대응 와이어가 있으면 그것을 따름. 없으면 §1.1 사용자 승인 후 진행.
+- **디자인 토큰**은 `src/app/globals.css` CSS 변수로만 정의. 컴포넌트 인라인 스타일·매직 넘버 금지.
+- **"Toss × iOS 26 × M3 Expressive"** 무드 변경은 §1.1 승인 대상.
+- 완료 검증: `/design-review` 또는 `/qa` 스킬로 와이어 일치 확인 후 보고.
+
 ---
 
 ## 2. 프로젝트 상태 (2026-05-06 기준)
@@ -110,7 +119,11 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **§1.3 별도 이슈 추가**: 7개 파일 unused `eslint-disable @typescript-eslint/no-explicit-any` 경고 — 빌드/테스트 차단 없음, §1.1 결정 후 별도 PR.
 - **PR-B(S-99) 완료 ✅ (2026-05-06)** — ErrorCard/LoadingState/EmptyState + global error/loading/not-found + error-codes 카탈로그. 커밋 `cec5038`. **833/833 PASS**, 0 TS errors.
 - **PR-A1(S-03 today 백엔드) 완료 ✅ (2026-05-06)** — GET /api/today route + cache-key(sha256) + builder(3-tier fallback) + openai(GPT-5 mini) + kst-date + types + daily_hap.md system prompt. 커밋 `77a90ef`. **850/850 PASS**, 0 TS errors.
-- **다음**: PR-C(S-96 OG 이미지) → PR-A2(today UI + TabBar).
+- **PR-C(S-96 OG 이미지) 완료 ✅ (2026-05-06)** — buildOgPayload(PII 0건) + OgTemplate(1200x630 Edge) + GET /api/og/hapcard/[id] + buildSharePayload URL에 range 추가 + page.tsx server wrapper(generateMetadata) + HapcardView.tsx 분리. 커밋 `acc94c6`. **866/866 PASS**, 0 TS errors. Auth 401 유지(메신저 크롤러 차단) — 공유 토큰 별도 PR.
+- **PR-A2(Today UI + TabBar) 완료 ✅ (2026-05-06)** — §1.6 UIDesign 준수 규칙 + globals.css M3 토큰 + TabBar + layout.tsx 통합 + Today 6 컴포넌트 + /api/me/chart route + (app)/page.tsx Today 조립 (3 useQuery + Top-N=5 최근순 + chart=null guard) + /me placeholder. **911/918 PASS** (full suite; 7 실패는 jsdom cold-load 사전 flake — 단독 실행 시 18/18 GREEN). PR-A2 영역 단독: layout 3/3 + Today 컴포넌트 28/28 + /api/me/chart 4/4 + (app)/page 8/8 + /me 2/2 = **45/45 PASS**, 0 TS errors, 0 lint errors.
+- §1.1 PR-A2 Phase 4 결정 사용자 확정: (1) /api/relations Top-N=5 (서버 created_at desc 그대로) (2) /api/me/chart 신규 호출 (user_charts 최신 1건).
+- §1.3 별도 이슈 추가: jsdom cold-load 시 hookTimeout 10s default 부족(testTimeout 15s 상향만 적용됨) — vitest config `hookTimeout` 별도 설정 필요. PR-A2 외부 hapcard 테스트 3건 영향 (단독 PASS, full suite flake).
+- **다음**: PR-A2 commit 후 Phase 6 manual smoke + 후속 PR 큐 §1.1 결정 대기.
 
 ---
 
