@@ -1,539 +1,1012 @@
-// Database types — db_schema.md DDL 1:1 매핑.
-// 단일 truth source: docs/specs/db_schema.md.
-// ADR-011: relations 테이블에 name/display_name/real_name 컬럼은 절대 추가 금지.
-// PII: birth_date / gender / nickname / email / birth_place 원본은 LLM 페이로드 직렬화 금지
-//      (docs/legal/pii_minimization.md).
-
-type ISODate = string;          // 'YYYY-MM-DD'
-type ISOTime = string;          // 'HH:mm:ss'
-type ISOTimestamp = string;     // ISO 8601 with timezone
-type Uuid = string;
-type JsonValue =
+export type Json =
   | string
   | number
   | boolean
   | null
-  | { [k: string]: JsonValue }
-  | JsonValue[];
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-// 6모드 (CLAUDE.md §8 도메인 용어 — 'mode')
-type Mode = '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
-
-type BirthCalendar = 'solar' | 'lunar';
-type BirthTimeKnowledge = 'exact' | 'approximate' | 'unknown';
-type Gender = 'M' | 'F';
-
-// LLM 모델 (db_schema.md §5 hapcards.llm_model)
-type LlmModel = 'gpt-5o' | 'gpt-5' | 'gpt-5-mini' | 'claude-fallback';
-
-// LLM 비용 추적 provider
-type LlmProvider = 'openai' | 'anthropic';
-
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      // §1 users
-      users: {
-        Row: {
-          user_id: Uuid;
-          nickname: string;
-          birth_date: ISODate;
-          birth_date_calendar: BirthCalendar;
-          is_lunar_leap: boolean;
-          birth_time_knowledge: BirthTimeKnowledge;
-          birth_time: ISOTime | null;
-          birth_time_range_from: ISOTime | null;
-          birth_time_range_to: ISOTime | null;
-          gender: Gender;
-          consented_at: ISOTimestamp;
-          consented_tos_version: string;
-          age_confirmed: boolean;
-          first_result_viewed_at: ISOTimestamp | null;
-          deletion_requested_at: ISOTimestamp | null;
-          created_at: ISOTimestamp;
-          updated_at: ISOTimestamp;
-        };
-        Insert: {
-          user_id: Uuid;
-          nickname: string;
-          birth_date: ISODate;
-          birth_date_calendar: BirthCalendar;
-          is_lunar_leap?: boolean;
-          birth_time_knowledge: BirthTimeKnowledge;
-          birth_time?: ISOTime | null;
-          birth_time_range_from?: ISOTime | null;
-          birth_time_range_to?: ISOTime | null;
-          gender: Gender;
-          consented_at?: ISOTimestamp;
-          consented_tos_version: string;
-          age_confirmed?: boolean;
-          first_result_viewed_at?: ISOTimestamp | null;
-          deletion_requested_at?: ISOTimestamp | null;
-        };
-        Update: Partial<Database['public']['Tables']['users']['Row']>;
-      };
-
-      // §2 user_charts
-      user_charts: {
-        Row: {
-          chart_id: Uuid;
-          user_id: Uuid;
-          chart_hash: string;
-          chart_core: JsonValue;
-          theory_profile_version: string;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          chart_id?: Uuid;
-          user_id: Uuid;
-          chart_hash: string;
-          chart_core: JsonValue;
-          theory_profile_version: string;
-        };
-        Update: Partial<Database['public']['Tables']['user_charts']['Row']>;
-      };
-
-      // §3 relations — ADR-011: 별명만, name/display_name 컬럼 금지
-      relations: {
-        Row: {
-          relation_id: Uuid;
-          user_id: Uuid;
-          nickname: string;
-          mode: Mode;
-          birth_date: ISODate;
-          birth_date_calendar: BirthCalendar;
-          is_lunar_leap: boolean;
-          birth_time_knowledge: BirthTimeKnowledge;
-          birth_time: ISOTime | null;
-          birth_longitude: number | null;
-          gender: Gender;
-          consent_confirmed: boolean;
-          is_primary: boolean;
-          created_at: ISOTimestamp;
-          updated_at: ISOTimestamp;
-        };
-        Insert: {
-          relation_id?: Uuid;
-          user_id: Uuid;
-          nickname: string;
-          mode: Mode;
-          birth_date: ISODate;
-          birth_date_calendar: BirthCalendar;
-          is_lunar_leap?: boolean;
-          birth_time_knowledge: BirthTimeKnowledge;
-          birth_time?: ISOTime | null;
-          birth_longitude?: number | null;
-          gender: Gender;
-          consent_confirmed?: boolean;
-          is_primary?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['relations']['Row']>;
-      };
-
-      // §4 relation_charts
-      relation_charts: {
-        Row: {
-          chart_id: Uuid;
-          relation_id: Uuid;
-          user_id: Uuid;
-          chart_hash: string;
-          chart_core: JsonValue;
-          theory_profile_version: string;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          chart_id?: Uuid;
-          relation_id: Uuid;
-          user_id: Uuid;
-          chart_hash: string;
-          chart_core: JsonValue;
-          theory_profile_version: string;
-        };
-        Update: Partial<Database['public']['Tables']['relation_charts']['Row']>;
-      };
-
-      // §5 hapcards — ADR-035: compat_score 결정형, LLM 개입 금지
-      hapcards: {
-        Row: {
-          hapcard_id: Uuid;
-          user_id: Uuid;
-          relation_id: Uuid;
-          mode: Mode;
-          compat_score: number;
-          score_breakdown: JsonValue;
-          content: JsonValue;
-          prompt_version: string;
-          llm_model: LlmModel;
-          cache_key: string;
-          user_chart_hash: string;
-          relation_chart_hash: string;
-          archived_at: ISOTimestamp | null;
-          version_label: string | null;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          hapcard_id?: Uuid;
-          user_id: Uuid;
-          relation_id: Uuid;
-          mode: Mode;
-          compat_score: number;
-          score_breakdown: JsonValue;
-          content: JsonValue;
-          prompt_version: string;
-          llm_model: LlmModel;
-          cache_key: string;
-          user_chart_hash: string;
-          relation_chart_hash: string;
-          archived_at?: ISOTimestamp | null;
-          version_label?: string | null;
-        };
-        Update: Partial<Database['public']['Tables']['hapcards']['Row']>;
-      };
-
-      // §6 hapcard_replays
-      hapcard_replays: {
-        Row: {
-          replay_id: Uuid;
-          hapcard_id: Uuid;
-          user_id: Uuid;
-          replay_reason: string | null;
-          content: JsonValue;
-          prompt_version: string;
-          llm_model: LlmModel;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          replay_id?: Uuid;
-          hapcard_id: Uuid;
-          user_id: Uuid;
-          replay_reason?: string | null;
-          content: JsonValue;
-          prompt_version: string;
-          llm_model: LlmModel;
-        };
-        Update: Partial<Database['public']['Tables']['hapcard_replays']['Row']>;
-      };
-
-      // §7 daily_haps
-      daily_haps: {
-        Row: {
-          hap_id: Uuid;
-          user_id: Uuid;
-          primary_relation_id: Uuid | null;
-          target_date: ISODate;
-          headline: string;
-          headline_reason: string;
-          avoid_phrase: string;
-          avoid_phrase_reason: string;
-          favorable_action: string;
-          favorable_action_reason: string;
-          source_packet_hash: string;
-          reused_from_yesterday: boolean;
-          llm_model: LlmModel;
-          generated_at: ISOTimestamp;
-        };
-        Insert: {
-          hap_id?: Uuid;
-          user_id: Uuid;
-          primary_relation_id?: Uuid | null;
-          target_date: ISODate;
-          headline: string;
-          headline_reason: string;
-          avoid_phrase: string;
-          avoid_phrase_reason: string;
-          favorable_action: string;
-          favorable_action_reason: string;
-          source_packet_hash: string;
-          reused_from_yesterday?: boolean;
-          llm_model?: LlmModel;
-        };
-        Update: Partial<Database['public']['Tables']['daily_haps']['Row']>;
-      };
-
-      // §8 token_ledger
-      token_ledger: {
-        Row: {
-          ledger_id: Uuid;
-          user_id: Uuid;
-          delta: number;
-          reason: string;
-          reference_id: string | null;
-          balance_after: number;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          ledger_id?: Uuid;
-          user_id: Uuid;
-          delta: number;
-          reason: string;
-          reference_id?: string | null;
-          balance_after: number;
-        };
-        Update: Partial<Database['public']['Tables']['token_ledger']['Row']>;
-      };
-
-      // §9 payments
-      payments: {
-        Row: {
-          payment_id: Uuid;
-          user_id: Uuid;
-          toss_payment_key: string;
-          toss_order_id: string;
-          amount_krw: number;
-          token_amount: number;
-          status: 'pending' | 'confirmed' | 'failed' | 'refunded';
-          confirmed_at: ISOTimestamp | null;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          payment_id?: Uuid;
-          user_id: Uuid;
-          toss_payment_key: string;
-          toss_order_id: string;
-          amount_krw: number;
-          token_amount: number;
-          status: 'pending' | 'confirmed' | 'failed' | 'refunded';
-          confirmed_at?: ISOTimestamp | null;
-        };
-        Update: Partial<Database['public']['Tables']['payments']['Row']>;
-      };
-
-      // §10 push_subscriptions
-      push_subscriptions: {
-        Row: {
-          subscription_id: Uuid;
-          user_id: Uuid;
-          fcm_token: string;
-          device_type: 'android' | 'ios' | 'web';
-          is_active: boolean;
-          created_at: ISOTimestamp;
-          updated_at: ISOTimestamp;
-        };
-        Insert: {
-          subscription_id?: Uuid;
-          user_id: Uuid;
-          fcm_token: string;
-          device_type: 'android' | 'ios' | 'web';
-          is_active?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['push_subscriptions']['Row']>;
-      };
-
-      // §11 notification_optins
-      notification_optins: {
-        Row: {
-          user_id: Uuid;
-          daily_hap: boolean;
-          hapcard_ready: boolean;
-          marketing: boolean;
-          updated_at: ISOTimestamp;
-        };
-        Insert: {
-          user_id: Uuid;
-          daily_hap?: boolean;
-          hapcard_ready?: boolean;
-          marketing?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['notification_optins']['Row']>;
-      };
-
-      // §12 prompt_versions (PK: prompt_name + version)
-      prompt_versions: {
-        Row: {
-          prompt_name: string;
-          version: string;
-          content: string;
-          status: 'active' | 'canary' | 'rolled_back';
-          canary_ratio: number | null;
-          notes: string | null;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          prompt_name: string;
-          version: string;
-          content: string;
-          status: 'active' | 'canary' | 'rolled_back';
-          canary_ratio?: number | null;
-          notes?: string | null;
-        };
-        Update: Partial<Database['public']['Tables']['prompt_versions']['Row']>;
-      };
-
-      // §13 knowledge_assets
-      knowledge_assets: {
-        Row: {
-          asset_id: string;
-          asset_type: 'classic' | 'concept_dict' | 'modern_translation' | 'safety_rule';
-          domain: string | null;
-          topic_tags: string[];
-          content: JsonValue;
-          embedding: number[] | null;
-          share_card_url: string | null;
-          version: string;
-          review_status:
-            | 'draft'
-            | 'approved_ai_pending_human'
-            | 'approved_ai_and_crowd'
-            | 'approved_ai_crowd_and_beta'
-            | 'deprecated';
-          created_at: ISOTimestamp;
-          updated_at: ISOTimestamp;
-        };
-        Insert: {
-          asset_id: string;
-          asset_type: 'classic' | 'concept_dict' | 'modern_translation' | 'safety_rule';
-          domain?: string | null;
-          topic_tags?: string[];
-          content: JsonValue;
-          embedding?: number[] | null;
-          share_card_url?: string | null;
-          version: string;
-          review_status:
-            | 'draft'
-            | 'approved_ai_pending_human'
-            | 'approved_ai_and_crowd'
-            | 'approved_ai_crowd_and_beta'
-            | 'deprecated';
-        };
-        Update: Partial<Database['public']['Tables']['knowledge_assets']['Row']>;
-      };
-
-      // §14 banned_phrase_hits
-      banned_phrase_hits: {
-        Row: {
-          hit_id: Uuid;
-          prompt_version: string;
-          phrase_category: string;
-          phrase_matched: string;
-          hapcard_id: Uuid | null;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          hit_id?: Uuid;
-          prompt_version: string;
-          phrase_category: string;
-          phrase_matched: string;
-          hapcard_id?: Uuid | null;
-        };
-        Update: Partial<Database['public']['Tables']['banned_phrase_hits']['Row']>;
-      };
-
-      // §15 error_events
-      error_events: {
-        Row: {
-          event_id: Uuid;
-          user_id: Uuid | null;
-          error_code: string;
-          chart_hash: string | null;
-          prompt_version: string | null;
-          context: JsonValue | null;
-          stack: string | null;
-          created_at: ISOTimestamp;
-        };
-        Insert: {
-          event_id?: Uuid;
-          user_id?: Uuid | null;
-          error_code: string;
-          chart_hash?: string | null;
-          prompt_version?: string | null;
-          context?: JsonValue | null;
-          stack?: string | null;
-        };
-        Update: Partial<Database['public']['Tables']['error_events']['Row']>;
-      };
-
-      // §16 llm_cost_tracking (PK: date + provider + model)
-      llm_cost_tracking: {
-        Row: {
-          date: ISODate;
-          provider: LlmProvider;
-          model: string;
-          total_usd: number;
-          call_count: number;
-          token_in: number;
-          token_out: number;
-        };
-        Insert: {
-          date: ISODate;
-          provider: LlmProvider;
-          model: string;
-          total_usd?: number;
-          call_count?: number;
-          token_in?: number;
-          token_out?: number;
-        };
-        Update: Partial<Database['public']['Tables']['llm_cost_tracking']['Row']>;
-      };
-
-      // §17 anon_requests (PK: ip_hash + bucket_minute)
       anon_requests: {
         Row: {
-          ip_hash: string;
-          bucket_minute: ISOTimestamp;
-          count: number;
-        };
+          bucket_minute: string
+          count: number
+          ip_hash: string
+        }
         Insert: {
-          ip_hash: string;
-          bucket_minute: ISOTimestamp;
-          count?: number;
-        };
-        Update: Partial<Database['public']['Tables']['anon_requests']['Row']>;
-      };
-
-      // §18 feedback_events
+          bucket_minute: string
+          count?: number
+          ip_hash: string
+        }
+        Update: {
+          bucket_minute?: string
+          count?: number
+          ip_hash?: string
+        }
+        Relationships: []
+      }
+      banned_phrase_hits: {
+        Row: {
+          created_at: string
+          hapcard_id: string | null
+          hit_id: string
+          phrase_category: string
+          phrase_matched: string
+          prompt_version: string
+        }
+        Insert: {
+          created_at?: string
+          hapcard_id?: string | null
+          hit_id?: string
+          phrase_category: string
+          phrase_matched: string
+          prompt_version: string
+        }
+        Update: {
+          created_at?: string
+          hapcard_id?: string | null
+          hit_id?: string
+          phrase_category?: string
+          phrase_matched?: string
+          prompt_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banned_phrase_hits_hapcard_id_fkey"
+            columns: ["hapcard_id"]
+            isOneToOne: false
+            referencedRelation: "hapcards"
+            referencedColumns: ["hapcard_id"]
+          },
+        ]
+      }
+      classics: {
+        Row: {
+          asset_id: string
+          created_at: string
+          embedding: string | null
+          modern_translation: string
+          original_reading: string | null
+          original_text: string
+          review_status: string
+          source_chapter: string
+          source_title: string
+          topic_tags: string[]
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          embedding?: string | null
+          modern_translation: string
+          original_reading?: string | null
+          original_text: string
+          review_status: string
+          source_chapter: string
+          source_title: string
+          topic_tags?: string[]
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          embedding?: string | null
+          modern_translation?: string
+          original_reading?: string | null
+          original_text?: string
+          review_status?: string
+          source_chapter?: string
+          source_title?: string
+          topic_tags?: string[]
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      daily_haps: {
+        Row: {
+          avoid_phrase: string
+          avoid_phrase_reason: string
+          favorable_action: string
+          favorable_action_reason: string
+          generated_at: string
+          hap_id: string
+          headline: string
+          headline_reason: string
+          llm_model: string
+          primary_relation_id: string | null
+          reused_from_yesterday: boolean
+          source_packet_hash: string
+          target_date: string
+          user_id: string
+        }
+        Insert: {
+          avoid_phrase: string
+          avoid_phrase_reason: string
+          favorable_action: string
+          favorable_action_reason: string
+          generated_at?: string
+          hap_id?: string
+          headline: string
+          headline_reason: string
+          llm_model?: string
+          primary_relation_id?: string | null
+          reused_from_yesterday?: boolean
+          source_packet_hash: string
+          target_date: string
+          user_id: string
+        }
+        Update: {
+          avoid_phrase?: string
+          avoid_phrase_reason?: string
+          favorable_action?: string
+          favorable_action_reason?: string
+          generated_at?: string
+          hap_id?: string
+          headline?: string
+          headline_reason?: string
+          llm_model?: string
+          primary_relation_id?: string | null
+          reused_from_yesterday?: boolean
+          source_packet_hash?: string
+          target_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_haps_primary_relation_id_fkey"
+            columns: ["primary_relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "daily_haps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      error_events: {
+        Row: {
+          chart_hash: string | null
+          context: Json | null
+          created_at: string
+          error_code: string
+          event_id: string
+          prompt_version: string | null
+          stack: string | null
+          user_id: string | null
+        }
+        Insert: {
+          chart_hash?: string | null
+          context?: Json | null
+          created_at?: string
+          error_code: string
+          event_id?: string
+          prompt_version?: string | null
+          stack?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          chart_hash?: string | null
+          context?: Json | null
+          created_at?: string
+          error_code?: string
+          event_id?: string
+          prompt_version?: string | null
+          stack?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       feedback_events: {
         Row: {
-          event_id: Uuid;
-          user_id: Uuid;
-          target_type: 'hapcard' | 'hapcard_replay' | 'daily_hap' | 'knowledge_asset';
-          target_id: string;
-          signal: 'thumbs_up' | 'thumbs_down' | 'inspect';
-          quality_issue_flag:
-            | 'generic'
-            | 'vague'
-            | 'wrong_context'
-            | 'classic_translation'
-            | 'other'
-            | null;
-          quality_issue_note: string | null;
-          created_at: ISOTimestamp;
-        };
+          created_at: string
+          event_id: string
+          quality_issue_flag: string | null
+          quality_issue_note: string | null
+          signal: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
         Insert: {
-          event_id?: Uuid;
-          user_id: Uuid;
-          target_type: 'hapcard' | 'hapcard_replay' | 'daily_hap' | 'knowledge_asset';
-          target_id: string;
-          signal: 'thumbs_up' | 'thumbs_down' | 'inspect';
-          quality_issue_flag?:
-            | 'generic'
-            | 'vague'
-            | 'wrong_context'
-            | 'classic_translation'
-            | 'other'
-            | null;
-          quality_issue_note?: string | null;
-        };
-        Update: Partial<Database['public']['Tables']['feedback_events']['Row']>;
-      };
-
-      // §19 deletion_grace — 30일 grace period 함수의 placeholder 슬롯.
-      // db_schema.md 0020 마이그레이션은 함수만 정의하지만, 19테이블 카운트 정합성 위해 보존.
-      deletion_grace: {
+          created_at?: string
+          event_id?: string
+          quality_issue_flag?: string | null
+          quality_issue_note?: string | null
+          signal: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          quality_issue_flag?: string | null
+          quality_issue_note?: string | null
+          signal?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hapcard_replays: {
         Row: {
-          user_id: Uuid;
-          deletion_requested_at: ISOTimestamp;
-        };
-        Insert: { user_id: Uuid; deletion_requested_at: ISOTimestamp };
-        Update: Partial<{ user_id: Uuid; deletion_requested_at: ISOTimestamp }>;
-      };
-    };
-    Views: Record<string, never>;
+          content: Json
+          created_at: string
+          hapcard_id: string
+          jinjin_date: string
+          llm_model: string
+          prompt_version: string
+          replay_id: string
+          replay_reason: string | null
+          user_id: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          hapcard_id: string
+          jinjin_date: string
+          llm_model: string
+          prompt_version: string
+          replay_id?: string
+          replay_reason?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          hapcard_id?: string
+          jinjin_date?: string
+          llm_model?: string
+          prompt_version?: string
+          replay_id?: string
+          replay_reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hapcard_replays_hapcard_id_fkey"
+            columns: ["hapcard_id"]
+            isOneToOne: false
+            referencedRelation: "hapcards"
+            referencedColumns: ["hapcard_id"]
+          },
+          {
+            foreignKeyName: "hapcard_replays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hapcards: {
+        Row: {
+          archived_at: string | null
+          cache_key: string
+          compat_score: number
+          content: Json
+          created_at: string
+          hapcard_id: string
+          llm_model: string
+          mode: string
+          prompt_version: string
+          relation_chart_hash: string
+          relation_id: string
+          score_breakdown: Json
+          user_chart_hash: string
+          user_id: string
+          version_label: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          cache_key: string
+          compat_score: number
+          content: Json
+          created_at?: string
+          hapcard_id?: string
+          llm_model: string
+          mode: string
+          prompt_version: string
+          relation_chart_hash: string
+          relation_id: string
+          score_breakdown: Json
+          user_chart_hash: string
+          user_id: string
+          version_label?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          cache_key?: string
+          compat_score?: number
+          content?: Json
+          created_at?: string
+          hapcard_id?: string
+          llm_model?: string
+          mode?: string
+          prompt_version?: string
+          relation_chart_hash?: string
+          relation_id?: string
+          score_breakdown?: Json
+          user_chart_hash?: string
+          user_id?: string
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hapcards_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "hapcards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      knowledge_assets: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          content: Json
+          created_at: string
+          domain: string | null
+          embedding: string | null
+          review_status: string
+          share_card_url: string | null
+          topic_tags: string[]
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          asset_id: string
+          asset_type: string
+          content: Json
+          created_at?: string
+          domain?: string | null
+          embedding?: string | null
+          review_status: string
+          share_card_url?: string | null
+          topic_tags?: string[]
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          content?: Json
+          created_at?: string
+          domain?: string | null
+          embedding?: string | null
+          review_status?: string
+          share_card_url?: string | null
+          topic_tags?: string[]
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      llm_cost_tracking: {
+        Row: {
+          call_count: number
+          date: string
+          model: string
+          provider: string
+          token_in: number
+          token_out: number
+          total_usd: number
+        }
+        Insert: {
+          call_count?: number
+          date: string
+          model: string
+          provider: string
+          token_in?: number
+          token_out?: number
+          total_usd?: number
+        }
+        Update: {
+          call_count?: number
+          date?: string
+          model?: string
+          provider?: string
+          token_in?: number
+          token_out?: number
+          total_usd?: number
+        }
+        Relationships: []
+      }
+      notification_optins: {
+        Row: {
+          daily_hap: boolean
+          hapcard_ready: boolean
+          marketing: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_hap?: boolean
+          hapcard_ready?: boolean
+          marketing?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_hap?: boolean
+          hapcard_ready?: boolean
+          marketing?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_optins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_krw: number
+          confirmed_at: string | null
+          created_at: string
+          payment_id: string
+          status: string
+          token_amount: number
+          toss_order_id: string
+          toss_payment_key: string
+          user_id: string
+        }
+        Insert: {
+          amount_krw: number
+          confirmed_at?: string | null
+          created_at?: string
+          payment_id?: string
+          status: string
+          token_amount: number
+          toss_order_id: string
+          toss_payment_key: string
+          user_id: string
+        }
+        Update: {
+          amount_krw?: number
+          confirmed_at?: string | null
+          created_at?: string
+          payment_id?: string
+          status?: string
+          token_amount?: number
+          toss_order_id?: string
+          toss_payment_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      prompt_versions: {
+        Row: {
+          canary_ratio: number | null
+          content: string
+          created_at: string
+          notes: string | null
+          prompt_name: string
+          status: string
+          version: string
+        }
+        Insert: {
+          canary_ratio?: number | null
+          content: string
+          created_at?: string
+          notes?: string | null
+          prompt_name: string
+          status: string
+          version: string
+        }
+        Update: {
+          canary_ratio?: number | null
+          content?: string
+          created_at?: string
+          notes?: string | null
+          prompt_name?: string
+          status?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_type: string
+          fcm_token: string
+          is_active: boolean
+          subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type: string
+          fcm_token: string
+          is_active?: boolean
+          subscription_id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          fcm_token?: string
+          is_active?: boolean
+          subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      relation_charts: {
+        Row: {
+          chart_core: Json
+          chart_hash: string
+          chart_id: string
+          created_at: string
+          relation_id: string
+          theory_profile_version: string
+          user_id: string
+        }
+        Insert: {
+          chart_core: Json
+          chart_hash: string
+          chart_id?: string
+          created_at?: string
+          relation_id: string
+          theory_profile_version: string
+          user_id: string
+        }
+        Update: {
+          chart_core?: Json
+          chart_hash?: string
+          chart_id?: string
+          created_at?: string
+          relation_id?: string
+          theory_profile_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relation_charts_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "relation_charts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      relations: {
+        Row: {
+          birth_date: string
+          birth_date_calendar: string
+          birth_longitude: number | null
+          birth_time: string | null
+          birth_time_knowledge: string
+          consent_confirmed: boolean
+          created_at: string
+          gender: string
+          is_lunar_leap: boolean
+          is_primary: boolean
+          mode: string
+          nickname: string
+          relation_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_date: string
+          birth_date_calendar: string
+          birth_longitude?: number | null
+          birth_time?: string | null
+          birth_time_knowledge: string
+          consent_confirmed?: boolean
+          created_at?: string
+          gender: string
+          is_lunar_leap?: boolean
+          is_primary?: boolean
+          mode: string
+          nickname: string
+          relation_id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string
+          birth_date_calendar?: string
+          birth_longitude?: number | null
+          birth_time?: string | null
+          birth_time_knowledge?: string
+          consent_confirmed?: boolean
+          created_at?: string
+          gender?: string
+          is_lunar_leap?: boolean
+          is_primary?: boolean
+          mode?: string
+          nickname?: string
+          relation_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      token_ledger: {
+        Row: {
+          balance_after: number
+          created_at: string
+          delta: number
+          ledger_id: string
+          reason: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          delta: number
+          ledger_id?: string
+          reason: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          delta?: number
+          ledger_id?: string
+          reason?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_charts: {
+        Row: {
+          chart_core: Json
+          chart_hash: string
+          chart_id: string
+          created_at: string
+          theory_profile_version: string
+          user_id: string
+        }
+        Insert: {
+          chart_core: Json
+          chart_hash: string
+          chart_id?: string
+          created_at?: string
+          theory_profile_version: string
+          user_id: string
+        }
+        Update: {
+          chart_core?: Json
+          chart_hash?: string
+          chart_id?: string
+          created_at?: string
+          theory_profile_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_charts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          age_confirmed: boolean
+          birth_date: string
+          birth_date_calendar: string
+          birth_time: string | null
+          birth_time_knowledge: string
+          birth_time_range_from: string | null
+          birth_time_range_to: string | null
+          consented_at: string
+          consented_tos_version: string
+          created_at: string
+          deletion_requested_at: string | null
+          first_result_viewed_at: string | null
+          gender: string
+          is_lunar_leap: boolean
+          nickname: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_confirmed?: boolean
+          birth_date: string
+          birth_date_calendar: string
+          birth_time?: string | null
+          birth_time_knowledge: string
+          birth_time_range_from?: string | null
+          birth_time_range_to?: string | null
+          consented_at?: string
+          consented_tos_version: string
+          created_at?: string
+          deletion_requested_at?: string | null
+          first_result_viewed_at?: string | null
+          gender: string
+          is_lunar_leap?: boolean
+          nickname: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_confirmed?: boolean
+          birth_date?: string
+          birth_date_calendar?: string
+          birth_time?: string | null
+          birth_time_knowledge?: string
+          birth_time_range_from?: string | null
+          birth_time_range_to?: string | null
+          consented_at?: string
+          consented_tos_version?: string
+          created_at?: string
+          deletion_requested_at?: string | null
+          first_result_viewed_at?: string | null
+          gender?: string
+          is_lunar_leap?: boolean
+          nickname?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
-      purge_deleted_users: {
-        Args: Record<string, never>;
-        Returns: void;
-      };
-    };
-    Enums: Record<string, never>;
-  };
+      deduct_tokens: {
+        Args: { delta: number; reason: string; ref?: string; uid: string }
+        Returns: number
+      }
+      purge_deleted_users: { Args: never; Returns: undefined }
+      refund_tokens: {
+        Args: { delta: number; reason: string; ref?: string; uid: string }
+        Returns: number
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const

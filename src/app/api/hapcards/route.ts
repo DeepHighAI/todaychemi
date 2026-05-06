@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       404,
     );
   }
-  const userChart = userChartRes.data as ChartRow;
+  const userChart = userChartRes.data as unknown as ChartRow;
 
   // 4. relation_charts fetch (RLS 자동 enforce via relation_charts.user_id)
   const relationChartRes = await supabaseUserClient
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       404,
     );
   }
-  const relationChart = relationChartRes.data as ChartRow;
+  const relationChart = relationChartRes.data as unknown as ChartRow;
 
   // 5. buildHapcard 호출
   const input: BuildHapcardInput = {

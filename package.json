@@ -14,7 +14,11 @@
     "verify-kasi": "tsx scripts/verify-kasi-vs-ssaju.ts",
     "analyze-month-pillar": "tsx scripts/analyze-month-pillar-failures.ts",
     "seed:prompts": "tsx scripts/seed-prompts.ts",
-    "seed:classics": "tsx scripts/seed-classics.ts"
+    "seed:classics": "tsx scripts/seed-classics.ts",
+    "db:link": "supabase link --project-ref jamhkucluhiibqpjsiov",
+    "db:status": "supabase projects list",
+    "db:push:dry": "supabase db push --dry-run",
+    "db:push": "supabase db push"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",

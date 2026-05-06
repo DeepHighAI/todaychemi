@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { Database } from '@/types/database.types';
 
 describe('Database types', () => {
-  it('has 19 tables in public schema', () => {
+  it('has 19 tables in public schema (incl. classics)', () => {
     type Tables = keyof Database['public']['Tables'];
     const expected: Tables[] = [
       'users',
@@ -24,7 +24,7 @@ describe('Database types', () => {
       'llm_cost_tracking',
       'anon_requests',
       'feedback_events',
-      'deletion_grace',
+      'classics',
     ];
     expect(expected).toHaveLength(19);
   });
@@ -34,16 +34,17 @@ describe('Database types', () => {
     expectTypeOf<Row>().toHaveProperty('nickname');
   });
 
-  it('users.Row.gender is M or F', () => {
+  // gender / birth_time_knowledge are DB CHECK constraints. supabase gen types
+  // does not extract CHECK into TS literal unions, so generated shape is string.
+  // Domain-narrow types are guaranteed by src/types/* aliases.
+  it('users.Row.gender is string (CHECK constraint not preserved by gen)', () => {
     type Row = Database['public']['Tables']['users']['Row'];
-    expectTypeOf<Row['gender']>().toEqualTypeOf<'M' | 'F'>();
+    expectTypeOf<Row['gender']>().toEqualTypeOf<string>();
   });
 
-  it('users.Row.birth_time_knowledge has 3 enum values', () => {
+  it('users.Row.birth_time_knowledge is string (CHECK constraint not preserved by gen)', () => {
     type Row = Database['public']['Tables']['users']['Row'];
-    expectTypeOf<Row['birth_time_knowledge']>().toEqualTypeOf<
-      'exact' | 'approximate' | 'unknown'
-    >();
+    expectTypeOf<Row['birth_time_knowledge']>().toEqualTypeOf<string>();
   });
 
   it('hapcards.Row exposes compat_score as number', () => {

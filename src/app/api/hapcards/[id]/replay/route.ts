@@ -83,11 +83,7 @@ export async function POST(
 
   // 6. 토큰 차감 (-4p, spec §7 D2)
   const serviceClient = createServiceRoleClient();
-  // database.types.ts는 migration 0022 push 전 미갱신 — rpc 시그니처 임시 캐스트
-  const tokenRpc = serviceClient as unknown as {
-    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
-  };
-  const { error: deductErr } = await tokenRpc.rpc('deduct_tokens', {
+  const { error: deductErr } = await serviceClient.rpc('deduct_tokens', {
     uid: userId,
     delta: -4,
     reason: 'replay_use',
@@ -113,7 +109,7 @@ export async function POST(
     const result = await buildReplay(input, deps);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    await tokenRpc.rpc('refund_tokens', {
+    await serviceClient.rpc('refund_tokens', {
       uid: userId,
       delta: 4,
       reason: 'replay_refund',

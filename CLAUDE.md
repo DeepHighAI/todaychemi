@@ -97,7 +97,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - S-07a 커밋: `99628c0`(build-share-payload) · `f4667eb`(share-handler) · `153d277`(ShareSheet) · `17bd916`(type fix) · `389b901`(HapcardShare+page wiring) · `0e2a8fa`(replay spec).
 - §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결(§1.1 결정 대기).
 - **S-07b Replay 완료 ✅ (2026-05-06)** — buildReplay async 함수 + POST /api/hapcards/[id]/replay route handler GREEN. 커밋 `c69acff`. **805/805 PASS**, 0 TS errors.
-- **다음**: 사용자 `supabase db push` (0022_token_rpcs + 0023_replay_idempotency) 수동 실행 필요. F5 sprint 이후 작업 §1.1 결정 대기.
+- **`supabase db push 0022+0023` 적용 완료 ✅ (2026-05-06)** — `deduct_tokens` / `refund_tokens` RPC + `hapcard_replays_idempotency` UNIQUE 제약 라이브 반영. 검증 스크립트 `scripts/verify-replay-migrations.ts`.
+- **다음**: `database.types.ts` 재생성 → route.ts `as unknown as` 캐스트 제거(§1.1 결정 대기). F5 sprint 이후 작업 §1.1 결정 대기.
 
 ---
 
@@ -130,6 +131,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **Frontend**: Next.js 15 App Router + TypeScript strict + Tailwind + shadcn/ui + Radix
 - **State**: TanStack Query v5 (서버) + Zustand (UI)
 - **Backend**: Next.js Route Handlers (별도 서버 X) + Supabase Free (Postgres + Auth + RLS + Storage)
+  - **Canonical Supabase project_ref**: `jamhkucluhiibqpjsiov` (`goonghap`, Northeast Asia / Seoul). 다른 ref(예: `aseszttxkxpfzenmbylx`, `muuudarddkvevwdpefvy`)는 작업용 아님. 링크 확인: `pnpm db:status`. 재링크: `pnpm db:link`. push: `pnpm db:push:dry` → `pnpm db:push`.
 - **i18n**: next-intl (KO 1차, EN/VI/TH/MS/ID Phase별)
 - **만세력**: ssaju (年/月/時柱 절기·입춘 기준 source + day_pillar cross-validator) + KASI (day_pillar 진본) + manseryeok-js (보조 cross-validator) — 2026-05-03 §1.1: ssaju 역할 年/月/時柱 프로덕션 source로 확대. 야자시 = 조자시 통합 학파 (ADR-037)
 - **사주 엔진**: 자체 TypeScript `fortune-core` (monorepo 패키지) — 결정형
