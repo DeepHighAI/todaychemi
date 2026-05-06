@@ -5,6 +5,16 @@ import type { Database } from '@/types/database.types';
 
 import { getSupabasePublicConfig } from './env';
 
+// Public paths — 미인증 통과 허용 (login UI / OAuth 콜백 / API 자체 인증 / 정적 자원).
+// /_next/* 와 favicon 은 matcher 에서 이미 제외되지만 방어적 가드.
+const PUBLIC_PATH_PATTERNS = [
+  /^\/login(\/|$|\?)/,
+  /^\/auth\//,
+  /^\/api\//,
+  /^\/_next\//,
+  /^\/favicon\.ico$/,
+];
+
 // Middleware helper — refresh Supabase auth cookies on every request.
 // Pattern: docs/patterns/nextjs15_supabase_ssr.md section 4.
 export async function updateSession(request: NextRequest) {
@@ -33,8 +43,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 보호된 경로: /app/** — 미인증 시 /login 으로 리다이렉트.
-  if (!user && request.nextUrl.pathname.startsWith('/app')) {
+  const pathname = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATH_PATTERNS.some((p) => p.test(pathname));
+
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
