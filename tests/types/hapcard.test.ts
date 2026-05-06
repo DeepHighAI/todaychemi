@@ -28,7 +28,6 @@ describe('HapcardRequestSchema', () => {
 
   it('rejects body with missing relation_id', () => {
     const bad = structuredClone(validBody);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (bad as any).relation_id;
     expect(HapcardRequestSchema.safeParse(bad).success).toBe(false);
   });

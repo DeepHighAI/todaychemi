@@ -118,7 +118,6 @@ describe('POST /api/relations', () => {
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const bad = structuredClone(VALID_BODY);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (bad as any).nickname;
     const res = await POST(makeRequest(bad));
 

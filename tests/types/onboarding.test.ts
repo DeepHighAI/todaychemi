@@ -52,7 +52,6 @@ describe('OnboardingRequestSchema', () => {
 
   it('defaults is_lunar_leap to false when omitted', () => {
     const body = structuredClone(validBodyExact);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (body as any).is_lunar_leap;
     const result = OnboardingRequestSchema.safeParse(body);
     expect(result.success).toBe(true);
