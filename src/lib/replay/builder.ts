@@ -1,5 +1,14 @@
 import { createHash } from 'node:crypto';
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import type { ChartCore } from '@/types/chart';
+import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
+import type { HapcardResult, HapcardReplayResult } from '@/types/hapcard';
+import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
+import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
+import { loadActivePrompt } from '@/lib/llm/prompt-loader';
 
 const JINJIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -36,4 +45,115 @@ export function buildReplayPayload(
   jinjin_date: string,
 ): LlmPayload {
   return { ...payload, time_context: { jinjin_date } };
+}
+
+export interface BuildReplayInput {
+  hapcard: HapcardResult;
+  jinjin_date: string; // YYYY-MM-DD UTC+9
+  replay_reason?: string;
+}
+
+export interface BuildReplayDeps {
+  supabaseUserClient: SupabaseClient;
+  supabaseServiceClient: SupabaseClient;
+  openaiClient: CallOpenAiDeps['openaiClient'];
+}
+
+interface ChartRow {
+  chart_core: ChartCore;
+}
+
+export async function buildReplay(
+  input: BuildReplayInput,
+  deps: BuildReplayDeps,
+): Promise<HapcardReplayResult> {
+  const { hapcard } = input;
+
+  const prompt = await loadActivePrompt(deps.supabaseUserClient, hapcard.mode);
+
+  const cacheKey = buildReplayCacheKey({
+    user_chart_hash: hapcard.user_chart_hash,
+    relation_chart_hash: hapcard.relation_chart_hash,
+    prompt_version: prompt.version,
+    theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+    jinjin_date: input.jinjin_date,
+  });
+
+  const replaySystemPrompt = buildReplaySystemPrompt(prompt.content, input.jinjin_date);
+
+  const { data: ucRow, error: ucErr } = await deps.supabaseUserClient
+    .from('user_charts')
+    .select('chart_core')
+    .eq('user_id', hapcard.user_id)
+    .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
+    .maybeSingle();
+  if (ucErr || !ucRow) {
+    throw new Error(`USER_CHART_NOT_FOUND: ${ucErr?.message ?? 'no chart'}`);
+  }
+
+  const { data: rcRow, error: rcErr } = await deps.supabaseUserClient
+    .from('relation_charts')
+    .select('chart_core')
+    .eq('relation_id', hapcard.relation_id)
+    .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
+    .maybeSingle();
+  if (rcErr || !rcRow) {
+    throw new Error(`RELATION_CHART_NOT_FOUND: ${rcErr?.message ?? 'no chart'}`);
+  }
+
+  const basePayload = buildLlmPayload({
+    self: (ucRow as ChartRow).chart_core,
+    relation: (rcRow as ChartRow).chart_core,
+    mode: hapcard.mode,
+    theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+  });
+  const replayPayload = buildReplayPayload(basePayload, input.jinjin_date);
+
+  const llm = await callOpenAi(
+    { systemPrompt: replaySystemPrompt, userPayload: replayPayload },
+    { openaiClient: deps.openaiClient, supabaseServiceRole: deps.supabaseServiceClient },
+  );
+
+  const content: HapcardResult['content'] = {
+    main_text: llm.output.main_text,
+    cause_factors: llm.output.cause_factors,
+    classic_citation: llm.output.classic_citation.map((c) => ({
+      source: `${(c as Record<string, unknown>).source_title ?? ''} ${(c as Record<string, unknown>).source_chapter ?? ''}`.trim(),
+      original: ((c as Record<string, unknown>).original_text as string) ?? '',
+      modern: ((c as Record<string, unknown>).modern_translation as string) ?? '',
+    })),
+    actions: llm.output.actions,
+    why_cards: llm.output.why_cards,
+  };
+
+  const { data: row, error } = await deps.supabaseServiceClient
+    .from('hapcard_replays')
+    .insert({
+      hapcard_id: hapcard.hapcard_id,
+      user_id: hapcard.user_id,
+      jinjin_date: input.jinjin_date,
+      replay_reason: input.replay_reason ?? null,
+      content,
+      prompt_version: prompt.version,
+      llm_model: llm.model,
+      cache_key: cacheKey,
+    })
+    .select('replay_id, created_at')
+    .single();
+
+  if (error || !row) {
+    throw new Error(`HAPCARD_REPLAY_INSERT_FAILED: ${error?.message ?? 'unknown'}`);
+  }
+
+  const insertedRow = row as { replay_id: string; created_at: string };
+  return {
+    ...hapcard,
+    replay_id: insertedRow.replay_id,
+    jinjin_date: input.jinjin_date,
+    content,
+    prompt_version: prompt.version,
+    llm_model: llm.model,
+    cache_key: cacheKey,
+    created_at: insertedRow.created_at,
+  };
 }

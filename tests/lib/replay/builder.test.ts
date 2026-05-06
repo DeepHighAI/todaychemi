@@ -67,7 +67,7 @@ describe('buildReplayPayload', () => {
 
   it('원본 페이로드 객체를 변이하지 않는다', () => {
     buildReplayPayload(BASE_PAYLOAD, JINJIN_DATE);
-    expect((BASE_PAYLOAD as Record<string, unknown>).time_context).toBeUndefined();
+    expect((BASE_PAYLOAD as unknown as Record<string, unknown>).time_context).toBeUndefined();
   });
 });
 
