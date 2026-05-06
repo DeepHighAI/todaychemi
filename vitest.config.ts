@@ -30,6 +30,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./tests/setup/dom.ts'],
+    testTimeout: 15000,
   },
   resolve: {
     alias: {

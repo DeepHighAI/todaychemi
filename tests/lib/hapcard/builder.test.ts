@@ -149,19 +149,32 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
 function makeMockUserClient(opts: {
   cachedRow?: HapcardResult | null;
   insertedRow?: HapcardResult;
+  relationNickname?: string;
 }) {
   const cachedRow = opts.cachedRow ?? null;
   const insertedRow = opts.insertedRow ?? makeInsertedRow(EXPECTED_CACHE_KEY);
 
+  // hapcards (cache + insert) 체인
   const maybeSingle = vi.fn().mockResolvedValue({ data: cachedRow, error: null });
   const single = vi.fn().mockResolvedValue({ data: insertedRow, error: null });
   const selectAfterInsert = vi.fn().mockReturnValue({ single });
   const insert = vi.fn().mockReturnValue({ select: selectAfterInsert });
   const eqForCache = vi.fn().mockReturnValue({ maybeSingle });
   const selectForCache = vi.fn().mockReturnValue({ eq: eqForCache });
-  const from = vi.fn().mockReturnValue({
-    select: selectForCache,
-    insert,
+
+  // relations (nickname 조회) 체인 — opts.relationNickname 미제공 시 null 반환
+  const relMaybeSingle = vi.fn().mockResolvedValue({
+    data: opts.relationNickname ? { nickname: opts.relationNickname } : null,
+    error: null,
+  });
+  const relEq = vi.fn().mockReturnValue({ maybeSingle: relMaybeSingle });
+  const relSelect = vi.fn().mockReturnValue({ eq: relEq });
+
+  const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'relations') {
+      return { select: relSelect };
+    }
+    return { select: selectForCache, insert };
   });
 
   return {
@@ -170,6 +183,7 @@ function makeMockUserClient(opts: {
     insert,
     maybeSingle,
     single,
+    relMaybeSingle,
   };
 }
 
@@ -377,5 +391,53 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(result.visuals).toBeDefined();
     expect(result.visuals?.user.day_pillar).toBe(SELF.day_pillar);
     expect(result.visuals?.relation.day_pillar).toBe(RELATION.day_pillar);
+  });
+
+  it('cache miss → relation_nickname (relations.nickname 조회 결과)', async () => {
+    const { client } = makeMockUserClient({
+      cachedRow: null,
+      relationNickname: '하늘이',
+    });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.relation_nickname).toBe('하늘이');
+  });
+
+  it('cache hit → relation_nickname (relations.nickname 조회 결과)', async () => {
+    const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
+    const { client } = makeMockUserClient({
+      cachedRow: existingRow,
+      relationNickname: '바다',
+    });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.relation_nickname).toBe('바다');
+  });
+
+  it('cache miss → relation_gender_normalized (input.relation.gender_normalized)', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.relation_gender_normalized).toBe(RELATION.gender_normalized);
+  });
+
+  it('cache hit → relation_gender_normalized (input.relation.gender_normalized)', async () => {
+    const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
+    const { client } = makeMockUserClient({ cachedRow: existingRow });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.relation_gender_normalized).toBe(RELATION.gender_normalized);
+  });
+
+  it('relations.nickname 조회 실패 (data null) → relation_nickname undefined', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.relation_nickname).toBeUndefined();
   });
 });

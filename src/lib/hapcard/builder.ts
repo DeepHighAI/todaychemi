@@ -36,6 +36,19 @@ export interface BuildHapcardDeps {
   ragQueryText: (input: BuildHapcardInput) => string;
 }
 
+// relations.nickname 조회 — 실패해도 throw 하지 않는다 (공유 UX 보조 데이터, 핵심 경로 차단 금지)
+async function fetchRelationNickname(
+  client: SupabaseClient,
+  relation_id: string,
+): Promise<string | undefined> {
+  const { data } = await client
+    .from('relations')
+    .select('nickname')
+    .eq('relation_id', relation_id)
+    .maybeSingle();
+  return (data as { nickname?: string } | null)?.nickname;
+}
+
 export async function buildHapcard(
   input: BuildHapcardInput,
   deps: BuildHapcardDeps,
@@ -69,7 +82,16 @@ export async function buildHapcard(
     throw new Error(`HAPCARD_CACHE_LOOKUP_FAILED: ${cacheRes.error.message}`);
   }
   if (cacheRes.data) {
-    return { ...(cacheRes.data as HapcardResult), visuals: deriveVisuals(input.self, input.relation) };
+    const relation_nickname = await fetchRelationNickname(
+      deps.supabaseUserClient,
+      input.relation_id,
+    );
+    return {
+      ...(cacheRes.data as HapcardResult),
+      visuals: deriveVisuals(input.self, input.relation),
+      relation_nickname,
+      relation_gender_normalized: input.relation.gender_normalized,
+    };
   }
 
   // 5. LLM payload 빌드 (PII 5필드 제외 — CLAUDE.md §5)
@@ -152,5 +174,15 @@ export async function buildHapcard(
   if (insertRes.error) {
     throw new Error(`HAPCARD_INSERT_FAILED: ${insertRes.error.message}`);
   }
-  return { ...(insertRes.data as HapcardResult), visuals: deriveVisuals(input.self, input.relation) };
+
+  const relation_nickname = await fetchRelationNickname(
+    deps.supabaseUserClient,
+    input.relation_id,
+  );
+  return {
+    ...(insertRes.data as HapcardResult),
+    visuals: deriveVisuals(input.self, input.relation),
+    relation_nickname,
+    relation_gender_normalized: input.relation.gender_normalized,
+  };
 }
