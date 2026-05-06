@@ -11,12 +11,14 @@ import {
 import { retryOnce } from '@/lib/llm/retry';
 
 // CLAUDE.md §5 — PII 화이트리스트. 이 키 외 발견 시 즉시 중단.
+// time_context: replay 전용 일진 날짜 (공개 정보, PII 아님)
 const PAYLOAD_WHITELIST = new Set([
   'self_chart_core',
   'relation_chart_core',
   'mode',
   'theory_profile',
   'question_slot',
+  'time_context',
 ]);
 
 interface OpenAiChatResponse {

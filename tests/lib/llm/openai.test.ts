@@ -366,4 +366,23 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
 
     expect(create).toHaveBeenCalledTimes(1);
   });
+
+  it('time_context 포함 payload (replay용) → PII 가드 통과', async () => {
+    const validJson = makeValidOutputJson();
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validJson));
+    const { client: supabase } = makeMockServiceClient();
+    const replayPayload = { ...makeValidPayload(), time_context: { jinjin_date: '2026-05-06' } };
+
+    const result = await callOpenAi(
+      { systemPrompt: '[재해석 모드 — 일진:2026-05-06]\n시스템', userPayload: replayPayload },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(result.model).toBe('gpt-5o');
+    expect(create).toHaveBeenCalledTimes(1);
+  });
 });

@@ -96,3 +96,30 @@ export const HAPCARD_ERROR_CODES = [
 ] as const;
 
 export type HapcardErrorCode = (typeof HAPCARD_ERROR_CODES)[number];
+
+// 다시합 결과 — hapcard_replays 테이블 1:1 매핑 + 원본 HapcardResult 구조 재사용
+export interface HapcardReplayResult extends HapcardResult {
+  replay_id: string;
+  jinjin_date: string; // YYYY-MM-DD (UTC+9)
+}
+
+// POST /api/hapcards/[id]/replay 요청 스키마 — .strict()로 PII 불명 필드 거부
+export const ReplayRequestSchema = z
+  .object({
+    replay_reason: z.string().max(500).optional(),
+  })
+  .strict();
+
+export type ReplayRequest = z.infer<typeof ReplayRequestSchema>;
+
+// replay route 에러 응답 code 허용값
+export const REPLAY_ERROR_CODES = [
+  'INVALID_BODY',
+  'UNAUTHORIZED',
+  'HAPCARD_NOT_FOUND',
+  'INSUFFICIENT_TOKENS',
+  'REPLAY_DURING_OUTAGE',
+  'INTERNAL_ERROR',
+] as const;
+
+export type ReplayErrorCode = (typeof REPLAY_ERROR_CODES)[number];
