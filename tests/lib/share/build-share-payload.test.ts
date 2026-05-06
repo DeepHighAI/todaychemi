@@ -47,9 +47,17 @@ describe('buildSharePayload', () => {
     expect(male.text).toContain('남성');
   });
 
-  it('url = origin/h/hapcardId?mode=mode 형식', () => {
+  it('url = origin/h/hapcardId?mode=mode&range=range 형식', () => {
     const result = buildSharePayload({ ...BASE_INPUT, range: 'nickname-only' });
-    expect(result.url).toBe('https://hap.plae/h/hap-uuid-001?mode=친구합');
+    expect(result.url).toBe('https://hap.plae/h/hap-uuid-001?mode=친구합&range=nickname-only');
+  });
+
+  it('url에 range 쿼리 포함 — 3종 모두', () => {
+    const ranges: ShareRange[] = ['nickname-only', 'nickname-ohaeng', 'nickname-gender'];
+    for (const range of ranges) {
+      const { url } = buildSharePayload({ ...BASE_INPUT, range });
+      expect(url).toContain(`range=${range}`);
+    }
   });
 
   it('동일 input → 동일 output (결정형)', () => {

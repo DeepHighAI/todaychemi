@@ -34,7 +34,7 @@ function ohaengSummary(counts: Record<string, number>): string {
 export function buildSharePayload(input: SharePayloadInput & { range: ShareRange }): SharePayload {
   const { hapcard_id, mode, nickname, score, range, gender_normalized, ohaeng_counts, origin } = input;
   const nick = truncateNickname(nickname);
-  const url = `${origin}/h/${hapcard_id}?mode=${mode}`;
+  const url = `${origin}/h/${hapcard_id}?mode=${mode}&range=${range}`;
   const title = `${nick}님과의 ${mode}`;
 
   let extra = '';
