@@ -96,7 +96,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **S-07a share 완료 ✅** — build-share-payload + share-handler(Web Share+clipboard) + ShareSheet(Drawer) + HapcardShare 통합 + page 배선. `docs/specs/replay.md` 작성 완료(§1.1 D1~D4 결정 매트릭스).
 - S-07a 커밋: `99628c0`(build-share-payload) · `f4667eb`(share-handler) · `153d277`(ShareSheet) · `17bd916`(type fix) · `389b901`(HapcardShare+page wiring) · `0e2a8fa`(replay spec).
 - §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결(§1.1 결정 대기).
-- **다음**: S-07b Replay §1.1 4건(D1~D4) 결정 → 코드 구현. `docs/specs/replay.md` §2 결정 매트릭스 참조.
+- **S-07b Replay 완료 ✅ (2026-05-06)** — buildReplay async 함수 + POST /api/hapcards/[id]/replay route handler GREEN. 커밋 `c69acff`. **805/805 PASS**, 0 TS errors.
+- **다음**: 사용자 `supabase db push` (0022_token_rpcs + 0023_replay_idempotency) 수동 실행 필요. F5 sprint 이후 작업 §1.1 결정 대기.
 
 ---
 
