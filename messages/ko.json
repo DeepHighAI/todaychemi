@@ -191,6 +191,17 @@
       "related_terms_label": "관련 용어"
     }
   },
+  "home": {
+    "greeting": "오늘의 합",
+    "add_relation": "인연 등록",
+    "recent_picks": "오늘 흐름이 좋은 인연",
+    "avoid_phrase_label": "오늘 피할 말",
+    "favorable_action_label": "오늘 좋은 행동",
+    "reused_label": "어제 이어감"
+  },
+  "me": {
+    "placeholder": "내사주 준비 중"
+  },
   "errors": {
     "generic": "오류가 발생했어요. 잠시 후 다시 시도해주세요.",
     "network": "네트워크 오류가 발생했어요. 연결을 확인해주세요.",
