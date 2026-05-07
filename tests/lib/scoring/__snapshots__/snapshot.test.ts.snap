@@ -11,6 +11,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 82,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -25,6 +26,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 70,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -39,6 +41,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 70,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -53,6 +56,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 82,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -67,6 +71,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 71,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -81,6 +86,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_0_mo
   "scenario_estimate": null,
   "score": 70,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -95,6 +101,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 74,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -109,6 +116,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 74,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -123,6 +131,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 74,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -137,6 +146,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 77,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -151,6 +161,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 73,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -165,6 +176,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_1_mo
   "scenario_estimate": null,
   "score": 74,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -179,6 +191,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 88,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -193,6 +206,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -207,6 +221,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -221,6 +236,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 89,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -235,6 +251,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 87,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -249,6 +266,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_2_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -263,6 +281,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 76,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -277,6 +296,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 80,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -291,6 +311,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 79,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -305,6 +326,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 84,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -319,6 +341,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 79,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -333,6 +356,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_3_mo
   "scenario_estimate": null,
   "score": 80,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -347,6 +371,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 80,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -361,6 +386,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -375,6 +401,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -389,6 +416,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 82,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -403,6 +431,7 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 87,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;
 
@@ -417,5 +446,6 @@ exports[`computeScore — snapshot lock (G0 fixture 5쌍 × 6모드) > pair_4_mo
   "scenario_estimate": null,
   "score": 86,
   "scoring_version": 1,
+  "yunse_adjustment": 0,
 }
 `;

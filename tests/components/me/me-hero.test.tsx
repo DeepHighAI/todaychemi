@@ -32,4 +32,9 @@ describe('MeHero', () => {
     renderWithProviders(<MeHero chart={CHART} />);
     expect(screen.getByTestId('me-hero')).toBeInTheDocument();
   });
+
+  it('eyebrow 라벨에 hanja title="日柱" (pillarDescriptor 사용 확인)', () => {
+    const { container } = renderWithProviders(<MeHero chart={CHART} />);
+    expect(container.querySelector('[title="日柱"]')).not.toBeNull();
+  });
 });

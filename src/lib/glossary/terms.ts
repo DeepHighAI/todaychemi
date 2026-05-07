@@ -28,6 +28,7 @@ export const GLOSSARY_TERMS: Record<GlossaryKey, GlossaryTerm> = {
   },
   합: {
     term: '합',
+    display_label: '끌림',
     reading: '合',
     definition:
       '천간합·지지합·삼합 등 두 글자 이상이 결합해 새로운 오행을 이루거나 기운을 합치는 현상입니다. 합이 형성되면 해당 오행의 힘이 배가되며, 두 사람 사이의 친화력과 협력을 가늠하는 근거가 됩니다.',
@@ -41,6 +42,7 @@ export const GLOSSARY_TERMS: Record<GlossaryKey, GlossaryTerm> = {
   },
   형: {
     term: '형',
+    display_label: '긴장',
     reading: '刑',
     definition:
       '특정 지지 조합이 서로 불협화음을 일으키는 관계입니다. 형은 갈등·마찰·구속의 긴장 에너지를 나타내며, 관계에서 역할 경계가 불분명할 때 드러나기 쉽습니다.',
@@ -51,6 +53,7 @@ export const GLOSSARY_TERMS: Record<GlossaryKey, GlossaryTerm> = {
   },
   충: {
     term: '충',
+    display_label: '부딪힘',
     reading: '沖',
     definition:
       '정반대 지지가 부딪혀 에너지가 격렬하게 충돌하는 현상입니다. 충은 분리·변화의 에너지를 담고 있어 상황의 전환점이 되기도 하며, 해소되지 않으면 불안과 단절로 이어질 수 있습니다.',
@@ -64,6 +67,7 @@ export const GLOSSARY_TERMS: Record<GlossaryKey, GlossaryTerm> = {
   },
   해: {
     term: '해',
+    display_label: '소모',
     reading: '害',
     definition:
       '두 지지가 서로 해를 끼쳐 기운을 약화시키는 관계입니다. 충만큼 격렬하지 않으나 은근한 불편함과 오해의 에너지를 나타내며, 지속되면 관계의 피로감으로 쌓입니다.',

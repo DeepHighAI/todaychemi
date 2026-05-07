@@ -275,7 +275,8 @@ C:\DEV\SAJU\
 | 오행 | `ohaeng` | `fiveElements`, `wuxing` |
 | 십신 | `sipsin` | `tenGods` |
 | 만세력 | `manseryeok` | `lunarCalendar` |
-| 합·형·충·해 | `hapChungHyungHae` | 영문 분리 식별자 |
+| 합·형·충·해 | `hapChungHyungHae` (코드 키) | 영문 분리 식별자 |
+| UI 소프트 alias | `끌림/긴장/부딪힘/소모` (display_label) — 합→끌림, 형→긴장, 충→부딪힘, 해→소모. GlossaryKey는 classical(`합\|형\|충\|해`) 유지, UI 표면만 소프트 용어 | — |
 | 오늘합 | `todayHap` | `dailyFortune` |
 | 딥합 (깊이 리포트) | `deepHap` | `report`, `deepReport` |
 | 합피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키) |

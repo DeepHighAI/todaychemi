@@ -42,4 +42,14 @@ describe('PillarGrid', () => {
     renderWithProviders(<PillarGrid chart={CHART} />);
     expect(screen.getByTestId('pillar-grid')).toBeInTheDocument();
   });
+
+  it('년주 라벨에 hanja title="年柱" (pillarDescriptor 사용 확인)', () => {
+    const { container } = renderWithProviders(<PillarGrid chart={CHART} />);
+    expect(container.querySelector('[title="年柱"]')).not.toBeNull();
+  });
+
+  it('일주 라벨에 hanja title="日柱"', () => {
+    const { container } = renderWithProviders(<PillarGrid chart={CHART} />);
+    expect(container.querySelector('[title="日柱"]')).not.toBeNull();
+  });
 });

@@ -2,12 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import { OhaengBars } from './primitives/ohaeng-bars';
-
-type OhaengKey = '목' | '화' | '토' | '금' | '수';
+import type { OhaengElement } from '@/lib/saju/elementLabel';
 
 interface HapcardOhaengProps {
-  userCounts: Record<OhaengKey, number>;
-  relationCounts: Record<OhaengKey, number>;
+  userCounts: Record<OhaengElement, number>;
+  relationCounts: Record<OhaengElement, number>;
 }
 
 export function HapcardOhaeng({ userCounts, relationCounts }: HapcardOhaengProps) {
