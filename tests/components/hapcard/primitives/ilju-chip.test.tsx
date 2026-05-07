@@ -34,4 +34,9 @@ describe('IljuChip', () => {
     const { container } = render(<IljuChip pillar="임자" element="수" />);
     expect(container.firstChild).toHaveClass('bg-element-water');
   });
+
+  it('목 element에 hanja title 속성 "木" (elementLabel 사용 확인)', () => {
+    const { container } = render(<IljuChip pillar="갑인" element="목" />);
+    expect(container.firstChild).toHaveAttribute('title', '木');
+  });
 });

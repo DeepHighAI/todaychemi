@@ -43,4 +43,10 @@ describe('OhaengBars', () => {
     // 최대 bar(목)은 0px보다 커야 함 (% 계산 버그 회귀 방지)
     expect(Math.max(...heights)).toBeGreaterThan(0);
   });
+
+  it('목 bar에 hanja title 속성 "木" (elementLabel 사용 확인)', () => {
+    const { container } = render(<OhaengBars data={DATA} />);
+    const woodBar = container.querySelector('[title="木"]');
+    expect(woodBar).not.toBeNull();
+  });
 });
