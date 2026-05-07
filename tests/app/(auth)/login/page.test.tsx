@@ -9,12 +9,24 @@ vi.mock('@/lib/auth/google', () => ({
   signInWithGoogle: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/email', () => ({
+  signInWithEmail: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
+
 import { signInWithGoogle } from '@/lib/auth/google';
+import { signInWithEmail } from '@/lib/auth/email';
 
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
+const mockSignInWithEmail = vi.mocked(signInWithEmail);
+const mockRouterPush = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRouterPush.mockReset();
 });
 
 afterEach(() => {
@@ -50,7 +62,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     await renderLoginPage();
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
     expect(screen.getByRole('button', { name: '연결 중...' })).toBeInTheDocument();
     resolve!();
@@ -62,9 +74,9 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     await renderLoginPage();
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
-    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '연결 중...' })).toBeDisabled();
     resolve!();
   });
 
@@ -76,5 +88,64 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
     await screen.findByText('로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
+  });
+});
+
+describe('LoginPage — Email/Password', () => {
+  it('renders email input, password input, and submit button', async () => {
+    await renderLoginPage();
+
+    expect(screen.getByLabelText('이메일')).toBeInTheDocument();
+    expect(screen.getByLabelText('비밀번호')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '이메일로 로그인' })).toBeInTheDocument();
+  });
+
+  it('submit calls signInWithEmail with entered email and password', async () => {
+    mockSignInWithEmail.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    await renderLoginPage();
+
+    await user.type(screen.getByLabelText('이메일'), 'test@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'secret123');
+    await user.click(screen.getByRole('button', { name: '이메일로 로그인' }));
+
+    await waitFor(() =>
+      expect(mockSignInWithEmail).toHaveBeenCalledWith('test@example.com', 'secret123'),
+    );
+  });
+
+  it('calls router.push("/") on successful sign-in', async () => {
+    mockSignInWithEmail.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    await renderLoginPage();
+
+    await user.type(screen.getByLabelText('이메일'), 'test@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'secret123');
+    await user.click(screen.getByRole('button', { name: '이메일로 로그인' }));
+
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/'));
+  });
+
+  it('shows errorInvalidCredentials message when signInWithEmail rejects', async () => {
+    mockSignInWithEmail.mockRejectedValue(new Error('Invalid login credentials'));
+    const user = userEvent.setup();
+    await renderLoginPage();
+
+    await user.type(screen.getByLabelText('이메일'), 'test@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'wrong');
+    await user.click(screen.getByRole('button', { name: '이메일로 로그인' }));
+
+    await screen.findByText('이메일 또는 비밀번호가 올바르지 않아요.');
+  });
+
+  it('shows errorEmailRequired when submitting with empty email', async () => {
+    const user = userEvent.setup();
+    await renderLoginPage();
+
+    await user.type(screen.getByLabelText('비밀번호'), 'secret123');
+    await user.click(screen.getByRole('button', { name: '이메일로 로그인' }));
+
+    await screen.findByText('이메일을 입력해주세요.');
+    expect(mockSignInWithEmail).not.toHaveBeenCalled();
   });
 });

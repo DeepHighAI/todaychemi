@@ -9,7 +9,13 @@
       "googleButton": "Google로 시작하기",
       "loading": "연결 중...",
       "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
-      "privacy": "로그인 시 개인정보 처리방침에 동의합니다"
+      "privacy": "로그인 시 개인정보 처리방침에 동의합니다",
+      "emailLabel": "이메일",
+      "passwordLabel": "비밀번호",
+      "submitButton": "이메일로 로그인",
+      "errorInvalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
+      "errorEmailRequired": "이메일을 입력해주세요.",
+      "errorPasswordRequired": "비밀번호를 입력해주세요."
     }
   },
   "onboarding": {
