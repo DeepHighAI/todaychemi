@@ -2,7 +2,7 @@
 
 > Mode: 첫합  
 > Model: GPT-5o (tech_stack §3.1)  
-> Version: v0.2 (claude-1차-draft, 2026-05-03)  
+> Version: v0.3 (claude-soft-terms, 2026-05-07)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
