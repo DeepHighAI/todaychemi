@@ -15,7 +15,23 @@
       "submitButton": "이메일로 로그인",
       "errorInvalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
       "errorEmailRequired": "이메일을 입력해주세요.",
-      "errorPasswordRequired": "비밀번호를 입력해주세요."
+      "errorPasswordRequired": "비밀번호를 입력해주세요.",
+      "signupLink": "계정이 없으신가요? 가입하기"
+    },
+    "signup": {
+      "title": "합플 회원가입",
+      "emailLabel": "이메일",
+      "passwordLabel": "비밀번호",
+      "passwordHint": "영문과 숫자를 모두 포함, 8자 이상",
+      "submitButton": "이메일로 가입",
+      "loading": "가입 중...",
+      "loginLink": "이미 계정이 있으신가요? 로그인",
+      "errorEmailRequired": "이메일을 입력해주세요.",
+      "errorPasswordTooShort": "비밀번호는 8자 이상이어야 해요.",
+      "errorPasswordWeak": "영문과 숫자를 모두 포함해주세요.",
+      "errorEmailTaken": "이미 사용 중인 이메일이에요.",
+      "errorRateLimited": "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
+      "errorGeneric": "가입에 실패했어요. 잠시 후 다시 시도해주세요."
     }
   },
   "onboarding": {
