@@ -113,25 +113,29 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
     });
   });
 
-  describe('chart_core 무손실 전달', () => {
-    it('self_chart_core 모든 필드 보존', () => {
+  describe('chart_core 무손실 전달 (yunse 는 Y2 투영 형태로 전달)', () => {
+    it('self_chart_core 의 pillar·element·counts·gender 보존', () => {
       const payload = buildLlmPayload({
         self: SELF_CHART,
         relation: RELATION_CHART,
         mode: '일합',
         theory_profile_version: '2026-05',
       });
-      expect(payload.self_chart_core).toEqual(SELF_CHART);
+      const { yunse: _sy, ...restSelf } = SELF_CHART;
+      const { yunse: _py, ...restPayload } = payload.self_chart_core;
+      expect(restPayload).toEqual(restSelf);
     });
 
-    it('relation_chart_core 모든 필드 보존', () => {
+    it('relation_chart_core 의 pillar·element·counts·gender 보존', () => {
       const payload = buildLlmPayload({
         self: SELF_CHART,
         relation: RELATION_CHART,
         mode: '일합',
         theory_profile_version: '2026-05',
       });
-      expect(payload.relation_chart_core).toEqual(RELATION_CHART);
+      const { yunse: _ry, ...restRelation } = RELATION_CHART;
+      const { yunse: _py, ...restPayload } = payload.relation_chart_core;
+      expect(restPayload).toEqual(restRelation);
     });
   });
 
@@ -185,6 +189,40 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       expect(json).not.toMatch(/compat_score/);
       expect(json).not.toMatch(/"score"/);
       expect(json).not.toMatch(/score_breakdown/);
+    });
+  });
+
+  describe('Y2 yunse 투영 (spec §7 — 현재 대운 1개, 토큰 절약)', () => {
+    const payload = buildLlmPayload({
+      self: SELF_CHART,
+      relation: RELATION_CHART,
+      mode: '일합',
+      theory_profile_version: '2026-05',
+    });
+
+    it('Y2: self_chart_core.yunse.daeun.current 가 payload 에 존재한다', () => {
+      expect(payload.self_chart_core.yunse.daeun).toHaveProperty('current');
+    });
+
+    it('Y2: self_chart_core.yunse.daeun.list 가 payload 에 없다 (spec §7 토큰 절약)', () => {
+      expect(payload.self_chart_core.yunse.daeun).not.toHaveProperty('list');
+    });
+
+    it('Y2: yunse.daeun.current = list[current_index] 의 { age, pillar, year }', () => {
+      const yunse = payload.self_chart_core.yunse;
+      const expected = SELF_CHART.yunse.daeun.list[SELF_CHART.yunse.daeun.current_index];
+      expect(yunse.daeun.current).toEqual({ age: expected.age, pillar: expected.pillar, year: expected.year });
+    });
+
+    it('Y2: yunse.daeun.start_age 와 current_index 가 보존된다', () => {
+      const yunse = payload.self_chart_core.yunse;
+      expect(yunse.daeun.start_age).toBe(SELF_CHART.yunse.daeun.start_age);
+      expect(yunse.daeun.current_index).toBe(SELF_CHART.yunse.daeun.current_index);
+    });
+
+    it('Y2: relation_chart_core.yunse 도 동일하게 투영된다 (list 없음, current 존재)', () => {
+      expect(payload.relation_chart_core.yunse.daeun).toHaveProperty('current');
+      expect(payload.relation_chart_core.yunse.daeun).not.toHaveProperty('list');
     });
   });
 });
