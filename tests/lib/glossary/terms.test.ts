@@ -66,4 +66,16 @@ describe('GLOSSARY_TERMS', () => {
       expect(entry.related_terms!).not.toContain(term);
     }
   });
+
+  it('합/형/충/해에 display_label(소프트 용어)이 있다', () => {
+    expect(GLOSSARY_TERMS['합'].display_label).toBe('끌림');
+    expect(GLOSSARY_TERMS['형'].display_label).toBe('긴장');
+    expect(GLOSSARY_TERMS['충'].display_label).toBe('부딪힘');
+    expect(GLOSSARY_TERMS['해'].display_label).toBe('소모');
+  });
+
+  it('일주·십신은 display_label이 없다', () => {
+    expect(GLOSSARY_TERMS['일주'].display_label).toBeUndefined();
+    expect(GLOSSARY_TERMS['십신'].display_label).toBeUndefined();
+  });
 });

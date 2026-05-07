@@ -10,6 +10,8 @@ export interface GlossaryTerm {
     source: string;
     original: string;
   } | null;
+  /** UI 소프트 표기 (합→끌림 / 형→긴장 / 충→부딪힘 / 해→소모). 없으면 term 그대로 사용. */
+  display_label?: string;
 }
 
 export type GlossaryKey = '일주' | '십신' | '합' | '형' | '충' | '해';
