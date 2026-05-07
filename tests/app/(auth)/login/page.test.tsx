@@ -148,4 +148,12 @@ describe('LoginPage — Email/Password', () => {
     await screen.findByText('이메일을 입력해주세요.');
     expect(mockSignInWithEmail).not.toHaveBeenCalled();
   });
+
+  it('renders signup link pointing to /signup', async () => {
+    await renderLoginPage();
+
+    const link = screen.getByRole('link', { name: /가입하기/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/signup');
+  });
 });

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
+import Link from 'next/link';
+
 import { Button } from '@/components/ui/button';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { signInWithEmail } from '@/lib/auth/email';
@@ -108,6 +110,12 @@ export default function LoginPage() {
         </Button>
 
         {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          <Link href="/signup" className="underline">
+            {t('signupLink')}
+          </Link>
+        </p>
       </div>
     </main>
   );
