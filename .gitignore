@@ -57,3 +57,4 @@ tests/fixtures/ssaju_verification_report.json
 android/
 twa-manifest.json
 *.keystore
+.gstack/
