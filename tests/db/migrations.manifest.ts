@@ -500,4 +500,31 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     kind: 'dml',
     description: 'v0.2 prompt_versions status → rolled_back',
   },
+
+  // §25 hapcard_score_snapshots — change_score 기준점 (ADR-036)
+  {
+    index: 25,
+    file: '0025_hapcard_score_snapshots.sql',
+    kind: 'table',
+    tableName: 'hapcard_score_snapshots',
+    columns: [
+      'user_id',
+      'relation_id',
+      'mode',
+      'scoring_version',
+      'prompt_version',
+      'target_date',
+      'compat_score',
+      'score_breakdown',
+      'created_at',
+    ],
+    checkEnums: [
+      { col: 'mode', values: ['일합', '친구합', '돈합', '첫합', '썸합', '오래합'] },
+    ],
+    foreignKeys: [
+      { col: 'user_id', refs: 'auth.users' },
+      { col: 'relation_id', refs: 'public.relations' },
+    ],
+    rls: { enabled: true, policies: ['user owns snapshots'] },
+  },
 ];

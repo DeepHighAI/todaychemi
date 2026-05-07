@@ -2,6 +2,9 @@ import type { Mode } from '@/types/mode';
 
 export const SCORING_VERSION = 1;
 
+// ADR-036: |change_score| ≥ 이 값이면 '흐름 변화 큼' badge + 합피드 상단 정렬
+export const CHANGE_SCORE_THRESHOLD = 10;
+
 // §2.1 천간합 — 일간 순서 기준 정규화 키 → 점수
 export const STEM_HAP: Record<string, number> = {
   '甲己': 12, '乙庚': 12, '丙辛': 12, '丁壬': 12, '戊癸': 12,
