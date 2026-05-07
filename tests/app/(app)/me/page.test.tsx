@@ -29,6 +29,7 @@ const CHART: ChartCore = {
   day_master_element: '목',
   five_elements_counts: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
   gender_normalized: 'F',
+  yunse: { daeun: { start_age: 7, list: [{ age: 7, pillar: '갑자', year: 1990 }], current_index: 0 }, seyun: { current_pillar: '병오', current_year: 2026 }, wolun: { current_pillar: '계사', current_month: '2026-05' }, iliun: { today_pillar: '갑자', today_date: '2026-05-07' } },
 };
 
 async function renderMePage() {
@@ -54,7 +55,7 @@ describe('MePage (본명식 화면)', () => {
     expect(screen.getByText('본명식이 아직 등록되지 않았어요.')).toBeInTheDocument();
   });
 
-  it('chart 있을 때 5개 섹션 모두 렌더 (me-hero / pillar-grid / ohaeng-bars / day-master-card / yunse-placeholder)', async () => {
+  it('chart 있을 때 5개 섹션 모두 렌더 (me-hero / pillar-grid / ohaeng-bars / day-master-card / yunse-card)', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -65,7 +66,7 @@ describe('MePage (본명식 화면)', () => {
     expect(screen.getByTestId('pillar-grid')).toBeInTheDocument();
     expect(screen.getAllByRole('progressbar').length).toBe(5);
     expect(screen.getByTestId('day-master-card')).toBeInTheDocument();
-    expect(screen.getByTestId('yunse-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('yunse-card')).toBeInTheDocument();
   });
 
   it('fetch 실패 → error-card 렌더', async () => {

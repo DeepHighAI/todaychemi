@@ -8,7 +8,7 @@ import { MeHero } from '@/components/me/me-hero';
 import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
-import { YunsePlaceholder } from '@/components/me/yunse-placeholder';
+import YunseCard from '@/components/me/yunse-card';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -62,7 +62,7 @@ export default function MePage() {
       <PillarGrid chart={chart} />
       <OhaengBars data={chart.five_elements_counts} />
       <DayMasterCard element={chart.day_master_element} />
-      <YunsePlaceholder />
+      <YunseCard yunse={chart.yunse} />
     </div>
   );
 }

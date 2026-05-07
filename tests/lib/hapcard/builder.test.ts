@@ -33,6 +33,7 @@ import type { Mode } from '@/types/mode';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HapcardResult } from '@/types/hapcard';
 import type { BuildHapcardInput, BuildHapcardDeps } from '@/lib/hapcard/builder';
+import { MOCK_YUNSE_CORE } from '../../fixtures/hapcard';
 
 // --- 픽스처 ---
 
@@ -44,6 +45,7 @@ const SELF: ChartCore = {
   day_master_element: '화',
   five_elements_counts: { 목: 2, 화: 1, 토: 0, 금: 0, 수: 1 },
   gender_normalized: 'M',
+  yunse: MOCK_YUNSE_CORE,
 };
 
 const RELATION: ChartCore = {
@@ -54,6 +56,7 @@ const RELATION: ChartCore = {
   day_master_element: '금',
   five_elements_counts: { 목: 0, 화: 0, 토: 2, 금: 2, 수: 0 },
   gender_normalized: 'F',
+  yunse: MOCK_YUNSE_CORE,
 };
 
 const BASE_INPUT: BuildHapcardInput = {

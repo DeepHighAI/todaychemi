@@ -1,5 +1,16 @@
-import type { ChartCore } from '@/types/chart';
+import type { ChartCore, YunseCore } from '@/types/chart';
 import type { HapcardResult, HapcardVisuals } from '@/types/hapcard';
+
+export const MOCK_YUNSE_CORE: YunseCore = {
+  daeun: {
+    start_age: 7,
+    list: Array.from({ length: 10 }, (_, i) => ({ age: 7 + 10 * i, pillar: '갑자', year: 1990 + 10 * i })),
+    current_index: 3,
+  },
+  seyun: { current_pillar: '병오', current_year: 2026 },
+  wolun: { current_pillar: '계사', current_month: '2026-05' },
+  iliun: { today_pillar: '갑자', today_date: '2026-05-07' },
+};
 
 export const mockChartCoreSelf: ChartCore = {
   year_pillar: '갑자',
@@ -9,6 +20,7 @@ export const mockChartCoreSelf: ChartCore = {
   day_master_element: '목',
   five_elements_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
   gender_normalized: 'M',
+  yunse: MOCK_YUNSE_CORE,
 };
 
 export const mockChartCoreRelation: ChartCore = {
@@ -19,6 +31,7 @@ export const mockChartCoreRelation: ChartCore = {
   day_master_element: '화',
   five_elements_counts: { 목: 1, 화: 3, 토: 2, 금: 1, 수: 1 },
   gender_normalized: 'F',
+  yunse: MOCK_YUNSE_CORE,
 };
 
 export const mockVisuals: HapcardVisuals = {

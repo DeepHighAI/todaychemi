@@ -10,6 +10,7 @@ const CHART: ChartCore = {
   day_master_element: '화',
   five_elements_counts: { 목: 2, 화: 1, 토: 0, 금: 0, 수: 1 },
   gender_normalized: 'M',
+  yunse: { daeun: { start_age: 7, list: [{ age: 7, pillar: '갑자', year: 1990 }], current_index: 0 }, seyun: { current_pillar: '병오', current_year: 2026 }, wolun: { current_pillar: '계사', current_month: '2026-05' }, iliun: { today_pillar: '갑자', today_date: '2026-05-07' } },
 };
 
 describe('buildSourcePacketHash', () => {

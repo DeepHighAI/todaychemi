@@ -6,7 +6,38 @@ import {
   hourToBranchIndex, HOUR_STEM_BASE,
   type Element,
 } from './constants';
-import type { ChartCore } from '@/types/chart';
+import type { ChartCore, YunseCore } from '@/types/chart';
+
+function formatKstDate(now: Date): string {
+  return new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function mapSsajuToYunse(sajuResult: ReturnType<typeof calculateSaju>, now: Date): YunseCore {
+  const daeunCurrent = sajuResult.daeun.current;
+  return {
+    daeun: {
+      start_age: sajuResult.daeun.startAge,
+      list: sajuResult.daeun.list.map(d => ({ age: d.startAge, pillar: d.ganzhi, year: d.startYear })),
+      current_index: daeunCurrent
+        ? Math.max(0, sajuResult.daeun.list.findIndex(
+            d => d.startAge === daeunCurrent.startAge && d.startYear === daeunCurrent.startYear,
+          ))
+        : 0,
+    },
+    seyun: {
+      current_pillar: sajuResult.reference.codes.thisYear,
+      current_year: sajuResult.currentYear,
+    },
+    wolun: {
+      current_pillar: sajuResult.reference.codes.thisMonth,
+      current_month: formatKstDate(now).slice(0, 7),
+    },
+    iliun: {
+      today_pillar: sajuResult.reference.codes.today,
+      today_date: formatKstDate(now),
+    },
+  };
+}
 
 type Gender = 'M' | 'F';
 
@@ -70,6 +101,7 @@ export function normalizeKasiToChartCore(
 
   // ADR-037 §1.1 결정 (2026-05-03): ssaju가 年/月柱(절기 기준) 프로덕션 source
   // KASI lunSecha(합삭 기준)·lunWolgeon(음력 月建)은 사주 기준과 다르므로 사용하지 않는다
+  const now = new Date();
   const sajuResult = calculateSaju({
     year: birthInput.year,
     month: birthInput.month,
@@ -79,6 +111,7 @@ export function normalizeKasiToChartCore(
     gender: gender === 'M' ? '남' : '여',
     calendar: birthInput.calendar,
     leap: birthInput.leap,
+    now,
   });
   const year_pillar = sajuResult.pillars.year;
   const month_pillar = sajuResult.pillars.month;
@@ -96,5 +129,6 @@ export function normalizeKasiToChartCore(
     day_master_element,
     five_elements_counts,
     gender_normalized: gender,
+    yunse: mapSsajuToYunse(sajuResult, now),
   };
 }

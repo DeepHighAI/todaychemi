@@ -15,6 +15,35 @@ export const BirthDataSchema = z.object({
 });
 export type BirthData = z.infer<typeof BirthDataSchema>;
 
+// 윤세 타입 (docs/specs/yunse_spec.md)
+export interface YunseDaeun {
+  readonly start_age: number;
+  readonly list: ReadonlyArray<{ age: number; pillar: string; year: number }>;
+  readonly current_index: number;
+}
+
+export interface YunseSeyun {
+  readonly current_pillar: string;
+  readonly current_year: number;
+}
+
+export interface YunseWolun {
+  readonly current_pillar: string;
+  readonly current_month: string; // YYYY-MM (KST)
+}
+
+export interface YunseIliun {
+  readonly today_pillar: string;
+  readonly today_date: string; // YYYY-MM-DD (KST)
+}
+
+export interface YunseCore {
+  readonly daeun: YunseDaeun;
+  readonly seyun: YunseSeyun;
+  readonly wolun: YunseWolun;
+  readonly iliun: YunseIliun;
+}
+
 // 사주 계산 결과 (LLM 페이로드 허용 형태 — chart_core)
 // PII: birth_date / gender 원본은 포함 금지 (docs/legal/pii_minimization.md)
 export interface ChartCore {
@@ -26,6 +55,8 @@ export interface ChartCore {
   five_elements_counts: Record<'목' | '화' | '토' | '금' | '수', number>;
   // 정규화된 성별 — 원본 gender 대신 chart 계산 결과로만 LLM에 전달
   gender_normalized: Gender;
+  // 윤세 (대운·세운·월운·일운) — 결정형, KST 기준
+  yunse: YunseCore;
 }
 
 export type ChartHash = string;

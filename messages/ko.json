@@ -249,7 +249,12 @@
       },
       "yunse": {
         "title": "운세 흐름",
-        "body": "타임라인 해석은 합카드 다시합과 함께 다음 업데이트에 공개돼요."
+        "subtitle": "본명식 위에 흐르는 시간의 운",
+        "daeun": { "label": "대운", "currentLabel": "현재 대운" },
+        "seyun": { "label": "올해 운(세운)" },
+        "wolun": { "label": "이번 달 운(월운)" },
+        "iliun": { "label": "오늘 운(일운)" },
+        "interpretationFooter": "더 자세한 해석은 합카드와 다시합에서 풀어요."
       }
     },
     "empty": {
