@@ -38,6 +38,17 @@ export type RelationCreate = z.infer<typeof RelationCreateSchema>;
 // 합피드 카드 항목 — S-04 인연 목록 그리드 표시용 subset
 export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'>;
 
+// Y4 ADR-036 — 합피드 응답 항목 (compat_score + change_score + badge flag, 서버 정렬 후 반환)
+export interface FeedItem {
+  relation_id: string;
+  nickname: string;
+  mode: Mode;
+  compat_score: number | null;        // 스냅샷 0건이면 null
+  change_score: number;               // prev 스냅샷 없으면 0
+  has_significant_change: boolean;    // |change_score| >= CHANGE_SCORE_THRESHOLD
+  created_at: string;
+}
+
 export const RELATION_ERROR_CODES = [
   'INVALID_BODY',
   'UNAUTHORIZED',
