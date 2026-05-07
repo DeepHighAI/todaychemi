@@ -19,6 +19,7 @@ export interface ScoringOutput {
   score: number;
   components: ScoringComponents;
   mode_adjustment: number;
+  yunse_adjustment: number;
   scenario_estimate: {
     is_estimated: boolean;
     display_score: number;

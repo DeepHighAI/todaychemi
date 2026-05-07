@@ -157,6 +157,7 @@ export async function buildHapcard(
         hap_chung_hyung_hae: scoreOutput.components.hap_chung_hyung_hae,
         sipsin: scoreOutput.components.sipsin,
         ohaeng: scoreOutput.components.ohaeng,
+        yunse_adjustment: scoreOutput.yunse_adjustment,
         mode_adjustment: scoreOutput.mode_adjustment,
       },
       content,

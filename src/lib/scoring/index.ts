@@ -13,7 +13,7 @@ export function computeScore(args: {
 }): ScoringOutput {
   const { self, relation, mode, scoring_version = SCORING_VERSION } = args;
 
-  const { score, components, mode_adjustment } = computeFinalScore(self, relation, mode);
+  const { score, components, mode_adjustment, yunse_adjustment } = computeFinalScore(self, relation, mode);
 
   const scenarioResult = computeScenarioEstimate(self, relation, mode);
   const scenario_estimate = scenarioResult.is_estimated ? scenarioResult : null;
@@ -22,6 +22,7 @@ export function computeScore(args: {
     score,
     components,
     mode_adjustment,
+    yunse_adjustment,
     scenario_estimate,
     scoring_version,
   };

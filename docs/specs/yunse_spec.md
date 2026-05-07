@@ -95,14 +95,50 @@ export interface YunseCore {
 
 단, yunse는 **매일 `iliun.today_date`가 변하므로** chart 캐시 키가 아닌 hapcard 요청별 캐시 키(`date_kst` 포함)로 처리됨 — 기존 동작 유지.
 
-## 6. 점수 산식 (Phase Y3 placeholder)
+## 6. 점수 산식 (Phase Y3 — 사용자 §1.1 확정 2026-05-07)
 
-> 이 섹션은 Phase Y3에서 채워진다. 윤세 가중치·중첩 처리·change_score 정의는 미확정.
+### 6.1 yunse_adjustment 산식
 
-요구사항:
-- `change_score = current_compat_score - previous_snapshot_score` (ADR-036)
-- 대운 전환 시 ±10p 이내의 가중치 — 결정형, LLM 산출 금지
-- `compatibility_scoring_spec.md`에 §yunse 섹션 추가 예정
+```
+yunse_adjustment(yunse, relDayPillar, mode) = clamp(
+  10 × (
+      0.40 × Δ(daeun.list[current_index].pillar, relDayPillar)
+    + 0.30 × Δ(seyun.current_pillar, relDayPillar)
+    + 0.20 × Δ(wolun.current_pillar, relDayPillar)
+    + 0.10 × Δ(iliun.today_pillar, relDayPillar)
+  ) × MODE_FACTOR[mode],
+  -10, +10
+)
+```
+
+### 6.2 단순화된 Δ 함수 (사용자 승인 — §2 점수표 미사용)
+
+```
+Δ(layerPillar, relDayPillar) = clamp(
+    (천간합 ? +1.0 : 0)
+  + (지지합 ? +1.0 : 0)
+  + (지지충 ? -1.0 : 0),
+  -1, +1
+)
+```
+
+### 6.3 MODE_FACTOR
+
+| mode | factor |
+|---|---|
+| 일합 | 1.00 |
+| 첫합 | 0.95 |
+| 썸합 | 0.90 |
+| 돈합 | 0.85 |
+| 친구합 | 0.80 |
+| 오래합 | 0.70 |
+
+### 6.4 적용 포인트
+
+- `src/lib/scoring/yunseAdjustment.ts` — 구현체 (한글 기둥 기반, ADR-035 결정형)
+- `src/lib/scoring/final.ts` — `raw` 합산에 `yunseAdj` 추가
+- `score_breakdown.yunse_adjustment` — observability 노출
+- `change_score = current_compat_score - previous_snapshot_score` (ADR-036, Phase Y4)
 
 ## 7. LLM 페이로드 (Phase Y2)
 
