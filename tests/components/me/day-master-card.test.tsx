@@ -40,4 +40,9 @@ describe('DayMasterCard', () => {
     renderWithProviders(<DayMasterCard element="목" />);
     expect(screen.getByTestId('day-master-card')).toBeInTheDocument();
   });
+
+  it('목 element에 hanja title="木" (elementLabel 사용 확인)', () => {
+    const { container } = renderWithProviders(<DayMasterCard element="목" />);
+    expect(container.querySelector('[title="木"]')).not.toBeNull();
+  });
 });

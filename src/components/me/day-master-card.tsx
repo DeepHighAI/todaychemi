@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { elementLabel } from '@/lib/saju/elementLabel';
 import type { ChartCore } from '@/types/chart';
 
 interface DayMasterCardProps {
@@ -9,10 +10,11 @@ interface DayMasterCardProps {
 
 export function DayMasterCard({ element }: DayMasterCardProps) {
   const t = useTranslations('me.section.daymaster');
+  const { hanja } = elementLabel(element);
   return (
     <div data-testid="day-master-card" className="space-y-2 rounded-2xl border border-border bg-card p-4">
       <p className="text-xs font-medium text-muted-foreground">{t('eyebrow')}</p>
-      <p className="text-sm text-foreground">{t(element)}</p>
+      <p title={hanja} className="text-sm text-foreground">{t(element)}</p>
     </div>
   );
 }
