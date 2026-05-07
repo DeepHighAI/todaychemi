@@ -16,10 +16,12 @@ interface OhaengBarsProps {
   data: Record<OhaengKey, number>;
 }
 
+const BAR_MAX_PX = 48;
+
 export function OhaengBars({ data }: OhaengBarsProps) {
   const percents = toPercent(data);
   return (
-    <div className="flex gap-1 items-end h-16">
+    <div className="flex gap-1 items-end">
       {ELEMENTS.map((el) => {
         const pct = Math.round(percents[el]);
         return (
@@ -30,7 +32,7 @@ export function OhaengBars({ data }: OhaengBarsProps) {
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label={el}
-              style={{ height: `${pct}%` }}
+              style={{ height: `${Math.round(pct * BAR_MAX_PX / 100)}px` }}
               className={`w-full rounded-sm ${elementClass[el]}`}
             />
             <span className="text-[10px] text-muted-foreground">{el}</span>

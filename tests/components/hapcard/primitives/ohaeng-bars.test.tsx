@@ -35,4 +35,12 @@ describe('OhaengBars', () => {
     render(<OhaengBars data={{ 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 }} />);
     expect(screen.getAllByRole('progressbar')).toHaveLength(5);
   });
+
+  it('데이터 비율에 따라 bar 높이(style.height)가 0이 아닌 픽셀 값', () => {
+    render(<OhaengBars data={DATA} />);
+    const bars = screen.getAllByRole('progressbar');
+    const heights = bars.map((b) => parseInt((b as HTMLElement).style.height, 10));
+    // 최대 bar(목)은 0px보다 커야 함 (% 계산 버그 회귀 방지)
+    expect(Math.max(...heights)).toBeGreaterThan(0);
+  });
 });
