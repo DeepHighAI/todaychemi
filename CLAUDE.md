@@ -124,6 +124,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - §1.1 PR-A2 Phase 4 결정 사용자 확정: (1) /api/relations Top-N=5 (서버 created_at desc 그대로) (2) /api/me/chart 신규 호출 (user_charts 최신 1건).
 - §1.3 별도 이슈 추가: jsdom cold-load 시 hookTimeout 부족 → **✅ 완료(72ba226, vitest.config.ts:34 hookTimeout:15000). 923/923 full suite GREEN.**
 - **Phase 6 manual smoke 완료 ✅ (2026-05-06)** — Bug 1(globals.css @import 순서, caba530) + Bug 2(라우트/미들웨어 exclusion-list 재작성 + /app 리다이렉트 삭제, bda3033) 수정. **923/923 PASS**, 0 TS, 0 lint. /login 200 ✓, / Today 화면 도달 ✓, TabBar 3탭 ✓, /me placeholder ✓. §1.3 잔여: API 401(만료 쿠키 Playwright 세션 한정). hookTimeout flake → ✅ 완료(72ba226).
+- **F5 /me 본명식 본 화면 완료 ✅ (2026-05-07)** — PillarGrid + DayMasterCard + MeHero + YunsePlaceholder + page composition(5섹션 + useQuery). **942/942 PASS**, 0 TS, 0 lint. 커밋: `eb3b05b`(ko.json) · `b146ce5`(컴포넌트 4종) · `0ad0b9e`(page 조립).
 
 ---
 
