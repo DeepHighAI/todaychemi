@@ -2,7 +2,7 @@
 
 > Mode: 오래합  
 > Model: GPT-5 (tech_stack §3.1 — 딥합 모델)  
-> Version: v0.2 (claude-1차-draft, 2026-05-03)  
+> Version: v0.3 (claude-soft-terms, 2026-05-07)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -182,7 +182,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
       { "source": "자평진전(子平眞詮) 충론", "original": "沖者，動也，動則變", "modern": "충은 움직임이고, 움직이면 변화가 따른다. 충이 있는 관계는 변화 속에서 서로를 이해하는 방식을 찾아가는 과정이 중요하다." }
     ],
     "daily_influences": {
-      "ilji": "오늘 일지 기운이 충 활성화 — 감정 논의보다 각자 시간 갖는 것이 나은 날.",
+      "ilji": "오늘 일지 기운이 부딪힘 활성화 — 감정 논의보다 각자 시간 갖는 것이 나은 날.",
       "jueun": "현재 운이 화(火) 강화 — 사용자의 에너지가 높아지는 시기, 상대 배려 의식 더 필요.",
       "woolun": "연간 운이 토(土) 방향 진입 — 양쪽 부족한 중간 에너지가 보강되는 흐름, 관계 규칙 재정립 좋은 시기."
     }

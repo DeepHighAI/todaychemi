@@ -34,7 +34,14 @@ export type FunctionSpec = {
   cronJobs?: string[];
 };
 
-export type MigrationSpec = ExtensionSpec | TableSpec | FunctionSpec;
+export type DmlSpec = {
+  index: number;
+  file: string;
+  kind: 'dml';
+  description: string;
+};
+
+export type MigrationSpec = ExtensionSpec | TableSpec | FunctionSpec | DmlSpec;
 
 export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
   // §0 확장
@@ -484,5 +491,13 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     ],
     foreignKeys: [],
     rls: { enabled: true, policies: ['classics_public_read'] },
+  },
+
+  // §24 prompt v0.2 rolled_back — 단발성 DML (파일 존재 회귀)
+  {
+    index: 24,
+    file: '0024_prompt_v0_3_rollback.sql',
+    kind: 'dml',
+    description: 'v0.2 prompt_versions status → rolled_back',
   },
 ];
