@@ -101,29 +101,29 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 **F5 Sprint 진행 중 (2026-05-06)** — **767/767 PASS**, 0 TS errors.
 - B1+B3 완료(jsdom+testing-library, route groups). B5(타입 리프트) + S-00(Kakao→Google OAuth) + S-01-A(로그인 polish) 완료. S-01-B+S-02(온보딩 단일 페이지) 완료. S-03(인연 등록 단일 페이지) 완료. S-04(합피드 페이지) 완료. S-05(합카드 호출 + 에러 UX) 완료. S-06(합카드 9섹션) 완료. S-06c-a(glossary tooltip) + S-06c-b(glossary bottom sheet) 완료. **S-06b(mini_radar 오각형 오버레이) 완료**. **chart 컴퓨트 A-eager 완료 — chartPending 영구 차단 해소** ✅.
 - 완료 커밋: `6abc2a4`(B5 types) · `ab1c87e`(S-00 Google OAuth) · `199b89f`(S-01-A 로그인) · `7e21788`(onboarding types) · `0731125`(onboarding page+route) · `c44059b`(relation types) · `9935f32`(relations page+route) · `b6bb288`(GET /api/relations) · `e707d11`(feed page+grid) · `c3e07bf`(theory version const) · `ef30b5a`(feed mode query) · `dd10783`(hapcard page S-05) · `0c65f52`(S-06 9 sections compose) · `138b778`(S-06c-a glossary tooltip) · `a520141`(S-06c-b glossary bottom sheet) · `6f8bd68`(S-06b mini_radar) · `fcab0ee`(chart-hash) · `02ac388`(compute) · `72e149b`(onboarding eager) · `f4ad43f`(relations eager).
-- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요).
+- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요).
 - **S-07a share 완료 ✅** — build-share-payload + share-handler(Web Share+clipboard) + ShareSheet(Drawer) + HapcardShare 통합 + page 배선. `docs/specs/replay.md` 작성 완료(§1.1 D1~D4 결정 매트릭스).
 - S-07a 커밋: `99628c0`(build-share-payload) · `f4667eb`(share-handler) · `153d277`(ShareSheet) · `17bd916`(type fix) · `389b901`(HapcardShare+page wiring) · `0e2a8fa`(replay spec).
-- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결(§1.1 결정 대기).
+- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN → **✅ 완료(7a0cb8c)**.
 - **S-07b Replay 완료 ✅ (2026-05-06)** — buildReplay async 함수 + POST /api/hapcards/[id]/replay route handler GREEN. 커밋 `c69acff`. **805/805 PASS**, 0 TS errors.
 - **`supabase db push 0022+0023` 적용 완료 ✅ (2026-05-06)** — `deduct_tokens` / `refund_tokens` RPC + `hapcard_replays_idempotency` UNIQUE 제약 라이브 반영. 검증 스크립트 `scripts/verify-replay-migrations.ts`.
 - **후속 작업 완료 ✅ (2026-05-06)**:
   - Task 1 (`b9e4e72`): `database.types.ts` 재생성 → route.ts tokenRpc 캐스트 제거.
   - Task 2 (`7a0cb8c`): `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결 + vitest testTimeout 15s 상향 (jsdom cold-load 회귀 해소). **810/810 PASS**, 0 TS errors.
   - Task 4 (`aa729ff`): `docs/specs/payments.md:271` `'hapcard'` → `'hapcard_use'` 정정.
-- **§1.3 별도 이슈 잔여**: ESLint 9 다운그레이드 별도 PR(§1.1 결정 대기). `payments.md:271` `'refund'` ↔ `'bonus'` 불일치(§1.1). 라우트 `'replay_refund'` reason 표준화(§1.1).
+- **§1.3 별도 이슈 잔여**: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. `payments.md:271` `'refund'` ↔ `'bonus'` 불일치 → **✅ 완료(e3a6a03)**. 라우트 `'replay_refund'` reason → **✅ 완료(route.ts:115 canonical)**.
 - **다음**: F5 sprint 이후 작업 §1.1 결정 대기.
 - **§1.1 결정 2건 완료 ✅ (2026-05-06)**:
   - Decision 2 (`e3a6a03`): `token_ledger.reason` enum 6값 doc-only 동기화 — `db_schema.md:319` + `payments.md:271` + `0009_token_ledger.sql:6`. **810/810 PASS**, 0 TS errors.
   - Decision 1 (`12ae939`): ESLint flat config 마이그레이션 — `eslint.config.mjs` 신규 + `package.json` lint 스크립트 `eslint .` + eslint `10→9` 다운그레이드(typescript-eslint v8 호환). `pnpm lint` PASS (0 errors, 7 warnings). **810/810 PASS**, 0 TS errors.
-- **§1.3 별도 이슈 추가**: 7개 파일 unused `eslint-disable @typescript-eslint/no-explicit-any` 경고 — 빌드/테스트 차단 없음, §1.1 결정 후 별도 PR.
+- **§1.3 별도 이슈 추가**: 7개 파일 unused `eslint-disable @typescript-eslint/no-explicit-any` 경고 → **✅ 완료(9ac5bfa, 4 tracked + 3 untracked auto-fix). pnpm lint 0/0.**
 - **PR-B(S-99) 완료 ✅ (2026-05-06)** — ErrorCard/LoadingState/EmptyState + global error/loading/not-found + error-codes 카탈로그. 커밋 `cec5038`. **833/833 PASS**, 0 TS errors.
 - **PR-A1(S-03 today 백엔드) 완료 ✅ (2026-05-06)** — GET /api/today route + cache-key(sha256) + builder(3-tier fallback) + openai(GPT-5 mini) + kst-date + types + daily_hap.md system prompt. 커밋 `77a90ef`. **850/850 PASS**, 0 TS errors.
 - **PR-C(S-96 OG 이미지) 완료 ✅ (2026-05-06)** — buildOgPayload(PII 0건) + OgTemplate(1200x630 Edge) + GET /api/og/hapcard/[id] + buildSharePayload URL에 range 추가 + page.tsx server wrapper(generateMetadata) + HapcardView.tsx 분리. 커밋 `acc94c6`. **866/866 PASS**, 0 TS errors. Auth 401 유지(메신저 크롤러 차단) — 공유 토큰 별도 PR.
 - **PR-A2(Today UI + TabBar) 완료 ✅ (2026-05-06)** — §1.6 UIDesign 준수 규칙 + globals.css M3 토큰 + TabBar + layout.tsx 통합 + Today 6 컴포넌트 + /api/me/chart route + (app)/page.tsx Today 조립 (3 useQuery + Top-N=5 최근순 + chart=null guard) + /me placeholder. **911/918 PASS** (full suite; 7 실패는 jsdom cold-load 사전 flake — 단독 실행 시 18/18 GREEN). PR-A2 영역 단독: layout 3/3 + Today 컴포넌트 28/28 + /api/me/chart 4/4 + (app)/page 8/8 + /me 2/2 = **45/45 PASS**, 0 TS errors, 0 lint errors.
 - §1.1 PR-A2 Phase 4 결정 사용자 확정: (1) /api/relations Top-N=5 (서버 created_at desc 그대로) (2) /api/me/chart 신규 호출 (user_charts 최신 1건).
-- §1.3 별도 이슈 추가: jsdom cold-load 시 hookTimeout 10s default 부족(testTimeout 15s 상향만 적용됨) — vitest config `hookTimeout` 별도 설정 필요. PR-A2 외부 hapcard 테스트 3건 영향 (단독 PASS, full suite flake).
-- **Phase 6 manual smoke 완료 ✅ (2026-05-06)** — Bug 1(globals.css @import 순서, caba530) + Bug 2(라우트/미들웨어 exclusion-list 재작성 + /app 리다이렉트 삭제, bda3033) 수정. **923/923 PASS**, 0 TS, 0 lint. /login 200 ✓, / Today 화면 도달 ✓, TabBar 3탭 ✓, /me placeholder ✓. §1.3 잔여: API 401(만료 쿠키 Playwright 세션 한정), hookTimeout flake 7건.
+- §1.3 별도 이슈 추가: jsdom cold-load 시 hookTimeout 부족 → **✅ 완료(72ba226, vitest.config.ts:34 hookTimeout:15000). 923/923 full suite GREEN.**
+- **Phase 6 manual smoke 완료 ✅ (2026-05-06)** — Bug 1(globals.css @import 순서, caba530) + Bug 2(라우트/미들웨어 exclusion-list 재작성 + /app 리다이렉트 삭제, bda3033) 수정. **923/923 PASS**, 0 TS, 0 lint. /login 200 ✓, / Today 화면 도달 ✓, TabBar 3탭 ✓, /me placeholder ✓. §1.3 잔여: API 401(만료 쿠키 Playwright 세션 한정). hookTimeout flake → ✅ 완료(72ba226).
 
 ---
 
