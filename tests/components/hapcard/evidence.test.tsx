@@ -58,4 +58,23 @@ describe('HapcardEvidence + GlossaryProvider 통합', () => {
     expect(screen.queryByTestId('term-tooltip-trigger')).toBeNull();
     expect(screen.getByText(/썸합/)).toBeInTheDocument();
   });
+
+  it('소프트 용어 "끌림" → trigger 렌더 (classical 키 합으로 조회)', () => {
+    const cards = [{ title: '두 사람의 끌림이 강합니다', reason: '기운이 맞아요.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    expect(screen.getByTestId('term-tooltip-trigger')).toBeInTheDocument();
+  });
+
+  it('소프트 용어 "긴장"과 "부딪힘" → trigger 2개 렌더', () => {
+    const cards = [{ title: '긴장과 부딪힘이 동시에', reason: '조율이 필요해요.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    expect(screen.getAllByTestId('term-tooltip-trigger')).toHaveLength(2);
+  });
+
+  it('"썸합 + 끌림" → 끌림만 trigger, 썸합은 plain text', () => {
+    const cards = [{ title: '썸합 + 끌림 분석', reason: '끌림이 있어요.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    const triggers = screen.getAllByTestId('term-tooltip-trigger');
+    expect(triggers).toHaveLength(2);
+  });
 });

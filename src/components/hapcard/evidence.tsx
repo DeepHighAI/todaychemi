@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useGlossaryContext } from '@/components/hapcard/glossary-provider';
 import { TermTooltip } from '@/components/hapcard/primitives/term-tooltip';
+import { toClassicalKey } from '@/lib/glossary/soft-term-map';
 
 interface WhyCard {
   title: string;
@@ -14,7 +15,8 @@ interface HapcardEvidenceProps {
 }
 
 // 앞 글자가 한글 음절이 아닐 때만 용어로 인식 (예: "썸합"의 "합"은 제외)
-const GLOSSARY_TERM_SOURCE = '(?<![가-힣ㄱ-ㅎㅏ-ㅣ])(일주|십신|합|형|충|해)';
+// 소프트 용어(끌림/긴장/부딪힘/소모)도 인식 — LLM v0.3 출력 및 과거 캐시 classical 토큰 모두 지원
+const GLOSSARY_TERM_SOURCE = '(?<![가-힣ㄱ-ㅎㅏ-ㅣ])(일주|십신|합|형|충|해|끌림|긴장|부딪힘|소모)';
 
 function parseWithGlossary(
   text: string,
@@ -32,9 +34,10 @@ function parseWithGlossary(
       nodes.push(text.slice(lastIndex, start));
     }
 
-    const isFirst = consume(term);
+    const classicalKey = toClassicalKey(term);
+    const isFirst = consume(classicalKey);
     nodes.push(
-      <TermTooltip key={start} term={term} defaultOpen={isFirst}>
+      <TermTooltip key={start} term={classicalKey} defaultOpen={isFirst}>
         {term}
       </TermTooltip>,
     );
