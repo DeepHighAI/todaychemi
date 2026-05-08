@@ -601,6 +601,38 @@ create policy "feedback_own_read" on public.feedback_events
 
 ---
 
+### 19. whatif_results
+
+마이플레이 6종 LLM 응답 캐시 (S-08, DiagnosticType). Self-anchor — relation 없음, scoring 없음.
+
+```sql
+-- supabase/migrations/0026_whatif_results.sql
+create table public.whatif_results (
+  whatif_id        uuid    primary key default gen_random_uuid(),
+  user_id          uuid    not null references public.users(user_id) on delete cascade,
+  type             text    not null check (type in (
+                     'work', 'love', 'conflict', 'leadership', 'money', 'first_meet'
+                   )),
+  content          jsonb   not null,        -- WhatifContent: body+keywords+do_first+first_meet_tips?
+  prompt_version   text    not null,
+  llm_model        text    not null check (llm_model in (
+                     'gpt-5o', 'gpt-5', 'gpt-5-mini', 'claude-fallback'
+                   )),
+  cache_key        text    not null unique,  -- sha256(chart_hash + type + prompt_version)
+  chart_hash       text    not null,
+  created_at       timestamptz not null default now()
+);
+
+create index on public.whatif_results (user_id, type, created_at desc);
+create index on public.whatif_results (cache_key);
+
+alter table public.whatif_results enable row level security;
+create policy "whatif_results_own" on public.whatif_results for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+```
+
+---
+
 ## 삭제 Grace Period 함수
 
 ```sql

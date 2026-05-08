@@ -527,4 +527,29 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     ],
     rls: { enabled: true, policies: ['user owns snapshots'] },
   },
+
+  // §26 whatif_results — S-08 마이플레이 6종 LLM 캐시
+  {
+    index: 26,
+    file: '0026_whatif_results.sql',
+    kind: 'table',
+    tableName: 'whatif_results',
+    columns: [
+      'whatif_id',
+      'user_id',
+      'type',
+      'content',
+      'prompt_version',
+      'llm_model',
+      'cache_key',
+      'chart_hash',
+      'created_at',
+    ],
+    checkEnums: [
+      { col: 'type', values: ['work', 'love', 'conflict', 'leadership', 'money', 'first_meet'] },
+      { col: 'llm_model', values: ['gpt-5o', 'gpt-5', 'gpt-5-mini', 'claude-fallback'] },
+    ],
+    foreignKeys: [{ col: 'user_id', refs: 'public.users' }],
+    rls: { enabled: true, policies: ['whatif_results_own'] },
+  },
 ];
