@@ -11,6 +11,8 @@ import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
+import { SCORING_VERSION } from '@/lib/scoring/constants';
+import { todayKST } from '@/lib/today/kst-date';
 
 export interface BuildHapcardInput {
   user_id: string;
@@ -175,6 +177,26 @@ export async function buildHapcard(
   if (insertRes.error) {
     throw new Error(`HAPCARD_INSERT_FAILED: ${insertRes.error.message}`);
   }
+
+  // 11. snapshot upsert — ADR-036 change_score 기준점
+  await deps.supabaseServiceClient
+    .from('hapcard_score_snapshots')
+    .upsert({
+      user_id: input.user_id,
+      relation_id: input.relation_id,
+      mode: input.mode,
+      scoring_version: String(SCORING_VERSION),
+      prompt_version: prompt.version,
+      target_date: todayKST(),
+      compat_score: scoreOutput.score,
+      score_breakdown: {
+        hap_chung_hyung_hae: scoreOutput.components.hap_chung_hyung_hae,
+        sipsin: scoreOutput.components.sipsin,
+        ohaeng: scoreOutput.components.ohaeng,
+        yunse_adjustment: scoreOutput.yunse_adjustment,
+        mode_adjustment: scoreOutput.mode_adjustment,
+      },
+    });
 
   const relation_nickname = await fetchRelationNickname(
     deps.supabaseUserClient,

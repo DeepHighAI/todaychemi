@@ -30,6 +30,15 @@ export interface HapcardVisuals {
   };
 }
 
+// score_breakdown 필드 구조 (DB jsonb 컬럼 매핑, Y3+ yunse_adjustment 포함)
+export interface ScoreBreakdown {
+  hap_chung_hyung_hae: number;
+  sipsin: number;
+  ohaeng: number;
+  yunse_adjustment: number;
+  mode_adjustment: number;
+}
+
 // 합카드 결과 — db_schema.md §5 hapcards 테이블 1:1 매핑
 // ADR-035: compat_score는 결정형 (LLM 점수 개입 금지). 본 인터페이스의 score 필드는 fortune-core 출력만 저장.
 export interface HapcardResult {
@@ -39,12 +48,7 @@ export interface HapcardResult {
   mode: Mode;
   // 점수 (DDL: numeric(5,2))
   compat_score: number;
-  score_breakdown: {
-    hap_chung_hyung_hae: number;
-    sipsin: number;
-    ohaeng: number;
-    mode_adjustment: number;
-  };
+  score_breakdown: ScoreBreakdown;
   // 카드 본문 (DDL: jsonb)
   content: {
     main_text: string;

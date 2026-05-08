@@ -128,6 +128,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **QA /me 본명식 완료 ✅ (2026-05-07)** — Email/Password 로그인 추가(영구 기능) + 테스트 계정 시드(Test1@test.com) + /me 5섹션 브라우저 시각 검증. OhaengBars 바 비가시 버그 수정. **948/948 PASS**, 0 TS, 0 lint. 커밋: `390d8f8`(email auth) · `23ae3c7`(ohaeng fix). §1.1 후속: Google SSO 진단(별도) · email auth 프로덕션 정책 결정 필요.
 - **Email/Password 프로덕션 강화 완료 ✅ (2026-05-07)** — 비밀번호 정책(8자+letters_digits) + rate limit(30→10/5min) + signUp 흐름(/signup 페이지) + TDD 20건 신규. **969/969 PASS**, 0 TS, 0 lint. 커밋: `b9aaea9`(supabase config) · `7f35599`(password-policy) · `8747ff7`(signUpWithEmail) · `7510008`(i18n) · `9b45b4f`(signup page) · `b8267c9`(login link) · `22187a1`(auth.md). §사용자 수동 절차: Supabase Dashboard → Auth 정책 동기화 필요(jamhkucluhiibqpjsiov). Google SSO 별도 세션.
 - **E1+E2 완료 ✅ (2026-05-07)** — UI 4토큰 소프트 변환(합→끌림/형→긴장/충→부딪힘/해→소모) + LLM v0.3 prompts + migration 0024. **1033/1033 PASS**, 0 TS, 0 lint. branch: `feature/e1-ui-term-conversion` (Cycles 1-12) + `feature/e2-llm-prompts-v0.3` (Cycles 13-15). §사용자 수동 절차: `pnpm db:push`(0024) → `pnpm seed:prompts` → v0.3 active 확인.
+- **Y4 완료 ✅ (2026-05-09)** — ADR-033/036 합피드 자동 정렬 + 흐름 변화 큼 배지 전체 완료 (Cycles 1-14). hapcard_score_snapshots 테이블 + computeChangeScore + /api/feed(정렬) + FeedPage 전환 + ChangeBadge + i18n(feed.badge.change_significant). **1068/1068 PASS**, 0 TS, 0 lint. 커밋: `dbb7939`(Phase 1+2) · `c98f764`(feed route) · `b62ea17`(feed page+badge) · `bd50a6d`(i18n). §사용자 수동 절차: `pnpm db:push`(0025 migration 이미 dbb7939 시점 적용 완료). branch: `feature/y4-change-score-feed-sort`.
 
 ---
 
@@ -362,3 +363,21 @@ C:\DEV\SAJU\
 - `docs/README.md` — fortune_architecture.md(v3.3) 폐기 후 추출된 spec/runbook/legal/pattern 인덱스
 - `docs/legal/pii_minimization.md` — PII 5필드 + gender 단일 truth source (ADR-004/ADR-011)
 - `MEMORY.md` — 결정·미결정 인덱스 (`C:\Users\batis\.claude\projects\C--DEV-SAJU\memory\`)
+
+## Skill routing
+
+When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
+
+Key routing rules:
+- Product ideas/brainstorming → invoke /office-hours
+- Strategy/scope → invoke /plan-ceo-review
+- Architecture → invoke /plan-eng-review
+- Design system/plan review → invoke /design-consultation or /plan-design-review
+- Full review pipeline → invoke /autoplan
+- Bugs/errors → invoke /investigate
+- QA/testing site behavior → invoke /qa or /qa-only
+- Code review/diff check → invoke /review
+- Visual polish → invoke /design-review
+- Ship/deploy/PR → invoke /ship or /land-and-deploy
+- Save progress → invoke /context-save
+- Resume context → invoke /context-restore

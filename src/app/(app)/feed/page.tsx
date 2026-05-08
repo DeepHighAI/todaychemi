@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { FeedListItem } from '@/types/relation';
+import { ChangeBadge } from '@/components/feed/ChangeBadge';
+import type { FeedItem } from '@/types/relation';
 
-async function fetchFeed(): Promise<FeedListItem[]> {
-  const res = await fetch('/api/relations');
+export async function fetchFeed(): Promise<FeedItem[]> {
+  const res = await fetch('/api/feed');
   if (!res.ok) throw new Error('FEED_FETCH_FAILED');
-  const body = (await res.json()) as { items: FeedListItem[] };
+  const body = (await res.json()) as { items: FeedItem[] };
   return body.items;
 }
 
@@ -59,10 +60,16 @@ export default function FeedPage() {
                   <span className="text-sm font-semibold text-foreground truncate">
                     {item.nickname}
                   </span>
+                  <ChangeBadge significant={item.has_significant_change} changeScore={item.change_score} />
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {tMode(item.mode)}
                 </Badge>
+                {item.compat_score !== null && (
+                  <p className="mt-2 text-lg font-bold tabular-nums text-foreground">
+                    {item.compat_score}
+                  </p>
+                )}
               </Link>
             </li>
           ))}

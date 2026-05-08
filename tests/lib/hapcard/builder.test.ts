@@ -84,6 +84,7 @@ const MOCK_SCORE = {
   score: 72,
   components: { hap_chung_hyung_hae: 70, sipsin: 75, ohaeng: 68 },
   mode_adjustment: 5,
+  yunse_adjustment: 3,
   scenario_estimate: null,
   scoring_version: 1,
 };
@@ -128,6 +129,7 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
       hap_chung_hyung_hae: MOCK_SCORE.components.hap_chung_hyung_hae,
       sipsin: MOCK_SCORE.components.sipsin,
       ohaeng: MOCK_SCORE.components.ohaeng,
+      yunse_adjustment: MOCK_SCORE.yunse_adjustment,
       mode_adjustment: MOCK_SCORE.mode_adjustment,
     },
     content: {
@@ -145,6 +147,19 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
     archived_at: null,
     version_label: null,
     created_at: '2026-05-04T22:00:00Z',
+  };
+}
+
+// --- Supabase 서비스 클라이언트 mock 팩토리 (snapshot upsert 포함) ---
+function makeMockServiceClientWithSnapshot() {
+  const snapshotUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
+  const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'hapcard_score_snapshots') return { upsert: snapshotUpsert };
+    return {};
+  });
+  return {
+    client: { from } as unknown as SupabaseClient,
+    snapshotUpsert,
   };
 }
 
@@ -192,7 +207,7 @@ function makeMockUserClient(opts: {
 
 // --- 기본 service client mock (embeddings/classics mocking은 module 수준) ---
 function makeMockServiceClient() {
-  return { from: vi.fn() } as unknown as SupabaseClient;
+  return makeMockServiceClientWithSnapshot().client;
 }
 
 // --- ragQueryText mock ---
@@ -201,10 +216,10 @@ const ragQueryText = vi.fn().mockReturnValue('테스트 RAG 쿼리');
 // --- OpenAI client mock (embeddings + chat) ---
 const embeddingsClient = { create: vi.fn() };
 
-function makeDeps(userClient: SupabaseClient): BuildHapcardDeps {
+function makeDeps(userClient: SupabaseClient, serviceClient?: SupabaseClient): BuildHapcardDeps {
   return {
     supabaseUserClient: userClient,
-    supabaseServiceClient: makeMockServiceClient(),
+    supabaseServiceClient: serviceClient ?? makeMockServiceClient(),
     openaiClient: { chat: { completions: { create: vi.fn() } } },
     embeddingsClient,
     ragQueryText,
@@ -262,7 +277,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     });
   });
 
-  it('score_breakdown 4개 필드 (hap_chung_hyung_hae, sipsin, ohaeng, mode_adjustment)', async () => {
+  it('score_breakdown 5개 필드 (hap_chung_hyung_hae, sipsin, ohaeng, yunse_adjustment, mode_adjustment)', async () => {
     const { client } = makeMockUserClient({ cachedRow: null });
 
     const result = await buildHapcard(BASE_INPUT, makeDeps(client));
@@ -271,6 +286,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
       hap_chung_hyung_hae: MOCK_SCORE.components.hap_chung_hyung_hae,
       sipsin: MOCK_SCORE.components.sipsin,
       ohaeng: MOCK_SCORE.components.ohaeng,
+      yunse_adjustment: MOCK_SCORE.yunse_adjustment,
       mode_adjustment: MOCK_SCORE.mode_adjustment,
     });
   });
@@ -442,5 +458,34 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     const result = await buildHapcard(BASE_INPUT, makeDeps(client));
 
     expect(result.relation_nickname).toBeUndefined();
+  });
+
+  // Cycle 7 — snapshot upsert (ADR-036)
+  it('cache miss → hapcard_score_snapshots upsert 1회', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+    const { client: svcClient, snapshotUpsert } = makeMockServiceClientWithSnapshot();
+
+    await buildHapcard(BASE_INPUT, makeDeps(client, svcClient));
+
+    expect(snapshotUpsert).toHaveBeenCalledTimes(1);
+    const row = snapshotUpsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(row.user_id).toBe(BASE_INPUT.user_id);
+    expect(row.relation_id).toBe(BASE_INPUT.relation_id);
+    expect(row.mode).toBe(BASE_INPUT.mode);
+    expect(row.compat_score).toBe(MOCK_SCORE.score);
+    expect(row.scoring_version).toBe('1');
+    expect(row.prompt_version).toBe(MOCK_PROMPT.version);
+    expect(typeof row.target_date).toBe('string');
+    expect(row.target_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('cache hit → hapcard_score_snapshots upsert 0회', async () => {
+    const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
+    const { client } = makeMockUserClient({ cachedRow: existingRow });
+    const { client: svcClient, snapshotUpsert } = makeMockServiceClientWithSnapshot();
+
+    await buildHapcard(BASE_INPUT, makeDeps(client, svcClient));
+
+    expect(snapshotUpsert).not.toHaveBeenCalled();
   });
 });
