@@ -39,6 +39,26 @@ export interface ScoreBreakdown {
   mode_adjustment: number;
 }
 
+export const ScoreBreakdownSchema = z.object({
+  hap_chung_hyung_hae: z.number(),
+  sipsin: z.number(),
+  ohaeng: z.number(),
+  yunse_adjustment: z.number(),
+  mode_adjustment: z.number(),
+});
+
+// DB row 런타임 검증 — score_breakdown shape 핵심 확인, 나머지는 passthrough
+export const HapcardDbRowSchema = z
+  .object({
+    hapcard_id: z.string(),
+    user_id: z.string(),
+    relation_id: z.string(),
+    mode: ModeSchema,
+    compat_score: z.number(),
+    score_breakdown: ScoreBreakdownSchema,
+  })
+  .passthrough();
+
 // 합카드 결과 — db_schema.md §5 hapcards 테이블 1:1 매핑
 // ADR-035: compat_score는 결정형 (LLM 점수 개입 금지). 본 인터페이스의 score 필드는 fortune-core 출력만 저장.
 export interface HapcardResult {
