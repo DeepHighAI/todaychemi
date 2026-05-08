@@ -10,6 +10,7 @@ import {
   type BuildReplayDeps,
 } from '@/lib/replay/builder';
 import {
+  HapcardDbRowSchema,
   ReplayRequestSchema,
   type ReplayRequest,
   type ReplayErrorCode,
@@ -62,7 +63,12 @@ export async function POST(
   if (!hapcardRes.data) {
     return errorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
   }
-  const hapcard = hapcardRes.data as HapcardResult;
+  const parseResult = HapcardDbRowSchema.safeParse(hapcardRes.data);
+  if (!parseResult.success) {
+    console.error('hapcard_db_row_invalid', { id, issues: parseResult.error.issues });
+    return errorResponse('INTERNAL_ERROR', 'hapcard data shape invalid', 500);
+  }
+  const hapcard = { ...hapcardRes.data, ...parseResult.data } as HapcardResult;
 
   // 4. idempotency 체크 — 오늘 이미 replay 존재 시 토큰 차감 없이 기존 반환
   const jinjin_date = todayKST();

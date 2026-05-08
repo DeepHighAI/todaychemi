@@ -56,6 +56,7 @@ const HAPCARD_RESULT: HapcardResult = {
     hap_chung_hyung_hae: 70,
     sipsin: 75,
     ohaeng: 68,
+    yunse_adjustment: 0,
     mode_adjustment: 5,
   },
   content: {

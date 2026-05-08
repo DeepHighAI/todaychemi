@@ -53,7 +53,7 @@ export const mockHapcardResult: HapcardResult = {
   relation_id: 'r1',
   mode: '친구합',
   compat_score: 73,
-  score_breakdown: { hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, mode_adjustment: 13 },
+  score_breakdown: { hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, yunse_adjustment: 0, mode_adjustment: 13 },
   content: {
     main_text: '두 사람의 합은 강합니다.',
     cause_factors: [],
