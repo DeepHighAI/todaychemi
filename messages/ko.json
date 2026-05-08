@@ -146,7 +146,10 @@
     "empty": "아직 등록된 인연이 없어요. 첫 인연을 추가해보세요.",
     "addRelation": "인연 추가",
     "loading": "불러오는 중...",
-    "errorGeneric": "인연을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+    "errorGeneric": "인연을 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+    "badge": {
+      "change_significant": "변화 큰 {delta}"
+    }
   },
   "hapcard": {
     "loading": "합카드를 불러오는 중...",
