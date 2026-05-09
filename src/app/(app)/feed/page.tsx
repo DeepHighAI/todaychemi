@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChangeBadge } from '@/components/feed/ChangeBadge';
 import type { FeedItem } from '@/types/relation';
+
+type FilterMode = 'all' | '썸합' | '일합' | '친구합';
 
 export async function fetchFeed(): Promise<FeedItem[]> {
   const res = await fetch('/api/feed');
@@ -20,10 +23,24 @@ export default function FeedPage() {
   const t = useTranslations('feed');
   const tMode = useTranslations('relations.new.mode');
 
+  const [activeFilter, setActiveFilter] = useState<FilterMode>('all');
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['feed'],
     queryFn: fetchFeed,
   });
+
+  const filters: { value: FilterMode; label: string }[] = [
+    { value: 'all', label: t('filter.all') },
+    { value: '썸합', label: tMode('썸합') },
+    { value: '일합', label: tMode('일합') },
+    { value: '친구합', label: tMode('친구합') },
+  ];
+
+  const displayedItems =
+    data && activeFilter !== 'all'
+      ? data.filter((item) => item.mode === activeFilter)
+      : (data ?? []);
 
   return (
     <main className="bg-background min-h-screen pb-32 px-4">
@@ -36,6 +53,24 @@ export default function FeedPage() {
         </Link>
       </header>
 
+      {/* Seg 필터 바 — UIDesign screens-feed.jsx:10-13 */}
+      <div className="flex bg-[var(--surface-2)] rounded-[var(--r-md)] p-[3px] gap-[2px] mb-4">
+        {filters.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setActiveFilter(f.value)}
+            className={`flex-1 text-center py-[9px] text-[13px] font-semibold rounded-[12px] transition ${
+              activeFilter === f.value
+                ? 'bg-[var(--surface)] text-[var(--on-surface)] shadow-[var(--e-1)]'
+                : 'text-[var(--on-surface-var)]'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading && (
         <p className="text-sm text-muted-foreground text-center py-8">{t('loading')}</p>
       )}
@@ -44,13 +79,13 @@ export default function FeedPage() {
         <p className="text-sm text-destructive text-center py-8">{t('errorGeneric')}</p>
       )}
 
-      {!isLoading && !isError && data && data.length === 0 && (
+      {!isLoading && !isError && data && displayedItems.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-12">{t('empty')}</p>
       )}
 
-      {!isLoading && !isError && data && data.length > 0 && (
+      {!isLoading && !isError && data && displayedItems.length > 0 && (
         <ul className="grid grid-cols-2 gap-3">
-          {data.map((item) => (
+          {displayedItems.map((item) => (
             <li key={item.relation_id}>
               <Link
                 href={`/hapcard/${item.relation_id}?mode=${encodeURIComponent(item.mode)}`}
