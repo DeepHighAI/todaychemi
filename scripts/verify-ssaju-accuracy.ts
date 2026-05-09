@@ -25,7 +25,7 @@ interface ReferenceSample {
     hour_pillar: string;
     day_master_stem: string;
     five_elements_counts: Record<string, number>;
-    source: 'kasi_derived' | 'ssaju_seed_pending_kasi_validation';
+    source: 'kasi_derived' | 'ssaju_seed_pending_kasi_validation' | 'kasi_authoritative';
   };
 }
 

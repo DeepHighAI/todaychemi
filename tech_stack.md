@@ -33,7 +33,7 @@
 | **DB·Auth·Storage** | Supabase Free (Postgres + Auth + RLS + Storage) | DB 500MB / 파일 1GB / MAU 50K 무료 |
 | **캐시** | Supabase table cache + Next.js fetch cache | Phase 1 충분, Phase 3 진입 시 Edge 캐시 재검토 |
 | **Realtime** | 미사용 | 우리 서비스 실시간성 핵심 X |
-| **만세력** | ssaju + manseryeok-js + KASI precompute | 다중 검증 (ADR-003). KASI 데이터를 Phase 0 G0에서 사전 계산 → Storage 정적 자산 |
+| **만세력** | ssaju + manseryeok-js + KASI precompute | 다중 검증 (ADR-003). ssaju = 年/月/時柱(절기·입춘 기준) 프로덕션 source + day_pillar cross-validator. KASI = day_pillar 진본 (year/month/hour: 절기 시각 API 부재 또는 야자시 학파 차이로 cross-validation 불가, 2026-05-03 §1.1 결정). 야자시 처리 = 조자시 통합 학파 (ssaju 동일 기준). manseryeok-js = 보조 cross-validator. |
 | **사주 엔진** | 자체 TypeScript fortune-core (monorepo 패키지) | ADR-035 `compatibility_scoring_spec.md` 구현. 결정형 점수 보장 |
 | **LLM 핵심** | **OpenAI API** (4단 분리) | 본 문서 §3 |
 | **LLM Fallback** | Anthropic Claude (Sonnet 4.6 / Haiku 4.5) | §11.4 다운그레이드 경로 |

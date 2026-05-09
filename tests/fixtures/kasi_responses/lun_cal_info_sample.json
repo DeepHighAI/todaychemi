@@ -1,0 +1,31 @@
+{
+  "response": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL SERVICE."
+    },
+    "body": {
+      "items": {
+        "item": {
+          "solYear": 1990,
+          "solMonth": 3,
+          "solDay": 15,
+          "solWeek": 4,
+          "solJd": 2447965,
+          "lunYear": 1990,
+          "lunMonth": 2,
+          "lunDay": 19,
+          "lunLeapmonth": "false",
+          "lunNday": 29,
+          "lunSecha": "庚午",
+          "lunWolgeon": "庚子",
+          "lunIljin": "壬子",
+          "lunYibgi": "清明"
+        }
+      },
+      "numOfRows": 10,
+      "pageNo": 1,
+      "totalCount": 1
+    }
+  }
+}
