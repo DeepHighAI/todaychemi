@@ -25,7 +25,7 @@ describe('FeedPage', () => {
   it('renders feed title', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
     await renderFeedPage();
-    expect(await screen.findByText('내 인연')).toBeInTheDocument();
+    expect(await screen.findByText('합피드')).toBeInTheDocument();
   });
 
   it('shows empty state when no relations exist', async () => {
