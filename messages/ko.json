@@ -223,6 +223,7 @@
   "home": {
     "greeting": "오늘의 합",
     "add_relation": "인연 등록",
+    "add_relation_sub": "썸합 · 일합 · 친구합 · 가족합",
     "recent_picks": "오늘 흐름이 좋은 인연",
     "avoid_phrase_label": "오늘 피할 말",
     "favorable_action_label": "오늘 좋은 행동",

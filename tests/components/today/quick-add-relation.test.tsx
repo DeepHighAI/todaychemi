@@ -12,9 +12,8 @@ describe('QuickAddRelation', () => {
     expect(link).toHaveAttribute('href', '/relations/new');
   });
 
-  it('링크 내부에 svg 아이콘이 있다', () => {
+  it('링크 내부에 sub 설명 텍스트가 있다', () => {
     renderWithProviders(<QuickAddRelation />);
-    const link = screen.getByRole('link', { name: /인연 등록/ });
-    expect(link.querySelector('svg')).toBeTruthy();
+    expect(screen.getByText(/썸합/)).toBeInTheDocument();
   });
 });
