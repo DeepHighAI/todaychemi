@@ -52,25 +52,42 @@ export async function POST(
   }
   const userChart = userChartRes.data as unknown as ChartRow;
 
-  // 4. buildWhatif 호출
+  // 4. buildWhatif 호출 준비
   const input: BuildWhatifInput = {
     user_id: userId,
     type,
     chart: userChart.chart_core,
     chart_hash: userChart.chart_hash,
   };
+  const serviceClient = createServiceRoleClient();
   const deps: BuildWhatifDeps = {
     supabaseUserClient,
-    supabaseServiceClient: createServiceRoleClient(),
+    supabaseServiceClient: serviceClient,
     openaiClient: createOpenAiClient() as unknown as BuildWhatifDeps['openaiClient'],
     embeddingsClient: createEmbeddingsClient(),
     ragQueryText: buildWhatifRagQueryText,
   };
 
+  // 5. 토큰 차감 (-4p, §1.1 결정 5)
+  const { error: deductErr } = await serviceClient.rpc('deduct_tokens', {
+    uid: userId,
+    delta: -4,
+    reason: 'whatif_use',
+    ref: type,
+  });
+  if (deductErr) {
+    return errorResponse('INSUFFICIENT_TOKENS', (deductErr as { message: string }).message, 402);
+  }
+
   try {
-    const { result } = await buildWhatif(input, deps);
+    const { result, fromCache } = await buildWhatif(input, deps);
+    if (fromCache) {
+      // 캐시 적중: 즉시 환불 (§1.1 결정 6 — 캐시 적중 = 무료)
+      await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
+    }
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
+    await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
     const message = err instanceof Error ? err.message : 'unknown error';
     if (message.startsWith('GROUNDING_FAILED')) {
       return errorResponse('GROUNDING_FAILED', message, 422);

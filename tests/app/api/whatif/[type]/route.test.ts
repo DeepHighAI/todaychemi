@@ -73,7 +73,8 @@ function makeRequest() {
   }) as unknown as Parameters<typeof POST>[0];
 }
 
-const SERVICE_CLIENT = { from: vi.fn() };
+const rpcFn = vi.fn();
+const SERVICE_CLIENT = { from: vi.fn(), rpc: rpcFn };
 const OPENAI_CLIENT = { chat: { completions: { create: vi.fn() } } };
 const EMBEDDINGS_CLIENT = { create: vi.fn() };
 
@@ -84,6 +85,7 @@ beforeEach(() => {
   vi.mocked(createEmbeddingsClient).mockReturnValue(EMBEDDINGS_CLIENT as never);
   vi.mocked(buildWhatifRagQueryText).mockReturnValue('work 일주 병인 일간 화');
   vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: false } as never);
+  rpcFn.mockResolvedValue({ error: null });
 });
 
 afterEach(() => {
@@ -213,5 +215,80 @@ describe('POST /api/whatif/[type]', () => {
     expect(deps.openaiClient).toBe(OPENAI_CLIENT);
     expect(deps.embeddingsClient).toBe(EMBEDDINGS_CLIENT);
     expect(deps.ragQueryText).toBe(buildWhatifRagQueryText);
+  });
+});
+
+describe('토큰 deduct/refund', () => {
+  function makeAuthedForToken() {
+    const supabase = makeAuthedClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    return supabase;
+  }
+
+  it('잔액 부족 → 402 INSUFFICIENT_TOKENS, buildWhatif 미호출', async () => {
+    rpcFn.mockResolvedValueOnce({ error: { message: 'insufficient balance', code: 'P0001' } });
+    makeAuthedForToken();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error.code).toBe('INSUFFICIENT_TOKENS');
+    expect(buildWhatif).not.toHaveBeenCalled();
+  });
+
+  it('정상 빌드(fromCache:false) → deduct_tokens({ delta:-4, reason:"whatif_use", ref:"work" }), 200', async () => {
+    makeAuthedForToken();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(200);
+    expect(rpcFn).toHaveBeenCalledWith(
+      'deduct_tokens',
+      expect.objectContaining({ delta: -4, reason: 'whatif_use', ref: 'work' }),
+    );
+  });
+
+  it('GROUNDING_FAILED throw → 422 + refund_tokens({ delta:4, reason:"whatif_refund" })', async () => {
+    vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
+    makeAuthedForToken();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(422);
+    expect(rpcFn).toHaveBeenCalledWith(
+      'refund_tokens',
+      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
+    );
+  });
+
+  it('generic throw → 500 + refund_tokens 1회', async () => {
+    vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
+    makeAuthedForToken();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(500);
+    expect(rpcFn).toHaveBeenCalledWith(
+      'refund_tokens',
+      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
+    );
+  });
+
+  it('캐시 적중(fromCache:true) → deduct 후 즉시 환불, 200 반환', async () => {
+    vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
+    makeAuthedForToken();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(200);
+    expect(rpcFn).toHaveBeenCalledWith(
+      'deduct_tokens',
+      expect.objectContaining({ delta: -4, reason: 'whatif_use' }),
+    );
+    expect(rpcFn).toHaveBeenCalledWith(
+      'refund_tokens',
+      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
+    );
   });
 });

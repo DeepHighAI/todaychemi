@@ -266,6 +266,53 @@
       "cta": "시작하기"
     }
   },
+  "whatif": {
+    "sheet": {
+      "title": "이런건 어때 ✨",
+      "trigger": "이런건 어때"
+    },
+    "card": {
+      "work": {
+        "title": "일할 때 나",
+        "cta": "알아보기"
+      },
+      "love": {
+        "title": "연애할 때 나",
+        "cta": "알아보기"
+      },
+      "conflict": {
+        "title": "싸울 때 나",
+        "cta": "알아보기"
+      },
+      "leadership": {
+        "title": "리더합",
+        "cta": "알아보기"
+      },
+      "money": {
+        "title": "돈쓰는 나",
+        "cta": "알아보기"
+      },
+      "first_meet": {
+        "title": "첫만남 플레이",
+        "cta": "알아보기"
+      }
+    },
+    "result": {
+      "loading": "사주를 읽고 있어요...",
+      "error": "결과를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+      "section": {
+        "keywords": "키워드",
+        "do_first": "일단 이거 해봐",
+        "first_meet_tips": "첫 만남 TIP"
+      }
+    },
+    "error": {
+      "invalid_type": "올바르지 않은 진단 유형이에요.",
+      "chart_missing": "사주 정보를 먼저 등록해주세요.",
+      "insufficient_tokens": "토큰이 부족해요. 충전 후 다시 시도해주세요.",
+      "llm_failed": "분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."
+    }
+  },
   "errors": {
     "generic": "오류가 발생했어요. 잠시 후 다시 시도해주세요.",
     "network": "네트워크 오류가 발생했어요. 연결을 확인해주세요.",
