@@ -80,7 +80,14 @@ export default function FeedPage() {
       )}
 
       {!isLoading && !isError && data && displayedItems.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-12">{t('empty')}</p>
+        <div className="rounded-2xl bg-card p-6 text-center mt-8">
+          <p className="text-sm text-muted-foreground mb-4">{t('empty')}</p>
+          <Link href="/relations/new">
+            <Button type="button" variant="default" className="h-10 px-4">
+              {t('emptyCta')}
+            </Button>
+          </Link>
+        </div>
       )}
 
       {!isLoading && !isError && data && displayedItems.length > 0 && (
