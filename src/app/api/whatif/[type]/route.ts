@@ -68,7 +68,7 @@ export async function POST(
   };
 
   try {
-    const result = await buildWhatif(input, deps);
+    const { result } = await buildWhatif(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';

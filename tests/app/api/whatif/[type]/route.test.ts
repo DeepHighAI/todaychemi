@@ -83,7 +83,7 @@ beforeEach(() => {
   vi.mocked(createOpenAiClient).mockReturnValue(OPENAI_CLIENT as never);
   vi.mocked(createEmbeddingsClient).mockReturnValue(EMBEDDINGS_CLIENT as never);
   vi.mocked(buildWhatifRagQueryText).mockReturnValue('work 일주 병인 일간 화');
-  vi.mocked(buildWhatif).mockResolvedValue(WHATIF_RESULT);
+  vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: false } as never);
 });
 
 afterEach(() => {

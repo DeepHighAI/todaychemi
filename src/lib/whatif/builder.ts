@@ -9,6 +9,11 @@ import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 
+export interface BuildWhatifResult {
+  result: WhatifResult;
+  fromCache: boolean;
+}
+
 export interface BuildWhatifInput {
   user_id: string;
   type: DiagnosticType;
@@ -56,7 +61,7 @@ function mapDbRow(data: unknown): WhatifResult {
 export async function buildWhatif(
   input: BuildWhatifInput,
   deps: BuildWhatifDeps,
-): Promise<WhatifResult> {
+): Promise<BuildWhatifResult> {
   // 1. 프롬프트 로드
   const prompt = loadWhatifPrompt(input.type);
 
@@ -74,7 +79,7 @@ export async function buildWhatif(
     .eq('cache_key', cacheKey)
     .maybeSingle();
   if (cacheRes.data) {
-    return mapDbRow(cacheRes.data);
+    return { result: mapDbRow(cacheRes.data), fromCache: true };
   }
 
   // 4. RAG retrieval
@@ -125,7 +130,13 @@ export async function buildWhatif(
   const insertRow = {
     user_id: input.user_id,
     type: input.type,
-    content: llmResult.output as WhatifContent,
+    content: {
+      body: llmResult.output.body,
+      keywords: llmResult.output.keywords,
+      do_first: llmResult.output.do_first,
+      ...(llmResult.output.first_meet_tips && { first_meet_tips: llmResult.output.first_meet_tips }),
+      ...(llmResult.output.classic_citation?.length && { classic_citation: llmResult.output.classic_citation }),
+    } satisfies WhatifContent,
     prompt_version: prompt.version,
     llm_model: 'gpt-5o',
     cache_key: cacheKey,
@@ -144,11 +155,11 @@ export async function buildWhatif(
         .select('*')
         .eq('cache_key', cacheKey)
         .maybeSingle();
-      if (retry.data) return mapDbRow(retry.data);
+      if (retry.data) return { result: mapDbRow(retry.data), fromCache: false };
       throw new Error('WHATIF_INSERT_FAILED: race recovery missed');
     }
     throw new Error(`WHATIF_INSERT_FAILED: ${insertRes.error.message}`);
   }
 
-  return mapDbRow(insertRes.data);
+  return { result: mapDbRow(insertRes.data), fromCache: false };
 }
