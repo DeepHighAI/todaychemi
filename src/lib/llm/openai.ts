@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ZodType } from 'zod';
 import { ZodError } from 'zod';
 import { HapcardLlmOutputSchema, type HapcardLlmOutput } from '@/lib/llm/output-schema';
-import type { LlmPayload } from '@/lib/llm/payload';
 import {
   loadBannedPhrases,
   findBannedPhrase,
@@ -10,9 +10,9 @@ import {
 } from '@/lib/llm/banned-phrases';
 import { retryOnce } from '@/lib/llm/retry';
 
-// CLAUDE.md §5 — PII 화이트리스트. 이 키 외 발견 시 즉시 중단.
+// CLAUDE.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
 // time_context: replay 전용 일진 날짜 (공개 정보, PII 아님)
-const PAYLOAD_WHITELIST = new Set([
+export const HAPCARD_PAYLOAD_WHITELIST = new Set([
   'self_chart_core',
   'relation_chart_core',
   'mode',
@@ -40,15 +40,19 @@ export interface CallOpenAiDeps {
   bannedPhraseCatalog?: BannedPhraseCategory[];
 }
 
-export interface CallOpenAiInput {
+export interface CallOpenAiInput<TOutput = HapcardLlmOutput> {
   systemPrompt: string;
-  userPayload: LlmPayload;
+  userPayload: object;
+  // 미제공 시 hapcard 기본값 사용
+  schema?: ZodType<TOutput>;
+  payloadWhitelist?: ReadonlySet<string>;
+  model?: string;
 }
 
-export interface CallOpenAiResult {
-  output: HapcardLlmOutput;
+export interface CallOpenAiResult<TOutput = HapcardLlmOutput> {
+  output: TOutput;
   usage: { token_in: number; token_out: number; total_usd: number };
-  model: 'gpt-5o';
+  model: string;
 }
 
 // 재시도 가능 여부 판별
@@ -64,13 +68,17 @@ function isRetryableError(err: unknown): boolean {
   return true;
 }
 
-export async function callOpenAi(
-  input: CallOpenAiInput,
+export async function callOpenAi<TOutput = HapcardLlmOutput>(
+  input: CallOpenAiInput<TOutput>,
   deps: CallOpenAiDeps,
-): Promise<CallOpenAiResult> {
+): Promise<CallOpenAiResult<TOutput>> {
+  const schema = (input.schema ?? HapcardLlmOutputSchema) as ZodType<TOutput>;
+  const whitelist = input.payloadWhitelist ?? HAPCARD_PAYLOAD_WHITELIST;
+  const model = input.model ?? 'gpt-5o';
+
   // PII 가드 (CLAUDE.md §5)
-  for (const key of Object.keys(input.userPayload)) {
-    if (!PAYLOAD_WHITELIST.has(key)) {
+  for (const key of Object.keys(input.userPayload as Record<string, unknown>)) {
+    if (!whitelist.has(key)) {
       throw new Error(`PII_GUARD_VIOLATION: ${key}`);
     }
   }
@@ -80,9 +88,9 @@ export async function callOpenAi(
   let tokenIn = 0;
   let tokenOut = 0;
 
-  const parseAndValidate = async (): Promise<HapcardLlmOutput> => {
+  const parseAndValidate = async (): Promise<TOutput> => {
     const response = await deps.openaiClient.chat.completions.create({
-      model: 'gpt-5o',
+      model,
       messages: [
         { role: 'system', content: input.systemPrompt },
         { role: 'user', content: JSON.stringify(input.userPayload) },
@@ -98,26 +106,19 @@ export async function callOpenAi(
     // JSON parse 실패 → 재시도 가능
     const raw = JSON.parse(text);
     // Zod strict 위반 → ZodError → 재시도 불가
-    const validated = HapcardLlmOutputSchema.parse(raw);
+    const validated = schema.parse(raw) as TOutput;
 
-    // banned-phrase + 점수 누설 검사
-    const joined = [
-      validated.main_text,
-      ...validated.cause_factors.map((f) => `${f.name} ${f.effect}`),
-      ...validated.actions,
-      ...validated.why_cards.map((c) => `${c.title} ${c.reason}`),
-    ].join(' ');
-
-    const banned = findBannedPhrase(joined, catalog);
+    // banned-phrase + 점수 누설: raw text 검사 (schema 독립적)
+    const banned = findBannedPhrase(text, catalog);
     if (banned.found) throw new Error(`BANNED_PHRASE: ${banned.phrase}`);
 
-    const scoreLeak = findScoreLeak(joined);
+    const scoreLeak = findScoreLeak(text);
     if (scoreLeak.found) throw new Error(`BANNED_PHRASE: score_leak: ${scoreLeak.phrase}`);
 
     return validated;
   };
 
-  let output: HapcardLlmOutput;
+  let output: TOutput;
   try {
     output = await retryOnce(parseAndValidate, { isRetryable: isRetryableError });
   } catch (err) {
@@ -129,9 +130,9 @@ export async function callOpenAi(
   }
 
   // 비용 추적 UPSERT — D2: total_usd=0 (토큰 단가 미확정)
-  await trackCost(deps.supabaseServiceRole, deps.now?.() ?? new Date(), tokenIn, tokenOut);
+  await trackCost(deps.supabaseServiceRole, deps.now?.() ?? new Date(), tokenIn, tokenOut, model);
 
-  return { output, usage: { token_in: tokenIn, token_out: tokenOut, total_usd: 0 }, model: 'gpt-5o' };
+  return { output, usage: { token_in: tokenIn, token_out: tokenOut, total_usd: 0 }, model };
 }
 
 async function trackCost(
@@ -139,6 +140,7 @@ async function trackCost(
   now: Date,
   tokenIn: number,
   tokenOut: number,
+  model: string,
 ): Promise<void> {
   const date = now.toISOString().slice(0, 10);
 
@@ -147,13 +149,13 @@ async function trackCost(
     .select('call_count, token_in, token_out')
     .eq('date', date)
     .eq('provider', 'openai')
-    .eq('model', 'gpt-5o')
+    .eq('model', model)
     .maybeSingle();
 
   await client.from('llm_cost_tracking').upsert({
     date,
     provider: 'openai',
-    model: 'gpt-5o',
+    model,
     total_usd: 0,
     call_count: ((existing as { call_count?: number } | null)?.call_count ?? 0) + 1,
     token_in: ((existing as { token_in?: number } | null)?.token_in ?? 0) + tokenIn,

@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { ChartCore } from '@/types/chart';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
-import type { HapcardResult, HapcardReplayResult } from '@/types/hapcard';
+import type { HapcardResult, HapcardReplayResult, LlmModel } from '@/types/hapcard';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
@@ -152,7 +152,7 @@ export async function buildReplay(
     jinjin_date: input.jinjin_date,
     content,
     prompt_version: prompt.version,
-    llm_model: llm.model,
+    llm_model: llm.model as LlmModel,
     cache_key: cacheKey,
     created_at: insertedRow.created_at,
   };

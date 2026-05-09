@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { z } from 'zod';
 import { callOpenAi } from '@/lib/llm/openai';
 import type { LlmPayload } from '@/lib/llm/payload';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
@@ -366,6 +367,32 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
       ),
     ).rejects.toThrow('401');
 
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('커스텀 schema/payloadWhitelist/model — whatif 전용 페이로드 파싱 성공', async () => {
+    const WhatifSchema = z.object({ body: z.string() }).strict();
+    const whatifWhitelist = new Set(['self_chart_core', 'type']);
+    const validWhatifJson = JSON.stringify({ body: '갑목일간 진단 결과입니다.' });
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validWhatifJson));
+    const { client: supabase } = makeMockServiceClient();
+
+    const result = await callOpenAi(
+      {
+        systemPrompt: 'whatif 시스템',
+        userPayload: { self_chart_core: {}, type: 'work' },
+        schema: WhatifSchema,
+        payloadWhitelist: whatifWhitelist,
+        model: 'gpt-5o',
+      },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect((result.output as { body: string }).body).toBe('갑목일간 진단 결과입니다.');
     expect(create).toHaveBeenCalledTimes(1);
   });
 
