@@ -105,7 +105,7 @@ export default function RelationsNewPage() {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={20}
-            className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" style={{borderRadius:'var(--r-sm)'}}
           />
         </div>
 
@@ -172,7 +172,7 @@ export default function RelationsNewPage() {
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" style={{borderRadius:'var(--r-sm)'}}
           />
         </div>
 
@@ -243,7 +243,7 @@ export default function RelationsNewPage() {
               type="time"
               value={birthTime}
               onChange={(e) => setBirthTime(e.target.value)}
-              className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" style={{borderRadius:'var(--r-sm)'}}
             />
           </div>
         ) : (
