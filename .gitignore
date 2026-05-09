@@ -71,3 +71,6 @@ twa-manifest.json
 
 # Manual QA smoke screenshots
 smoke-*.png
+
+# UIDesign reference prototype (local-only, read-only per §1.6)
+UIDesign/
