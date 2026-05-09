@@ -303,7 +303,8 @@
       "section": {
         "keywords": "키워드",
         "do_first": "일단 이거 해봐",
-        "first_meet_tips": "첫 만남 TIP"
+        "first_meet_tips": "첫 만남 TIP",
+        "classic_citation": "고전 인용"
       }
     },
     "error": {
