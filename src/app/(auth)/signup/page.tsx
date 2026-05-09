@@ -54,7 +54,7 @@ export default function SignupPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm bg-card p-8 shadow" style={{borderRadius:'var(--r-xl)'}}>
+      <div className="w-full max-w-sm rounded-[var(--r-xl)] bg-card p-8 shadow">
 
         <h1 className="mb-6 text-center text-xl font-semibold text-foreground">{t('title')}</h1>
 
@@ -69,7 +69,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" style={{borderRadius:'var(--r-sm)'}}
+              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               autoComplete="email"
             />
             {emailError && <p className="text-xs text-destructive">{emailError}</p>}
@@ -85,7 +85,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" style={{borderRadius:'var(--r-sm)'}}
+              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               autoComplete="new-password"
             />
             <p className="text-xs text-muted-foreground">{t('passwordHint')}</p>

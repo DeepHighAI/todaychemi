@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -30,17 +30,23 @@ export default function FeedPage() {
     queryFn: fetchFeed,
   });
 
-  const filters: { value: FilterMode; label: string }[] = [
-    { value: 'all', label: t('filter.all') },
-    { value: '썸합', label: tMode('썸합') },
-    { value: '일합', label: tMode('일합') },
-    { value: '친구합', label: tMode('친구합') },
-  ];
+  const filters = useMemo<{ value: FilterMode; label: string }[]>(
+    () => [
+      { value: 'all', label: t('filter.all') },
+      { value: '썸합', label: tMode('썸합') },
+      { value: '일합', label: tMode('일합') },
+      { value: '친구합', label: tMode('친구합') },
+    ],
+    [t, tMode],
+  );
 
-  const displayedItems =
-    data && activeFilter !== 'all'
-      ? data.filter((item) => item.mode === activeFilter)
-      : (data ?? []);
+  const displayedItems = useMemo(
+    () =>
+      data && activeFilter !== 'all'
+        ? data.filter((item) => item.mode === activeFilter)
+        : (data ?? []),
+    [data, activeFilter],
+  );
 
   return (
     <main className="bg-background min-h-screen pb-32 px-4">
@@ -54,13 +60,15 @@ export default function FeedPage() {
       </header>
 
       {/* Seg 필터 바 — UIDesign screens-feed.jsx:10-13 */}
-      <div className="flex bg-[var(--surface-2)] rounded-[var(--r-md)] p-[3px] gap-[2px] mb-4">
+      <div role="radiogroup" className="flex bg-[var(--surface-2)] rounded-[var(--r-md)] p-[3px] gap-[2px] mb-4">
         {filters.map((f) => (
           <button
             key={f.value}
             type="button"
+            role="radio"
+            aria-checked={activeFilter === f.value}
             onClick={() => setActiveFilter(f.value)}
-            className={`flex-1 text-center py-[9px] text-[13px] font-semibold rounded-[12px] transition ${
+            className={`flex-1 text-center py-[9px] text-[13px] font-semibold rounded-[12px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--p-40)] focus-visible:ring-offset-1 ${
               activeFilter === f.value
                 ? 'bg-[var(--surface)] text-[var(--on-surface)] shadow-[var(--e-1)]'
                 : 'text-[var(--on-surface-var)]'
