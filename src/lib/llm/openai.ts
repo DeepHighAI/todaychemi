@@ -8,6 +8,7 @@ import {
   findScoreLeak,
   type BannedPhraseCategory,
 } from '@/lib/llm/banned-phrases';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { retryOnce } from '@/lib/llm/retry';
 
 // CLAUDE.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
@@ -74,7 +75,7 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
 ): Promise<CallOpenAiResult<TOutput>> {
   const schema = (input.schema ?? HapcardLlmOutputSchema) as ZodType<TOutput>;
   const whitelist = input.payloadWhitelist ?? HAPCARD_PAYLOAD_WHITELIST;
-  const model = input.model ?? 'gpt-5o';
+  const model = input.model ?? DEFAULT_LLM_MODEL;
 
   // PII 가드 (CLAUDE.md §5)
   for (const key of Object.keys(input.userPayload as Record<string, unknown>)) {

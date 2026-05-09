@@ -3,6 +3,7 @@ import type { ChartCore, ChartHash } from '@/types/chart';
 import type { DiagnosticType, WhatifResult, WhatifContent } from '@/types/diagnostic';
 import { WhatifLlmOutputSchema } from '@/lib/whatif/output-schema';
 import { loadWhatifPrompt } from '@/lib/whatif/prompt-loader';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { deriveCacheKey } from '@/lib/whatif/cache-key';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
@@ -104,7 +105,7 @@ export async function buildWhatif(
     userPayload,
     schema: WhatifLlmOutputSchema,
     payloadWhitelist,
-    model: 'gpt-5o',
+    model: DEFAULT_LLM_MODEL,
   };
 
   // validateClassicCitations는 HapcardLlmOutput 타입으로 정의되어 있으나 runtime 사용 필드는 동일 — 안전한 캐스트
@@ -138,7 +139,7 @@ export async function buildWhatif(
       ...(llmResult.output.classic_citation?.length && { classic_citation: llmResult.output.classic_citation }),
     } satisfies WhatifContent,
     prompt_version: prompt.version,
-    llm_model: 'gpt-5o',
+    llm_model: DEFAULT_LLM_MODEL,
     cache_key: cacheKey,
     chart_hash: input.chart_hash,
   };

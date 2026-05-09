@@ -8,6 +8,7 @@ import { deriveCacheKey } from '@/lib/hapcard/cache-key';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
@@ -164,7 +165,7 @@ export async function buildHapcard(
       },
       content,
       prompt_version: prompt.version,
-      llm_model: 'gpt-5o',
+      llm_model: DEFAULT_LLM_MODEL,
       cache_key: cacheKey,
       user_chart_hash: input.self_chart_hash,
       relation_chart_hash: input.relation_chart_hash,
