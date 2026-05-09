@@ -53,7 +53,8 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm rounded-2xl bg-card p-8 shadow">
+      <div className="w-full max-w-sm bg-card p-8 shadow" style={{borderRadius:'var(--r-xl)'}}>
+
         <h1 className="mb-6 text-center text-xl font-semibold text-foreground">{t('title')}</h1>
 
         <form onSubmit={handleEmailSubmit} className="mb-4 flex flex-col gap-3" noValidate>
@@ -67,7 +68,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" style={{borderRadius:'var(--r-sm)'}}
               autoComplete="email"
             />
             {emailError && <p className="text-xs text-destructive">{emailError}</p>}
@@ -83,7 +84,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="w-full border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" style={{borderRadius:'var(--r-sm)'}}
               autoComplete="current-password"
             />
           </div>
