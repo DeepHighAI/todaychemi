@@ -62,3 +62,12 @@ android/
 twa-manifest.json
 *.keystore
 .gstack/
+
+# Claude Code session cache
+.claude/
+
+# Playwright MCP cache
+.playwright-mcp/
+
+# Manual QA smoke screenshots
+smoke-*.png
