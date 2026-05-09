@@ -61,7 +61,7 @@ pnpm seed:test-user
 ### 0-5. dev 서버 시작
 
 ```powershell
-pnpm dev
+
 ```
 
 브라우저에서 `http://localhost:3000` 열기. 첫 빌드는 10~20초 소요.
@@ -441,6 +441,40 @@ pnpm seed:prompts
 | F6 오늘 홈 | `/api/today` |
 | F7 /me | `/api/me/chart` |
 | F8 만약합 | `/api/whatif/[type]` |
+
+---
+
+## 부록 D: 자주 발생하는 문제
+
+### "Another next dev server is already running" (Next.js 16)
+
+**증상:** `pnpm dev` 실행 시 포트 3000이 점유되고 부팅 거절.
+
+```
+⚠ Port 3000 is in use by process <PID>, using available port 3001 instead.
+⨯ Another next dev server is already running.
+Run taskkill /PID <PID> /F to stop it.
+```
+
+**원인:** 이전 세션의 `next dev` 프로세스가 비정상 종료(터미널 창 닫기, 절전 진입 등)로 포트를 점유한 채 살아남은 orphan 프로세스. Next.js 16 신규 가드가 같은 프로젝트 디렉토리에서 두 번째 서버 시작을 거부한다.
+
+**해결:**
+
+```powershell
+# 메시지에 표시된 PID로 교체
+taskkill /PID <PID> /F
+
+# 포트 해제 확인 (출력 없으면 PASS)
+netstat -ano | Select-String ":3000.*LISTENING"
+
+# 재시도
+pnpm dev
+```
+
+**예방:**
+- `pnpm dev` 종료는 반드시 **`Ctrl+C`** 후 프롬프트 복귀 확인
+- 시스템 절전·재시작 전 dev 서버 먼저 종료
+- VS Code Integrated Terminal에서 X 버튼으로 창 닫기 시 자식 프로세스가 살아남을 수 있음
 
 ---
 
