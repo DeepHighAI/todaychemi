@@ -232,6 +232,45 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(refund).toHaveBeenCalledTimes(1);
   });
 
+  it('refund 실패 → console.error("replay_refund_failed") 호출', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    refund.mockResolvedValueOnce({ data: null, error: { message: 'rpc unavailable' } });
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(buildReplay).mockRejectedValue(new Error('boom'));
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(500);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'replay_refund_failed',
+      expect.objectContaining({
+        user_id: USER_ID,
+        hapcard_id: HAPCARD_ID,
+        phase: 'build_error',
+        original_error: 'boom',
+        refund_error: 'rpc unavailable',
+      }),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('refund 성공 → console.error("replay_refund_failed") 미호출', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(buildReplay).mockRejectedValue(new Error('crash'));
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await POST(makeRequest({}), makeParams());
+
+    expect(consoleSpy).not.toHaveBeenCalledWith('replay_refund_failed', expect.anything());
+    consoleSpy.mockRestore();
+  });
+
   it('201 → 성공 경로 — HapcardReplayResult 반환', async () => {
     const userClient = makeUserClient({});
     const { client: svcClient, deduct } = makeServiceClient();

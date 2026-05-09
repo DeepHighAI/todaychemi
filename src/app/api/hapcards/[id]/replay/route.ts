@@ -115,13 +115,22 @@ export async function POST(
     const result = await buildReplay(input, deps);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    await serviceClient.rpc('refund_tokens', {
+    const message = err instanceof Error ? err.message : 'unknown error';
+    const { error: refundErr } = await serviceClient.rpc('refund_tokens', {
       uid: userId,
       delta: 4,
       reason: 'replay_refund',
       ref: id,
     });
-    const message = err instanceof Error ? err.message : 'unknown error';
+    if (refundErr) {
+      console.error('replay_refund_failed', {
+        user_id: userId,
+        hapcard_id: id,
+        phase: 'build_error',
+        original_error: message,
+        refund_error: refundErr.message,
+      });
+    }
     return errorResponse('INTERNAL_ERROR', message, 500);
   }
 }
