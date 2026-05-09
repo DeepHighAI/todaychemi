@@ -291,4 +291,51 @@ describe('토큰 deduct/refund', () => {
       expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
     );
   });
+
+  it('캐시 적중 + 환불 RPC 실패 → console.error("whatif_refund_failed", { phase: "cache_hit", ... })', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // deduct succeeds, then refund fails
+    rpcFn.mockResolvedValueOnce({ error: null }); // deduct
+    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } }); // refund
+    vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
+    makeAuthedForToken();
+
+    await POST(makeRequest(), makeParams('love'));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'whatif_refund_failed',
+      expect.objectContaining({ phase: 'cache_hit', error: 'refund failed' }),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('빌드 실패 + 환불 RPC 실패 → console.error("whatif_refund_failed", { phase: "build_error", ... })', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    rpcFn.mockResolvedValueOnce({ error: null }); // deduct
+    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } }); // refund
+    vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
+    makeAuthedForToken();
+
+    await POST(makeRequest(), makeParams('work'));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'whatif_refund_failed',
+      expect.objectContaining({ phase: 'build_error', refund_error: 'refund failed' }),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('환불 성공 시 console.error 미호출', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
+    makeAuthedForToken();
+
+    await POST(makeRequest(), makeParams('work'));
+
+    expect(consoleSpy).not.toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
+    consoleSpy.mockRestore();
+  });
 });

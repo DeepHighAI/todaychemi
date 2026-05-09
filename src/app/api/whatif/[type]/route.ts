@@ -83,12 +83,14 @@ export async function POST(
     const { result, fromCache } = await buildWhatif(input, deps);
     if (fromCache) {
       // 캐시 적중: 즉시 환불 (§1.1 결정 6 — 캐시 적중 = 무료)
-      await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
+      const { error: refundErr } = await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
+      if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'cache_hit', error: (refundErr as { message: string }).message });
     }
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
-    await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
+    const { error: refundErr } = await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
     const message = err instanceof Error ? err.message : 'unknown error';
+    if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'build_error', original_error: message, refund_error: (refundErr as { message: string }).message });
     if (message.startsWith('GROUNDING_FAILED')) {
       return errorResponse('GROUNDING_FAILED', message, 422);
     }
