@@ -52,6 +52,10 @@ test-results/
 
 # Verification reports (regenerate locally)
 tests/fixtures/ssaju_verification_report.json
+reports/
+
+# KASI 부분 진행 (재시도용 임시 파일)
+tests/fixtures/.kasi_partial.json
 
 # TWA
 android/
