@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../../../../utils/render-with-providers';
+import { ERROR_COPY } from '@/lib/errors/error-codes';
 import { WhatifView } from '@/app/(app)/whatif/[type]/WhatifView';
 import {
   makeMockInsertedRow,
@@ -123,5 +124,35 @@ describe('WhatifView', () => {
     renderWithProviders(<WhatifView />);
     await screen.findByTestId('whatif-view');
     expect(screen.queryByTestId('whatif-classic-citation')).toBeNull();
+  });
+
+  it('GROUNDING_FAILED → ErrorCard 에 GROUNDING_FAILED 카피 노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: { code: 'GROUNDING_FAILED' } }),
+    });
+    renderWithProviders(<WhatifView />);
+    expect(await screen.findByText(ERROR_COPY['GROUNDING_FAILED'])).toBeInTheDocument();
+  });
+
+  it('INTERNAL_ERROR → ErrorCard 에 INTERNAL_ERROR 카피 노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: { code: 'INTERNAL_ERROR' } }),
+    });
+    renderWithProviders(<WhatifView />);
+    expect(await screen.findByText(ERROR_COPY['INTERNAL_ERROR'])).toBeInTheDocument();
+  });
+
+  it('알 수 없는 코드 → INTERNAL_ERROR fallback 카피 노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: { code: 'UNKNOWN_FOO' } }),
+    });
+    renderWithProviders(<WhatifView />);
+    expect(await screen.findByText(ERROR_COPY['INTERNAL_ERROR'])).toBeInTheDocument();
   });
 });

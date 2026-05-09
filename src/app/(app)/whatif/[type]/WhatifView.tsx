@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { DiagnosticType, WhatifResult } from '@/types/diagnostic';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
+import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 import { WhatifHero } from '@/components/whatif/whatif-hero';
 import { WhatifKeywords } from '@/components/whatif/whatif-keywords';
 import { WhatifDoFirst } from '@/components/whatif/whatif-do-first';
@@ -45,7 +46,8 @@ export function WhatifView() {
         </div>
       );
     }
-    return <ErrorCard code="LLM_TIMEOUT" onRetry={() => refetch()} />;
+    const safeCode = ERROR_CODES.includes(code as ErrorCode) ? (code as ErrorCode) : 'INTERNAL_ERROR';
+    return <ErrorCard code={safeCode} onRetry={() => refetch()} />;
   }
 
   if (!data) return null;
