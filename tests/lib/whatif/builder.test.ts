@@ -257,3 +257,47 @@ describe('buildWhatif', () => {
     expect(content.classic_citation).toBeUndefined();
   });
 });
+
+describe('buildWhatif — PII 가드 (CLAUDE.md §5)', () => {
+  it('callOpenAi userPayload JSON에 birth_date 없음', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    expect(JSON.stringify(callInput.userPayload)).not.toMatch(/birth_date/i);
+  });
+
+  it('callOpenAi userPayload JSON에 nickname 없음', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    expect(JSON.stringify(callInput.userPayload)).not.toMatch(/nickname/i);
+  });
+
+  it('callOpenAi userPayload JSON에 email 없음', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    expect(JSON.stringify(callInput.userPayload)).not.toMatch(/email/i);
+  });
+
+  it('callOpenAi userPayload JSON에 birth_place 없음', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    expect(JSON.stringify(callInput.userPayload)).not.toMatch(/birth_place/i);
+  });
+
+  it('payloadWhitelist = {self_chart_core, type} — PII 키 포함 안 됨', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    const wl = callInput.payloadWhitelist as Set<string>;
+    expect(wl.has('self_chart_core')).toBe(true);
+    expect(wl.has('type')).toBe(true);
+    expect(wl.has('birth_date')).toBe(false);
+    expect(wl.has('nickname')).toBe(false);
+    expect(wl.has('email')).toBe(false);
+    expect(wl.has('name')).toBe(false);
+    expect(wl.size).toBe(2);
+  });
+});
