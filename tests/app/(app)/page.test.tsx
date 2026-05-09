@@ -6,6 +6,10 @@ import { renderWithProviders } from '../../utils/render-with-providers';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
+}));
+
 const mockFetch = vi.fn();
 
 beforeEach(() => {
@@ -133,6 +137,19 @@ describe('TodayPage (composition)', () => {
     });
     await renderTodayPage();
     await waitFor(() => expect(screen.getByTestId('error-card')).toBeInTheDocument());
+  });
+
+  it('chart 있을 때 WhatifTrigger 카드 렌더', async () => {
+    setupRoutes({});
+    await renderTodayPage();
+    expect(await screen.findByRole('button', { name: '이런건 어때' })).toBeInTheDocument();
+  });
+
+  it('chart=null 이면 WhatifTrigger를 렌더하지 않는다', async () => {
+    setupRoutes({ meChart: { ok: true, body: { ok: true, chart: null } } });
+    await renderTodayPage();
+    await screen.findByText('좋은 에너지가 흐르는 날');
+    expect(screen.queryByRole('button', { name: '이런건 어때' })).toBeNull();
   });
 
   it('today 로딩 중에는 LoadingState 렌더', async () => {

@@ -7,6 +7,7 @@ import { DateLine } from '@/components/today/date-line';
 import { TodayHero } from '@/components/today/today-hero';
 import { AvoidActionCards } from '@/components/today/avoid-action-cards';
 import { QuickAddRelation } from '@/components/today/quick-add-relation';
+import { WhatifTrigger } from '@/components/today/whatif-trigger';
 import { RecentFeedRows } from '@/components/today/recent-feed-rows';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -85,6 +86,7 @@ export default function TodayPage() {
           <TodayHero card={card} />
           <AvoidActionCards card={card} />
           <QuickAddRelation />
+          {chart && <WhatifTrigger />}
           <RecentFeedRows rows={topRelations} />
         </>
       )}
