@@ -306,12 +306,6 @@
         "first_meet_tips": "첫 만남 TIP",
         "classic_citation": "고전 인용"
       }
-    },
-    "error": {
-      "invalid_type": "올바르지 않은 진단 유형이에요.",
-      "chart_missing": "사주 정보를 먼저 등록해주세요.",
-      "insufficient_tokens": "토큰이 부족해요. 충전 후 다시 시도해주세요.",
-      "llm_failed": "분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."
     }
   },
   "errors": {
