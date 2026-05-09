@@ -66,6 +66,10 @@ export default function OnboardingPage() {
   return (
     <main className="bg-background min-h-screen pb-32 px-4">
       <header className="pt-8 pb-6">
+        {/* Progress bar 1/4 — UIDesign screens-entry.jsx::ScreenBirthDate Progress */}
+        <div className="h-1 bg-[var(--surface-2)] rounded-full mb-4">
+          <div className="h-full w-1/4 bg-[var(--p-40)] rounded-full" />
+        </div>
         <p className="text-xs font-bold uppercase tracking-wide text-primary mb-2">
           {t('eyebrow')}
         </p>
