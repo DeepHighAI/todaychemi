@@ -134,7 +134,9 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **S-08 followups #1-#5 완료 ✅ (2026-05-09)** — `chore/s08-followups` → `master` fast-forward 병합. #1(`b6f7765`) DEFAULT_LLM_MODEL 통합 · #2.1(`4cd4057`) 에러 코드 카탈로그 6건 · #2.2(`6b14193`) WhatifView ErrorCard 매핑 · #3(`07a7060`) ClassicCitation 스키마 일원화(`src/lib/rag/citation-schema.ts`) · #4(`281a425`) refund_tokens 실패 로깅 · #5(`901291a`) ErrorCard CTA + INSUFFICIENT_TOKENS "충전하러 가기"→`/me`. **1192/1192 PASS**, 0 TS, 0 lint.
 - **§1.3 cleanup 2차 완료 ✅ (2026-05-09)** — (1) Replay route 환불 catch 로깅(`313a2bb`, TDD 2건) (2) `messages/ko.json` `whatif.error.*` 블록 4키 전체 제거 (3) `0009_token_ledger.sql:6` 주석 whatif_use/whatif_refund 동기화(`05fedcf`). **1194/1194 PASS**, 0 TS, 0 lint.
 - **§1.3 잔여 1건**: `INSUFFICIENT_TOKENS` CTA href `/me` → 충전 페이지 구현 시 `/payments/charge` 업데이트(`src/lib/errors/error-codes.ts:40`). 별도 PR.
-- **P0 working tree 정리 완료 ✅ (2026-05-09)** — 19개 base migration(0001~0020) + supabase/.gitignore + G0 KASI toolchain(scripts 7종·tests 11건·fixtures) + PR-A2 layout/styles tests + DB contract/RLS tests + seed-prompts 커밋. UIDesign/ → .gitignore(로컬 전용). master clone 재현 가능 상태 회복. **1194/1194 PASS**, 0 TS, 0 lint. 커밋: `2f4948d`·`dc7bede`·`99f64b5`·`a74330b`·`f186817`·`89438c0`·`10f7539`.
+- **P0 working tree 정리 완료 ✅ (2026-05-09)** — 19개 base migration(0001~0020) + supabase/.gitignore + G0 KASI toolchain(scripts 7종·tests 11건·fixtures) + PR-A2 layout/styles tests + DB contract/RLS tests + seed-prompts 커밋. UIDesign/ → .gitignore(로컬 전용). master clone 재현 가능 상태 회복. **1194/1194 PASS**, 0 TS, 0 lint. 커밋: `2f4948d`·`dc7bede`·`99f64b5`·`a74330b`·`f186817`·`89438c0`·`10f7539`. stale 브랜치 3개 삭제 완료(feature/e1·e2·s08).
+- **Yunse Y0/Y1 완료 확인 ✅ (2026-05-09, 재검증)** — `src/types/chart.ts` YunseCore(4레이어: 대운·세운·월운·일운) + `src/lib/kasi/normalize.ts:mapSsajuToYunse()` + `src/components/me/yunse-card.tsx` YunseCard(실구현, placeholder 아님) + 테스트 passing. 메모리 stale 항목 해소.
+- **P1/P2 정리 완료 ✅ (2026-05-09)** — C4 stale 브랜치 3개 삭제(feature/e1·e2·s08). C5 vitest reporter = non-issue(pnpm test 1194/1194 정상). C1 Yunse 완료 확인. 잔여: C2(D1 결제 페이지 의존) · B1(pnpm db:push 0024+0026 사용자 수동) · B2(Supabase Dashboard 수동).
 
 ---
 
