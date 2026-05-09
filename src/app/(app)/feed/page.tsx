@@ -68,7 +68,7 @@ export default function FeedPage() {
             role="radio"
             aria-checked={activeFilter === f.value}
             onClick={() => setActiveFilter(f.value)}
-            className={`flex-1 text-center py-[9px] text-[13px] font-semibold rounded-[12px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--p-40)] focus-visible:ring-offset-1 ${
+            className={`flex-1 text-center py-[10px] text-[13px] font-semibold rounded-[12px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--p-40)] focus-visible:ring-offset-1 ${
               activeFilter === f.value
                 ? 'bg-[var(--surface)] text-[var(--on-surface)] shadow-[var(--e-1)]'
                 : 'text-[var(--on-surface-var)]'
@@ -87,7 +87,7 @@ export default function FeedPage() {
         <p className="text-sm text-destructive text-center py-8">{t('errorGeneric')}</p>
       )}
 
-      {!isLoading && !isError && data && displayedItems.length === 0 && (
+      {!isLoading && !isError && data && data.length === 0 && (
         <div className="rounded-2xl bg-card p-6 text-center mt-8">
           <p className="text-sm text-muted-foreground mb-4">{t('empty')}</p>
           <Link href="/relations/new">
@@ -96,6 +96,10 @@ export default function FeedPage() {
             </Button>
           </Link>
         </div>
+      )}
+
+      {!isLoading && !isError && data && data.length > 0 && displayedItems.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">{t('emptyFilter')}</p>
       )}
 
       {!isLoading && !isError && data && displayedItems.length > 0 && (

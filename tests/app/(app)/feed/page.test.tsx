@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../../utils/render-with-providers';
 import type { FeedItem } from '@/types/relation';
 
@@ -128,5 +129,46 @@ describe('FeedPage', () => {
 
     await screen.findByText('봄달');
     expect(screen.queryByTestId('change-badge')).toBeNull();
+  });
+
+  it('필터 클릭 시 해당 모드 항목만 표시된다', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      { relation_id: 'r1', nickname: '봄달', mode: '썸합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r2', nickname: '여름새', mode: '친구합', compat_score: 60, change_score: 0, has_significant_change: false, created_at: '2026-05-04T08:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    await screen.findByText('봄달');
+    const 썸합btn = screen.getByRole('radio', { name: '썸' });
+    await user.click(썸합btn);
+
+    expect(screen.getByText('봄달')).toBeInTheDocument();
+    expect(screen.queryByText('여름새')).not.toBeInTheDocument();
+  });
+
+  it('필터 0건이면 emptyFilter 메시지 표시, 전체 빈 상태 CTA는 미노출', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    await screen.findByText('봄달');
+    const 썸합btn = screen.getByRole('radio', { name: '썸' });
+    await user.click(썸합btn);
+
+    expect(await screen.findByText('이 관계 유형의 인연이 없어요.')).toBeInTheDocument();
+    expect(screen.queryByText('첫 인연 등록하기')).not.toBeInTheDocument();
+  });
+
+  it('데이터 0건(글로벌 empty)이면 CTA 버튼 표시, emptyFilter는 미노출', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    await renderFeedPage();
+
+    expect(await screen.findByRole('button', { name: '첫 인연 등록하기' })).toBeInTheDocument();
+    expect(screen.queryByText('이 관계 유형의 인연이 없어요.')).not.toBeInTheDocument();
   });
 });
