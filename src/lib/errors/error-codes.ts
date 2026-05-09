@@ -7,6 +7,12 @@ export const ERROR_CODES = [
   'USER_QUOTA_EXCEEDED',
   'IP_RATE_LIMIT',
   'NETWORK_OFFLINE',
+  'INSUFFICIENT_TOKENS',
+  'GROUNDING_FAILED',
+  'INTERNAL_ERROR',
+  'HAPCARD_NOT_FOUND',
+  'USER_CHART_NOT_FOUND',
+  'REPLAY_DURING_OUTAGE',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -21,4 +27,10 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   USER_QUOTA_EXCEEDED: '오늘의 질문 한도를 다 쓰셨어요. 내일 자정에 초기화됩니다.',
   IP_RATE_LIMIT: '너무 자주 시도하고 있어요. 1분 후 다시 해주세요.',
   NETWORK_OFFLINE: '인터넷 연결이 끊어졌어요. 마지막 결과는 확인할 수 있어요.',
+  INSUFFICIENT_TOKENS: '포인트가 부족해요. 충전 후 다시 시도해주세요.',
+  GROUNDING_FAILED: '고전 문헌 검증에 실패했어요. 잠시 후 다시 시도해주세요.',
+  INTERNAL_ERROR: '잠시 문제가 생겼어요. 다시 시도해주세요.',
+  HAPCARD_NOT_FOUND: '합카드를 찾을 수 없어요.',
+  USER_CHART_NOT_FOUND: '본명식이 없어요. 먼저 본명식을 등록해주세요.',
+  REPLAY_DURING_OUTAGE: 'AI 서비스 점검 중이에요. 잠시 후 다시 시도해주세요.',
 };
