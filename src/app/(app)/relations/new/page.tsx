@@ -109,23 +109,25 @@ export default function RelationsNewPage() {
           />
         </div>
 
-        {/* 관계 모드 (6분기) */}
+        {/* 관계 모드 (6분기) — UIDesign screens-relation.jsx::ScreenName Chip 6개 */}
         <div className="mb-4">
           <p className="text-xs text-muted-foreground mb-1">{t('mode.label')}</p>
           <div className="flex flex-wrap gap-2" role="radiogroup">
             {MODES.map(({ value, key }) => (
-              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="mode"
-                  value={value}
-                  checked={mode === value}
-                  onChange={() => setMode(value)}
-                  aria-label={t(`mode.${key}`)}
-                  className="accent-primary"
-                />
-                <span className="text-sm text-foreground">{t(`mode.${key}`)}</span>
-              </label>
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={mode === value}
+                onClick={() => setMode(value)}
+                className={`px-3 py-2 rounded-[var(--r-pill)] border text-sm font-semibold transition ${
+                  mode === value
+                    ? 'border-[var(--p-40)] bg-[var(--p-95)] text-[var(--p-30)]'
+                    : 'border-border bg-[var(--surface-1)] text-foreground'
+                }`}
+              >
+                {t(`mode.${key}`)}
+              </button>
             ))}
           </div>
         </div>
