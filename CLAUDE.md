@@ -81,7 +81,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-05-06 기준)
+## 2. 프로젝트 상태 (2026-05-09 기준)
 
 - **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
 - **PR-1 완료** — Next.js 16.2.4 스캐폴드 생성됨. `pnpm dev` 정상 동작.
@@ -130,6 +130,10 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **E1+E2 완료 ✅ (2026-05-07)** — UI 4토큰 소프트 변환(합→끌림/형→긴장/충→부딪힘/해→소모) + LLM v0.3 prompts + migration 0024. **1033/1033 PASS**, 0 TS, 0 lint. branch: `feature/e1-ui-term-conversion` (Cycles 1-12) + `feature/e2-llm-prompts-v0.3` (Cycles 13-15). §사용자 수동 절차: `pnpm db:push`(0024) → `pnpm seed:prompts` → v0.3 active 확인.
 - **Y4 완료 ✅ (2026-05-09)** — ADR-033/036 합피드 자동 정렬 + 흐름 변화 큼 배지 전체 완료 (Cycles 1-14). hapcard_score_snapshots 테이블 + computeChangeScore + /api/feed(정렬) + FeedPage 전환 + ChangeBadge + i18n(feed.badge.change_significant). **1068/1068 PASS**, 0 TS, 0 lint. 커밋: `dbb7939`(Phase 1+2) · `c98f764`(feed route) · `b62ea17`(feed page+badge) · `bd50a6d`(i18n). §사용자 수동 절차: `pnpm db:push`(0025 migration 이미 dbb7939 시점 적용 완료). branch: `feature/y4-change-score-feed-sort`.
 - **§1.3 cleanup 완료 ✅ (2026-05-09)** — `yunse_adjustment` fixture 3건 + replay route Zod parse. 0 TS errors 달성. 커밋: `287ec28`. ScoreBreakdownSchema + HapcardDbRowSchema 추가 (`src/types/hapcard.ts`). §1.3 잔여: vitest default-reporter 환경 이슈(별도 세션). 기타 §1.3 baseline 4건 → ✅ 완료.
+- **S-08 만약합(Whatif) 기능 전체 구현 완료 ✅ (2026-05-09)** — 6모드 백엔드+UI 전체 완성. 주요 산출물: `src/types/diagnostic.ts`(6모드 타입) · `src/lib/whatif/`(builder/cache-key/output-schema/prompt-loader/query-text) · `/api/whatif/[type]` route · WhatifSheet + WhatifTrigger + 5개 섹션 컴포넌트 · WhatifView 4-state. **1174/1174 PASS**. §사용자 수동 절차: `pnpm db:push`(0026_whatif_results) 필요. 커밋 키: `518aa7e`(D1 supporting files) · `43945c6`(route) · `fffc024`(WhatifView) · `60fa445`(PII guard).
+- **S-08 followups #1-#5 완료 ✅ (2026-05-09)** — `chore/s08-followups` → `master` fast-forward 병합. #1(`b6f7765`) DEFAULT_LLM_MODEL 통합 · #2.1(`4cd4057`) 에러 코드 카탈로그 6건 · #2.2(`6b14193`) WhatifView ErrorCard 매핑 · #3(`07a7060`) ClassicCitation 스키마 일원화(`src/lib/rag/citation-schema.ts`) · #4(`281a425`) refund_tokens 실패 로깅 · #5(`901291a`) ErrorCard CTA + INSUFFICIENT_TOKENS "충전하러 가기"→`/me`. **1192/1192 PASS**, 0 TS, 0 lint.
+- **§1.3 cleanup 2차 완료 ✅ (2026-05-09)** — (1) Replay route 환불 catch 로깅(`313a2bb`, TDD 2건) (2) `messages/ko.json` `whatif.error.*` 블록 4키 전체 제거 (3) `0009_token_ledger.sql:6` 주석 whatif_use/whatif_refund 동기화(`05fedcf`). **1194/1194 PASS**, 0 TS, 0 lint.
+- **§1.3 잔여 1건**: `INSUFFICIENT_TOKENS` CTA href `/me` → 충전 페이지 구현 시 `/payments/charge` 업데이트(`src/lib/errors/error-codes.ts:40`). 별도 PR.
 
 ---
 
