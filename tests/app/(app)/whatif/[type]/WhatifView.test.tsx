@@ -54,27 +54,15 @@ describe('WhatifView', () => {
     expect(init.method).toBe('POST');
   });
 
-  it('INSUFFICIENT_TOKENS → 토큰 부족 카드 노출, ErrorCard 미노출', async () => {
+  it('INSUFFICIENT_TOKENS 에러 → error-card 렌더 + 충전하러 가기 링크', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 402,
-      json: async () => ({ error: { code: 'INSUFFICIENT_TOKENS' } }),
+      json: async () => ({ error: { code: 'INSUFFICIENT_TOKENS', message: 'insufficient' } }),
     });
     renderWithProviders(<WhatifView />);
-    expect(await screen.findByTestId('whatif-insufficient-tokens')).toBeInTheDocument();
-    expect(screen.queryByTestId('error-card')).toBeNull();
-  });
-
-  it('INSUFFICIENT_TOKENS 카드에 i18n 카피 노출', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 402,
-      json: async () => ({ error: { code: 'INSUFFICIENT_TOKENS' } }),
-    });
-    renderWithProviders(<WhatifView />);
-    expect(
-      await screen.findByText('토큰이 부족해요. 충전 후 다시 시도해주세요.'),
-    ).toBeInTheDocument();
+    await screen.findByTestId('error-card');
+    expect(screen.getByRole('link', { name: '충전하러 가기' })).toBeInTheDocument();
   });
 
   it('GROUNDING_FAILED → ErrorCard 노출', async () => {

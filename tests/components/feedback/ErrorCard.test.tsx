@@ -74,4 +74,21 @@ describe('ErrorCard', () => {
     renderWithProviders(<ErrorCard code="LLM_TIMEOUT" onReport={vi.fn()} />);
     expect(screen.getByRole('button', { name: '제보' })).toBeInTheDocument();
   });
+
+  it('INSUFFICIENT_TOKENS → [충전하러 가기] 링크 표시 (href=/me)', () => {
+    renderWithProviders(<ErrorCard code="INSUFFICIENT_TOKENS" />);
+    const link = screen.getByRole('link', { name: '충전하러 가기' });
+    expect(link).toHaveAttribute('href', '/me');
+  });
+
+  it('CTA 미정의 코드(CALC_FAIL) → 링크 미표시', () => {
+    renderWithProviders(<ErrorCard code="CALC_FAIL" />);
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
+  it('INSUFFICIENT_TOKENS — 카피와 CTA 링크 동시 표시', () => {
+    renderWithProviders(<ErrorCard code="INSUFFICIENT_TOKENS" />);
+    expect(screen.getByText('포인트가 부족해요. 충전 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '충전하러 가기' })).toBeInTheDocument();
+  });
 });

@@ -34,3 +34,8 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   USER_CHART_NOT_FOUND: '본명식이 없어요. 먼저 본명식을 등록해주세요.',
   REPLAY_DURING_OUTAGE: 'AI 서비스 점검 중이에요. 잠시 후 다시 시도해주세요.',
 };
+
+// 특정 에러 코드에 대한 CTA 링크 정의 (현재: INSUFFICIENT_TOKENS → 충전 페이지)
+export const ERROR_CTA: Partial<Record<ErrorCode, { label: string; href: string }>> = {
+  INSUFFICIENT_TOKENS: { label: '충전하러 가기', href: '/me' },
+};

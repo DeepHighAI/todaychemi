@@ -1,7 +1,6 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import type { DiagnosticType, WhatifResult } from '@/types/diagnostic';
 import { LoadingState } from '@/components/feedback/LoadingState';
@@ -26,7 +25,6 @@ async function callWhatif(type: DiagnosticType): Promise<WhatifResult> {
 export function WhatifView() {
   const params = useParams<{ type: string }>();
   const type = params.type as DiagnosticType;
-  const t = useTranslations('whatif');
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['whatif', type],
@@ -39,13 +37,7 @@ export function WhatifView() {
 
   if (isError) {
     const code = (error as { code?: string })?.code;
-    if (code === 'INSUFFICIENT_TOKENS') {
-      return (
-        <div data-testid="whatif-insufficient-tokens" className="rounded-2xl bg-card p-6 space-y-3">
-          <p className="text-sm font-semibold text-foreground">{t('error.insufficient_tokens')}</p>
-        </div>
-      );
-    }
+    // 모든 에러를 ErrorCard로 통합 처리 (CTA 링크는 ErrorCard 내부에서 error-codes.ts 기반 처리)
     const safeCode = ERROR_CODES.includes(code as ErrorCode) ? (code as ErrorCode) : 'INTERNAL_ERROR';
     return <ErrorCard code={safeCode} onRetry={() => refetch()} />;
   }
