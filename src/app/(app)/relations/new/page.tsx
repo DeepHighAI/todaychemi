@@ -132,25 +132,26 @@ export default function RelationsNewPage() {
           </div>
         </div>
 
-        {/* 성별 */}
+        {/* 성별 — UIDesign §1.6 Seg pill */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('gender.label')}</p>
-          <div className="flex gap-3" role="radiogroup">
+          <div className="flex gap-2" role="radiogroup">
             {(['M', 'F'] as const).map((g) => (
-              <label key={g} className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="gender"
-                  value={g}
-                  checked={gender === g}
-                  onChange={() => setGender(g)}
-                  aria-label={g === 'M' ? t('gender.male') : t('gender.female')}
-                  className="accent-primary"
-                />
-                <span className="text-sm text-foreground">
-                  {g === 'M' ? t('gender.male') : t('gender.female')}
-                </span>
-              </label>
+              <button
+                key={g}
+                type="button"
+                role="radio"
+                aria-checked={gender === g}
+                aria-label={g === 'M' ? t('gender.male') : t('gender.female')}
+                onClick={() => setGender(g)}
+                className={`flex-1 rounded-[var(--r-pill)] px-4 py-2 text-sm font-semibold transition ${
+                  gender === g
+                    ? 'bg-[var(--p-40)] text-white'
+                    : 'bg-[var(--surface-2)] text-foreground'
+                }`}
+              >
+                {g === 'M' ? t('gender.male') : t('gender.female')}
+              </button>
             ))}
           </div>
         </div>
@@ -175,25 +176,28 @@ export default function RelationsNewPage() {
           />
         </div>
 
-        {/* 양/음력 */}
+        {/* 양/음력 — UIDesign §1.6 Seg pill */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">{t('birth.calendar')}</p>
-          <div className="flex gap-3" role="radiogroup">
+          <div className="flex gap-2" role="radiogroup">
             {([
               { value: 'solar', label: t('birth.calendarSolar') },
               { value: 'lunar', label: t('birth.calendarLunar') },
             ] as { value: Calendar; label: string }[]).map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="birth-calendar"
-                  value={value}
-                  checked={calendar === value}
-                  onChange={() => setCalendar(value)}
-                  className="accent-primary"
-                />
-                <span className="text-sm text-foreground">{label}</span>
-              </label>
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={calendar === value}
+                onClick={() => setCalendar(value)}
+                className={`flex-1 rounded-[var(--r-pill)] px-4 py-2 text-sm font-semibold transition ${
+                  calendar === value
+                    ? 'bg-[var(--p-40)] text-white'
+                    : 'bg-[var(--surface-2)] text-foreground'
+                }`}
+              >
+                {label}
+              </button>
             ))}
           </div>
         </div>
