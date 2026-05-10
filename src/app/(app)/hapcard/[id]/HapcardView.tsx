@@ -16,6 +16,7 @@ import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardConclusion } from '@/components/hapcard/conclusion';
+import { HapcardHighlights2Up } from '@/components/hapcard/highlights-2up';
 import { HapcardFooter } from '@/components/hapcard/footer';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -123,6 +124,7 @@ export default function HapcardView() {
       <HapcardGauge score={data.compat_score} breakdown={data.score_breakdown} />
       <HapcardConclusion mainText={data.content.main_text} />
       <HapcardBody mainText={data.content.main_text} />
+      <HapcardHighlights2Up cards={data.content.why_cards} />
       <HapcardOhaeng
         userCounts={visuals.user.five_elements_counts}
         relationCounts={visuals.relation.five_elements_counts}
