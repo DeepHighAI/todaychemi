@@ -69,7 +69,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               autoComplete="email"
             />
             {emailError && <p className="text-xs text-destructive">{emailError}</p>}
@@ -85,7 +85,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               autoComplete="new-password"
             />
             <p className="text-xs text-muted-foreground">{t('passwordHint')}</p>
