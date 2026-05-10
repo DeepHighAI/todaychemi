@@ -140,6 +140,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **Yunse Y0/Y1 완료 확인 ✅ (2026-05-09, 재검증)** — `src/types/chart.ts` YunseCore(4레이어: 대운·세운·월운·일운) + `src/lib/kasi/normalize.ts:mapSsajuToYunse()` + `src/components/me/yunse-card.tsx` YunseCard(실구현, placeholder 아님) + 테스트 passing. 메모리 stale 항목 해소.
 - **P1/P2 정리 완료 ✅ (2026-05-09)** — C4 stale 브랜치 3개 삭제(feature/e1·e2·s08). C5 vitest reporter = non-issue(pnpm test 1194/1194 정상). C1 Yunse 완료 확인. 잔여: C2(D1 결제 페이지 의존) · B1(pnpm db:push 0024+0026 사용자 수동) · B2(Supabase Dashboard 수동).
 - **§1.6 UI design-review 완료 ✅ (2026-05-10)** — /login·/signup·/feed·/onboarding·/relations/new 5개 화면 감사 + 5개 finding 수정(FINDING-001~005). 커밋 `ffcad13`·`365ebf6`·`0526aac`·`43af94b`. **1203/1203 PASS**, 0 TS, 0 lint. §1.3 잔여: time-accuracy Seg pill 변환·rounded-2xl 토큰화·Seg pill DRY·필터 매직픽셀(별도 PR).
+- **Hapcard design-review Phase 0-9 완료 ✅ (2026-05-10)** — 13섹션 composition lock + AppBar/CtaBar/Timeline/ReplayButton/SharePreviewTile/MiniRadar 신규 + replayHint footer 제거 → ReplayButton 컴포넌트로 대체. commits `982ea52`~`6bd7ea6`(13개). **1252/1252 PASS**, 0 TS, 0 lint. /qa-only DONE_WITH_CONCERNS(6 PASS · 1 BLOCKED hapcard 500 · 1 INFO). 로컬 `main` 브랜치 fast-forward 완료. GitHub PR 생성 보류(git remote 미설정). §1.3 잔여: 테스트 계정 onboarding 시드 추가 → hapcard 브라우저 E2E #1-#13 별도 PR.
 
 ---
 
