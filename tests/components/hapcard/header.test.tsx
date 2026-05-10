@@ -33,4 +33,28 @@ describe('HapcardHeader', () => {
     renderWithProviders(<HapcardHeader {...defaultProps} />);
     expect(screen.getByText('친구합')).toBeInTheDocument();
   });
+
+  it('nickname 미전달 시 기존 렌더 회귀 없음', () => {
+    renderWithProviders(<HapcardHeader {...defaultProps} />);
+    expect(screen.getByText('갑인')).toBeInTheDocument();
+    expect(screen.getByText('병오')).toBeInTheDocument();
+    expect(screen.queryByTestId('hapcard-header-nickname')).toBeNull();
+  });
+
+  it('nickname 전달 시 헤더 영역 내부에 1회 노출', () => {
+    renderWithProviders(<HapcardHeader {...defaultProps} nickname="별이" />);
+    const nicknameEl = screen.getByTestId('hapcard-header-nickname');
+    expect(nicknameEl).toBeInTheDocument();
+    expect(nicknameEl.textContent).toBe('별이');
+    expect(
+      document.querySelector('[data-testid="hapcard-header"]')
+    ).toContainElement(nicknameEl);
+  });
+
+  it('닉네임은 mode 텍스트와 별개 DOM 노드', () => {
+    renderWithProviders(<HapcardHeader {...defaultProps} nickname="별이" />);
+    const nicknameEl = screen.getByTestId('hapcard-header-nickname');
+    const modeEl = screen.getByText('친구합');
+    expect(nicknameEl).not.toBe(modeEl);
+  });
 });

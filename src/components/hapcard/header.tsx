@@ -11,6 +11,7 @@ interface HapcardHeaderProps {
   userElement: OhaengElement;
   relationPillar: string;
   relationElement: OhaengElement;
+  nickname?: string;
 }
 
 export function HapcardHeader({
@@ -19,6 +20,7 @@ export function HapcardHeader({
   userElement,
   relationPillar,
   relationElement,
+  nickname,
 }: HapcardHeaderProps) {
   const t = useTranslations('hapcard');
   return (
@@ -27,6 +29,14 @@ export function HapcardHeader({
       <div className="flex flex-col items-center gap-1">
         <span className="text-xs text-muted-foreground">{t('header.vs')}</span>
         <span className="text-xs font-medium text-foreground">{mode}</span>
+        {nickname && (
+          <span
+            data-testid="hapcard-header-nickname"
+            className="text-sm font-semibold text-foreground"
+          >
+            {nickname}
+          </span>
+        )}
       </div>
       <IljuChip pillar={relationPillar} element={relationElement} />
     </div>
