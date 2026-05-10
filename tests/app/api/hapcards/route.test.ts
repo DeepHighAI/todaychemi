@@ -67,7 +67,7 @@ const HAPCARD_RESULT: HapcardResult = {
     why_cards: [{ title: '제목', reason: '이유' }],
   },
   prompt_version: 'v0.2',
-  llm_model: 'gpt-5o',
+  llm_model: 'gpt-4.5-preview',
   cache_key: 'cache-key-abc',
   user_chart_hash: 'self-hash-abc',
   relation_chart_hash: 'rel-hash-def',

@@ -62,7 +62,7 @@ export const mockHapcardResult: HapcardResult = {
     why_cards: [],
   },
   prompt_version: 'v0.2',
-  llm_model: 'gpt-5o',
+  llm_model: 'gpt-4.5-preview',
   cache_key: 'abc123',
   user_chart_hash: 'uh1',
   relation_chart_hash: 'rh1',
