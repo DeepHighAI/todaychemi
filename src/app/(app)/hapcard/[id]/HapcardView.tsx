@@ -21,6 +21,7 @@ import { HapcardHighlights2Up } from '@/components/hapcard/highlights-2up';
 import { HapcardAppBar } from '@/components/hapcard/app-bar';
 import { HapcardCtaBar } from '@/components/hapcard/cta-bar';
 import { HapcardFooter } from '@/components/hapcard/footer';
+import { HapcardTimeline } from '@/components/hapcard/timeline';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -144,6 +145,7 @@ export default function HapcardView() {
         user={visuals.user.five_elements_counts}
         relation={visuals.relation.five_elements_counts}
       />
+      <HapcardTimeline hapcardId={data.hapcard_id} mode={mode!} />
       <HapcardEvidence cards={data.content.why_cards} />
       <HapcardActions actions={data.content.actions} />
       <HapcardClassic citations={data.content.classic_citation} />

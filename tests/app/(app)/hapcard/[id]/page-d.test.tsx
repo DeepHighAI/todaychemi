@@ -96,4 +96,22 @@ describe('HapcardPage — Stage D composition', () => {
       expect(screen.queryByRole('button', { name: /다시합/ })).not.toBeNull(),
     );
   });
+
+  it('성공 응답(with visuals) → hapcard-timeline 마운트됨 (snapshots fetch 응답 후)', async () => {
+    const SNAPSHOTS = {
+      today_index: 3,
+      snapshots: Array.from({ length: 7 }, (_, i) => ({ date: `2026-05-${String(7 + i).padStart(2, '0')}`, score: i < 4 ? 70 + i : null })),
+    };
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/snapshots')) {
+        return Promise.resolve({ ok: true, json: async () => SNAPSHOTS });
+      }
+      return Promise.resolve({ ok: true, json: async () => withVisuals() });
+    });
+    await renderHapcardPage();
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="hapcard-timeline"]')).not.toBeNull(),
+    );
+  });
 });
