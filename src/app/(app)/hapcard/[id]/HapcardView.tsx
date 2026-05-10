@@ -129,6 +129,7 @@ export default function HapcardView() {
         userElement={visuals.user.day_master_element}
         relationPillar={visuals.relation.day_pillar}
         relationElement={visuals.relation.day_master_element}
+        nickname={data.relation_nickname}
       />
       <HapcardGauge score={data.compat_score} breakdown={data.score_breakdown} />
       <HapcardConclusion mainText={data.content.main_text} />

@@ -74,4 +74,17 @@ describe('HapcardPage — Stage D composition', () => {
     );
     expect(screen.getByText(/20/)).toBeInTheDocument();
   });
+
+  it('relation_nickname → header에 닉네임 노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => withVisuals({ relation_nickname: '별이' }),
+    });
+    await renderHapcardPage();
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="hapcard-header-nickname"]')).not.toBeNull(),
+    );
+    expect(screen.getByTestId('hapcard-header-nickname').textContent).toBe('별이');
+  });
 });
