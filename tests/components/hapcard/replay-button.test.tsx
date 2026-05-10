@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 
-const DEFAULT_PROPS = { hapcardId: 'h1', mode: '친구합' as const };
+const DEFAULT_PROPS = { hapcardId: 'h1', mode: '친구합' };
 
 beforeEach(() => {
   vi.clearAllMocks();

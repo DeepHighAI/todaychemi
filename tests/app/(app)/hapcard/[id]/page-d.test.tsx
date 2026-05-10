@@ -87,4 +87,13 @@ describe('HapcardPage — Stage D composition', () => {
     );
     expect(screen.getByTestId('hapcard-header-nickname').textContent).toBe('별이');
   });
+
+  it('성공 응답(with visuals) → 다시합 버튼 존재', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => withVisuals() });
+    await renderHapcardPage();
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /다시합/ })).not.toBeNull(),
+    );
+  });
 });

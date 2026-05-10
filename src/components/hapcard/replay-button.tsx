@@ -17,11 +17,9 @@ import {
 import { ERROR_COPY, ERROR_CTA } from '@/lib/errors/error-codes';
 import type { ReplayErrorCode } from '@/types/hapcard';
 
-type HapcardMode = '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
-
 interface Props {
   hapcardId: string;
-  mode: HapcardMode;
+  mode: string;
 }
 
 type State = 'idle' | 'loading' | 'success' | 'error';
