@@ -57,6 +57,11 @@
   --color-element-metal: var(--accent-metal);
   --color-element-water: var(--accent-water);
 
+  /* M3 tertiary tonal — UIDesign/system.css L24-26 정합 */
+  --color-tertiary-30: var(--t-30);
+  --color-tertiary-40: var(--t-40);
+  --color-tertiary-90: var(--t-90);
+
   /* Semantic — 시스템 화면(S-99) 에러·경고·정보 */
   --color-semantic-ok: var(--ok);
   --color-semantic-ok-bg: var(--ok-bg);
@@ -193,6 +198,16 @@
   --s-40: #625b71;
   --s-90: #e8def8;
   --s-95: #f7f2fa;
+
+  /* M3 tertiary tonal — UIDesign/system.css L24-26 정합 */
+  --t-30: #633B48;
+  --t-40: #7D5260;
+  --t-90: #FFD8E4;
+
+  /* Layout height tokens */
+  --tabbar-h: 76px;
+  --ctabar-h: 72px;
+  --ctabar-h-with-safe-area: calc(72px + env(safe-area-inset-bottom));
 
   /* M3 surface container levels */
   --surface: #fffbfe;
@@ -331,6 +346,11 @@
   --s-40: #ccc2dc;
   --s-90: #4a4458;
   --s-95: #332d41;
+
+  /* M3 tertiary tonal (다크) */
+  --t-30: #FFD8E4;
+  --t-40: #EFB8C8;
+  --t-90: #633B48;
 
   --surface: #141218;
   --surface-1: #1d1b20;
