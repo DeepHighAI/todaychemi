@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import type {
@@ -52,7 +53,8 @@ export async function GET(
   const start = addDays(today, -3);
   const end = addDays(today, 3);
 
-  const { data: rows, error: snapErr } = await supabase
+  const db = supabase as unknown as SupabaseClient;
+  const { data: rows, error: snapErr } = await db
     .from('hapcard_score_snapshots')
     .select('target_date, compat_score, created_at')
     .eq('relation_id', relation_id)
