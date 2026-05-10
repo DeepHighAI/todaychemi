@@ -98,37 +98,138 @@ async function main() {
 
   if (existingChart) {
     console.log(`ℹ️  public.user_charts: user_id=${userId} 이미 존재 — skip upsert`);
-    console.log('\n✅ 시드 완료 (멱등 — 이미 존재)');
-    return;
+  } else {
+    // chart 계산
+    const computeResult = await computeChart(
+      {
+        entity_id: userId,
+        birth_date: '1990-01-01',
+        birth_date_calendar: 'solar',
+        is_lunar_leap: false,
+        birth_time_knowledge: 'exact',
+        birth_time: '12:00',
+        gender: 'M',
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      kasiServiceKey,
+    );
+    console.log(`✅ computeChart 완료 (hash=${computeResult.chart_hash.slice(0, 12)}…)`);
+
+    const { error: chartError } = await admin.from('user_charts').upsert(
+      {
+        user_id: userId,
+        chart_hash: computeResult.chart_hash,
+        chart_core: computeResult.chart_core,
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      { onConflict: 'chart_hash' },
+    );
+    if (chartError) throw new Error(`user_charts upsert 실패: ${chartError.message}`);
+    console.log(`✅ public.user_charts: upsert 완료`);
   }
 
-  // chart 계산
-  const computeResult = await computeChart(
+  // ── 인연(relation) 시드 ────────────────────────────────────────────────────
+  const RELATION_SEEDS = [
     {
-      entity_id: userId,
-      birth_date: '1990-01-01',
-      birth_date_calendar: 'solar',
-      is_lunar_leap: false,
-      birth_time_knowledge: 'exact',
-      birth_time: '12:00',
-      gender: 'M',
-      theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      mode: '일합' as const,
+      nickname: '예시상대1',
+      birth_date: '1991-03-15',
+      birth_time: '14:30',
+      gender: 'F' as const,
     },
-    kasiServiceKey,
-  );
-  console.log(`✅ computeChart 완료 (hash=${computeResult.chart_hash.slice(0, 12)}…)`);
+    {
+      mode: '친구합' as const,
+      nickname: '예시친구1',
+      birth_date: '1989-07-22',
+      birth_time: '09:00',
+      gender: 'M' as const,
+    },
+    {
+      mode: '오래합' as const,
+      nickname: '예시오래1',
+      birth_date: '1985-11-08',
+      birth_time: '20:15',
+      gender: 'F' as const,
+    },
+  ];
 
-  const { error: chartError } = await admin.from('user_charts').upsert(
-    {
-      user_id: userId,
-      chart_hash: computeResult.chart_hash,
-      chart_core: computeResult.chart_core,
-      theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
-    },
-    { onConflict: 'chart_hash' },
-  );
-  if (chartError) throw new Error(`user_charts upsert 실패: ${chartError.message}`);
-  console.log(`✅ public.user_charts: upsert 완료`);
+  for (const seed of RELATION_SEEDS) {
+    // 멱등성: (user_id, nickname) 기존 확인
+    const { data: existingRelation } = await admin
+      .from('relations')
+      .select('relation_id')
+      .eq('user_id', userId)
+      .eq('nickname', seed.nickname)
+      .maybeSingle();
+
+    let relationId: string;
+
+    if (existingRelation) {
+      console.log(`ℹ️  relations[${seed.mode}]: "${seed.nickname}" 이미 존재 — skip INSERT`);
+      relationId = existingRelation.relation_id as string;
+    } else {
+      const { data: relData, error: relError } = await admin
+        .from('relations')
+        .insert({
+          user_id: userId,
+          nickname: seed.nickname,
+          mode: seed.mode,
+          birth_date: seed.birth_date,
+          birth_date_calendar: 'solar',
+          is_lunar_leap: false,
+          birth_time_knowledge: 'exact',
+          birth_time: seed.birth_time,
+          gender: seed.gender,
+          consent_confirmed: true,
+          is_primary: false,
+        })
+        .select('relation_id')
+        .single();
+      if (relError) throw new Error(`relations INSERT(${seed.mode}) 실패: ${relError.message}`);
+      relationId = relData.relation_id as string;
+      console.log(`✅ relations[${seed.mode}]: "${seed.nickname}" INSERT 완료 (id=${relationId})`);
+    }
+
+    // relation_charts 멱등성 확인
+    const { data: existingRelChart } = await admin
+      .from('relation_charts')
+      .select('chart_id')
+      .eq('relation_id', relationId)
+      .maybeSingle();
+
+    if (existingRelChart) {
+      console.log(`ℹ️  relation_charts[${seed.mode}]: relation_id=${relationId} 이미 존재 — skip upsert`);
+      continue;
+    }
+
+    const relComputeResult = await computeChart(
+      {
+        entity_id: relationId,
+        birth_date: seed.birth_date,
+        birth_date_calendar: 'solar',
+        is_lunar_leap: false,
+        birth_time_knowledge: 'exact',
+        birth_time: seed.birth_time,
+        gender: seed.gender,
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      kasiServiceKey,
+    );
+    console.log(`✅ computeChart[${seed.mode}] 완료 (hash=${relComputeResult.chart_hash.slice(0, 12)}…)`);
+
+    const { error: relChartError } = await admin.from('relation_charts').upsert(
+      {
+        relation_id: relationId,
+        user_id: userId,
+        chart_hash: relComputeResult.chart_hash,
+        chart_core: relComputeResult.chart_core,
+        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+      },
+      { onConflict: 'chart_hash' },
+    );
+    if (relChartError) throw new Error(`relation_charts upsert(${seed.mode}) 실패: ${relChartError.message}`);
+    console.log(`✅ relation_charts[${seed.mode}]: upsert 완료`);
+  }
 
   console.log('\n✅ 시드 완료');
   console.log(`   email    : ${TEST_EMAIL}`);
