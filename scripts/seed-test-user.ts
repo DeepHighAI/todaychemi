@@ -89,16 +89,22 @@ async function main() {
     console.log(`✅ public.users: user_id=${userId} INSERT 완료`);
   }
 
-  // user_charts 멱등성 확인
+  // user_charts 멱등성 확인 — yunse 필드 존재 여부도 체크 (Y0/Y1 이전 시드 감지)
   const { data: existingChart } = await admin
     .from('user_charts')
-    .select('user_id')
+    .select('user_id, chart_core')
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (existingChart) {
-    console.log(`ℹ️  public.user_charts: user_id=${userId} 이미 존재 — skip upsert`);
+  const existingHasYunse = !!(existingChart as { chart_core?: { yunse?: unknown } } | null)?.chart_core?.yunse;
+
+  if (existingChart && existingHasYunse) {
+    console.log(`ℹ️  public.user_charts: user_id=${userId} 이미 존재 (yunse OK) — skip upsert`);
   } else {
+    if (existingChart && !existingHasYunse) {
+      console.log(`⚠️  public.user_charts: user_id=${userId} 존재하지만 yunse 없음 — 강제 재계산`);
+      await admin.from('user_charts').delete().eq('user_id', userId);
+    }
     // chart 계산
     const computeResult = await computeChart(
       {
