@@ -12,6 +12,7 @@ let mockMode: string | null = '친구합';
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'r1' }),
   useSearchParams: () => ({ get: (key: string) => (key === 'mode' ? mockMode : null) }),
+  useRouter: () => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() }),
 }));
 
 beforeEach(() => {

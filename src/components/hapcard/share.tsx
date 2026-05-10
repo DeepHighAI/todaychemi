@@ -13,6 +13,8 @@ export interface HapcardShareProps {
   score: number;
   genderNormalized?: 'F' | 'M';
   visuals: HapcardVisuals;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function HapcardShare({
@@ -22,8 +24,13 @@ export function HapcardShare({
   score,
   genderNormalized = 'F',
   visuals,
+  open: controlledOpen,
+  onOpenChange,
 }: HapcardShareProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
+  const sheetOpen = isControlled ? controlledOpen : internalOpen;
+  const setSheetOpen = isControlled ? onOpenChange : setInternalOpen;
   const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'error'>('idle');
 
   const hapcardInput = {

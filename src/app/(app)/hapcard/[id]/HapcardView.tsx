@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +18,8 @@ import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardConclusion } from '@/components/hapcard/conclusion';
 import { HapcardHighlights2Up } from '@/components/hapcard/highlights-2up';
+import { HapcardAppBar } from '@/components/hapcard/app-bar';
+import { HapcardCtaBar } from '@/components/hapcard/cta-bar';
 import { HapcardFooter } from '@/components/hapcard/footer';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -63,6 +66,11 @@ export default function HapcardView() {
     enabled: !!mode,
     retry: false,
   });
+
+  const [shareOpen, setShareOpen] = useState(false);
+  const scrollToActions = useCallback(() => {
+    document.querySelector('[data-testid="hapcard-actions"]')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   if (!mode || (isError && !isChartPendingError(error))) {
     return (
@@ -113,7 +121,8 @@ export default function HapcardView() {
 
   return (
     <GlossaryProvider>
-    <main className="bg-background min-h-screen px-4 pt-8 pb-16 space-y-3">
+    <HapcardAppBar onShare={() => setShareOpen(true)} />
+    <main className="bg-background min-h-screen px-4 pt-8 pb-32 space-y-3">
       <HapcardHeader
         mode={mode!}
         userPillar={visuals.user.day_pillar}
@@ -144,8 +153,11 @@ export default function HapcardView() {
         score={data.compat_score}
         genderNormalized={data.relation_gender_normalized}
         visuals={visuals}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
       />
     </main>
+    <HapcardCtaBar onAction={scrollToActions} onShare={() => setShareOpen(true)} />
     <GlossarySheet />
     </GlossaryProvider>
   );
