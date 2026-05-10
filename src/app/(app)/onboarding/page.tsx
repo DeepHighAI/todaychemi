@@ -178,7 +178,7 @@ export default function OnboardingPage() {
               { value: 'approximate', label: t('birth.timeAccuracy.estimated') },
               { value: 'unknown', label: t('birth.timeAccuracy.unknown') },
             ] as { value: TimeAccuracy; label: string }[]).map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-1.5 cursor-pointer">
+              <label key={value} className="flex min-h-[44px] items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
                   name="birth-time-knowledge"
