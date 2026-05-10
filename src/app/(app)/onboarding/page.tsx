@@ -128,7 +128,7 @@ export default function OnboardingPage() {
                 role="radio"
                 aria-checked={calendar === value}
                 onClick={() => setCalendar(value)}
-                className={`flex-1 rounded-[var(--r-pill)] px-4 py-2 text-sm font-semibold transition ${
+                className={`flex-1 rounded-[var(--r-pill)] px-4 py-3 text-sm font-semibold transition ${
                   calendar === value
                     ? 'bg-[var(--p-40)] text-white'
                     : 'bg-[var(--surface-2)] text-foreground'
@@ -152,7 +152,7 @@ export default function OnboardingPage() {
                 aria-checked={gender === g}
                 aria-label={g === 'M' ? t('gender.male') : t('gender.female')}
                 onClick={() => setGender(g)}
-                className={`flex-1 rounded-[var(--r-pill)] px-4 py-2 text-sm font-semibold transition ${
+                className={`flex-1 rounded-[var(--r-pill)] px-4 py-3 text-sm font-semibold transition ${
                   gender === g
                     ? 'bg-[var(--p-40)] text-white'
                     : 'bg-[var(--surface-2)] text-foreground'
