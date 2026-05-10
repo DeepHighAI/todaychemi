@@ -101,7 +101,7 @@ beforeEach(() => {
   mockCallOpenAi.mockResolvedValue({
     output: MOCK_LLM_OUTPUT,
     usage: { token_in: 100, token_out: 200, total_usd: 0 },
-    model: 'gpt-4.5-preview',
+    model: 'gpt-4o',
   });
   mockValidate.mockReturnValue({ valid: true });
 });
@@ -146,10 +146,10 @@ describe('buildWhatif', () => {
     expect(insertFn.mock.calls[0][0].prompt_version).toBe(MOCK_PROMPT_VERSION);
   });
 
-  it('llm_model = "gpt-4.5-preview" 고정', async () => {
+  it('llm_model = "gpt-4o" 고정', async () => {
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
-    expect(insertFn.mock.calls[0][0].llm_model).toBe('gpt-4.5-preview');
+    expect(insertFn.mock.calls[0][0].llm_model).toBe('gpt-4o');
   });
 
   it('INSERT row에 user_id, type, chart_hash 포함 (relation_id 없음)', async () => {
@@ -241,7 +241,7 @@ describe('buildWhatif', () => {
     mockCallOpenAi.mockResolvedValue({
       output: MOCK_LLM_OUTPUT_WITH_CITATION,
       usage: { token_in: 100, token_out: 200, total_usd: 0 },
-      model: 'gpt-4.5-preview',
+      model: 'gpt-4o',
     });
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));

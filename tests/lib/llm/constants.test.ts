@@ -3,13 +3,13 @@ import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import type { LlmModel } from '@/types/hapcard';
 
 describe('DEFAULT_LLM_MODEL', () => {
-  it('값이 gpt-4.5-preview 이다', () => {
-    expect(DEFAULT_LLM_MODEL).toBe('gpt-4.5-preview');
+  it('값이 gpt-4o 이다', () => {
+    expect(DEFAULT_LLM_MODEL).toBe('gpt-4o');
   });
 
   it('LlmModel 타입에 할당 가능하다', () => {
     // compile-time check — runtime 에서는 assignability 검증
     const _typed: LlmModel = DEFAULT_LLM_MODEL;
-    expect(_typed).toBe('gpt-4.5-preview');
+    expect(_typed).toBe('gpt-4o');
   });
 });
