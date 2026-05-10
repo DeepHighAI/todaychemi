@@ -127,6 +127,25 @@ export interface HapcardReplayResult extends HapcardResult {
   jinjin_date: string; // YYYY-MM-DD (UTC+9)
 }
 
+// GET /api/hapcards/[id]/snapshots 응답 타입 (ADR-033 7일 흐름 타임라인)
+export interface HapcardSnapshotEntry {
+  date: string;        // YYYY-MM-DD (KST)
+  score: number | null; // null = 데이터 없음 (미래 날짜 포함)
+}
+
+export interface HapcardSnapshotsResponse {
+  snapshots: HapcardSnapshotEntry[]; // 길이 7 (D-3 ~ D+3)
+  today_index: number;                // 항상 3
+}
+
+export const SNAPSHOTS_ERROR_CODES = [
+  'UNAUTHORIZED',
+  'HAPCARD_NOT_FOUND',
+  'INTERNAL_ERROR',
+] as const;
+
+export type SnapshotsErrorCode = (typeof SNAPSHOTS_ERROR_CODES)[number];
+
 // POST /api/hapcards/[id]/replay 요청 스키마 — .strict()로 PII 불명 필드 거부
 export const ReplayRequestSchema = z
   .object({
