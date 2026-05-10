@@ -183,6 +183,29 @@
       "breakdown": "끌림·긴장·부딪힘·소모 {h} · 십신 {s} · 오행 {o} · 모드 {m}"
     },
     "body": { "eyebrow": "한 줄 결론" },
+    "conclusion": { "eyebrow": "한 줄 결론" },
+    "highlights": {
+      "strengthLabel": "강점",
+      "warningLabel": "주의"
+    },
+    "ctaBar": { "action": "이렇게 해봐", "share": "공유" },
+    "timeline": {
+      "title": "흐름",
+      "caption": "최근 3일 ↔ 오늘 ↔ 앞으로 3일",
+      "today": "오늘",
+      "loading": "흐름 불러오는 중…"
+    },
+    "sharePreview": { "ariaLabel": "공유 미리보기" },
+    "replayButton": {
+      "label": "다시합 (재해석)",
+      "confirmTitle": "다시합으로 재해석할까요?",
+      "confirmBody": "토큰 1개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
+      "confirmCta": "재해석 받기",
+      "cancel": "취소",
+      "successToast": "재해석 완료. 흐름이 갱신되었어요.",
+      "insufficientTokens": "토큰이 부족합니다. 충전 후 다시 시도해 주세요."
+    },
+    "appBar": { "title": "합카드", "back": "뒤로", "share": "공유" },
     "ohaeng": {
       "title": "오행 흐름",
       "labelMe": "본인",
@@ -198,8 +221,7 @@
     "actionsList": { "title": "오늘의 조언", "empty": "조언이 아직 준비되지 않았어요." },
     "classicList": { "title": "고전에서 찾은 지혜", "empty": "관련 고전이 아직 준비되지 않았어요." },
     "footer": {
-      "disclaimer": "본 콘텐츠는 참고용이며, 의료·재정·법적 결정의 근거가 될 수 없습니다.",
-      "replayHint": "D+1 다시합 알림은 다음 단계에서 설정할 수 있어요."
+      "disclaimer": "본 콘텐츠는 참고용이며, 의료·재정·법적 결정의 근거가 될 수 없습니다."
     },
     "errors": {
       "chartPending": {

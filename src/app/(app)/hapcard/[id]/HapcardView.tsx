@@ -15,6 +15,7 @@ import { HapcardMiniRadar } from '@/components/hapcard/mini-radar';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
+import { HapcardConclusion } from '@/components/hapcard/conclusion';
 import { HapcardFooter } from '@/components/hapcard/footer';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -120,6 +121,7 @@ export default function HapcardView() {
         relationElement={visuals.relation.day_master_element}
       />
       <HapcardGauge score={data.compat_score} breakdown={data.score_breakdown} />
+      <HapcardConclusion mainText={data.content.main_text} />
       <HapcardBody mainText={data.content.main_text} />
       <HapcardOhaeng
         userCounts={visuals.user.five_elements_counts}

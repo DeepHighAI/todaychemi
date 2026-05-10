@@ -18,10 +18,10 @@ describe('HapcardFooter', () => {
     ).toBeInTheDocument();
   });
 
-  it('다시합 힌트 카피 표시', () => {
+  it('replayHint 제거됨 — 별도 ReplayButton으로 대체', () => {
     renderWithProviders(<HapcardFooter />);
     expect(
-      screen.getByText('D+1 다시합 알림은 다음 단계에서 설정할 수 있어요.'),
-    ).toBeInTheDocument();
+      screen.queryByText('D+1 다시합 알림은 다음 단계에서 설정할 수 있어요.'),
+    ).not.toBeInTheDocument();
   });
 });
