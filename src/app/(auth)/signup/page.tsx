@@ -99,11 +99,11 @@ export default function SignupPage() {
 
         {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          <Link href="/login" className="underline">
+        <div className="mt-4 flex justify-center text-xs text-muted-foreground">
+          <Link href="/login" className="inline-flex min-h-[44px] items-center px-4 underline">
             {t('loginLink')}
           </Link>
-        </p>
+        </div>
       </div>
     </main>
   );
