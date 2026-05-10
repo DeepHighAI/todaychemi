@@ -11,6 +11,7 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
+import { HapcardSharePreviewTile } from '@/components/hapcard/share-preview-tile';
 import type { SharePayloadInput, ShareRange } from '@/lib/share/build-share-payload';
 
 interface ShareSheetProps {
@@ -26,7 +27,7 @@ const RANGE_OPTIONS: Array<{ value: ShareRange; labelKey: string }> = [
   { value: 'nickname-gender', labelKey: 'withGender' },
 ];
 
-export function ShareSheet({ open, onOpenChange, onShare }: ShareSheetProps) {
+export function ShareSheet({ open, onOpenChange, hapcard, onShare }: ShareSheetProps) {
   const t = useTranslations('hapcard.shareSheet');
   const [range, setRange] = useState<ShareRange>('nickname-only');
 
@@ -36,6 +37,7 @@ export function ShareSheet({ open, onOpenChange, onShare }: ShareSheetProps) {
         <DrawerHeader>
           <DrawerTitle id="share-sheet-title">{t('title')}</DrawerTitle>
         </DrawerHeader>
+        <HapcardSharePreviewTile hapcard={hapcard} range={range} />
         <div className="px-4 pb-2 space-y-2">
           {RANGE_OPTIONS.map(({ value, labelKey }) => (
             <label key={value} className="flex items-center gap-2 cursor-pointer">

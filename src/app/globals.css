@@ -102,6 +102,8 @@
     var(--lg-3),
     var(--lg-4)
   );
+  /* Share 미리보기 타일 — 와이어 S-07d liquid-dawn (UIDesign/system.css .liquid.dawn) */
+  --background-image-liquid-dawn: linear-gradient(135deg, #FFC453 0%, #FF6A88 50%, #6541F2 110%);
 }
 
 /* =========================================================================

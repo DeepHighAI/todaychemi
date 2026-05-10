@@ -68,4 +68,11 @@ describe('ShareSheet', () => {
     );
     expect(screen.queryByLabelText('별명만')).toBeNull();
   });
+
+  it('open=true 시 미리보기 타일이 마운트됨 (aria-label "공유 미리보기")', () => {
+    renderWithProviders(
+      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
+    );
+    expect(screen.getByLabelText('공유 미리보기')).toBeInTheDocument();
+  });
 });
