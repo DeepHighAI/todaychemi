@@ -14,8 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ERROR_COPY, ERROR_CTA } from '@/lib/errors/error-codes';
-import type { ReplayErrorCode } from '@/types/hapcard';
+import { ERROR_COPY, ERROR_CTA, type ErrorCode } from '@/lib/errors/error-codes';
 
 interface Props {
   hapcardId: string;
@@ -23,12 +22,13 @@ interface Props {
 }
 
 type State = 'idle' | 'loading' | 'success' | 'error';
+type DisplayCode = Extract<ErrorCode, 'INSUFFICIENT_TOKENS' | 'REPLAY_DURING_OUTAGE' | 'HAPCARD_NOT_FOUND' | 'INTERNAL_ERROR'>;
 
 async function postReplay(hapcardId: string): Promise<unknown> {
   const res = await fetch(`/api/hapcards/${hapcardId}/replay`, { method: 'POST' });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const code: ReplayErrorCode = body?.error?.code ?? 'INTERNAL_ERROR';
+    const code: string = body?.error?.code ?? 'INTERNAL_ERROR';
     throw Object.assign(new Error(code), { code });
   }
   return res.json();
@@ -39,7 +39,7 @@ export function HapcardReplayButton({ hapcardId, mode: _mode }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<State>('idle');
-  const [errorCode, setErrorCode] = useState<ReplayErrorCode | null>(null);
+  const [errorCode, setErrorCode] = useState<DisplayCode | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
@@ -52,8 +52,12 @@ export function HapcardReplayButton({ hapcardId, mode: _mode }: Props) {
       timerRef.current = setTimeout(() => setOpen(false), 1500);
     },
     onError: (err: unknown) => {
-      const code = (err as { code?: ReplayErrorCode })?.code ?? 'INTERNAL_ERROR';
-      setErrorCode(code as ReplayErrorCode);
+      const raw = (err as { code?: string })?.code;
+      const code: DisplayCode =
+        raw === 'INSUFFICIENT_TOKENS' || raw === 'REPLAY_DURING_OUTAGE' || raw === 'HAPCARD_NOT_FOUND'
+          ? (raw as DisplayCode)
+          : 'INTERNAL_ERROR';
+      setErrorCode(code);
       setState('error');
     },
   });
