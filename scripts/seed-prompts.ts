@@ -56,6 +56,15 @@ export function loadPromptFiles(dir: string): PromptRow[] {
 
 // SupabaseClient without Database generic — avoids conditional type inference issue with typed schema.
 export async function runSeed(client: SupabaseClient, rows: PromptRow[]) {
+  const names = rows.map((r) => r.prompt_name);
+  // Archive existing active versions before inserting new ones
+  // (prompt_versions_one_active partial unique index: only 1 active per prompt_name)
+  const { error: archiveError } = await client
+    .from('prompt_versions')
+    .update({ status: 'rolled_back' })
+    .in('prompt_name', names)
+    .eq('status', 'active');
+  if (archiveError) throw archiveError;
   const { error } = await client
     .from('prompt_versions')
     .upsert(rows, { onConflict: 'prompt_name,version' });
