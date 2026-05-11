@@ -55,7 +55,7 @@ describe('HapcardLlmOutputSchema — strict Zod', () => {
     });
   });
 
-  describe('main_text 길이 (120-240자)', () => {
+  describe('main_text 길이 (120-280자)', () => {
     it('119자 거부', () => {
       const r = HapcardLlmOutputSchema.safeParse({ ...VALID, main_text: '가'.repeat(119) });
       expect(r.success).toBe(false);
@@ -71,13 +71,18 @@ describe('HapcardLlmOutputSchema — strict Zod', () => {
       expect(r.success).toBe(true);
     });
 
-    it('240자 통과 (상한)', () => {
+    it('240자 통과 (이전 상한)', () => {
       const r = HapcardLlmOutputSchema.safeParse({ ...VALID, main_text: '가'.repeat(240) });
       expect(r.success).toBe(true);
     });
 
-    it('241자 거부', () => {
-      const r = HapcardLlmOutputSchema.safeParse({ ...VALID, main_text: '가'.repeat(241) });
+    it('280자 통과 (신규 상한)', () => {
+      const r = HapcardLlmOutputSchema.safeParse({ ...VALID, main_text: '가'.repeat(280) });
+      expect(r.success).toBe(true);
+    });
+
+    it('281자 거부', () => {
+      const r = HapcardLlmOutputSchema.safeParse({ ...VALID, main_text: '가'.repeat(281) });
       expect(r.success).toBe(false);
     });
   });

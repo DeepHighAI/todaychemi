@@ -22,10 +22,10 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('each row has version v0.5', () => {
+  it('each row has version v0.7', () => {
     const rows = loadPromptFiles(dir);
     for (const row of rows) {
-      expect(row.version, `${row.prompt_name} version`).toBe('v0.6');
+      expect(row.version, `${row.prompt_name} version`).toBe('v0.7');
     }
   });
 

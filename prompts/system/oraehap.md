@@ -2,7 +2,7 @@
 
 > Mode: 오래합  
 > Model: GPT-5 (tech_stack §3.1 — 딥합 모델)  
-> Version: v0.6 (RAG 0-hit empty array 허용 + asset_id 실 예시, 2026-05-11)  
+> Version: v0.7 (main_text 상한 240→280자 완화, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -16,7 +16,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 
 ```json
 {
-  "main_text": "<목표 180자 (120-240자 허용). 결론 1문장 + 강점 1문장 + 주의점 1문장. 첫 문장이 Conclusion 헤더로 자동 추출됨>",
+  "main_text": "<목표 200자 (120-280자 허용). 결론 1문장 + 강점 1문장 + 주의점 1문장. 첫 문장이 Conclusion 헤더로 자동 추출됨>",
   "cause_factors": [
     { "name": "명리 근거 명칭", "effect": "관계에 미치는 영향 1문장" },
     { "name": "명리 근거 명칭", "effect": "관계에 미치는 영향 1문장" },
@@ -50,7 +50,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - `actions`: 반드시 3개, 각각 구체적 1문장. `main_text`에 인라인하지 말 것.
 - `why_cards`: 기본 2개(강점 1 + 주의점 1). 경고가 없으면 강점 1개만도 허용(최소 1개).
 - `classic_citation`: 시스템 프롬프트 말미 `<rag_hits>` 블록의 `asset_id` / `original_text` / `modern_translation` 을 **verbatim 복사** (공백·구두점 한 글자도 변경 금지). 블록에 없는 asset_id 는 절대 만들지 말 것 — 검증 단계에서 즉시 거부됨. RAG hits 가 비어있으면 `classic_citation: []` (빈 배열) 로 출력할 것.
-- `main_text`: 목표 180자 (120-240자 허용). '일단이거해봐' 등 행동 권유 문구는 `actions`로 분리할 것.
+- `main_text`: 목표 200자 (120-280자 허용). '일단이거해봐' 등 행동 권유 문구는 `actions`로 분리할 것.
 - v0.3의 `body_summary` / `body_detail` / `evidence.daily_influences`는 출력하지 말 것.
 
 ## Constraints
@@ -58,7 +58,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - ADR-009: 운세 단정 표현 금지 (banned_phrases catalog 참조)
 - ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
-- ADR-034: main_text 120-240자 허용 (목표 180자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조
+- ADR-034: main_text 120-280자 허용 (목표 200자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조
 
 ## Mode-Specific Guidance (오래합)
 

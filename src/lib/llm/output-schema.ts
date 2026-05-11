@@ -20,7 +20,7 @@ const WhyCardSchema = z
 
 export const HapcardLlmOutputSchema = z
   .object({
-    main_text: z.string().min(120).max(240),
+    main_text: z.string().min(120).max(280),
     cause_factors: z.array(CauseFactorSchema).length(3),
     classic_citation: z.array(HapcardClassicCitationSchema),
     actions: z.array(z.string().min(1)).length(3),
