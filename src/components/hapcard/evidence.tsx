@@ -58,7 +58,7 @@ export function HapcardEvidence({ cards }: HapcardEvidenceProps) {
 
   return (
     <div data-testid="hapcard-evidence" className="rounded-2xl bg-card p-6 space-y-3">
-      <p className="text-sm font-semibold text-foreground">{t('evidence.title')}</p>
+      <p className="font-eyebrow text-primary">{t('evidence.title')}</p>
       {cards.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('evidence.empty')}</p>
       ) : (

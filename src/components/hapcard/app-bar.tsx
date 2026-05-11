@@ -16,7 +16,7 @@ export function HapcardAppBar({ onShare, onBack }: HapcardAppBarProps) {
   return (
     <header
       data-testid="hapcard-app-bar"
-      className="sticky top-0 z-40 h-12 flex items-center justify-between px-2 bg-background/80 backdrop-blur-sm border-b border-border"
+      className="sticky top-0 z-40 h-11 flex items-center justify-between px-2 bg-background/80 backdrop-blur-sm border-b border-border"
     >
       <button
         type="button"
@@ -26,7 +26,7 @@ export function HapcardAppBar({ onShare, onBack }: HapcardAppBarProps) {
       >
         <ChevronLeft size={22} />
       </button>
-      <h1 className="text-base font-semibold text-foreground">{t('title')}</h1>
+      <h1 className="font-h3 text-foreground">{t('title')}</h1>
       <button
         type="button"
         aria-label={t('share')}

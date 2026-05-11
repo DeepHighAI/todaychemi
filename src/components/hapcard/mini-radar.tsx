@@ -14,11 +14,11 @@ export function HapcardMiniRadar({ user, relation }: HapcardMiniRadarProps) {
   const t = useTranslations('hapcard.miniRadar');
   return (
     <div data-testid="hapcard-mini-radar" className="rounded-2xl bg-card p-6 space-y-3">
-      <p className="text-sm font-semibold text-foreground">{t('title')}</p>
+      <p className="font-eyebrow text-primary">{t('title')}</p>
       <div className="mx-auto w-full max-w-[220px]">
         <MiniRadar user={user} relation={relation} />
       </div>
-      <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+      <div className="flex justify-center gap-4 font-cap text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span
             aria-hidden

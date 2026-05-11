@@ -14,11 +14,11 @@ export function HapcardConclusion({ mainText }: HapcardConclusionProps) {
     <div data-testid="hapcard-conclusion" className="rounded-2xl bg-card p-6 space-y-1">
       <p
         data-testid="conclusion-eyebrow"
-        className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+        className="font-eyebrow text-primary"
       >
         {t('conclusion.eyebrow')}
       </p>
-      <h2 className="text-lg font-bold text-foreground leading-snug text-balance">
+      <h2 className="font-h2 text-foreground text-balance">
         {conclusion}
       </h2>
     </div>

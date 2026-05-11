@@ -28,13 +28,13 @@ export function HapcardHighlights2Up({ cards }: HapcardHighlights2UpProps) {
         data-testid="hapcard-highlights-strength"
         className="rounded-2xl bg-semantic-ok-bg p-3 flex flex-col gap-0.5"
       >
-        <p className="text-xs font-medium uppercase tracking-wide text-semantic-ok">
+        <p className="font-eyebrow text-semantic-ok">
           {t('highlights.strengthLabel')}
         </p>
-        <h3 className="text-[15px] font-semibold leading-snug text-semantic-ok">
+        <h3 className="font-h3 text-semantic-ok">
           {strength.title}
         </h3>
-        <p className="text-[11px] leading-snug text-semantic-ok/80">
+        <p className="font-sub text-semantic-ok/80">
           {strength.reason}
         </p>
       </div>
@@ -43,13 +43,13 @@ export function HapcardHighlights2Up({ cards }: HapcardHighlights2UpProps) {
           data-testid="hapcard-highlights-warning"
           className="rounded-2xl bg-semantic-warn-bg p-3 flex flex-col gap-0.5"
         >
-          <p className="text-xs font-medium uppercase tracking-wide text-semantic-warn">
+          <p className="font-eyebrow text-semantic-warn">
             {t('highlights.warningLabel')}
           </p>
-          <h3 className="text-[15px] font-semibold leading-snug text-semantic-warn">
+          <h3 className="font-h3 text-semantic-warn">
             {warning.title}
           </h3>
-          <p className="text-[11px] leading-snug text-semantic-warn/80">
+          <p className="font-sub text-semantic-warn/80">
             {warning.reason}
           </p>
         </div>

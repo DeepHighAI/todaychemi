@@ -423,3 +423,38 @@
     }
   }
 }
+
+/* =========================================================================
+ * UIDesign §1.6 — 시멘틱 타이포그래피 유틸리티
+ * --t-* CSS 복합 font 토큰을 Tailwind @utility 로 노출.
+ * 컴포넌트에서 raw text-xs/sm/base/lg 대신 font-h2, font-sub 등 사용.
+ * ========================================================================= */
+@utility font-h1 {
+  font: var(--t-h1);
+  letter-spacing: var(--ls-tight);
+}
+@utility font-h2 {
+  font: var(--t-h2);
+  letter-spacing: var(--ls-snug);
+}
+@utility font-h3 {
+  font: var(--t-h3);
+  letter-spacing: -0.012em;
+}
+@utility font-body {
+  font: var(--t-body);
+}
+@utility font-sub {
+  font: var(--t-sub);
+}
+@utility font-cap {
+  font: var(--t-cap);
+}
+/* eyebrow — 700/11px/0.06em uppercase. color 는 컨텍스트별 별도 지정. */
+@utility font-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

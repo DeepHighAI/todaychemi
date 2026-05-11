@@ -21,14 +21,14 @@ export function HapcardCtaBar({ onAction, onShare }: HapcardCtaBarProps) {
       <button
         type="button"
         onClick={onAction}
-        className="w-full rounded-full bg-primary text-primary-foreground py-3 text-sm font-semibold"
+        className="w-full rounded-full bg-primary text-primary-foreground py-4 px-5 text-[15px] font-bold leading-none"
       >
         {t('action')}
       </button>
       <button
         type="button"
         onClick={onShare}
-        className="text-xs font-medium text-muted-foreground py-1 px-2 hover:text-foreground"
+        className="text-[13px] font-bold text-muted-foreground py-1 px-2 hover:text-foreground"
       >
         {t('share')}
       </button>

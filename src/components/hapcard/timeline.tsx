@@ -104,10 +104,10 @@ export function HapcardTimeline({ hapcardId, mode }: Props) {
   if (!data?.snapshots) return null;
 
   return (
-    <div data-testid="hapcard-timeline" className="rounded-2xl bg-card p-4 space-y-2">
+    <div data-testid="hapcard-timeline" className="rounded-2xl bg-primary/10 p-4 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-foreground">{t('title')}</span>
-        <span className="text-xs text-muted-foreground">{t('caption')}</span>
+        <span className="font-eyebrow text-primary">{t('title')}</span>
+        <span className="font-cap text-muted-foreground">{t('caption')}</span>
       </div>
       <BarChart snapshots={data.snapshots} todayIndex={data.today_index} />
       <p className="text-xs text-center text-primary font-medium">{t('today')}</p>

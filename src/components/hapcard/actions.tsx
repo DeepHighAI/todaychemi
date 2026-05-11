@@ -8,21 +8,31 @@ interface HapcardActionsProps {
 
 export function HapcardActions({ actions }: HapcardActionsProps) {
   const t = useTranslations('hapcard');
+  if (actions.length === 0) {
+    return (
+      <div data-testid="hapcard-actions" className="rounded-2xl bg-card p-6">
+        <p className="font-sub text-muted-foreground">{t('actionsList.empty')}</p>
+      </div>
+    );
+  }
+
   return (
-    <div data-testid="hapcard-actions" className="rounded-2xl bg-primary/10 p-6 space-y-3">
-      <p className="text-sm font-semibold text-foreground">{t('actionsList.title')}</p>
-      {actions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('actionsList.empty')}</p>
-      ) : (
-        <ol className="space-y-2">
-          {actions.map((action, i) => (
-            <li key={i} className="flex gap-3 items-start">
-              <span className="text-sm font-bold text-primary">{i + 1}</span>
-              <span className="text-sm text-foreground">{action}</span>
-            </li>
-          ))}
-        </ol>
-      )}
+    <div data-testid="hapcard-actions" className="space-y-2">
+      {actions.map((action, i) => (
+        <div
+          key={i}
+          className={
+            i === 0
+              ? 'rounded-2xl bg-primary/10 border border-primary/20 p-4 space-y-1.5'
+              : 'rounded-2xl bg-card border border-border p-4 space-y-1.5'
+          }
+        >
+          <p className="font-eyebrow text-primary">{i + 1}</p>
+          <p className={i === 0 ? 'font-h3 text-foreground' : 'font-body text-foreground'}>
+            {action}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
