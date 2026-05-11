@@ -10,7 +10,7 @@ export interface BannedPhraseCategory {
 
 export type BannedHit =
   | { found: true; category: string; phrase: string }
-  | { found: false };
+  | { found: false; phrase?: string };
 
 interface CatalogYaml {
   categories: Record<string, { description: string; phrases: string[] }>;
@@ -57,4 +57,13 @@ export function findScoreLeak(text: string): BannedHit {
     }
   }
   return { found: false };
+}
+
+/** CJK Unified Ideographs 범위에서 한자 존재 여부 확인 (U+4E00–U+9FFF). ADR-038. */
+export function containsClassicalHanja(text: string): BannedHit {
+  // 한자가 없으면 조기 반환
+  if (!text) return { found: false, phrase: '' };
+  const match = text.match(/[一-鿿]/);
+  if (!match) return { found: false, phrase: '' };
+  return { found: true, category: 'classical_hanja', phrase: match[0] };
 }

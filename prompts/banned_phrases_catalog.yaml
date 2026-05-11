@@ -2,8 +2,8 @@
 # LLM 출력에서 grep으로 차단할 표현. 위반 시 자동 톤 보정 재호출.
 # 변경 시 docs/specs/llm_quality_regression.md §2.3 동시 갱신.
 
-version: "1.0"
-updated_at: "2026-05-03"
+version: "1.1"
+updated_at: "2026-05-11"
 
 categories:
   fortune_assertion:
@@ -47,6 +47,10 @@ categories:
       - "이혼한다"
       - "헤어진다"
       - "절대 만나면 안"
+
+  classical_hanja:
+    description: "한자 직접 노출 금지 (main_text/cause_factors/why_cards/actions). 매칭은 src/lib/llm/banned-phrases.ts:containsClassicalHanja() 사용. ADR-038 (2026-05-11)."
+    phrases: []
 
 soft_replacements:
   "반드시": "~하는 흐름"

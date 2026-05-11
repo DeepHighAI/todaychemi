@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadBannedPhrases, findBannedPhrase, findScoreLeak } from '@/lib/llm/banned-phrases';
+import { loadBannedPhrases, findBannedPhrase, findScoreLeak, containsClassicalHanja } from '@/lib/llm/banned-phrases';
 
 describe('loadBannedPhrases — YAML 카탈로그 로드', () => {
   it('5개 카테고리 로드', () => {
@@ -12,11 +12,15 @@ describe('loadBannedPhrases — YAML 카탈로그 로드', () => {
     expect(categories).toContain('relationship_definitive');
   });
 
-  it('각 카테고리에 phrases 배열 존재', () => {
+  it('각 카테고리에 phrases 배열 존재 (함수 기반 카테고리는 빈 배열 허용)', () => {
     const catalog = loadBannedPhrases();
+    // 함수 기반 검사를 사용하는 카테고리는 phrases가 빈 배열일 수 있음 (ADR-038 classical_hanja)
+    const FUNCTION_BASED_CATEGORIES = new Set(['classical_hanja']);
     for (const cat of catalog) {
       expect(Array.isArray(cat.phrases)).toBe(true);
-      expect(cat.phrases.length).toBeGreaterThan(0);
+      if (!FUNCTION_BASED_CATEGORIES.has(cat.category)) {
+        expect(cat.phrases.length).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -134,5 +138,30 @@ describe('findScoreLeak — ADR-035 점수 누설 탐지', () => {
   it('빈 문자열 — found:false', () => {
     const hit = findScoreLeak('');
     expect(hit.found).toBe(false);
+  });
+});
+
+describe('containsClassicalHanja — ADR-038 한자 직접 노출 차단', () => {
+  it('한자 포함 텍스트에서 found:true 반환', () => {
+    const result = containsClassicalHanja('재성(財星)이 왕한 구조');
+    expect(result.found).toBe(true);
+    expect(result.phrase).toBe('財');
+  });
+
+  it('순한글 텍스트에서 found:false 반환', () => {
+    const result = containsClassicalHanja('재성(재물 기운)이 왕한 구조');
+    expect(result.found).toBe(false);
+    expect(result.phrase).toBe('');
+  });
+
+  it('빈 문자열에서 found:false 반환', () => {
+    const result = containsClassicalHanja('');
+    expect(result.found).toBe(false);
+  });
+
+  it('순한자 텍스트에서 첫 번째 한자 반환', () => {
+    const result = containsClassicalHanja('官多者身弱');
+    expect(result.found).toBe(true);
+    expect(result.phrase).toBe('官');
   });
 });
