@@ -42,6 +42,7 @@ Two root causes:
 **Negative:**
 - `convertHanja()` adds a minimal string processing overhead per render (negligible at ~300 chars).
 - Korean glosses slightly increase text length (within 120–280 char constraint verified).
+- `cause_factors` field (명리 근거 목록) has no React render component in Phase B. When `HapcardCauseFactors` is implemented in a future phase, it MUST wrap `.name` and `.effect` with `convertHanja()` to maintain this policy.
 
 ## Implementation
 
