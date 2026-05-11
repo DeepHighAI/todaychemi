@@ -12,8 +12,8 @@ export type HapcardComponent =
   | 'glossary'
   | 'mini_radar';
 
-// LLM 모델 식별자 (db_schema.md §5 hapcards.llm_model 허용값)
-export type LlmModel = 'gpt-4o' | 'gpt-4o-mini' | 'claude-fallback';
+// LLM 모델 식별자 (db_schema.md §5 hapcards.llm_model 허용값 — migration 0006/0026 CHECK 제약과 동일)
+export type LlmModel = 'gpt-5o' | 'gpt-5' | 'gpt-5-mini' | 'claude-fallback';
 
 // 합카드 시각 보조 데이터 — DB 저장 X, 런타임 첨부 (builder.ts → transport)
 // ChartCore에서 파생: day_pillar(일주 chip), day_master_element(오행 컬러), five_elements_counts(오행맵 막대)

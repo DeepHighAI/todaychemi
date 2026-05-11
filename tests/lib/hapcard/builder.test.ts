@@ -106,7 +106,7 @@ const MOCK_LLM_OUTPUT = {
 const MOCK_LLM_RESULT = {
   output: MOCK_LLM_OUTPUT,
   usage: { token_in: 100, token_out: 200, total_usd: 0 },
-  model: 'gpt-4o' as const,
+  model: 'gpt-5o' as const,
 };
 
 const EXPECTED_CACHE_KEY = deriveCacheKey({
@@ -140,7 +140,7 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
       why_cards: MOCK_LLM_OUTPUT.why_cards,
     },
     prompt_version: MOCK_PROMPT.version,
-    llm_model: 'gpt-4o',
+    llm_model: 'gpt-5o',
     cache_key: cacheKey,
     user_chart_hash: BASE_INPUT.self_chart_hash,
     relation_chart_hash: BASE_INPUT.relation_chart_hash,
@@ -315,7 +315,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     await buildHapcard(BASE_INPUT, makeDeps(client));
 
     const insertCall = insert.mock.calls[0][0];
-    expect(insertCall.llm_model).toBe('gpt-4o');
+    expect(insertCall.llm_model).toBe('gpt-5o');
   });
 
   it('grounding 실패(errors.length>0) → 1회 retry → 2차 성공', async () => {

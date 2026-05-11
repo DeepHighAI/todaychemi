@@ -13,7 +13,7 @@ export async function callDailyHapLlm(chart: ChartCore, openai: OpenAI): Promise
   const systemPrompt = loadSystemPrompt();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: JSON.stringify({ chart_core: chart }) },
