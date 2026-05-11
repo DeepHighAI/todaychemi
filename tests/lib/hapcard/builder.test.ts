@@ -531,6 +531,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     // RAG hit: asset_id 매칭, original_reading 보유
     const ragHit = {
       asset_id: 'classic_dts_001',
+      // ragHit.source_title은 builder에서 미사용 — source는 LLM citation.source_title 기반
       source_title: '滴天髓(적천수)',
       source_chapter: '通神頌',
       original_text: '官多者身弱, 食傷可用',

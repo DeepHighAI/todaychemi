@@ -192,8 +192,8 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     const replayRow = { replay_id: 'replay-001', created_at: '2026-05-06T00:00:00Z' };
 
     // 두 번 연속 .eq() 체인을 지원하는 빌더 — user_charts / relation_charts 공용
-    const maybySingle = vi.fn().mockResolvedValue({ data: chartRow, error: null });
-    const eq2 = vi.fn().mockReturnValue({ maybeSingle: maybySingle });
+    const maybeSingle = vi.fn().mockResolvedValue({ data: chartRow, error: null });
+    const eq2 = vi.fn().mockReturnValue({ maybeSingle });
     const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
     const selectChart = vi.fn().mockReturnValue({ eq: eq1 });
 
