@@ -20,4 +20,11 @@ describe('HapcardBody', () => {
     renderWithProviders(<HapcardBody mainText="두 사람의 합은 강합니다." />);
     expect(screen.getByText('두 사람의 합은 강합니다.')).toBeInTheDocument();
   });
+
+  it('한자 포함 텍스트에서 한자를 DOM에 노출하지 않는다', () => {
+    const { container } = renderWithProviders(
+      <HapcardBody mainText="재성(財星)이 왕한 구조입니다." />
+    );
+    expect(container.textContent).not.toMatch(/[一-鿿]/);
+  });
 });

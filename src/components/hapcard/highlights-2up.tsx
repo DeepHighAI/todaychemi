@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { convertHanja } from '@/lib/glossary/post-process';
 
 interface WhyCard {
   title: string;
@@ -31,11 +32,12 @@ export function HapcardHighlights2Up({ cards }: HapcardHighlights2UpProps) {
         <p className="font-eyebrow text-semantic-ok">
           {t('highlights.strengthLabel')}
         </p>
+        {/* LLM 출력 필드 — 한자 안전망 적용 */}
         <h3 className="font-h3 text-semantic-ok">
-          {strength.title}
+          {convertHanja(strength.title)}
         </h3>
         <p className="font-sub text-semantic-ok/80">
-          {strength.reason}
+          {convertHanja(strength.reason)}
         </p>
       </div>
       {warning && (
@@ -46,11 +48,12 @@ export function HapcardHighlights2Up({ cards }: HapcardHighlights2UpProps) {
           <p className="font-eyebrow text-semantic-warn">
             {t('highlights.warningLabel')}
           </p>
+          {/* LLM 출력 필드 — 한자 안전망 적용 */}
           <h3 className="font-h3 text-semantic-warn">
-            {warning.title}
+            {convertHanja(warning.title)}
           </h3>
           <p className="font-sub text-semantic-warn/80">
-            {warning.reason}
+            {convertHanja(warning.reason)}
           </p>
         </div>
       )}

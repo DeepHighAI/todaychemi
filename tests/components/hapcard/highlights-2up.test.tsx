@@ -56,4 +56,16 @@ describe('HapcardHighlights2Up', () => {
     expect(screen.queryByText('중간 카드')).toBeNull();
     expect(screen.queryByText('중간 이유')).toBeNull();
   });
+
+  it('한자 포함 텍스트에서 한자를 DOM에 노출하지 않는다', () => {
+    const { container } = renderWithProviders(
+      <HapcardHighlights2Up
+        cards={[
+          { title: '자오충(子午沖)', reason: '일지가 충돌합니다' },
+          { title: '금수(金水) 조화', reason: '에너지가 균형잡혀요' },
+        ]}
+      />
+    );
+    expect(container.textContent).not.toMatch(/[一-鿿]/);
+  });
 });

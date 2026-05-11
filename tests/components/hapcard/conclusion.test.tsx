@@ -20,4 +20,11 @@ describe('HapcardConclusion', () => {
     renderWithProviders(<HapcardConclusion mainText="짧은 텍스트" />);
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('짧은 텍스트');
   });
+
+  it('한자 포함 텍스트에서 한자를 DOM에 노출하지 않는다', () => {
+    const { container } = renderWithProviders(
+      <HapcardConclusion mainText="木火土 기운이 강한 인연입니다." />
+    );
+    expect(container.textContent).not.toMatch(/[一-鿿]/);
+  });
 });

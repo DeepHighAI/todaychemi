@@ -26,4 +26,11 @@ describe('HapcardActions', () => {
     expect(screen.getByText('진심을 전하기')).toBeInTheDocument();
     expect(screen.getByText('작은 선물하기')).toBeInTheDocument();
   });
+
+  it('한자 포함 텍스트에서 한자를 DOM에 노출하지 않는다', () => {
+    const { container } = renderWithProviders(
+      <HapcardActions actions={['金水 관계 강화하기', '木火 균형 맞추기']} />
+    );
+    expect(container.textContent).not.toMatch(/[一-鿿]/);
+  });
 });
