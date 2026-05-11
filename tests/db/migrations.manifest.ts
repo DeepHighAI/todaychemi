@@ -189,6 +189,7 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     ],
     checkEnums: [
       { col: 'mode', values: ['일합', '친구합', '돈합', '첫합', '썸합', '오래합'] },
+      { col: 'llm_model', values: ['gpt-5o', 'gpt-5', 'gpt-5-mini', 'claude-fallback'] },
     ],
     foreignKeys: [
       { col: 'user_id', refs: 'public.users' },
@@ -546,6 +547,7 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     ],
     checkEnums: [
       { col: 'type', values: ['work', 'love', 'conflict', 'leadership', 'money', 'first_meet'] },
+      { col: 'llm_model', values: ['gpt-5o', 'gpt-5', 'gpt-5-mini', 'claude-fallback'] },
     ],
     foreignKeys: [{ col: 'user_id', refs: 'public.users' }],
     rls: { enabled: true, policies: ['whatif_results_own'] },
