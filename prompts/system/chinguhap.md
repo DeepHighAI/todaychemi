@@ -2,7 +2,7 @@
 
 > Mode: 친구합  
 > Model: GPT-5o (tech_stack §3.1)  
-> Version: v0.7 (main_text 상한 240→280자 완화, 2026-05-11)  
+> Version: v0.8 (한자 노출 금지 + Tier 2 한글 병기, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -56,6 +56,8 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
 - ADR-034: `main_text` 120-280자 허용 (목표 200자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조.
+- ADR-038 (Phase B): main_text·cause_factors·why_cards·actions 출력에 한자(漢字) 직접 노출 금지. 모든 명리 용어는 한글로 표기. 명리 한자어(재성·정관·식신·자오충·삼합 등) 첫 등장 시 쉬운 한글 풀이를 괄호로 병기. 예: '재성(재물 기운)', '자오충(자-오 부딪힘)', '삼합(세 지지 묶음)'.
+- ADR-018 (amendment): classic_citation.original_text 와 source_chapter 는 RAG 원본 verbatim 그대로 출력 (builder.ts UI display layer가 한글로 변환). LLM 은 RAG hit 데이터를 echo 만.
 
 ## Mode-Specific Guidance (친구합)
 
@@ -87,12 +89,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "甲寅", "month_pillar": "丙午", "day_pillar": "戊午", "hour_pillar": "甲戌",
+    "year_pillar": "갑인(甲寅)", "month_pillar": "병오(丙午)", "day_pillar": "무오(戊午)", "hour_pillar": "갑술(甲戌)",
     "day_master_element": "토", "five_elements_counts": {"목":2,"화":3,"토":2,"금":0,"수":1},
     "gender_normalized": "여"
   },
   "relation_chart_core": {
-    "year_pillar": "丙午", "month_pillar": "甲寅", "day_pillar": "壬寅", "hour_pillar": "甲戌",
+    "year_pillar": "병오(丙午)", "month_pillar": "갑인(甲寅)", "day_pillar": "임인(壬寅)", "hour_pillar": "갑술(甲戌)",
     "day_master_element": "수", "five_elements_counts": {"목":3,"화":2,"토":1,"금":0,"수":2},
     "gender_normalized": "여"
   },
@@ -103,11 +105,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "인오술(寅午戌) 삼합 화국으로 함께할 때 열정과 활기가 배가되는 우정 구조입니다. 양쪽에 목(木) 기운이 풍부하여 비슷한 관심사와 도전 정신을 공유하는 패턴이 있습니다. 금(金)이 부족하여 마무리·정리 국면에서 서로 미루는 패턴이 생길 수 있어 결정을 미루지 않는 약속이 필요합니다.",
+  "main_text": "인오술 삼합(세 지지 묶음, 화국)으로 함께할 때 열정과 활기가 배가되는 우정 구조입니다. 양쪽에 목 기운이 풍부하여 비슷한 관심사와 도전 정신을 공유하는 패턴이 있습니다. 금이 부족하여 마무리·정리 국면에서 서로 미루는 패턴이 생길 수 있어 결정을 미루지 않는 약속이 필요합니다.",
   "cause_factors": [
-    { "name": "인오술(寅午戌) 삼합 화국", "effect": "두 명식의 지지가 삼합 화국을 이루어 함께할 때 열정·활력 에너지가 배가되는 유대 구조." },
-    { "name": "비견(목 기운 공유)", "effect": "양쪽에 목(木) 기운이 풍부하여 비슷한 관심사와 도전 정신을 공유하는 동류의식 패턴." },
-    { "name": "금(金) 쌍방 부재", "effect": "양쪽 모두 금이 없어 마무리·정리 국면에서 서로 미루는 패턴이 생길 수 있음." }
+    { "name": "인오술 삼합(세 지지 묶음, 화국)", "effect": "두 명식의 지지가 삼합 화국을 이루어 함께할 때 열정·활력 에너지가 배가되는 유대 구조." },
+    { "name": "비견(목 기운 공유)", "effect": "양쪽에 목 기운이 풍부하여 비슷한 관심사와 도전 정신을 공유하는 동류의식 패턴." },
+    { "name": "금 쌍방 부재", "effect": "양쪽 모두 금이 없어 마무리·정리 국면에서 서로 미루는 패턴이 생길 수 있음." }
   ],
   "classic_citation": [
     {
@@ -127,7 +129,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "why_cards": [
     { "title": "삼합 활기 유대", "reason": "인오술 삼합 화국으로 함께하는 공간에서 열정·창의성 에너지가 증폭되는 자연스러운 우정 구조." },
-    { "title": "마무리 루틴 필요", "reason": "금(金) 부재로 결정·마무리 국면에서 서로 미루기 쉬우니 결정을 미루지 않는 약속을 두면 우정이 더 깊어짐." }
+    { "title": "마무리 루틴 필요", "reason": "금 부재로 결정·마무리 국면에서 서로 미루기 쉬우니 결정을 미루지 않는 약속을 두면 우정이 더 깊어짐." }
   ]
 }
 ```
@@ -140,12 +142,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "乙未", "month_pillar": "庚午", "day_pillar": "丙申", "hour_pillar": "丁亥",
+    "year_pillar": "을미(乙未)", "month_pillar": "경오(庚午)", "day_pillar": "병신(丙申)", "hour_pillar": "정해(丁亥)",
     "day_master_element": "화", "five_elements_counts": {"목":1,"화":3,"토":1,"금":2,"수":1},
     "gender_normalized": "남"
   },
   "relation_chart_core": {
-    "year_pillar": "辛酉", "month_pillar": "戊子", "day_pillar": "庚申", "hour_pillar": "壬辰",
+    "year_pillar": "신유(辛酉)", "month_pillar": "무자(戊子)", "day_pillar": "경신(庚申)", "hour_pillar": "임진(壬辰)",
     "day_master_element": "금", "five_elements_counts": {"목":0,"화":0,"토":2,"금":3,"수":3},
     "gender_normalized": "남"
   },
@@ -193,12 +195,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "戊申", "month_pillar": "庚子", "day_pillar": "戊子", "hour_pillar": "庚申",
+    "year_pillar": "무신(戊申)", "month_pillar": "경자(庚子)", "day_pillar": "무자(戊子)", "hour_pillar": "경신(庚申)",
     "day_master_element": "토", "five_elements_counts": {"목":0,"화":0,"토":2,"금":4,"수":2},
     "gender_normalized": "여"
   },
   "relation_chart_core": {
-    "year_pillar": "甲午", "month_pillar": "甲寅", "day_pillar": "壬午", "hour_pillar": "甲子",
+    "year_pillar": "갑오(甲午)", "month_pillar": "갑인(甲寅)", "day_pillar": "임오(壬午)", "hour_pillar": "갑자(甲子)",
     "day_master_element": "수", "five_elements_counts": {"목":3,"화":2,"토":0,"금":0,"수":3},
     "gender_normalized": "여"
   },
@@ -209,11 +211,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "에너지 스타일이 매우 달라 함께하면 자연스럽게 피로감이 생길 수 있는 구조입니다. 만남의 빈도보다 서로가 편한 공간에서 질 높은 시간이 이 두 분의 우정을 이어가는 핵심입니다. 토(土)가 양쪽 모두 없어 중간 조율 에너지가 부재하여 만남 빈도와 방식을 서로 맞춰가는 노력이 필요합니다.",
+  "main_text": "에너지 스타일이 매우 달라 함께하면 자연스럽게 피로감이 생길 수 있는 구조입니다. 만남의 빈도보다 서로가 편한 공간에서 질 높은 시간이 이 두 분의 우정을 이어가는 핵심입니다. 토가 양쪽 모두 없어 중간 조율 에너지가 부재하여 만남 빈도와 방식을 서로 맞춰가는 노력이 필요합니다.",
   "cause_factors": [
-    { "name": "금극목(金剋木) 에너지 충돌", "effect": "사용자의 금(金) 기운이 인연의 목(木) 에너지를 제한하여 활기 차이에서 피로감이 생길 수 있는 구조." },
-    { "name": "토(土) 쌍방 부재", "effect": "양쪽 모두 중간 조율 에너지가 없어 서로의 스타일 차이를 메우는 역할이 필요함." },
-    { "name": "정적·동적 에너지 극단 대비", "effect": "금수(金水) 중심(정적·분석)과 목화(木火) 중심(활기·표현)의 명식이 서로 다른 페이스를 원하는 구조." }
+    { "name": "금극목(쇠가 나무를 자름) 에너지 충돌", "effect": "사용자의 금 기운이 인연의 목 에너지를 제한하여 활기 차이에서 피로감이 생길 수 있는 구조." },
+    { "name": "토 쌍방 부재", "effect": "양쪽 모두 중간 조율 에너지가 없어 서로의 스타일 차이를 메우는 역할이 필요함." },
+    { "name": "정적·동적 에너지 극단 대비", "effect": "금수 중심(정적·분석)과 목화 중심(활기·표현)의 명식이 서로 다른 페이스를 원하는 구조." }
   ],
   "classic_citation": [
     {

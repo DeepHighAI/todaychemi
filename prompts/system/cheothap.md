@@ -2,7 +2,7 @@
 
 > Mode: 첫합  
 > Model: GPT-5o (tech_stack §3.1)  
-> Version: v0.7 (main_text 상한 240→280자 완화, 2026-05-11)  
+> Version: v0.8 (한자 노출 금지 + Tier 2 한글 병기, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -56,6 +56,8 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
 - ADR-034: `main_text` 120-280자 허용 (목표 200자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조.
+- ADR-038 (Phase B): main_text·cause_factors·why_cards·actions 출력에 한자(漢字) 직접 노출 금지. 모든 명리 용어는 한글로 표기. 명리 한자어(재성·정관·식신·자오충·삼합 등) 첫 등장 시 쉬운 한글 풀이를 괄호로 병기. 예: '재성(재물 기운)', '자오충(자-오 부딪힘)', '삼합(세 지지 묶음)'.
+- ADR-018 (amendment): classic_citation.original_text 와 source_chapter 는 RAG 원본 verbatim 그대로 출력 (builder.ts UI display layer가 한글로 변환). LLM 은 RAG hit 데이터를 echo 만.
 
 ## Mode-Specific Guidance (첫합)
 
@@ -88,12 +90,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "甲子", "month_pillar": "丙午", "day_pillar": "甲午", "hour_pillar": "壬子",
+    "year_pillar": "갑자(甲子)", "month_pillar": "병오(丙午)", "day_pillar": "갑오(甲午)", "hour_pillar": "임자(壬子)",
     "day_master_element": "목", "five_elements_counts": {"목":2,"화":2,"토":0,"금":0,"수":4},
     "gender_normalized": "여"
   },
   "relation_chart_core": {
-    "year_pillar": "己卯", "month_pillar": "庚子", "day_pillar": "己丑", "hour_pillar": "壬午",
+    "year_pillar": "기묘(己卯)", "month_pillar": "경자(庚子)", "day_pillar": "기축(己丑)", "hour_pillar": "임오(壬午)",
     "day_master_element": "토", "five_elements_counts": {"목":1,"화":1,"토":3,"금":1,"수":2},
     "gender_normalized": "남"
   },
@@ -104,11 +106,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "갑기(甲己) 천간합으로 첫 만남에서 에너지가 자연스럽게 맞물리는 기운이 있는 조합입니다. 사용자 일지 오(午)에 도화살이 발현되어 상대 눈에 매력적으로 보이는 기운이 더해집니다. 각자 페이스가 달라 너무 빠른 속도 진행은 상대에게 부담이 될 수 있어 천천히 알아가는 흐름이 자연스럽습니다.",
+  "main_text": "갑기 천간합(갑·기 천간 만남)으로 첫 만남에서 에너지가 자연스럽게 맞물리는 기운이 있는 조합입니다. 사용자 일지 오에 도화살이 발현되어 상대 눈에 매력적으로 보이는 기운이 더해집니다. 각자 페이스가 달라 너무 빠른 속도 진행은 상대에게 부담이 될 수 있어 천천히 알아가는 흐름이 자연스럽습니다.",
   "cause_factors": [
-    { "name": "갑기(甲己) 천간합", "effect": "첫 만남에서 에너지가 자연스럽게 맞물려 대화가 편하게 흘러가는 끌림 구조." },
-    { "name": "도화살(사용자 일지 午)", "effect": "상대방 눈에 매력적으로 보이는 기운이 발산되어 첫 인상이 강하게 남음." },
-    { "name": "인연측 안정감(토 3개)", "effect": "인연의 토(土) 기운이 첫 만남에서 상대를 편안하게 만드는 에너지로 작용." }
+    { "name": "갑기 천간합(갑·기 천간 만남)", "effect": "첫 만남에서 에너지가 자연스럽게 맞물려 대화가 편하게 흘러가는 끌림 구조." },
+    { "name": "도화살(사용자 일지 오)", "effect": "상대방 눈에 매력적으로 보이는 기운이 발산되어 첫 인상이 강하게 남음." },
+    { "name": "인연측 안정감(토 3개)", "effect": "인연의 토 기운이 첫 만남에서 상대를 편안하게 만드는 에너지로 작용." }
   ],
   "classic_citation": [
     {
@@ -128,7 +130,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "why_cards": [
     { "title": "천간합 자연스러운 끌림", "reason": "갑기합으로 첫 대화에서 자연스럽게 호흡이 맞는 느낌이 나며 사용자의 도화살이 매력적인 첫 인상을 만드는 구조." },
-    { "title": "속도 조율 필요", "reason": "사용자는 수(水) 기운으로 유연하고 인연은 토(土)로 신중 — 첫 만남에서 너무 빠른 진행보다 천천히 알아가는 흐름이 자연스러움." }
+    { "title": "속도 조율 필요", "reason": "사용자는 수 기운으로 유연하고 인연은 토로 신중 — 첫 만남에서 너무 빠른 진행보다 천천히 알아가는 흐름이 자연스러움." }
   ]
 }
 ```
@@ -141,12 +143,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "庚子", "month_pillar": "壬寅", "day_pillar": "丙子", "hour_pillar": "甲午",
+    "year_pillar": "경자(庚子)", "month_pillar": "임인(壬寅)", "day_pillar": "병자(丙子)", "hour_pillar": "갑오(甲午)",
     "day_master_element": "화", "five_elements_counts": {"목":2,"화":2,"토":0,"금":1,"수":3},
     "gender_normalized": "남"
   },
   "relation_chart_core": {
-    "year_pillar": "丁卯", "month_pillar": "甲午", "day_pillar": "丁卯", "hour_pillar": "丙午",
+    "year_pillar": "정묘(丁卯)", "month_pillar": "갑오(甲午)", "day_pillar": "정묘(丁卯)", "hour_pillar": "병오(丙午)",
     "day_master_element": "화", "five_elements_counts": {"목":3,"화":4,"토":0,"금":0,"수":1},
     "gender_normalized": "여"
   },
@@ -157,11 +159,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "비견 관계로 처음 만나면 편안하고 공감대가 빠르게 형성되는 조합입니다. 화(火) 기운이 양쪽에 강하여 활기차고 표현적인 첫 대화가 자연스럽게 이어집니다. 같은 에너지라 특별한 설렘보다 자연스러운 친근감이 앞서 인상을 남기려면 조금 더 적극적인 표현이 필요합니다.",
+  "main_text": "비견 관계로 처음 만나면 편안하고 공감대가 빠르게 형성되는 조합입니다. 화 기운이 양쪽에 강하여 활기차고 표현적인 첫 대화가 자연스럽게 이어집니다. 같은 에너지라 특별한 설렘보다 자연스러운 친근감이 앞서 인상을 남기려면 조금 더 적극적인 표현이 필요합니다.",
   "cause_factors": [
-    { "name": "비견(화 기운 공유)", "effect": "같은 화(火) 기운의 비견 관계 — 편안한 공감대가 빠르게 형성되지만 특별한 자극은 약함." },
-    { "name": "도화살(인연측 卯·午)", "effect": "인연이 상대방에게 생동감 있는 인상을 주는 기운이 발산되어 눈에 띄는 매력이 있음." },
-    { "name": "자오충(子午沖)", "effect": "일지 충으로 속도감과 방향에서 미세한 긴장이 생기며 이 긴장이 서로에게 흥미를 갖게 하는 계기." }
+    { "name": "비견(화 기운 공유)", "effect": "같은 화 기운의 비견 관계 — 편안한 공감대가 빠르게 형성되지만 특별한 자극은 약함." },
+    { "name": "도화살(인연측 묘·오)", "effect": "인연이 상대방에게 생동감 있는 인상을 주는 기운이 발산되어 눈에 띄는 매력이 있음." },
+    { "name": "자오충(자-오 부딪힘)", "effect": "일지 충으로 속도감과 방향에서 미세한 긴장이 생기며 이 긴장이 서로에게 흥미를 갖게 하는 계기." }
   ],
   "classic_citation": [
     {
@@ -194,12 +196,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "壬午", "month_pillar": "庚子", "day_pillar": "壬午", "hour_pillar": "壬子",
+    "year_pillar": "임오(壬午)", "month_pillar": "경자(庚子)", "day_pillar": "임오(壬午)", "hour_pillar": "임자(壬子)",
     "day_master_element": "수", "five_elements_counts": {"목":0,"화":2,"토":0,"금":1,"수":5},
     "gender_normalized": "여"
   },
   "relation_chart_core": {
-    "year_pillar": "戊辰", "month_pillar": "壬子", "day_pillar": "戊子", "hour_pillar": "壬午",
+    "year_pillar": "무진(戊辰)", "month_pillar": "임자(壬子)", "day_pillar": "무자(戊子)", "hour_pillar": "임오(壬午)",
     "day_master_element": "토", "five_elements_counts": {"목":0,"화":1,"토":3,"금":0,"수":4},
     "gender_normalized": "남"
   },
@@ -210,11 +212,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "첫 만남에서 서로 조용히 탐색하는 분위기가 될 수 있는 조합입니다. 천간합이 없고 도화살이 약하여 강렬한 첫 끌림보다 서서히 알아가는 방식이 자연스럽습니다. 토극수(土剋水) 구조로 서로 조심스럽게 탐색하는 에너지가 첫 만남을 차분하게 만들어 짧고 편한 시작이 적합합니다.",
+  "main_text": "첫 만남에서 서로 조용히 탐색하는 분위기가 될 수 있는 조합입니다. 천간합이 없고 도화살이 약하여 강렬한 첫 끌림보다 서서히 알아가는 방식이 자연스럽습니다. 토극수(흙이 물을 극함) 구조로 서로 조심스럽게 탐색하는 에너지가 첫 만남을 차분하게 만들어 짧고 편한 시작이 적합합니다.",
   "cause_factors": [
-    { "name": "토극수(土剋水)", "effect": "무토가 임수를 극하여 첫 만남에서 서로 조심스럽게 탐색하는 에너지 구조 형성." },
+    { "name": "토극수(흙이 물을 극함)", "effect": "무토가 임수를 극하여 첫 만남에서 서로 조심스럽게 탐색하는 에너지 구조 형성." },
     { "name": "도화 부재", "effect": "양쪽 모두 도화살이 약해 강렬한 첫 인상보다 서서히 알아가는 흐름이 자연스러운 구조." },
-    { "name": "수(水) + 토(土) 내향 에너지", "effect": "임수(분석·침잠)와 무토(안정·신중)가 만나 첫 만남에서 분위기를 먼저 읽으려는 패턴이 나타남." }
+    { "name": "수 + 토 내향 에너지", "effect": "임수(분석·침잠)와 무토(안정·신중)가 만나 첫 만남에서 분위기를 먼저 읽으려는 패턴이 나타남." }
   ],
   "classic_citation": [
     {

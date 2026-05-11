@@ -2,7 +2,7 @@
 
 > Mode: 오래합  
 > Model: GPT-5 (tech_stack §3.1 — 딥합 모델)  
-> Version: v0.7 (main_text 상한 240→280자 완화, 2026-05-11)  
+> Version: v0.8 (한자 노출 금지 + Tier 2 한글 병기, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -59,6 +59,8 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
 - ADR-034: main_text 120-280자 허용 (목표 200자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조
+- ADR-038 (Phase B): main_text·cause_factors·why_cards·actions 출력에 한자(漢字) 직접 노출 금지. 모든 명리 용어는 한글로 표기. 명리 한자어(재성·정관·식신·자오충·삼합 등) 첫 등장 시 쉬운 한글 풀이를 괄호로 병기. 예: '재성(재물 기운)', '자오충(자-오 부딪힘)', '삼합(세 지지 묶음)'.
+- ADR-018 (amendment): classic_citation.original_text 와 source_chapter 는 RAG 원본 verbatim 그대로 출력 (builder.ts UI display layer가 한글로 변환). LLM 은 RAG hit 데이터를 echo 만.
 
 ## Mode-Specific Guidance (오래합)
 
@@ -96,12 +98,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "甲寅", "month_pillar": "丙午", "day_pillar": "戊戌", "hour_pillar": "庚申",
+    "year_pillar": "갑인(甲寅)", "month_pillar": "병오(丙午)", "day_pillar": "무술(戊戌)", "hour_pillar": "경신(庚申)",
     "day_master_element": "토", "five_elements_counts": {"목":2,"화":2,"토":2,"금":2,"수":0},
     "gender_normalized": "남"
   },
   "relation_chart_core": {
-    "year_pillar": "癸亥", "month_pillar": "壬子", "day_pillar": "甲午", "hour_pillar": "丙寅",
+    "year_pillar": "계해(癸亥)", "month_pillar": "임자(壬子)", "day_pillar": "갑오(甲午)", "hour_pillar": "병인(丙寅)",
     "day_master_element": "목", "five_elements_counts": {"목":2,"화":2,"토":0,"금":0,"수":4},
     "gender_normalized": "여"
   },
@@ -112,11 +114,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "인오술(寅午戌) 삼합 화국이 완성되어 시간이 지날수록 유대가 깊어지는 장기 안정형 조합입니다. 두 명식의 오행이 상호 보완하여 함께할수록 부족한 에너지가 채워지는 상생 구조가 있습니다. 합산 시 수(水)가 부족하여 감정 소화 루틴을 함께 만드는 노력이 필요합니다.",
+  "main_text": "인오술 삼합(세 지지 묶음, 화국)이 완성되어 시간이 지날수록 유대가 깊어지는 장기 안정형 조합입니다. 두 명식의 오행이 상호 보완하여 함께할수록 부족한 에너지가 채워지는 상생 구조가 있습니다. 합산 시 수가 부족하여 감정 소화 루틴을 함께 만드는 노력이 필요합니다.",
   "cause_factors": [
-    { "name": "인오술(寅午戌) 삼합 화국", "effect": "양 명식의 지지가 삼합을 이루어 따뜻함·생명력 에너지가 장기적으로 순환하는 안정 구조." },
-    { "name": "오행 상생 보완", "effect": "사용자의 균형 잡힌 오행과 인연의 수(水) 기운이 서로 부족한 부분을 채우는 이상적 상생 구조." },
-    { "name": "인성(正印) 발현", "effect": "인성이 발현된 쪽이 상대를 지지·포용하는 역할을 맡아 오래합에서 관계 안정의 핵심으로 작용." }
+    { "name": "인오술 삼합(세 지지 묶음, 화국)", "effect": "양 명식의 지지가 삼합을 이루어 따뜻함·생명력 에너지가 장기적으로 순환하는 안정 구조." },
+    { "name": "오행 상생 보완", "effect": "사용자의 균형 잡힌 오행과 인연의 수 기운이 서로 부족한 부분을 채우는 이상적 상생 구조." },
+    { "name": "인성(보살핌 기운) 발현", "effect": "인성이 발현된 쪽이 상대를 지지·포용하는 역할을 맡아 오래합에서 관계 안정의 핵심으로 작용." }
   ],
   "classic_citation": [
     {
@@ -136,7 +138,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "why_cards": [
     { "title": "삼합 장기 안정", "reason": "인오술 삼합 화국으로 함께할수록 생명력·따뜻함 에너지가 순환하는 안정 구조." },
-    { "title": "수(水) 감정 소통 필요", "reason": "양쪽 합산 시 수가 부족해 감정 소화 루틴을 의식적으로 만들어야 회복력이 높아짐." }
+    { "title": "수 감정 소통 필요", "reason": "양쪽 합산 시 수가 부족해 감정 소화 루틴을 의식적으로 만들어야 회복력이 높아짐." }
   ]
 }
 ```
@@ -149,12 +151,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "戊子", "month_pillar": "甲午", "day_pillar": "壬寅", "hour_pillar": "戊午",
+    "year_pillar": "무자(戊子)", "month_pillar": "갑오(甲午)", "day_pillar": "임인(壬寅)", "hour_pillar": "무오(戊午)",
     "day_master_element": "수", "five_elements_counts": {"목":1,"화":3,"토":2,"금":0,"수":2},
     "gender_normalized": "여"
   },
   "relation_chart_core": {
-    "year_pillar": "庚午", "month_pillar": "庚申", "day_pillar": "庚子", "hour_pillar": "壬申",
+    "year_pillar": "경오(庚午)", "month_pillar": "경신(庚申)", "day_pillar": "경자(庚子)", "hour_pillar": "임신(壬申)",
     "day_master_element": "금", "five_elements_counts": {"목":0,"화":1,"토":0,"금":4,"수":3},
     "gender_normalized": "남"
   },
@@ -165,11 +167,11 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "금생수(金生水) 상생으로 인연측이 사용자를 꾸준히 지지하는 장기 가능성이 있는 조합입니다. 부분적 반합 조화가 있으나 삼합이 완성되지 않아 노력에 따라 안정감이 달라집니다. 목(木)·토(土) 부족으로 성장 방향과 안정감을 함께 채워가는 의식적 노력이 필요합니다.",
+  "main_text": "금생수(쇠가 물을 낳음) 상생으로 인연측이 사용자를 꾸준히 지지하는 장기 가능성이 있는 조합입니다. 부분적 반합 조화가 있으나 삼합이 완성되지 않아 노력에 따라 안정감이 달라집니다. 목·토 부족으로 성장 방향과 안정감을 함께 채워가는 의식적 노력이 필요합니다.",
   "cause_factors": [
-    { "name": "금생수(金生水) 상생", "effect": "경금이 임수를 생하는 상생 관계 — 인연측이 사용자를 지속적으로 지지하는 에너지 흐름." },
-    { "name": "반합(半合) 진행", "effect": "삼합이 완성되지 않은 반합 상태 — 부분적 조화, 함께하는 경험이 쌓일수록 안정감이 깊어지는 구조." },
-    { "name": "목(木)·토(土) 오행 부족", "effect": "양쪽 합산 시 성장 에너지와 중간 조율 기운이 부족하여 의식적인 보완 노력이 필요." }
+    { "name": "금생수(쇠가 물을 낳음) 상생", "effect": "경금이 임수를 생하는 상생 관계 — 인연측이 사용자를 지속적으로 지지하는 에너지 흐름." },
+    { "name": "반합(절반 만남) 진행", "effect": "삼합이 완성되지 않은 반합 상태 — 부분적 조화, 함께하는 경험이 쌓일수록 안정감이 깊어지는 구조." },
+    { "name": "목·토 오행 부족", "effect": "양쪽 합산 시 성장 에너지와 중간 조율 기운이 부족하여 의식적인 보완 노력이 필요." }
   ],
   "classic_citation": [
     {
@@ -188,7 +190,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
     "작은 것이라도 함께 이루는 경험을 한 가지씩 쌓아가기"
   ],
   "why_cards": [
-    { "title": "금생수 지지 구조", "reason": "인연측 금(金)이 사용자 수(水)를 생하여 장기적으로 상대의 존재가 힘이 되는 흐름." },
+    { "title": "금생수 지지 구조", "reason": "인연측 금이 사용자 수를 생하여 장기적으로 상대의 존재가 힘이 되는 흐름." },
     { "title": "삼합 미완성 주의", "reason": "반합 상태로 노력과 공동 경험 없이는 관계 안정이 정착되지 않을 수 있음." }
   ]
 }
@@ -202,12 +204,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 ```json
 {
   "user_chart_core": {
-    "year_pillar": "丙午", "month_pillar": "丙午", "day_pillar": "丙午", "hour_pillar": "甲午",
+    "year_pillar": "병오(丙午)", "month_pillar": "병오(丙午)", "day_pillar": "병오(丙午)", "hour_pillar": "갑오(甲午)",
     "day_master_element": "화", "five_elements_counts": {"목":1,"화":7,"토":0,"금":0,"수":0},
     "gender_normalized": "남"
   },
   "relation_chart_core": {
-    "year_pillar": "壬子", "month_pillar": "庚子", "day_pillar": "壬子", "hour_pillar": "庚申",
+    "year_pillar": "임자(壬子)", "month_pillar": "경자(庚子)", "day_pillar": "임자(壬子)", "hour_pillar": "경신(庚申)",
     "day_master_element": "수", "five_elements_counts": {"목":0,"화":0,"토":0,"금":3,"수":5},
     "gender_normalized": "여"
   },
@@ -218,10 +220,10 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 **Output**
 ```json
 {
-  "main_text": "수극화(水剋火) 상극과 자오충이 겹쳐 오래 함께하려면 서로 상당한 이해와 노력이 필요한 조합입니다. 화(火)와 수(水)의 극단 편중이 충돌하여 에너지 방향이 근본적으로 다른 구조입니다. 각자만의 영역과 규칙을 명확히 설정하지 않으면 소모적 마찰이 반복될 수 있습니다.",
+  "main_text": "수극화(물이 불을 끔) 상극과 자오충(자-오 부딪힘)이 겹쳐 오래 함께하려면 서로 상당한 이해와 노력이 필요한 조합입니다. 화와 수의 극단 편중이 충돌하여 에너지 방향이 근본적으로 다른 구조입니다. 각자만의 영역과 규칙을 명확히 설정하지 않으면 소모적 마찰이 반복될 수 있습니다.",
   "cause_factors": [
-    { "name": "수극화(水剋火) 상극", "effect": "임수와 병화의 상극 관계 — 에너지 방향이 근본적으로 달라 지속적 조율이 필요한 구조." },
-    { "name": "자오충(子午沖)", "effect": "일지 충 — 생활 방식과 감정 표현의 반복적 마찰. 냉각 시간을 두는 소통 방식이 중요." },
+    { "name": "수극화(물이 불을 끔) 상극", "effect": "임수와 병화의 상극 관계 — 에너지 방향이 근본적으로 달라 지속적 조율이 필요한 구조." },
+    { "name": "자오충(자-오 부딪힘)", "effect": "일지 충 — 생활 방식과 감정 표현의 반복적 마찰. 냉각 시간을 두는 소통 방식이 중요." },
     { "name": "삼합·오행 결핍", "effect": "삼합이 성립하지 않고 목·토·금 3가지 오행이 양쪽 합산 시 부재하여 상생 구조가 취약." }
   ],
   "classic_citation": [
