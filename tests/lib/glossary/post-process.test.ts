@@ -59,6 +59,12 @@ describe('transliterateHanja', () => {
   it('pure Korean → unchanged', () => {
     expect(transliterateHanja('재성을 생하여')).toBe('재성을 생하여');
   });
+  it('복합어 우선 매치 — 긴 키가 짧은 키보다 먼저 매치된다', () => {
+    // SHINSAL_READINGS: 桃花殺(3자) 와 桃花(2자) 가 둘 다 map에 있음.
+    // 정렬 없이 桃花가 먼저 매치되면 결과는 '도화殺' (殺이 남음).
+    // 올바른 정렬이라면 桃花殺이 우선 매치되어 '도화살'이 나와야 함.
+    expect(transliterateHanja('桃花殺 운에서')).toBe('도화살 운에서');
+  });
 });
 
 describe('convertHanja', () => {

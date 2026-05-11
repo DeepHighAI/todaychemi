@@ -8,14 +8,17 @@ import {
 // 단, "滴天髓(적천수)" 같은 역순(Hanja first)은 보존
 export function stripHanjaInParens(text: string): string {
   // 한글 음절 뒤에 오는 (漢字...) 만 제거
+  // CJK Unified Ideographs(U+4E00–U+9FFF)만 포함. Extension A(U+3400–U+4DBF) 등 희귀 자형은 범위 제외 (현행 RAG 코퍼스에 미존재).
   return text.replace(/([가-힣]+)\(([一-鿿·，。]+)\)/g, '$1');
 }
 
 // Standalone Hanja sequences → Korean reading (longest match first)
 export function transliterateHanja(text: string): string {
   let result = text;
-  // Compound Hanja (multi-char) — longest first
-  for (const [hanja, reading] of Object.entries(COMPOUND_READINGS)) {
+  // 복합어 우선 — 키 길이 내림차순 정렬 후 치환 (긴 키가 짧은 키보다 먼저 매치되도록)
+  const sortedCompounds = Object.entries(COMPOUND_READINGS)
+    .sort((a, b) => b[0].length - a[0].length);
+  for (const [hanja, reading] of sortedCompounds) {
     result = result.split(hanja).join(reading);
   }
   // Sipsin multi-char
