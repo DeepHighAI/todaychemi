@@ -25,7 +25,7 @@ const WHATIF_RESULT: WhatifResult = {
   type: 'work',
   content: MOCK_LLM_OUTPUT,
   prompt_version: MOCK_PROMPT_VERSION,
-  llm_model: 'gpt-5o',
+  llm_model: 'gpt-5',
   cache_key: 'cachecachecachecachecachecachecachecachecachecachecachecachecach',
   chart_hash: MOCK_CHART_HASH,
   created_at: '2026-05-09T00:00:00Z',

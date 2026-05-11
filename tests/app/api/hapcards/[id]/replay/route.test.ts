@@ -32,7 +32,7 @@ const HAPCARD_ROW: HapcardResult = {
     why_cards: [{ title: '제목', reason: '이유' }],
   },
   prompt_version: 'v0.2',
-  llm_model: 'gpt-5o',
+  llm_model: 'gpt-5',
   cache_key: 'cache-abc',
   user_chart_hash: 'self-hash',
   relation_chart_hash: 'rel-hash',

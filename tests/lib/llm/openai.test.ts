@@ -81,7 +81,7 @@ function makeMockServiceClient() {
   };
 }
 
-describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
+describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
   it('PII 가드 — userPayload에 허용 외 키(birth_date) 포함 → PII_GUARD_VIOLATION throw, OpenAI 호출 0회', async () => {
     const createMock = vi.fn();
     const { client: supabase } = makeMockServiceClient();
@@ -118,7 +118,7 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
       },
     );
 
-    expect(result.model).toBe('gpt-5o');
+    expect(result.model).toBe('gpt-5');
     expect(result.usage.token_in).toBe(120);
     expect(result.usage.token_out).toBe(250);
     expect(result.usage.total_usd).toBe(0); // D2
@@ -308,7 +308,7 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
     expect(upsert).toHaveBeenCalledTimes(1);
     const call = upsert.mock.calls[0][0];
     expect(call.provider).toBe('openai');
-    expect(call.model).toBe('gpt-5o');
+    expect(call.model).toBe('gpt-5');
     expect(call.total_usd).toBe(0);
   });
 
@@ -328,7 +328,7 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
     const callArgs = create.mock.calls[0][0];
     expect(callArgs.response_format).toEqual({ type: 'json_object' });
     expect(callArgs.store).toBe(false);
-    expect(callArgs.model).toBe('gpt-5o');
+    expect(callArgs.model).toBe('gpt-5');
   });
 
   it('5xx 에러 응답 → 재시도', async () => {
@@ -383,7 +383,7 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
         userPayload: { self_chart_core: {}, type: 'work' },
         schema: WhatifSchema,
         payloadWhitelist: whatifWhitelist,
-        model: 'gpt-5o',
+        model: 'gpt-5',
       },
       {
         openaiClient: { chat: { completions: { create } } },
@@ -411,7 +411,7 @@ describe('callOpenAi — GPT-5o 클라이언트 래퍼', () => {
       },
     );
 
-    expect(result.model).toBe('gpt-5o');
+    expect(result.model).toBe('gpt-5');
     expect(create).toHaveBeenCalledTimes(1);
   });
 });

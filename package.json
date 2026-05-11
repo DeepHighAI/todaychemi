@@ -19,7 +19,8 @@
     "db:link": "supabase link --project-ref jamhkucluhiibqpjsiov",
     "db:status": "supabase projects list",
     "db:push:dry": "supabase db push --dry-run",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "verify:llm-models": "tsx scripts/verify-llm-models.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
