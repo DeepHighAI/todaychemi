@@ -14,6 +14,7 @@ import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
 import { SCORING_VERSION } from '@/lib/scoring/constants';
 import { todayKST } from '@/lib/today/kst-date';
+import { stripHanjaInParens, translateChapter, convertHanja } from '@/lib/glossary/post-process';
 
 export interface BuildHapcardInput {
   user_id: string;
@@ -143,11 +144,16 @@ export async function buildHapcard(
   const content: HapcardResult['content'] = {
     main_text: llmResult.output.main_text,
     cause_factors: llmResult.output.cause_factors,
-    classic_citation: llmResult.output.classic_citation.map((c) => ({
-      source: `${(c as Record<string, unknown>).source_title ?? ''} ${(c as Record<string, unknown>).source_chapter ?? ''}`.trim(),
-      original: ((c as Record<string, unknown>).original_text as string) ?? '',
-      modern: ((c as Record<string, unknown>).modern_translation as string) ?? '',
-    })),
+    classic_citation: llmResult.output.classic_citation.map((c) => {
+      const citation = c as Record<string, unknown>;
+      // asset_id 기준으로 RAG hit 조회 — original_reading이 있으면 우선 사용
+      const ragHit = ragHits.find((h) => h.asset_id === citation.asset_id);
+      return {
+        source: `${stripHanjaInParens((citation.source_title as string) ?? '')} ${translateChapter((citation.source_chapter as string) ?? '')}`.trim(),
+        original: ragHit?.original_reading ?? convertHanja((citation.original_text as string) ?? ''),
+        modern: (citation.modern_translation as string) ?? '',
+      };
+    }),
     actions: llmResult.output.actions,
     why_cards: llmResult.output.why_cards,
   };

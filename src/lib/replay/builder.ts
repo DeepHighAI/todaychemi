@@ -9,6 +9,7 @@ import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
+import { stripHanjaInParens, translateChapter, convertHanja } from '@/lib/glossary/post-process';
 
 const JINJIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -117,11 +118,15 @@ export async function buildReplay(
   const content: HapcardResult['content'] = {
     main_text: llm.output.main_text,
     cause_factors: llm.output.cause_factors,
-    classic_citation: llm.output.classic_citation.map((c) => ({
-      source: `${(c as Record<string, unknown>).source_title ?? ''} ${(c as Record<string, unknown>).source_chapter ?? ''}`.trim(),
-      original: ((c as Record<string, unknown>).original_text as string) ?? '',
-      modern: ((c as Record<string, unknown>).modern_translation as string) ?? '',
-    })),
+    classic_citation: llm.output.classic_citation.map((c) => {
+      const citation = c as Record<string, unknown>;
+      // replay는 RAG hit 없음 — convertHanja로 한자 → 한글 변환
+      return {
+        source: `${stripHanjaInParens((citation.source_title as string) ?? '')} ${translateChapter((citation.source_chapter as string) ?? '')}`.trim(),
+        original: convertHanja((citation.original_text as string) ?? ''),
+        modern: (citation.modern_translation as string) ?? '',
+      };
+    }),
     actions: llm.output.actions,
     why_cards: llm.output.why_cards,
   };

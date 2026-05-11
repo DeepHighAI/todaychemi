@@ -525,4 +525,97 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
 
     expect(snapshotUpsert).not.toHaveBeenCalled();
   });
+
+  // Phase B T3 — classic_citation Korean 변환
+  it('classic_citation RAG hit 있음 → source는 한글화, original은 ragHit.original_reading 우선', async () => {
+    // RAG hit: asset_id 매칭, original_reading 보유
+    const ragHit = {
+      asset_id: 'classic_dts_001',
+      source_title: '滴天髓(적천수)',
+      source_chapter: '通神頌',
+      original_text: '官多者身弱, 食傷可用',
+      original_reading: '관다자신약, 식상가용',
+      modern_translation: '관살이 많으면 신약하니 식상을 쓸 수 있다',
+      topic_tags: ['관살', '식상'],
+      similarity: 0.92,
+      tier: 'required' as const,
+    };
+    (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue([ragHit]);
+    (validateClassicCitations as ReturnType<typeof vi.fn>).mockReturnValue({ valid: true });
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...MOCK_LLM_RESULT,
+      output: {
+        ...MOCK_LLM_OUTPUT,
+        classic_citation: [
+          {
+            asset_id: 'classic_dts_001',
+            // source_title에 Hanja-in-parens 역순(Hanja first) → stripHanjaInParens는 유지
+            // 단 한글이 앞인 "한글(漢字)" 형식만 제거
+            source_title: '적천수(滴天髓)',
+            // '通神頌' → CHAPTER_READINGS 매핑 → '통신송'
+            source_chapter: '通神頌',
+            original_text: '官多者身弱, 食傷可用',
+            modern_translation: '관살이 많으면 신약하니 식상을 쓸 수 있다',
+          },
+        ],
+      },
+    });
+
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const insertCall = insert.mock.calls[0][0];
+    const citations = insertCall.content.classic_citation as Array<{ source: string; original: string; modern: string }>;
+    expect(citations).toHaveLength(1);
+    // source_title '적천수(滴天髓)' → stripHanjaInParens → '적천수', chapter '通神頌' → '통신송'
+    expect(citations[0].source).toBe('적천수 통신송');
+    // ragHit.original_reading 우선 사용
+    expect(citations[0].original).toBe('관다자신약, 식상가용');
+    // modern_translation은 그대로
+    expect(citations[0].modern).toBe('관살이 많으면 신약하니 식상을 쓸 수 있다');
+  });
+
+  it('classic_citation RAG miss → original은 convertHanja(original_text) 폴백', async () => {
+    // RAG hit 없음 (다른 asset_id로 매칭 불가)
+    const ragHit = {
+      asset_id: 'classic_other_999',
+      source_title: '다른 문헌',
+      source_chapter: '序',
+      original_text: '不相關',
+      original_reading: '불상관',
+      modern_translation: '무관함',
+      topic_tags: [],
+      similarity: 0.3,
+      tier: 'optional' as const,
+    };
+    (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue([ragHit]);
+    (validateClassicCitations as ReturnType<typeof vi.fn>).mockReturnValue({ valid: true });
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...MOCK_LLM_RESULT,
+      output: {
+        ...MOCK_LLM_OUTPUT,
+        classic_citation: [
+          {
+            asset_id: 'classic_dts_002', // 매칭 ragHit 없음 → convertHanja 폴백
+            source_title: '자평진전(子平眞詮)',
+            source_chapter: '神煞論',
+            // 甲子 → convertHanja → '갑자' (甲→갑, 子→자)
+            original_text: '甲子',
+            modern_translation: '갑자년',
+          },
+        ],
+      },
+    });
+
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const insertCall = insert.mock.calls[0][0];
+    const citations = insertCall.content.classic_citation as Array<{ source: string; original: string; modern: string }>;
+    expect(citations).toHaveLength(1);
+    // ragHit 없으므로 convertHanja('甲子') 폴백 → '갑자'
+    expect(citations[0].original).toBe('갑자');
+    // modern은 그대로
+    expect(citations[0].modern).toBe('갑자년');
+  });
 });
