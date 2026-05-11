@@ -22,10 +22,10 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('each row has version v0.4', () => {
+  it('each row has version v0.5', () => {
     const rows = loadPromptFiles(dir);
     for (const row of rows) {
-      expect(row.version, `${row.prompt_name} version`).toBe('v0.4');
+      expect(row.version, `${row.prompt_name} version`).toBe('v0.5');
     }
   });
 
@@ -56,7 +56,7 @@ describe('runSeed', () => {
     const fakeClient = { from: mockFrom } as unknown as Parameters<typeof runSeed>[0];
 
     const rows: PromptRow[] = [
-      { prompt_name: 'ilhap', version: 'v0.4', content: 'test', status: 'active' },
+      { prompt_name: 'ilhap', version: 'v0.5', content: 'test', status: 'active' },
     ];
 
     const result = await runSeed(fakeClient, rows);
