@@ -146,10 +146,10 @@ describe('buildWhatif', () => {
     expect(insertFn.mock.calls[0][0].prompt_version).toBe(MOCK_PROMPT_VERSION);
   });
 
-  it('llm_model = "gpt-5" 고정', async () => {
+  it('llm_model = DEFAULT_LLM_MODEL 고정', async () => {
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
-    expect(insertFn.mock.calls[0][0].llm_model).toBe('gpt-5');
+    expect(insertFn.mock.calls[0][0].llm_model).toBe('gpt-5-mini');
   });
 
   it('INSERT row에 user_id, type, chart_hash 포함 (relation_id 없음)', async () => {

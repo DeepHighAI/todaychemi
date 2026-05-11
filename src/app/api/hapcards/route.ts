@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     const result = await buildHapcard(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
+    console.error('[POST /api/hapcards]', err);
     const message = err instanceof Error ? err.message : 'unknown error';
     if (message.startsWith('GROUNDING_FAILED')) {
       return errorResponse('GROUNDING_FAILED', message, 422);

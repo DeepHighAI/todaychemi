@@ -309,13 +309,13 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(insertCall.prompt_version).toBe(MOCK_PROMPT.version);
   });
 
-  it('llm_model = "gpt-5" 고정', async () => {
+  it('llm_model = DEFAULT_LLM_MODEL 고정', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));
 
     const insertCall = insert.mock.calls[0][0];
-    expect(insertCall.llm_model).toBe('gpt-5');
+    expect(insertCall.llm_model).toBe('gpt-5-mini');
   });
 
   it('grounding 실패(errors.length>0) → 1회 retry → 2차 성공', async () => {

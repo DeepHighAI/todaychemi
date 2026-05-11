@@ -28,7 +28,7 @@ describe('createOpenAiClient', () => {
     const { createOpenAiClient } = await import('@/lib/llm/clients');
     createOpenAiClient();
     expect(OpenAiCtor).toHaveBeenCalledTimes(1);
-    expect(OpenAiCtor.mock.calls[0][0]).toEqual({ apiKey: 'sk-test-key' });
+    expect(OpenAiCtor.mock.calls[0][0]).toEqual({ apiKey: 'sk-test-key', timeout: 60_000 });
   });
 
   it('OPENAI_API_KEY 누락 시 ConfigError throw', async () => {

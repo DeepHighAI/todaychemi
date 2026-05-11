@@ -8,7 +8,7 @@ export function createOpenAiClient(): OpenAI {
   if (!apiKey) {
     throw new ConfigError('Missing env: OPENAI_API_KEY');
   }
-  return new OpenAI({ apiKey });
+  return new OpenAI({ apiKey, timeout: 60_000 });
 }
 
 // embeddings 만 필요한 경우 (RAG 쿼리용).

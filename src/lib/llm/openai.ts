@@ -98,6 +98,8 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
       ],
       response_format: { type: 'json_object' },
       store: false,
+      reasoning_effort: 'low',
+      max_completion_tokens: 4000,
     });
 
     tokenIn = response.usage.prompt_tokens;

@@ -157,6 +157,27 @@ async function main() {
       birth_time: '20:15',
       gender: 'F' as const,
     },
+    {
+      mode: '돈합' as const,
+      nickname: '예시돈1',
+      birth_date: '1988-04-12',
+      birth_time: '11:45',
+      gender: 'M' as const,
+    },
+    {
+      mode: '첫합' as const,
+      nickname: '예시첫1',
+      birth_date: '1995-09-30',
+      birth_time: '17:20',
+      gender: 'F' as const,
+    },
+    {
+      mode: '썸합' as const,
+      nickname: '예시썸1',
+      birth_date: '1993-12-03',
+      birth_time: '05:50',
+      gender: 'M' as const,
+    },
   ];
 
   for (const seed of RELATION_SEEDS) {

@@ -118,7 +118,7 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
       },
     );
 
-    expect(result.model).toBe('gpt-5');
+    expect(result.model).toBe('gpt-5-mini');
     expect(result.usage.token_in).toBe(120);
     expect(result.usage.token_out).toBe(250);
     expect(result.usage.total_usd).toBe(0); // D2
@@ -308,7 +308,7 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     expect(upsert).toHaveBeenCalledTimes(1);
     const call = upsert.mock.calls[0][0];
     expect(call.provider).toBe('openai');
-    expect(call.model).toBe('gpt-5');
+    expect(call.model).toBe('gpt-5-mini');
     expect(call.total_usd).toBe(0);
   });
 
@@ -328,7 +328,25 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     const callArgs = create.mock.calls[0][0];
     expect(callArgs.response_format).toEqual({ type: 'json_object' });
     expect(callArgs.store).toBe(false);
-    expect(callArgs.model).toBe('gpt-5');
+    expect(callArgs.model).toBe('gpt-5-mini');
+  });
+
+  it('reasoning_effort=low + max_completion_tokens=4000 전달 검증', async () => {
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient();
+
+    await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload() },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    const callArgs = create.mock.calls[0][0];
+    expect(callArgs.reasoning_effort).toBe('low');
+    expect(callArgs.max_completion_tokens).toBe(4000);
   });
 
   it('5xx 에러 응답 → 재시도', async () => {
@@ -411,7 +429,7 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
       },
     );
 
-    expect(result.model).toBe('gpt-5');
+    expect(result.model).toBe('gpt-5-mini');
     expect(create).toHaveBeenCalledTimes(1);
   });
 });
