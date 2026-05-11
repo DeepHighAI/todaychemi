@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { loadBannedPhrases, findBannedPhrase, findScoreLeak, containsClassicalHanja } from '@/lib/llm/banned-phrases';
 
 describe('loadBannedPhrases — YAML 카탈로그 로드', () => {
-  it('5개 카테고리 로드', () => {
+  it('6개 카테고리 로드', () => {
     const catalog = loadBannedPhrases();
     const categories = catalog.map((c) => c.category);
     expect(categories).toContain('fortune_assertion');
@@ -10,6 +10,7 @@ describe('loadBannedPhrases — YAML 카탈로그 로드', () => {
     expect(categories).toContain('health_medical');
     expect(categories).toContain('legal_financial');
     expect(categories).toContain('relationship_definitive');
+    expect(categories).toContain('classical_hanja');
   });
 
   it('각 카테고리에 phrases 배열 존재 (함수 기반 카테고리는 빈 배열 허용)', () => {
@@ -145,13 +146,14 @@ describe('containsClassicalHanja — ADR-038 한자 직접 노출 차단', () =>
   it('한자 포함 텍스트에서 found:true 반환', () => {
     const result = containsClassicalHanja('재성(財星)이 왕한 구조');
     expect(result.found).toBe(true);
-    expect(result.phrase).toBe('財');
+    if (result.found) {
+      expect(result.phrase).toBe('財');
+    }
   });
 
   it('순한글 텍스트에서 found:false 반환', () => {
     const result = containsClassicalHanja('재성(재물 기운)이 왕한 구조');
     expect(result.found).toBe(false);
-    expect(result.phrase).toBe('');
   });
 
   it('빈 문자열에서 found:false 반환', () => {
@@ -162,6 +164,8 @@ describe('containsClassicalHanja — ADR-038 한자 직접 노출 차단', () =>
   it('순한자 텍스트에서 첫 번째 한자 반환', () => {
     const result = containsClassicalHanja('官多者身弱');
     expect(result.found).toBe(true);
-    expect(result.phrase).toBe('官');
+    if (result.found) {
+      expect(result.phrase).toBe('官');
+    }
   });
 });

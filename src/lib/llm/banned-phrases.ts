@@ -10,7 +10,7 @@ export interface BannedPhraseCategory {
 
 export type BannedHit =
   | { found: true; category: string; phrase: string }
-  | { found: false; phrase?: string };
+  | { found: false };
 
 interface CatalogYaml {
   categories: Record<string, { description: string; phrases: string[] }>;
@@ -43,6 +43,9 @@ export function findBannedPhrase(
   return { found: false };
 }
 
+/** CJK Unified Ideographs U+4E00–U+9FFF. ADR-038. */
+const CLASSICAL_HANJA_RE = /[一-鿿]/;
+
 // ADR-035 §8 점수 누설 회귀 차단
 const SCORE_LEAK_PATTERNS = [
   /(\d{1,3})\s*점/,
@@ -62,8 +65,8 @@ export function findScoreLeak(text: string): BannedHit {
 /** CJK Unified Ideographs 범위에서 한자 존재 여부 확인 (U+4E00–U+9FFF). ADR-038. */
 export function containsClassicalHanja(text: string): BannedHit {
   // 한자가 없으면 조기 반환
-  if (!text) return { found: false, phrase: '' };
-  const match = text.match(/[一-鿿]/);
-  if (!match) return { found: false, phrase: '' };
+  if (!text) return { found: false };
+  const match = text.match(CLASSICAL_HANJA_RE);
+  if (!match) return { found: false };
   return { found: true, category: 'classical_hanja', phrase: match[0] };
 }
