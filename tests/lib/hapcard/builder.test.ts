@@ -355,6 +355,43 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(insert).toHaveBeenCalledTimes(1);
   });
 
+  it('RAG hits 보유 시 systemPrompt 에 ## Available RAG hits 헤더 + <rag_hits> 블록 포함', async () => {
+    const hits = [
+      {
+        asset_id: 'classic_test_001',
+        source_title: '테스트',
+        source_chapter: '편',
+        original_text: '原文',
+        original_reading: '원문',
+        modern_translation: '현대역',
+        similarity: 0.9,
+      },
+    ];
+    (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue(hits);
+
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.systemPrompt).toContain('## Available RAG hits');
+    expect(callArgs.systemPrompt).toContain('<rag_hits>');
+    expect(callArgs.systemPrompt).toContain('classic_test_001');
+  });
+
+  it('RAG hits 0건 시 systemPrompt 에 No classical references match + classic_citation: [] 안내 포함', async () => {
+    (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.systemPrompt).toContain('No classical references match');
+    expect(callArgs.systemPrompt).toContain('classic_citation: []');
+    expect(callArgs.systemPrompt).not.toContain('<rag_hits>');
+  });
+
   it('ragQueryText 함수가 input을 받고 string 반환 → embedQuery 인자로 전달', async () => {
     const queryFn = vi.fn().mockReturnValue('내 RAG 쿼리');
     const { client } = makeMockUserClient({ cachedRow: null });

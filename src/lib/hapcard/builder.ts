@@ -111,8 +111,12 @@ export async function buildHapcard(
   const queryVec = await embedQuery(queryText, { embeddings: deps.embeddingsClient });
   const ragHits = await retrieveClassics(deps.supabaseServiceClient, queryVec);
 
-  // 7. system prompt 조합
-  const systemPrompt = `${prompt.content}\n\n${JSON.stringify(ragHits, null, 2)}`;
+  // 7. system prompt 조합 (RAG hits scaffolding — 0-hit 시 LLM hallucination 차단)
+  const ragSection =
+    ragHits.length === 0
+      ? `## RAG hits\n\nNo classical references match this query.\nSet \`classic_citation: []\` in your response.\nDO NOT invent asset_ids — empty array is the correct output here.`
+      : `## Available RAG hits — use ONLY these asset_ids verbatim\n\nAny asset_id NOT in this list will fail validation and the request will be rejected.\n\n<rag_hits>\n${JSON.stringify(ragHits, null, 2)}\n</rag_hits>`;
+  const systemPrompt = `${prompt.content}\n\n${ragSection}`;
 
   // 8. LLM 호출 + grounding 검증 (최대 1회 재시도)
   const callDeps = {

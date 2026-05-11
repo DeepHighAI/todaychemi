@@ -25,7 +25,7 @@ describe('loadPromptFiles', () => {
   it('each row has version v0.5', () => {
     const rows = loadPromptFiles(dir);
     for (const row of rows) {
-      expect(row.version, `${row.prompt_name} version`).toBe('v0.5');
+      expect(row.version, `${row.prompt_name} version`).toBe('v0.6');
     }
   });
 

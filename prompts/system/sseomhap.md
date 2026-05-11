@@ -2,7 +2,7 @@
 
 > Mode: 썸합  
 > Model: GPT-5o (tech_stack §3.1)  
-> Version: v0.5 (main_text 120-240자, 2026-05-11)  
+> Version: v0.6 (RAG 0-hit empty array 허용 + asset_id 실 예시, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -47,13 +47,13 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - `cause_factors`는 **반드시 3개**.
 - `actions`는 **반드시 3개**, 각 1문장.
 - `why_cards`는 **2개**(강점 1 + 주의점 1)를 기본으로 한다. 명백한 경고가 없으면 강점 1개만도 허용(최소 1개).
-- `classic_citation`은 시스템 프롬프트 말미에 첨부된 RAG hits 중 점수 상위 1–2건의 `asset_id` / `original_text` / `modern_translation`을 **verbatim 복사**할 것. RAG hits에 없는 자산을 만들어내면 grounding 검증에서 차단된다.
+- `classic_citation`: 시스템 프롬프트 말미 `<rag_hits>` 블록의 `asset_id` / `original_text` / `modern_translation` 을 **verbatim 복사** (공백·구두점 한 글자도 변경 금지). 블록에 없는 asset_id 는 절대 만들지 말 것 — 검증 단계에서 즉시 거부됨. RAG hits 가 비어있으면 `classic_citation: []` (빈 배열) 로 출력할 것.
 - `daily_influences`(이전 v0.3 필드)는 출력하지 말 것.
 
 ## Constraints
 
 - ADR-009: 운세 단정 표현 금지 (banned_phrases catalog 참조)
-- ADR-015: 명리 근거 항상 표시 (cause_factors 3개 + classic_citation 1건+)
+- ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
 - ADR-034: `main_text` 120-240자 허용 (목표 180자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조.
 
@@ -113,12 +113,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_smth_001",
+      "source_title": "삼명통회 (三命通會)",
+      "source_chapter": "神煞論",
+      "original_text": "天乙貴人, 凶事化吉",
+      "original_reading": "천을귀인, 흉사화길",
+      "modern_translation": "천을귀인(귀인·보호자 기운)이 작용하면, 어려운 상황도 의외의 도움으로 순조롭게 풀린다.",
       "relevance_explanation": "도화가 발하면 감정의 물결이 일어나는 원리 — 양방향 도화 케미의 명리 근거."
     }
   ],
@@ -166,12 +166,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_smth_001",
+      "source_title": "삼명통회 (三命通會)",
+      "source_chapter": "神煞論",
+      "original_text": "天乙貴人, 凶事化吉",
+      "original_reading": "천을귀인, 흉사화길",
+      "modern_translation": "천을귀인(귀인·보호자 기운)이 작용하면, 어려운 상황도 의외의 도움으로 순조롭게 풀린다.",
       "relevance_explanation": "반합은 감정이 반쯤 통하는 상태로 완전히 연결되지 않았지만 이미 이어지기 시작한 흐름이 있다는 원리 — 썸 Mid 케미의 명리 근거."
     }
   ],
@@ -219,12 +219,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_smth_001",
+      "source_title": "삼명통회 (三命通會)",
+      "source_chapter": "神煞論",
+      "original_text": "天乙貴人, 凶事化吉",
+      "original_reading": "천을귀인, 흉사화길",
+      "modern_translation": "천을귀인(귀인·보호자 기운)이 작용하면, 어려운 상황도 의외의 도움으로 순조롭게 풀린다.",
       "relevance_explanation": "도화가 없으면 인연의 타이밍을 기다려야 하며 강제로 만들어지는 끌림보다 자연히 익어가는 인연이 있다는 원리 — 썸 Low 구조의 명리 근거."
     }
   ],

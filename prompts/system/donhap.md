@@ -2,7 +2,7 @@
 
 > Mode: 돈합  
 > Model: GPT-5o (tech_stack §3.1)  
-> Version: v0.5 (main_text 120-240자, 2026-05-11)  
+> Version: v0.6 (RAG 0-hit empty array 허용 + asset_id 실 예시, 2026-05-11)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role
@@ -47,13 +47,13 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - `cause_factors`는 **반드시 3개**.
 - `actions`는 **반드시 3개**, 각 1문장.
 - `why_cards`는 **2개**(강점 1 + 주의점 1)를 기본으로 한다. 명백한 경고가 없으면 강점 1개만도 허용(최소 1개).
-- `classic_citation`은 시스템 프롬프트 말미에 첨부된 RAG hits 중 점수 상위 1–2건의 `asset_id` / `original_text` / `modern_translation`을 **verbatim 복사**할 것. RAG hits에 없는 자산을 만들어내면 grounding 검증에서 차단된다.
+- `classic_citation`: 시스템 프롬프트 말미 `<rag_hits>` 블록의 `asset_id` / `original_text` / `modern_translation` 을 **verbatim 복사** (공백·구두점 한 글자도 변경 금지). 블록에 없는 asset_id 는 절대 만들지 말 것 — 검증 단계에서 즉시 거부됨. RAG hits 가 비어있으면 `classic_citation: []` (빈 배열) 로 출력할 것.
 - `daily_influences`(이전 v0.3 필드)는 출력하지 말 것.
 
 ## Constraints
 
 - ADR-009: 운세 단정 표현 금지 (banned_phrases catalog 참조)
-- ADR-015: 명리 근거 항상 표시 (cause_factors 3개 + classic_citation 1건+)
+- ADR-015: 명리 근거 항상 표시 (cause_factors 3개 필수 + classic_citation 은 RAG hits 가 있을 때만 1건+, 없으면 빈 배열)
 - ADR-023: "쉽게 보기" 토글 대응 — 본문은 평이 표현, 명리 용어는 ⓘ 처리
 - ADR-034: `main_text` 120-240자 허용 (목표 180자) — 결론 1문장(첫 문장) + 강점 1문장 + 주의점 1문장 구조.
 
@@ -111,12 +111,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_jcs_002",
+      "source_title": "적천수 (滴天髓)",
+      "source_chapter": "體用",
+      "original_text": "財星太旺, 比劫護身",
+      "original_reading": "재성태왕, 비겁호신",
+      "modern_translation": "재성(돈·외부 자원)이 지나치게 강할 때는, 비견·겁재(동류·협력자)가 일간을 보호해야 균형이 잡힌다.",
       "relevance_explanation": "정재와 재고의 결합이 안정적 재물 흐름을 만드는 원리를 뒷받침하는 명리 근거."
     }
   ],
@@ -164,12 +164,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_jcs_002",
+      "source_title": "적천수 (滴天髓)",
+      "source_chapter": "體用",
+      "original_text": "財星太旺, 比劫護身",
+      "original_reading": "재성태왕, 비겁호신",
+      "modern_translation": "재성(돈·외부 자원)이 지나치게 강할 때는, 비견·겁재(동류·협력자)가 일간을 보호해야 균형이 잡힌다.",
       "relevance_explanation": "식신이 약하면 재물이 흘러가기 쉬운 원리 — 재고 부재 시 수익 관리 전략 수립의 중요성을 뒷받침하는 근거."
     }
   ],
@@ -217,12 +217,12 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
   ],
   "classic_citation": [
     {
-      "asset_id": "<시스템 말미 RAG hits 중 유사도 최상위 항목의 asset_id를 verbatim 복사>",
-      "source_title": "<RAG hits.source_title verbatim>",
-      "source_chapter": "<RAG hits.source_chapter verbatim>",
-      "original_text": "<RAG hits.original_text verbatim>",
-      "original_reading": "<RAG hits.original_reading verbatim — 없으면 이 필드 생략>",
-      "modern_translation": "<RAG hits.modern_translation verbatim>",
+      "asset_id": "classic_jcs_002",
+      "source_title": "적천수 (滴天髓)",
+      "source_chapter": "體用",
+      "original_text": "財星太旺, 比劫護身",
+      "original_reading": "재성태왕, 비겁호신",
+      "modern_translation": "재성(돈·외부 자원)이 지나치게 강할 때는, 비견·겁재(동류·협력자)가 일간을 보호해야 균형이 잡힌다.",
       "relevance_explanation": "재성이 강해도 감당력이 다르면 공동 재물이 어렵다는 원리 — 각자 독립 관리 구조의 필요성을 뒷받침하는 근거."
     }
   ],
