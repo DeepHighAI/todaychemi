@@ -28,6 +28,9 @@ describe('stripHanjaInParens', () => {
   it('empty string → ""', () => {
     expect(stripHanjaInParens('')).toBe('');
   });
+  it('"滴天髓(적천수)" — Hanja outside, Korean inside parens → unchanged', () => {
+    expect(stripHanjaInParens('滴天髓(적천수)')).toBe('滴天髓(적천수)');
+  });
 });
 
 describe('transliterateHanja', () => {
@@ -47,14 +50,8 @@ describe('transliterateHanja', () => {
     expect(transliterateHanja('桃花殺')).toBe('도화살');
   });
   it('unmapped Hanja chars pass through unchanged', () => {
-    // 官·者·身·弱·多·可·用 are not in our maps — they remain as-is
-    const input = '官多者身弱, 食傷可用';
-    const result = transliterateHanja(input);
-    // 식(食)·상(傷) both mapped: 食→? no, 食 not in single maps either. Verify no crash only.
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
-    // unmapped chars stay: result still contains 官 (not converted)
-    expect(result).toContain('官');
+    // 官·多·者·身·弱·食·傷·可·用 — none are in any single-char or compound map
+    expect(transliterateHanja('官多者身弱, 食傷可用')).toBe('官多者身弱, 食傷可用');
   });
   it('pure Korean → unchanged', () => {
     expect(transliterateHanja('재성을 생하여')).toBe('재성을 생하여');
@@ -75,6 +72,9 @@ describe('convertHanja', () => {
     const x = '자오충(子午沖)';
     expect(convertHanja(convertHanja(x))).toBe(convertHanja(x));
   });
+  it('idempotent: convertHanja(convertHanja("木火土")) === convertHanja("木火土")', () => {
+    expect(convertHanja('木火土')).toBe(convertHanja(convertHanja('木火土')));
+  });
   it('empty string → ""', () => {
     expect(convertHanja('')).toBe('');
   });
@@ -90,9 +90,8 @@ describe('translateChapter', () => {
   it('"體用" → "체용"', () => {
     expect(translateChapter('體用')).toBe('체용');
   });
-  it('unknown chapter "佚文" → does not crash, returns string', () => {
+  it('unknown chapter "佚文" → falls back to transliterateHanja, returns "佚文" unchanged', () => {
     const result = translateChapter('佚文');
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+    expect(result).toBe('佚文');
   });
 });
