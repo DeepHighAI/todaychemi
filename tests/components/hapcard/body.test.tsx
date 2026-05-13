@@ -11,9 +11,9 @@ describe('HapcardBody', () => {
     expect(document.querySelector('[data-testid="hapcard-body"]')).not.toBeNull();
   });
 
-  it('eyebrow "한 줄 결론" 표시', () => {
+  it('eyebrow "전체 해석" 표시', () => {
     renderWithProviders(<HapcardBody mainText="두 사람의 합은 강합니다." />);
-    expect(screen.getByText('한 줄 결론')).toBeInTheDocument();
+    expect(screen.getByText('전체 해석')).toBeInTheDocument();
   });
 
   it('main_text 표시', () => {
