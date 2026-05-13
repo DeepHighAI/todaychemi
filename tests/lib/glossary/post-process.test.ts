@@ -65,6 +65,15 @@ describe('transliterateHanja', () => {
     // 올바른 정렬이라면 桃花殺이 우선 매치되어 '도화살'이 나와야 함.
     expect(transliterateHanja('桃花殺 운에서')).toBe('도화살 운에서');
   });
+  it('SHINSAL longest-first: 紅艶殺(3자)가 紅艶(2자)보다 우선 매치된다', () => {
+    expect(transliterateHanja('紅艶殺 운에서')).toBe('홍염살 운에서');
+  });
+  it('SHINSAL longest-first: 같은 텍스트에 桃花殺과 桃花 둘 다 있을 때 각각 정확히 매치된다', () => {
+    expect(transliterateHanja('桃花殺과 桃花가 함께')).toBe('도화살과 도화가 함께');
+  });
+  it('SHINSAL longest-first: 月德貴人 4자 신살 정상 변환', () => {
+    expect(transliterateHanja('月德貴人이 있다')).toBe('월덕귀인이 있다');
+  });
 });
 
 describe('convertHanja', () => {

@@ -25,8 +25,10 @@ export function transliterateHanja(text: string): string {
   for (const [hanja, reading] of Object.entries(SIPSIN_READINGS)) {
     result = result.split(hanja).join(reading);
   }
-  // Shinsal multi-char
-  for (const [hanja, reading] of Object.entries(SHINSAL_READINGS)) {
+  // Shinsal multi-char — longest-first sort (COMPOUND_READINGS와 동일 패턴)
+  const sortedShinsal = Object.entries(SHINSAL_READINGS)
+    .sort((a, b) => b[0].length - a[0].length);
+  for (const [hanja, reading] of sortedShinsal) {
     result = result.split(hanja).join(reading);
   }
   // Single chars last
