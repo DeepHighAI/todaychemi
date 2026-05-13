@@ -25,7 +25,8 @@ export async function GET() {
   const { data, error } = await db
     .from('relations')
     .select('relation_id, nickname, mode, created_at')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   if (error) return errorResponse('INTERNAL_ERROR', 500);
 

@@ -23,14 +23,18 @@ export async function GET() {
   const { data: relations, error: relErr } = await db
     .from('relations')
     .select('relation_id, nickname, mode, created_at')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
   if (relErr) return errorResponse('INTERNAL_ERROR', 500);
 
   // 2. 사용자 전체 스냅샷 — 단일 round-trip (RLS가 user_id 필터, 인덱스 활용)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data: snapshots, error: snapErr } = await db
     .from('hapcard_score_snapshots')
     .select('relation_id, mode, compat_score, created_at')
-    .order('created_at', { ascending: false });
+    .gte('created_at', thirtyDaysAgo)
+    .order('created_at', { ascending: false })
+    .limit(1000);
   if (snapErr) return errorResponse('INTERNAL_ERROR', 500);
 
   // 3. (relation_id::mode) 키별 최신 2건만 유지 (already sorted desc)
