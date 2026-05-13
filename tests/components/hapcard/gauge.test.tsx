@@ -5,7 +5,7 @@ import { screen } from '@testing-library/react';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import { HapcardGauge } from '@/components/hapcard/gauge';
 
-const breakdown = { hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, mode_adjustment: 13 };
+const breakdown = { hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, mode_adjustment: 13, yunse_adjustment: 0 };
 
 describe('HapcardGauge', () => {
   it('data-testid="hapcard-gauge" 렌더', () => {
@@ -52,6 +52,7 @@ describe('HapcardGauge', () => {
       sipsin: 28.333333333333332,
       ohaeng: 15.0,
       mode_adjustment: 5.5,
+      yunse_adjustment: 0,
     };
     renderWithProviders(<HapcardGauge score={73} breakdown={floatBreakdown} />);
     expect(screen.queryByText(/96\.666/)).not.toBeInTheDocument();

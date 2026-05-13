@@ -2,14 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { scoreToTier } from '@/lib/hapcard/score-tier';
+import type { ScoreBreakdown } from '@/types/hapcard';
 import { LiquidHero } from './primitives/liquid-hero';
-
-interface ScoreBreakdown {
-  hap_chung_hyung_hae: number;
-  sipsin: number;
-  ohaeng: number;
-  mode_adjustment: number;
-}
 
 interface HapcardGaugeProps {
   score: number;
