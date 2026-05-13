@@ -268,6 +268,7 @@ describe('GET /api/relations', () => {
     await GET();
 
     expect(client._order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(client._limit).toHaveBeenCalledWith(200);
   });
 
   it('401 → UNAUTHORIZED (미인증)', async () => {

@@ -34,6 +34,7 @@ export async function GET() {
     .select('relation_id, mode, compat_score, created_at')
     .gte('created_at', thirtyDaysAgo)
     .order('created_at', { ascending: false })
+    // .gte 30일 윈도우 + limit(1000): 비활성 사용자 데이터 제외, Supabase Free 규모에서 충분
     .limit(1000);
   if (snapErr) return errorResponse('INTERNAL_ERROR', 500);
 

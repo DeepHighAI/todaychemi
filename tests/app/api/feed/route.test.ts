@@ -115,6 +115,10 @@ describe('GET /api/feed', () => {
     expect(item).toHaveProperty('change_score');
     expect(item).toHaveProperty('has_significant_change');
     expect(item).toHaveProperty('created_at');
+    // limit/gte 호출 인수 검증
+    expect(client._relationsLimit).toHaveBeenCalledWith(200);
+    expect(client._snapshotsGte).toHaveBeenCalledWith('created_at', expect.any(String));
+    expect(client._snapshotsLimit).toHaveBeenCalledWith(1000);
   });
 
   it('200 → 스냅샷 0건인 인연: compat_score=null, change_score=0, has_significant_change=false', async () => {
