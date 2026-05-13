@@ -45,4 +45,18 @@ describe('HapcardGauge', () => {
     expect(screen.getByText(/22/)).toBeInTheDocument();
     expect(screen.getByText(/13/)).toBeInTheDocument();
   });
+
+  it('ISSUE-2: 부동소수점 breakdown 값은 반올림하여 표시', () => {
+    const floatBreakdown = {
+      hap_chung_hyung_hae: 96.66666666666667,
+      sipsin: 28.333333333333332,
+      ohaeng: 15.0,
+      mode_adjustment: 5.5,
+    };
+    renderWithProviders(<HapcardGauge score={73} breakdown={floatBreakdown} />);
+    expect(screen.queryByText(/96\.666/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/28\.333/)).not.toBeInTheDocument();
+    expect(screen.getByText(/97/)).toBeInTheDocument();
+    expect(screen.getByText(/28/)).toBeInTheDocument();
+  });
 });

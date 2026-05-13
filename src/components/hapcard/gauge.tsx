@@ -24,10 +24,10 @@ export function HapcardGauge({ score, breakdown }: HapcardGaugeProps) {
       <LiquidHero score={score} tier={tier}>
         <p className="text-xs opacity-75">
           {t('gauge.breakdown', {
-            h: breakdown.hap_chung_hyung_hae,
-            s: breakdown.sipsin,
-            o: breakdown.ohaeng,
-            m: breakdown.mode_adjustment,
+            h: Math.round(breakdown.hap_chung_hyung_hae),
+            s: Math.round(breakdown.sipsin),
+            o: Math.round(breakdown.ohaeng),
+            m: Math.round(breakdown.mode_adjustment),
           })}
         </p>
       </LiquidHero>
