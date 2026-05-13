@@ -1,14 +1,6 @@
 import type { Mode } from './mode';
 import type { ChartHash } from './chart';
 
-export interface ScoringInput {
-  user_chart_hash: ChartHash;
-  relation_chart_hash: ChartHash;
-  mode: Mode;
-  scoring_version: number;
-  ilji_date: string;
-}
-
 export interface ScoringComponents {
   hap_chung_hyung_hae: number;
   sipsin: number;

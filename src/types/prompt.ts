@@ -16,15 +16,3 @@ export interface PromptVersion {
   created_at: string;
 }
 
-// db_schema.md §14 banned_phrase_hits 테이블 1:1 매핑
-export interface BannedPhraseHit {
-  hit_id: string;
-  prompt_version: string;
-  phrase_category: string;
-  phrase_matched: string;
-  hapcard_id: string | null;
-  created_at: string;
-}
-
-// 모델 사용처 매핑 (참고용 — 실제 검증은 LlmModel 타입에 의존)
-export type PromptModelMap = Record<string, LlmModel>;
