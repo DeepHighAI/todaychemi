@@ -40,13 +40,22 @@ export async function POST(request: NextRequest) {
   }
   const userId = userData.user.id;
 
-  // 3. user_charts fetch (RLS 자동 enforce)
-  const userChartRes = await supabaseUserClient
-    .from('user_charts')
-    .select('chart_core, chart_hash')
-    .eq('user_id', userId)
-    .eq('theory_profile_version', body.theory_profile_version)
-    .maybeSingle();
+  // 3+4. user_charts / relation_charts 는 독립 쿼리 — 병렬 fetch (RLS 자동 enforce)
+  const [userChartRes, relationChartRes] = await Promise.all([
+    supabaseUserClient
+      .from('user_charts')
+      .select('chart_core, chart_hash')
+      .eq('user_id', userId)
+      .eq('theory_profile_version', body.theory_profile_version)
+      .maybeSingle(),
+    supabaseUserClient
+      .from('relation_charts')
+      .select('chart_core, chart_hash')
+      .eq('relation_id', body.relation_id)
+      .eq('theory_profile_version', body.theory_profile_version)
+      .maybeSingle(),
+  ]);
+
   if (userChartRes.error) {
     return errorResponse('USER_CHART_LOOKUP_FAILED', userChartRes.error.message, 500);
   }
@@ -59,13 +68,6 @@ export async function POST(request: NextRequest) {
   }
   const userChart = userChartRes.data as unknown as ChartRow;
 
-  // 4. relation_charts fetch (RLS 자동 enforce via relation_charts.user_id)
-  const relationChartRes = await supabaseUserClient
-    .from('relation_charts')
-    .select('chart_core, chart_hash')
-    .eq('relation_id', body.relation_id)
-    .eq('theory_profile_version', body.theory_profile_version)
-    .maybeSingle();
   if (relationChartRes.error) {
     return errorResponse(
       'RELATION_CHART_LOOKUP_FAILED',

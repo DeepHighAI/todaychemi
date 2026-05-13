@@ -82,22 +82,28 @@ export async function buildReplay(
 
   const replaySystemPrompt = buildReplaySystemPrompt(prompt.content, input.jinjin_date);
 
-  const { data: ucRow, error: ucErr } = await deps.supabaseUserClient
-    .from('user_charts')
-    .select('chart_core')
-    .eq('user_id', hapcard.user_id)
-    .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
-    .maybeSingle();
+  // user_charts / relation_charts 는 독립 쿼리 — 병렬 fetch
+  const [ucResult, rcResult] = await Promise.all([
+    deps.supabaseUserClient
+      .from('user_charts')
+      .select('chart_core')
+      .eq('user_id', hapcard.user_id)
+      .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
+      .maybeSingle(),
+    deps.supabaseUserClient
+      .from('relation_charts')
+      .select('chart_core')
+      .eq('relation_id', hapcard.relation_id)
+      .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
+      .maybeSingle(),
+  ]);
+
+  const { data: ucRow, error: ucErr } = ucResult;
   if (ucErr || !ucRow) {
     throw new Error(`USER_CHART_NOT_FOUND: ${ucErr?.message ?? 'no chart'}`);
   }
 
-  const { data: rcRow, error: rcErr } = await deps.supabaseUserClient
-    .from('relation_charts')
-    .select('chart_core')
-    .eq('relation_id', hapcard.relation_id)
-    .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
-    .maybeSingle();
+  const { data: rcRow, error: rcErr } = rcResult;
   if (rcErr || !rcRow) {
     throw new Error(`RELATION_CHART_NOT_FOUND: ${rcErr?.message ?? 'no chart'}`);
   }
