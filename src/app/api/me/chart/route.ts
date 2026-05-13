@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
@@ -12,7 +13,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ ok: false, code: 'UNAUTHORIZED' }, { status: 401 });
+      return apiErrorResponse('UNAUTHORIZED', '', 401);
     }
 
     const db = supabase as unknown as SupabaseClient;
@@ -25,7 +26,7 @@ export async function GET() {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ ok: false, code: 'INTERNAL_ERROR' }, { status: 500 });
+      return apiErrorResponse('INTERNAL_ERROR', '', 500);
     }
 
     const chart = data ? ((data as { chart_core: ChartCore }).chart_core) : null;

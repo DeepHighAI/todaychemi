@@ -81,7 +81,7 @@ describe('GET /api/me/chart', () => {
     const res = await GET();
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
   });
 
   it('500 → INTERNAL_ERROR (DB 오류)', async () => {
@@ -91,6 +91,6 @@ describe('GET /api/me/chart', () => {
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

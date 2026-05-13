@@ -16,14 +16,11 @@ import {
   type ReplayErrorCode,
   type HapcardResult,
 } from '@/types/hapcard';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 
 function todayKST(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
   return now.toISOString().slice(0, 10);
-}
-
-function errorResponse(code: ReplayErrorCode, message: string, status: number): NextResponse {
-  return NextResponse.json({ error: { code, message } }, { status });
 }
 
 export async function POST(
@@ -38,18 +35,18 @@ export async function POST(
     const raw = await request.json();
     const parsed = ReplayRequestSchema.safeParse(raw);
     if (!parsed.success) {
-      return errorResponse('INVALID_BODY', parsed.error.message, 400);
+      return apiErrorResponse('INVALID_BODY', parsed.error.message, 400);
     }
     body = parsed.data;
   } catch {
-    return errorResponse('INVALID_BODY', 'JSON parse failed', 400);
+    return apiErrorResponse('INVALID_BODY', 'JSON parse failed', 400);
   }
 
   // 2. auth
   const supabaseUserClient = await createServerClient();
   const { data: userData, error: userErr } = await supabaseUserClient.auth.getUser();
   if (userErr || !userData?.user) {
-    return errorResponse('UNAUTHORIZED', 'sign-in required', 401);
+    return apiErrorResponse('UNAUTHORIZED', 'sign-in required', 401);
   }
   const userId = userData.user.id;
 
@@ -61,12 +58,12 @@ export async function POST(
     .eq('user_id', userId)
     .maybeSingle();
   if (!hapcardRes.data) {
-    return errorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
+    return apiErrorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
   }
   const parseResult = HapcardDbRowSchema.safeParse(hapcardRes.data);
   if (!parseResult.success) {
     console.error('hapcard_db_row_invalid', { id, issues: parseResult.error.issues });
-    return errorResponse('INTERNAL_ERROR', 'hapcard data shape invalid', 500);
+    return apiErrorResponse('INTERNAL_ERROR', 'hapcard data shape invalid', 500);
   }
   const hapcard = { ...hapcardRes.data, ...parseResult.data } as HapcardResult;
 
@@ -84,7 +81,7 @@ export async function POST(
 
   // 5. LLM outage 게이트
   if (process.env.LLM_ALL_PROVIDERS_DOWN === 'true') {
-    return errorResponse('REPLAY_DURING_OUTAGE', 'LLM providers unavailable', 503);
+    return apiErrorResponse('REPLAY_DURING_OUTAGE', 'LLM providers unavailable', 503);
   }
 
   // 6. 토큰 차감 (-4p, spec §7 D2)
@@ -96,7 +93,7 @@ export async function POST(
     ref: id,
   });
   if (deductErr) {
-    return errorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
+    return apiErrorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
   }
 
   // 7. replay 생성 — 실패 시 토큰 환불 후 500
@@ -131,6 +128,6 @@ export async function POST(
         refund_error: refundErr.message,
       });
     }
-    return errorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', message, 500);
   }
 }

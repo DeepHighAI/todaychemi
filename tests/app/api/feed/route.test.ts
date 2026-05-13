@@ -84,7 +84,7 @@ describe('GET /api/feed', () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
     // 인증 실패 시 DB 조회 없음
     expect(client._relationsSelect).not.toHaveBeenCalled();
     expect(client._snapshotsSelect).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe('GET /api/feed', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('500 → INTERNAL_ERROR (snapshots SELECT 실패)', async () => {
@@ -309,6 +309,6 @@ describe('GET /api/feed', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

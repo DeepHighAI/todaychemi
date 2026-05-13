@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 
 import { createClient } from '@/lib/supabase/server';
 import { createOpenAiClient } from '@/lib/llm/clients';
@@ -39,7 +40,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ ok: false, code: 'UNAUTHORIZED' }, { status: 401 });
+      return apiErrorResponse('UNAUTHORIZED', '', 401);
     }
 
     const target = todayKST();
@@ -111,6 +112,6 @@ export async function GET() {
     return NextResponse.json({ ok: true, card });
   } catch (err) {
     console.error('[/api/today]', err);
-    return NextResponse.json({ ok: false, code: 'INTERNAL_ERROR' }, { status: 500 });
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

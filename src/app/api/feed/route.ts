@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
@@ -6,16 +7,12 @@ import type { FeedItem, RelationErrorCode } from '@/types/relation';
 import { CHANGE_SCORE_THRESHOLD } from '@/lib/scoring/constants';
 import { computeChangeScore } from '@/lib/scoring/changeScore';
 
-function errorResponse(code: RelationErrorCode, status: number) {
-  return NextResponse.json({ code }, { status });
-}
-
 export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return errorResponse('UNAUTHORIZED', 401);
+  if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
   const db = supabase as unknown as SupabaseClient;
 
@@ -25,7 +22,7 @@ export async function GET() {
     .select('relation_id, nickname, mode, created_at')
     .order('created_at', { ascending: false })
     .limit(200);
-  if (relErr) return errorResponse('INTERNAL_ERROR', 500);
+  if (relErr) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
   // 2. 사용자 전체 스냅샷 — 단일 round-trip (RLS가 user_id 필터, 인덱스 활용)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -36,7 +33,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
     // .gte 30일 윈도우 + limit(1000): 비활성 사용자 데이터 제외, Supabase Free 규모에서 충분
     .limit(1000);
-  if (snapErr) return errorResponse('INTERNAL_ERROR', 500);
+  if (snapErr) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
   // 3. (relation_id::mode) 키별 최신 2건만 유지 (already sorted desc)
   type SnapRow = { relation_id: string; mode: string; compat_score: number };

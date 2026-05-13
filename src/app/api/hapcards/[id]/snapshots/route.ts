@@ -8,6 +8,7 @@ import type {
   HapcardSnapshotsResponse,
   SnapshotsErrorCode,
 } from '@/types/hapcard';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 
 function todayKST(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
@@ -20,10 +21,6 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function errorResponse(code: SnapshotsErrorCode, message: string, status: number): NextResponse {
-  return NextResponse.json({ error: { code, message } }, { status });
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -34,7 +31,7 @@ export async function GET(
   const supabase = await createServerClient();
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData?.user) {
-    return errorResponse('UNAUTHORIZED', 'sign-in required', 401);
+    return apiErrorResponse('UNAUTHORIZED', 'sign-in required', 401);
   }
 
   // 2. hapcard 조회 (RLS가 user_id 자동 enforce — 타 사용자 소유면 null 반환)
@@ -44,7 +41,7 @@ export async function GET(
     .eq('hapcard_id', id)
     .maybeSingle();
   if (!hapcardRes.data) {
-    return errorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
+    return apiErrorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
   }
   const { relation_id, mode } = hapcardRes.data as { relation_id: string; mode: string };
 
@@ -65,7 +62,7 @@ export async function GET(
     .order('created_at', { ascending: false });
 
   if (snapErr) {
-    return errorResponse('INTERNAL_ERROR', snapErr.message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', snapErr.message, 500);
   }
 
   // 4. 같은 날짜의 여러 행 → ORDER BY created_at desc로 이미 정렬돼 있으므로 첫 행 채택

@@ -7,15 +7,11 @@ import { buildHapcard, type BuildHapcardInput, type BuildHapcardDeps } from '@/l
 import { buildRagQueryText } from '@/lib/rag/query-text';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
-}
-
-// 통일된 에러 응답 — { error: { code, message } }, code 는 UPPER_SNAKE.
-function errorResponse(code: HapcardErrorCode, message: string, status: number): NextResponse {
-  return NextResponse.json({ error: { code, message } }, { status });
 }
 
 export async function POST(request: NextRequest) {
@@ -25,18 +21,18 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = HapcardRequestSchema.safeParse(raw);
     if (!parsed.success) {
-      return errorResponse('INVALID_BODY', parsed.error.message, 400);
+      return apiErrorResponse('INVALID_BODY', parsed.error.message, 400);
     }
     body = parsed.data;
   } catch {
-    return errorResponse('INVALID_BODY', 'JSON parse failed', 400);
+    return apiErrorResponse('INVALID_BODY', 'JSON parse failed', 400);
   }
 
   // 2. auth — supabaseUserClient
   const supabaseUserClient = await createServerClient();
   const { data: userData, error: userErr } = await supabaseUserClient.auth.getUser();
   if (userErr || !userData?.user) {
-    return errorResponse('UNAUTHORIZED', 'sign-in required', 401);
+    return apiErrorResponse('UNAUTHORIZED', 'sign-in required', 401);
   }
   const userId = userData.user.id;
 
@@ -57,10 +53,10 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (userChartRes.error) {
-    return errorResponse('USER_CHART_LOOKUP_FAILED', userChartRes.error.message, 500);
+    return apiErrorResponse('USER_CHART_LOOKUP_FAILED', userChartRes.error.message, 500);
   }
   if (!userChartRes.data) {
-    return errorResponse(
+    return apiErrorResponse(
       'USER_CHART_NOT_FOUND',
       `user chart for theory_profile_version=${body.theory_profile_version} not found`,
       404,
@@ -69,14 +65,14 @@ export async function POST(request: NextRequest) {
   const userChart = userChartRes.data as unknown as ChartRow;
 
   if (relationChartRes.error) {
-    return errorResponse(
+    return apiErrorResponse(
       'RELATION_CHART_LOOKUP_FAILED',
       relationChartRes.error.message,
       500,
     );
   }
   if (!relationChartRes.data) {
-    return errorResponse(
+    return apiErrorResponse(
       'RELATION_CHART_NOT_FOUND',
       `relation chart for relation_id=${body.relation_id} not found`,
       404,
@@ -112,8 +108,8 @@ export async function POST(request: NextRequest) {
     console.error('[POST /api/hapcards]', err);
     const message = err instanceof Error ? err.message : 'unknown error';
     if (message.startsWith('GROUNDING_FAILED')) {
-      return errorResponse('GROUNDING_FAILED', message, 422);
+      return apiErrorResponse('GROUNDING_FAILED', message, 422);
     }
-    return errorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', message, 500);
   }
 }

@@ -6,14 +6,11 @@ import { buildWhatif, type BuildWhatifInput, type BuildWhatifDeps } from '@/lib/
 import { buildWhatifRagQueryText } from '@/lib/whatif/query-text';
 import { DiagnosticTypeSchema, type WhatifErrorCode } from '@/types/diagnostic';
 import type { ChartCore } from '@/types/chart';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
-}
-
-function errorResponse(code: WhatifErrorCode, message: string, status: number): NextResponse {
-  return NextResponse.json({ error: { code, message } }, { status });
 }
 
 export async function POST(
@@ -24,7 +21,7 @@ export async function POST(
   const { type: rawType } = await params;
   const typeParsed = DiagnosticTypeSchema.safeParse(rawType);
   if (!typeParsed.success) {
-    return errorResponse('INVALID_TYPE', `unknown diagnostic type: ${rawType}`, 400);
+    return apiErrorResponse('INVALID_TYPE', `unknown diagnostic type: ${rawType}`, 400);
   }
   const type = typeParsed.data;
 
@@ -32,7 +29,7 @@ export async function POST(
   const supabaseUserClient = await createServerClient();
   const { data: userData } = await supabaseUserClient.auth.getUser();
   if (!userData?.user) {
-    return errorResponse('UNAUTHORIZED', 'sign-in required', 401);
+    return apiErrorResponse('UNAUTHORIZED', 'sign-in required', 401);
   }
   const userId = userData.user.id;
 
@@ -45,10 +42,10 @@ export async function POST(
     .limit(1)
     .maybeSingle();
   if (userChartRes.error) {
-    return errorResponse('INTERNAL_ERROR', `user_charts lookup: ${userChartRes.error.message}`, 500);
+    return apiErrorResponse('INTERNAL_ERROR', `user_charts lookup: ${userChartRes.error.message}`, 500);
   }
   if (!userChartRes.data) {
-    return errorResponse('USER_CHART_NOT_FOUND', 'user chart not found', 404);
+    return apiErrorResponse('USER_CHART_NOT_FOUND', 'user chart not found', 404);
   }
   const userChart = userChartRes.data as unknown as ChartRow;
 
@@ -76,7 +73,7 @@ export async function POST(
     ref: type,
   });
   if (deductErr) {
-    return errorResponse('INSUFFICIENT_TOKENS', (deductErr as { message: string }).message, 402);
+    return apiErrorResponse('INSUFFICIENT_TOKENS', (deductErr as { message: string }).message, 402);
   }
 
   try {
@@ -92,8 +89,8 @@ export async function POST(
     const message = err instanceof Error ? err.message : 'unknown error';
     if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'build_error', original_error: message, refund_error: (refundErr as { message: string }).message });
     if (message.startsWith('GROUNDING_FAILED')) {
-      return errorResponse('GROUNDING_FAILED', message, 422);
+      return apiErrorResponse('GROUNDING_FAILED', message, 422);
     }
-    return errorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', message, 500);
   }
 }

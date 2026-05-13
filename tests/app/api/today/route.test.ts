@@ -60,7 +60,7 @@ describe('GET /api/today', () => {
     const res = await GET();
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
     expect(vi.mocked(buildDailyHap)).not.toHaveBeenCalled();
   });
 
@@ -70,6 +70,6 @@ describe('GET /api/today', () => {
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

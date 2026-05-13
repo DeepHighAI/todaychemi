@@ -113,7 +113,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
     expect(client._insert).not.toHaveBeenCalled();
   });
 
@@ -126,7 +126,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
   });
 
   it('401 → UNAUTHORIZED (미인증)', async () => {
@@ -137,7 +137,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
     expect(client._insert).not.toHaveBeenCalled();
   });
 
@@ -149,7 +149,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(409);
     const body = await res.json();
-    expect(body.code).toBe('USER_ALREADY_ONBOARDED');
+    expect(body.error.code).toBe('USER_ALREADY_ONBOARDED');
   });
 
   it('500 → INTERNAL_ERROR (generic DB failure)', async () => {
@@ -160,7 +160,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('400 → INVALID_BODY on non-JSON body', async () => {
@@ -177,7 +177,7 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
   });
 
   it('200 성공 시 user_charts upsert 호출 (chart_hash, chart_core, user_id, theory_profile_version)', async () => {
@@ -214,6 +214,6 @@ describe('POST /api/onboarding', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

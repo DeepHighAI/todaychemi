@@ -125,7 +125,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
     expect(client._insert).not.toHaveBeenCalled();
   });
 
@@ -137,7 +137,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
   });
 
   it('400 → INVALID_BODY (birth_place 추가 필드 — PII strict 가드)', async () => {
@@ -148,7 +148,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
   });
 
   it('401 → UNAUTHORIZED (미인증)', async () => {
@@ -159,7 +159,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
     expect(client._insert).not.toHaveBeenCalled();
   });
 
@@ -171,7 +171,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('400 → INVALID_BODY on non-JSON body', async () => {
@@ -188,7 +188,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.code).toBe('INVALID_BODY');
+    expect(body.error.code).toBe('INVALID_BODY');
   });
 
   it('200 성공 시 relation_charts upsert 호출 (chart_hash, chart_core, user_id, relation_id)', async () => {
@@ -227,7 +227,7 @@ describe('POST /api/relations', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });
 
@@ -279,7 +279,7 @@ describe('GET /api/relations', () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.code).toBe('UNAUTHORIZED');
+    expect(body.error.code).toBe('UNAUTHORIZED');
     expect(client._select).not.toHaveBeenCalled();
   });
 
@@ -293,6 +293,6 @@ describe('GET /api/relations', () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.code).toBe('INTERNAL_ERROR');
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });

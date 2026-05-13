@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { apiErrorResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
@@ -6,20 +7,16 @@ import { OnboardingRequestSchema, type OnboardingErrorCode } from '@/types/onboa
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import { computeChart } from '@/lib/chart/compute';
 
-function errorResponse(code: OnboardingErrorCode, status: number) {
-  return NextResponse.json({ code }, { status });
-}
-
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
   const parsed = OnboardingRequestSchema.safeParse(json);
-  if (!parsed.success) return errorResponse('INVALID_BODY', 400);
+  if (!parsed.success) return apiErrorResponse('INVALID_BODY', '', 400);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return errorResponse('UNAUTHORIZED', 401);
+  if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
   // chart compute 먼저 — 성공 시에만 users INSERT (partial state 방지)
   let computeResult;
@@ -38,7 +35,7 @@ export async function POST(request: Request) {
       process.env.KASI_SERVICE_KEY!,
     );
   } catch {
-    return errorResponse('INTERNAL_ERROR', 500);
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
   // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 INSERT (users 테이블 타입 해소 우회)
@@ -56,8 +53,8 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    if (error.code === '23505') return errorResponse('USER_ALREADY_ONBOARDED', 409);
-    return errorResponse('INTERNAL_ERROR', 500);
+    if (error.code === '23505') return apiErrorResponse('USER_ALREADY_ONBOARDED', '', 409);
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
   const { error: chartError } = await db.from('user_charts').upsert(
@@ -69,7 +66,7 @@ export async function POST(request: Request) {
     },
     { onConflict: 'chart_hash' },
   );
-  if (chartError) return errorResponse('INTERNAL_ERROR', 500);
+  if (chartError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
   return NextResponse.json({ ok: true });
 }
