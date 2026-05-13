@@ -13,7 +13,7 @@ export function mapLlmCitation(
 ) {
   return {
     source: `${stripHanjaInParens((citation.source_title as string) ?? '')} ${translateChapter((citation.source_chapter as string) ?? '')}`.trim(),
-    original: (ragHit?.original_reading ?? null) !== null ? (ragHit!.original_reading as string) : convertHanja((citation.original_text as string) ?? ''),
+    original: ragHit?.original_reading ?? convertHanja((citation.original_text as string) ?? ''),
     modern: (citation.modern_translation as string) ?? '',
   };
 }
