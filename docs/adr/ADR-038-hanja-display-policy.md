@@ -51,4 +51,4 @@ Two root causes:
 - `src/lib/hapcard/builder.ts` + `src/lib/replay/builder.ts` — `classic_citation` UI mapping.
 - `prompts/system/*.md` v0.8 — Constraints + Examples rewritten.
 - `src/components/hapcard/{body,conclusion,highlights-2up,actions}.tsx` — safety-net wraps.
-- `src/lib/llm/banned-phrases.ts` — `containsClassicalHanja()` validation gate.
+- `src/lib/llm/banned-phrases.ts` — `containsClassicalHanja()` warn-and-pass observability gate (Option C, 2026-05-13 §1.1). LLM 응답에 한자 누수 시 `console.warn('[CLASSICAL_HANJA]', { phrase })` 후 통과. throw 없음. UI safety-net(`convertHanja`) 최종 방어.

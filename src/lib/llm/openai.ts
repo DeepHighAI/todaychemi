@@ -6,6 +6,7 @@ import {
   loadBannedPhrases,
   findBannedPhrase,
   findScoreLeak,
+  containsClassicalHanja,
   type BannedPhraseCategory,
 } from '@/lib/llm/banned-phrases';
 import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
@@ -117,6 +118,10 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
 
     const scoreLeak = findScoreLeak(text);
     if (scoreLeak.found) throw new Error(`BANNED_PHRASE: score_leak: ${scoreLeak.phrase}`);
+
+    // ADR-038 Option C: 한자 누수 감지 시 warn-and-pass (UI safety-net이 최종 방어)
+    const hanjaHit = containsClassicalHanja(text);
+    if (hanjaHit.found) console.warn('[CLASSICAL_HANJA]', { phrase: hanjaHit.phrase });
 
     return validated;
   };

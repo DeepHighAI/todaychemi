@@ -432,4 +432,59 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     expect(result.model).toBe('gpt-5-mini');
     expect(create).toHaveBeenCalledTimes(1);
   });
+
+  it('한자 포함 LLM 응답 → throw 없이 통과, console.warn([CLASSICAL_HANJA]) 호출', async () => {
+    // main_text에 한자(木) 포함 — 유효한 JSON 구조는 유지
+    const mainText = '갑목일간'.repeat(40).slice(0, 155) + '木기운';
+    const hanjaJson = JSON.stringify({
+      main_text: mainText,
+      cause_factors: [
+        { name: '원인1', effect: '결과1' },
+        { name: '원인2', effect: '결과2' },
+        { name: '원인3', effect: '결과3' },
+      ],
+      classic_citation: [],
+      actions: ['행동1', '행동2', '행동3'],
+      why_cards: [{ title: '제목1', reason: '이유1' }],
+    });
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(hanjaJson));
+    const { client: supabase } = makeMockServiceClient();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload() },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    // throw 없이 결과 반환 (Option C: warn-and-pass)
+    expect(result).toBeDefined();
+    // console.warn '[CLASSICAL_HANJA]' prefix 로 호출됨
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[CLASSICAL_HANJA]',
+      expect.objectContaining({ phrase: expect.any(String) }),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('한자 없는 정상 응답 → console.warn 미호출', async () => {
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload() },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });
