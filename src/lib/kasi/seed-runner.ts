@@ -1,3 +1,4 @@
+import { toErrorMessage } from '@/lib/errors/to-message';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { normalizeKasiToChartCore, type BirthInput } from './normalize';
 import type { KasiLunCalItem } from './types';
@@ -129,7 +130,7 @@ export async function buildKasiFixtures(
         writeFileSync(partialPath, JSON.stringify(all, null, 2), 'utf-8');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = toErrorMessage(err, String(err));
       console.warn(`WARN: ${input.id} failed: ${msg}`);
       failures.push(input.id);
     }

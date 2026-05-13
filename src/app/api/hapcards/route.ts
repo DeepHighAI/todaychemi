@@ -8,6 +8,7 @@ import { buildRagQueryText } from '@/lib/rag/query-text';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { toErrorMessage } from '@/lib/errors/to-message';
 
 interface ChartRow {
   chart_core: ChartCore;
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     console.error('[POST /api/hapcards]', err);
-    const message = err instanceof Error ? err.message : 'unknown error';
+    const message = toErrorMessage(err);
     if (message.startsWith('GROUNDING_FAILED')) {
       return apiErrorResponse('GROUNDING_FAILED', message, 422);
     }

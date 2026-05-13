@@ -17,6 +17,7 @@ import {
   type HapcardResult,
 } from '@/types/hapcard';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { toErrorMessage } from '@/lib/errors/to-message';
 
 function todayKST(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
@@ -112,7 +113,7 @@ export async function POST(
     const result = await buildReplay(input, deps);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'unknown error';
+    const message = toErrorMessage(err);
     const { error: refundErr } = await serviceClient.rpc('refund_tokens', {
       uid: userId,
       delta: 4,

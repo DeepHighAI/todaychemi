@@ -7,6 +7,7 @@ import { buildWhatifRagQueryText } from '@/lib/whatif/query-text';
 import { DiagnosticTypeSchema, type WhatifErrorCode } from '@/types/diagnostic';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { toErrorMessage } from '@/lib/errors/to-message';
 import { fetchLatestUserChart } from '@/lib/chart/queries';
 
 interface ChartRow {
@@ -81,7 +82,7 @@ export async function POST(
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const { error: refundErr } = await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
-    const message = err instanceof Error ? err.message : 'unknown error';
+    const message = toErrorMessage(err);
     if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'build_error', original_error: message, refund_error: (refundErr as { message: string }).message });
     if (message.startsWith('GROUNDING_FAILED')) {
       return apiErrorResponse('GROUNDING_FAILED', message, 422);
