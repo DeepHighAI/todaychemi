@@ -7,6 +7,7 @@ import { buildWhatifRagQueryText } from '@/lib/whatif/query-text';
 import { DiagnosticTypeSchema, type WhatifErrorCode } from '@/types/diagnostic';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { fetchLatestUserChart } from '@/lib/chart/queries';
 
 interface ChartRow {
   chart_core: ChartCore;
@@ -34,13 +35,7 @@ export async function POST(
   const userId = userData.user.id;
 
   // 3. user_charts fetch — latest by created_at (self-anchor, theory_profile_version 미사용)
-  const userChartRes = await supabaseUserClient
-    .from('user_charts')
-    .select('chart_core, chart_hash')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const userChartRes = await fetchLatestUserChart(supabaseUserClient, userId);
   if (userChartRes.error) {
     return apiErrorResponse('INTERNAL_ERROR', `user_charts lookup: ${userChartRes.error.message}`, 500);
   }

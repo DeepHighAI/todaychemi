@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
+import { fetchLatestUserChart } from '@/lib/chart/queries';
 import { createClient } from '@/lib/supabase/server';
 import type { ChartCore } from '@/types/chart';
 
@@ -16,23 +15,16 @@ export async function GET() {
       return apiErrorResponse('UNAUTHORIZED', '', 401);
     }
 
-    const db = supabase as unknown as SupabaseClient;
-    const { data, error } = await db
-      .from('user_charts')
-      .select('chart_core')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data, error } = await fetchLatestUserChart(supabase, user.id);
 
     if (error) {
       return apiErrorResponse('INTERNAL_ERROR', '', 500);
     }
 
-    const chart = data ? ((data as { chart_core: ChartCore }).chart_core) : null;
+    const chart = data ? ((data as unknown as { chart_core: ChartCore }).chart_core) : null;
     return NextResponse.json({ ok: true, chart });
   } catch (err) {
     console.error('[/api/me/chart]', err);
-    return NextResponse.json({ ok: false, code: 'INTERNAL_ERROR' }, { status: 500 });
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

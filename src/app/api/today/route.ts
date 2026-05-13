@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { fetchLatestUserChart } from '@/lib/chart/queries';
 
 import { createClient } from '@/lib/supabase/server';
 import { createOpenAiClient } from '@/lib/llm/clients';
@@ -72,13 +73,7 @@ export async function GET() {
       },
 
       fetchUserChart: async () => {
-        const { data } = await supabase
-          .from('user_charts')
-          .select('chart_core')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data } = await fetchLatestUserChart(supabase, user.id);
         cachedChart = data ? (data.chart_core as unknown as ChartCore) : null;
         return cachedChart;
       },
