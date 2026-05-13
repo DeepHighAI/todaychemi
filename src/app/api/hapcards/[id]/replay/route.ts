@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { todayKST } from '@/lib/today/kst-date';
 import type { NextRequest } from 'next/server';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -18,11 +19,6 @@ import {
 } from '@/types/hapcard';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
-
-function todayKST(): string {
-  const now = new Date(Date.now() + 9 * 3600 * 1000);
-  return now.toISOString().slice(0, 10);
-}
 
 export async function POST(
   request: NextRequest,

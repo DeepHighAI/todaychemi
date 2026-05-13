@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { todayKST } from '@/lib/today/kst-date';
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -9,11 +10,6 @@ import type {
   SnapshotsErrorCode,
 } from '@/types/hapcard';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-
-function todayKST(): string {
-  const now = new Date(Date.now() + 9 * 3600 * 1000);
-  return now.toISOString().slice(0, 10);
-}
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00Z');
