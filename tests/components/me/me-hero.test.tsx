@@ -18,9 +18,10 @@ const CHART: ChartCore = {
 };
 
 describe('MeHero', () => {
-  it('IljuChip — 일주 값(甲戌) 렌더', () => {
+  it('IljuChip — 일주 값(甲戌 → 갑술) 렌더 (ADR-038: convertHanja 적용)', () => {
     renderWithProviders(<MeHero chart={CHART} />);
-    expect(screen.getByText('甲戌')).toBeInTheDocument();
+    expect(screen.getByText('갑술')).toBeInTheDocument();
+    expect(screen.queryByText('甲戌')).not.toBeInTheDocument();
   });
 
   it('eyebrow "일주" 렌더', () => {

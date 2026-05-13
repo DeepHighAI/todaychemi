@@ -39,4 +39,16 @@ describe('IljuChip', () => {
     const { container } = render(<IljuChip pillar="갑인" element="목" />);
     expect(container.firstChild).toHaveAttribute('title', '木');
   });
+
+  it('ADR-038: raw Hanja pillar → Korean 음독 변환 (丙寅 → 병인)', () => {
+    render(<IljuChip pillar="丙寅" element="화" />);
+    expect(screen.getByText('병인')).toBeInTheDocument();
+    expect(screen.queryByText('丙寅')).not.toBeInTheDocument();
+  });
+
+  it('ADR-038: raw Hanja pillar → Korean 음독 변환 (辛亥 → 신해)', () => {
+    render(<IljuChip pillar="辛亥" element="금" />);
+    expect(screen.getByText('신해')).toBeInTheDocument();
+    expect(screen.queryByText('辛亥')).not.toBeInTheDocument();
+  });
 });

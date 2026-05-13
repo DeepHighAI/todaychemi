@@ -1,4 +1,5 @@
 import { elementLabel, type OhaengElement } from '@/lib/saju/elementLabel';
+import { convertHanja } from '@/lib/glossary/post-process';
 
 interface IljuChipProps {
   pillar: string;
@@ -12,7 +13,7 @@ export function IljuChip({ pillar, element }: IljuChipProps) {
       title={hanja}
       className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold text-white ${color_class}`}
     >
-      {pillar}
+      {convertHanja(pillar)}
     </span>
   );
 }
