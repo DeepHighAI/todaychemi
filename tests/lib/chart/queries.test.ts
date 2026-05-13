@@ -34,4 +34,18 @@ describe('fetchLatestUserChart', () => {
     const result = await fetchLatestUserChart(supabase, 'user-456');
     expect(result).toEqual(expected);
   });
+
+  it('passes through { data: null, error: null } when no chart exists', async () => {
+    const expected = { data: null, error: null };
+    const maybeSingle = vi.fn().mockResolvedValue(expected);
+    const limit = vi.fn().mockReturnValue({ maybeSingle });
+    const order = vi.fn().mockReturnValue({ limit });
+    const eq = vi.fn().mockReturnValue({ order });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    const supabase = { from } as never;
+
+    const result = await fetchLatestUserChart(supabase, 'user-789');
+    expect(result).toEqual(expected);
+  });
 });

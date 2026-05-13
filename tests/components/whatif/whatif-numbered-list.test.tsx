@@ -26,4 +26,9 @@ describe('WhatifNumberedList', () => {
     const { container } = render(<WhatifNumberedList testid="my-list" titleKey="k" items={[]} />);
     expect(container.querySelector('[data-testid="my-list"]')).toBeTruthy();
   });
+
+  it('renders zero <li> when items is empty', () => {
+    const { container } = render(<WhatifNumberedList testid="empty" titleKey="k" items={[]} />);
+    expect(container.querySelectorAll('li').length).toBe(0);
+  });
 });

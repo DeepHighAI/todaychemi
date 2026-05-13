@@ -34,4 +34,17 @@ describe('mapLlmCitation', () => {
     expect(result.original).toBe('');
     expect(result.modern).toBe('');
   });
+
+  it('preserves ragHit.original_reading === "" — empty wins over convertHanja fallback', () => {
+    const citation = { original_text: '甲木参天' };
+    const result = mapLlmCitation(citation, { original_reading: '' });
+    expect(result.original).toBe('');
+  });
+
+  it('falls back to convertHanja when ragHit.original_reading === null (explicit)', () => {
+    const citation = { original_text: '甲木参天' };
+    const result = mapLlmCitation(citation, { original_reading: null });
+    expect(typeof result.original).toBe('string');
+    expect(result.original).not.toBe('');
+  });
 });

@@ -10,6 +10,7 @@ describe('toErrorMessage', () => {
     expect(toErrorMessage('string error')).toBe('unknown error');
     expect(toErrorMessage(42)).toBe('unknown error');
     expect(toErrorMessage(null)).toBe('unknown error');
+    expect(toErrorMessage(undefined)).toBe('unknown error');
   });
 
   it('uses custom fallback for non-Error', () => {
