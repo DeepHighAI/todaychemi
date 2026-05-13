@@ -9,7 +9,7 @@ import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
-import { stripHanjaInParens, translateChapter, convertHanja } from '@/lib/glossary/post-process';
+import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 
 const JINJIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -127,11 +127,7 @@ export async function buildReplay(
     classic_citation: llm.output.classic_citation.map((c) => {
       const citation = c as Record<string, unknown>;
       // replay는 RAG hit 없음 — convertHanja로 한자 → 한글 변환
-      return {
-        source: `${stripHanjaInParens((citation.source_title as string) ?? '')} ${translateChapter((citation.source_chapter as string) ?? '')}`.trim(),
-        original: convertHanja((citation.original_text as string) ?? ''),
-        modern: (citation.modern_translation as string) ?? '',
-      };
+      return mapLlmCitation(citation);
     }),
     actions: llm.output.actions,
     why_cards: llm.output.why_cards,

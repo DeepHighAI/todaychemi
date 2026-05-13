@@ -14,7 +14,7 @@ import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
 import { SCORING_VERSION } from '@/lib/scoring/constants';
 import { todayKST } from '@/lib/today/kst-date';
-import { stripHanjaInParens, translateChapter, convertHanja } from '@/lib/glossary/post-process';
+import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 
 export interface BuildHapcardInput {
   user_id: string;
@@ -148,11 +148,7 @@ export async function buildHapcard(
       const citation = c as Record<string, unknown>;
       // asset_id 기준으로 RAG hit 조회 — original_reading이 있으면 우선 사용
       const ragHit = ragHits.find((h) => h.asset_id === citation.asset_id);
-      return {
-        source: `${stripHanjaInParens((citation.source_title as string) ?? '')} ${translateChapter((citation.source_chapter as string) ?? '')}`.trim(),
-        original: ragHit?.original_reading ?? convertHanja((citation.original_text as string) ?? ''),
-        modern: (citation.modern_translation as string) ?? '',
-      };
+      return mapLlmCitation(citation, ragHit);
     }),
     actions: llmResult.output.actions,
     why_cards: llmResult.output.why_cards,
