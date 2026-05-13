@@ -93,7 +93,8 @@ export async function POST(request: Request) {
       { onConflict: 'chart_hash' },
     );
     if (chartError) return errorResponse('INTERNAL_ERROR', 500);
-  } catch {
+  } catch (err) {
+    console.error('[relations] computeChart failed', err);
     // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
   }
 
