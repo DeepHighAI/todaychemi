@@ -35,19 +35,22 @@ function makeClient(opts: {
     error: null,
   });
 
-  // relations 체인: select → order → {data, error}
-  const relationsOrder = vi.fn().mockResolvedValue({
+  // relations 체인: select → order → limit → {data, error}
+  const relationsLimit = vi.fn().mockResolvedValue({
     data: opts.relations ?? [],
     error: opts.relationsError ?? null,
   });
+  const relationsOrder = vi.fn().mockReturnValue({ limit: relationsLimit });
   const relationsSelect = vi.fn().mockReturnValue({ order: relationsOrder });
 
-  // snapshots 체인: select → order → {data, error}
-  const snapshotsOrder = vi.fn().mockResolvedValue({
+  // snapshots 체인: select → gte → order → limit → {data, error}
+  const snapshotsLimit = vi.fn().mockResolvedValue({
     data: opts.snapshots ?? [],
     error: opts.snapshotsError ?? null,
   });
-  const snapshotsSelect = vi.fn().mockReturnValue({ order: snapshotsOrder });
+  const snapshotsOrder = vi.fn().mockReturnValue({ limit: snapshotsLimit });
+  const snapshotsGte = vi.fn().mockReturnValue({ order: snapshotsOrder });
+  const snapshotsSelect = vi.fn().mockReturnValue({ gte: snapshotsGte });
 
   const from = vi.fn().mockImplementation((table: string) => {
     if (table === 'relations') return { select: relationsSelect };
@@ -59,7 +62,10 @@ function makeClient(opts: {
     auth: { getUser },
     from,
     _relationsOrder: relationsOrder,
+    _relationsLimit: relationsLimit,
     _snapshotsOrder: snapshotsOrder,
+    _snapshotsGte: snapshotsGte,
+    _snapshotsLimit: snapshotsLimit,
     _relationsSelect: relationsSelect,
     _snapshotsSelect: snapshotsSelect,
   };
@@ -109,6 +115,10 @@ describe('GET /api/feed', () => {
     expect(item).toHaveProperty('change_score');
     expect(item).toHaveProperty('has_significant_change');
     expect(item).toHaveProperty('created_at');
+    // limit/gte 호출 인수 검증
+    expect(client._relationsLimit).toHaveBeenCalledWith(200);
+    expect(client._snapshotsGte).toHaveBeenCalledWith('created_at', expect.any(String));
+    expect(client._snapshotsLimit).toHaveBeenCalledWith(1000);
   });
 
   it('200 → 스냅샷 0건인 인연: compat_score=null, change_score=0, has_significant_change=false', async () => {

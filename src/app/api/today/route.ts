@@ -46,6 +46,9 @@ export async function GET() {
     const prev = yesterdayKST();
     const openai = createOpenAiClient();
 
+    // saveCard 클로저가 재사용할 수 있도록 fetchUserChart 결과를 외부 스코프에 캡처
+    let cachedChart: ChartCore | null = null;
+
     const card = await buildDailyHap({
       fetchTodayCache: async () => {
         const { data } = await supabase
@@ -75,21 +78,16 @@ export async function GET() {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        return data ? (data.chart_core as unknown as ChartCore) : null;
+        cachedChart = data ? (data.chart_core as unknown as ChartCore) : null;
+        return cachedChart;
       },
 
       callLlm: (chart) => callDailyHapLlm(chart, openai),
 
       saveCard: async (c) => {
-        const { data: chartRow } = await supabase
-          .from('user_charts')
-          .select('chart_core')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // fetchUserChart 결과를 외부 스코프에서 캡처 — 중복 DB 쿼리 제거
         const hash = buildSourcePacketHash(
-          chartRow ? (chartRow.chart_core as unknown as ChartCore) : ({} as ChartCore),
+          cachedChart ?? ({} as ChartCore),
           target,
         );
         await supabase.from('daily_haps').upsert(

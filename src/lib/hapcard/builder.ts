@@ -190,7 +190,7 @@ export async function buildHapcard(
   }
 
   // 11. snapshot upsert — ADR-036 change_score 기준점
-  await deps.supabaseServiceClient
+  const snapRes = await deps.supabaseServiceClient
     .from('hapcard_score_snapshots')
     .upsert({
       user_id: input.user_id,
@@ -208,6 +208,7 @@ export async function buildHapcard(
         mode_adjustment: scoreOutput.mode_adjustment,
       },
     });
+  if (snapRes.error) console.error('[hapcard] snapshot upsert failed', snapRes.error);
 
   const relation_nickname = await fetchRelationNickname(
     deps.supabaseUserClient,

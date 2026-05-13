@@ -50,10 +50,11 @@ function makeClient(opts: {
     error: opts.upsertChartError ?? null,
   });
 
-  const order = vi.fn().mockResolvedValue({
+  const limit = vi.fn().mockResolvedValue({
     data: opts.selectRows ?? [],
     error: opts.selectError ?? null,
   });
+  const order = vi.fn().mockReturnValue({ limit });
   const select = vi.fn().mockReturnValue({ order });
 
   // relations INSERT chains .select('relation_id') → returns {data, error}
@@ -69,7 +70,7 @@ function makeClient(opts: {
     return { insert: vi.fn(), upsert: vi.fn(), select };
   });
 
-  return { auth: { getUser }, from, _insert: insertRelations, _upsertCharts: upsertCharts, _select: select, _order: order };
+  return { auth: { getUser }, from, _insert: insertRelations, _upsertCharts: upsertCharts, _select: select, _order: order, _limit: limit };
 }
 
 function makeRequest(body: unknown) {
@@ -267,6 +268,7 @@ describe('GET /api/relations', () => {
     await GET();
 
     expect(client._order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(client._limit).toHaveBeenCalledWith(200);
   });
 
   it('401 → UNAUTHORIZED (미인증)', async () => {

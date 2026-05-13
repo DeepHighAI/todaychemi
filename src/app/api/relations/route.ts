@@ -25,7 +25,8 @@ export async function GET() {
   const { data, error } = await db
     .from('relations')
     .select('relation_id, nickname, mode, created_at')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   if (error) return errorResponse('INTERNAL_ERROR', 500);
 
@@ -92,7 +93,8 @@ export async function POST(request: Request) {
       { onConflict: 'chart_hash' },
     );
     if (chartError) return errorResponse('INTERNAL_ERROR', 500);
-  } catch {
+  } catch (err) {
+    console.error('[relations] computeChart failed', err);
     // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
   }
 
