@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
 
@@ -17,7 +17,7 @@ vi.mock('next/og', () => ({
 }));
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { GET } from '@/app/api/og/hapcard/[id]/route';
+import { GET, runtime } from '@/app/api/og/hapcard/[id]/route';
 
 const HAPCARD_ID = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -93,6 +93,20 @@ function makeRequest(url: string): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Satori 폰트 fetch stub — 실제 네트워크 없이 ArrayBuffer 반환
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation((url: string | URL) => {
+      if (url.toString().includes('/fonts/')) {
+        return Promise.resolve(new Response(new ArrayBuffer(8)));
+      }
+      return Promise.resolve(new Response('', { status: 404 }));
+    }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('GET /api/og/hapcard/[id]', () => {
@@ -132,5 +146,18 @@ describe('GET /api/og/hapcard/[id]', () => {
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
     await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
     expect(imageResponseSpy).toHaveBeenCalledOnce();
+  });
+
+  it('200 — ImageResponse에 Noto Sans KR fonts 옵션 전달됨', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
+    await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    const opts = imageResponseSpy.mock.calls[0][1] as { fonts?: { name: string }[] };
+    expect(opts?.fonts).toHaveLength(1);
+    expect(opts?.fonts?.[0]?.name).toBe('Noto Sans KR');
+  });
+
+  it('runtime = "edge" export', () => {
+    expect(runtime).toBe('edge');
   });
 });

@@ -14,7 +14,7 @@ export function OgTemplate({ payload }: { payload: OgPayload }) {
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
         padding: '60px',
-        fontFamily: 'sans-serif',
+        fontFamily: 'Noto Sans KR',
       }}
     >
       <div

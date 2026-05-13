@@ -79,12 +79,26 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       range,
     );
 
+    // Satori 기본 폰트(Geist)는 Latin-only — Hangul 렌더링을 위해 Noto Sans KR 등록
+    const fontUrl = new URL('/fonts/NotoSansKR-Regular.otf', request.url);
+    const fontData = await fetch(fontUrl).then((r) => r.arrayBuffer());
+
     return new ImageResponse(<OgTemplate payload={payload} />, {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: 'Noto Sans KR',
+          data: fontData,
+          style: 'normal',
+          weight: 400,
+        },
+      ],
     });
   } catch (err) {
     console.error('[og/hapcard] 렌더 오류:', err);
     return new Response('internal error', { status: 500 });
   }
 }
+
+export const runtime = 'edge';
