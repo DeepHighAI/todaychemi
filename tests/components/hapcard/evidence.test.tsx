@@ -77,4 +77,29 @@ describe('HapcardEvidence + GlossaryProvider 통합', () => {
     const triggers = screen.getAllByTestId('term-tooltip-trigger');
     expect(triggers).toHaveLength(2);
   });
+
+  it('compound 용어 "자오충"이 title에 있으면 단일 TermTooltip trigger 렌더 (분해 안 됨)', () => {
+    const cards = [{ title: '자오충 관계로 강한 부딪힘', reason: '지지가 정반대입니다.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    // 자오충(compound) + 부딪힘(soft alias) = trigger 2개
+    const triggers = screen.getAllByTestId('term-tooltip-trigger');
+    expect(triggers).toHaveLength(2);
+    // 첫 번째 trigger가 자오충을 단일 unit으로 감싸고 있어야 함
+    expect(triggers[0]).toHaveTextContent('자오충');
+  });
+
+  it('"인오술 삼합" → 삼합과 인오술이 각각 단일 trigger', () => {
+    const cards = [{ title: '인오술 삼합 에너지', reason: '화기(火氣)가 강합니다.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    const triggers = screen.getAllByTestId('term-tooltip-trigger');
+    // 인오술(compound) + 삼합(compound) = 2개
+    expect(triggers).toHaveLength(2);
+  });
+
+  it('"자오충" definition 텍스트가 tooltip에 표시된다 (defaultOpen=true 첫 등장)', () => {
+    const cards = [{ title: '자오충 관계', reason: '에너지가 맞부딪힙니다.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    // 자오충 definition 텍스트 일부 확인
+    expect(screen.getByText(/정반대 방향으로 부딪히는/)).toBeInTheDocument();
+  });
 });

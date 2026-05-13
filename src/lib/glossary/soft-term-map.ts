@@ -9,13 +9,11 @@ export const SOFT_TO_CLASSICAL: Record<SoftTerm, GlossaryKey> = {
   소모: '해',
 };
 
-export const CLASSICAL_TO_SOFT: Record<GlossaryKey, SoftTerm | undefined> = {
+export const CLASSICAL_TO_SOFT: Partial<Record<GlossaryKey, SoftTerm>> = {
   합: '끌림',
   형: '긴장',
   충: '부딪힘',
   해: '소모',
-  일주: undefined,
-  십신: undefined,
 };
 
 export function toClassicalKey(token: string): string {

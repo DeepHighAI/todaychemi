@@ -79,3 +79,35 @@ describe('GLOSSARY_TERMS', () => {
     expect(GLOSSARY_TERMS['십신'].display_label).toBeUndefined();
   });
 });
+
+describe('GLOSSARY_TERMS — compound terms', () => {
+  const COMPOUND_TERMS = [
+    '자오충', '축미충', '인신충', '묘유충', '진술충', '사해충',
+    '인오술', '신자진', '사유축', '해묘미',
+    '삼합', '반합',
+  ] as const;
+
+  it('12개 compound 용어가 모두 등록되어 있다', () => {
+    for (const term of COMPOUND_TERMS) {
+      expect(GLOSSARY_TERMS).toHaveProperty(term);
+    }
+  });
+
+  it('각 compound 항목이 GlossaryTerm 기본 구조를 충족한다 (term, definition, classic_quote)', () => {
+    for (const key of COMPOUND_TERMS) {
+      const entry = GLOSSARY_TERMS[key];
+      expect(typeof entry.term).toBe('string');
+      expect(entry.term.length).toBeGreaterThan(0);
+      expect(typeof entry.definition).toBe('string');
+      expect(entry.definition.length).toBeGreaterThan(0);
+      expect(entry.definition.length).toBeLessThanOrEqual(200);
+      expect(entry.classic_quote).toBeNull();
+    }
+  });
+
+  it('compound 용어들은 display_label이 없다 (soft alias 없음)', () => {
+    for (const key of COMPOUND_TERMS) {
+      expect(GLOSSARY_TERMS[key].display_label).toBeUndefined();
+    }
+  });
+});

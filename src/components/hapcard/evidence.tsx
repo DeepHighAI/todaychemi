@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { useGlossaryContext } from '@/components/hapcard/glossary-provider';
 import { TermTooltip } from '@/components/hapcard/primitives/term-tooltip';
-import { toClassicalKey } from '@/lib/glossary/soft-term-map';
+import { toClassicalKey, SOFT_TO_CLASSICAL } from '@/lib/glossary/soft-term-map';
+import { GLOSSARY_TERMS } from '@/lib/glossary/terms';
 
 interface WhyCard {
   title: string;
@@ -14,9 +15,14 @@ interface HapcardEvidenceProps {
   cards: WhyCard[];
 }
 
-// 앞 글자가 한글 음절이 아닐 때만 용어로 인식 (예: "썸합"의 "합"은 제외)
-// 소프트 용어(끌림/긴장/부딪힘/소모)도 인식 — LLM v0.3 출력 및 과거 캐시 classical 토큰 모두 지원
-const GLOSSARY_TERM_SOURCE = '(?<![가-힣ㄱ-ㅎㅏ-ㅣ])(일주|십신|합|형|충|해|끌림|긴장|부딪힘|소모)';
+// 카탈로그 키 + 소프트 alias를 longest-first 정렬로 합쳐 regex 생성.
+// 긴 compound term이 짧은 단일자보다 먼저 매치되도록 보장 (예: "자오충" > "충").
+// lookbehind: 앞 글자가 한글 음절이면 용어 외부로 판단해 제외 (예: "썸합"의 "합").
+const _CATALOG_AND_SOFT = [
+  ...Object.keys(GLOSSARY_TERMS),
+  ...Object.keys(SOFT_TO_CLASSICAL),
+].sort((a, b) => b.length - a.length);
+const GLOSSARY_TERM_SOURCE = `(?<![가-힣ㄱ-ㅎㅏ-ㅣ])(${_CATALOG_AND_SOFT.join('|')})`;
 
 function parseWithGlossary(
   text: string,

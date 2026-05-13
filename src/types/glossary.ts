@@ -14,4 +14,8 @@ export interface GlossaryTerm {
   display_label?: string;
 }
 
-export type GlossaryKey = '일주' | '십신' | '합' | '형' | '충' | '해';
+export type GlossaryKey =
+  | '일주' | '십신' | '합' | '형' | '충' | '해'
+  | '자오충' | '축미충' | '인신충' | '묘유충' | '진술충' | '사해충'
+  | '인오술' | '신자진' | '사유축' | '해묘미'
+  | '삼합' | '반합';
