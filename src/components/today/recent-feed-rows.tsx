@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/feedback/EmptyState';
 
 interface FeedRow {
@@ -17,11 +18,17 @@ interface RecentFeedRowsProps {
 
 export function RecentFeedRows({ rows }: RecentFeedRowsProps) {
   const t = useTranslations('home');
+  const router = useRouter();
   return (
     <div className="px-4 space-y-3">
       <p className="text-sm font-semibold text-foreground">{t('recent_picks')}</p>
       {rows.length === 0 ? (
-        <EmptyState title="아직 등록된 인연이 없어요." />
+        <EmptyState
+          title={t('empty.title')}
+          body={t('empty.body')}
+          cta={t('empty.cta')}
+          onCta={() => router.push('/relations/new')}
+        />
       ) : (
         <div className="space-y-2">
           {rows.map((row) => (

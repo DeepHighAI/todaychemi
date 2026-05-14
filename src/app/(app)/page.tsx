@@ -13,6 +13,7 @@ import { WhatifTrigger } from '@/components/today/whatif-trigger';
 import { RecentFeedRows } from '@/components/today/recent-feed-rows';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
+import { useTranslations } from 'next-intl';
 import { todayKST } from '@/lib/today/kst-date';
 import { isErrorCode, type ErrorCode } from '@/lib/errors/error-codes';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -55,6 +56,7 @@ function formatKstDate(iso: string): string {
 
 export default function TodayPage() {
   const router = useRouter();
+  const t = useTranslations('home');
   const todayQuery = useQuery({ queryKey: ['today'], queryFn: fetchToday });
   const chartQuery = useQuery({ queryKey: ['me-chart'], queryFn: fetchMyChart });
   const relationsQuery = useQuery({ queryKey: ['relations'], queryFn: fetchRelations });
@@ -102,10 +104,16 @@ export default function TodayPage() {
             <DateLine date={formatKstDate(todayKST())} dayPillar={chart.day_pillar} />
           )}
           <TodayHero card={card} />
+          <section className="space-y-3">
+            <div className="px-4">
+              <p className="font-eyebrow text-muted-foreground">{t('compat.eyebrow')}</p>
+              <h2 className="font-h3 text-foreground">{t('compat.title')}</h2>
+            </div>
+            <QuickAddRelation />
+            <RecentFeedRows rows={topRelations} />
+          </section>
           <AvoidActionCards card={card} />
-          <QuickAddRelation />
           {chart && <WhatifTrigger />}
-          <RecentFeedRows rows={topRelations} />
         </>
       )}
     </div>

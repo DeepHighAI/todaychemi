@@ -185,6 +185,12 @@ describe('TodayPage (composition)', () => {
     expect(screen.queryByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeNull();
   });
 
+  it('궁합 섹션 헤더 "다른 사람과의 사주" 렌더 (ADR-010 핵심 동선)', async () => {
+    setupRoutes({});
+    await renderTodayPage();
+    expect(await screen.findByText('다른 사람과의 사주')).toBeInTheDocument();
+  });
+
   it('/api/today 500 LLM_TIMEOUT → "AI가 많이 생각 중이에요" 렌더', async () => {
     setupRoutes({
       today: { ok: false, status: 500, body: { error: { code: 'LLM_TIMEOUT', message: '' } } },

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { MeHero } from '@/components/me/me-hero';
+import { MeEditRow } from '@/components/me/me-edit-row';
 import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
@@ -61,7 +62,8 @@ export default function MePage() {
 
   return (
     <div className="space-y-4 px-4 py-6">
-      <MeHero chart={chart} onEditClick={() => setEditOpen(true)} />
+      <MeHero chart={chart} />
+      <MeEditRow onClick={() => setEditOpen(true)} />
       <MeEditDrawer open={editOpen} onOpenChange={setEditOpen} />
       <PillarGrid chart={chart} />
       <OhaengBars data={chart.five_elements_counts} />

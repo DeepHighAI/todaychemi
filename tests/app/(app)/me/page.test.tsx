@@ -55,6 +55,16 @@ describe('MePage (본명식 화면)', () => {
     expect(screen.getByText('본명식이 아직 등록되지 않았어요.')).toBeInTheDocument();
   });
 
+  it('chart 있을 때 "내 정보 수정" 행 카드 렌더 (MeEditRow)', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, chart: CHART }),
+    });
+    await renderMePage();
+    await waitFor(() => expect(screen.getByText('내 정보 수정')).toBeInTheDocument());
+  });
+
   it('chart 있을 때 5개 섹션 모두 렌더 (me-hero / pillar-grid / ohaeng-bars / day-master-card / yunse-card)', async () => {
     mockFetch.mockResolvedValue({
       ok: true,

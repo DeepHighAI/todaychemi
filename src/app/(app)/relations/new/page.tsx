@@ -70,7 +70,8 @@ export default function RelationsNewPage() {
         setSubmitting(false);
         return;
       }
-      router.push('/feed');
+      const created = (await res.json().catch(() => null)) as { relation_id?: string } | null;
+      router.push(created?.relation_id ? `/feed?focus=${created.relation_id}` : '/feed');
     } catch {
       setError(t('errors.generic'));
       setSubmitting(false);

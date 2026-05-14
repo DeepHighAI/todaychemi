@@ -250,11 +250,24 @@
     "recent_picks": "오늘 흐름이 좋은 인연",
     "avoid_phrase_label": "오늘 피할 말",
     "favorable_action_label": "오늘 좋은 행동",
-    "reused_label": "어제 이어감"
+    "reused_label": "어제 이어감",
+    "compat": {
+      "eyebrow": "궁합",
+      "title": "다른 사람과의 사주"
+    },
+    "empty": {
+      "title": "아직 등록된 인연이 없어요.",
+      "body": "동료·이성·가족을 등록하면 궁합 사주를 볼 수 있어요.",
+      "cta": "인연 등록하기"
+    }
   },
   "me": {
     "placeholder": "내사주 준비 중",
     "title": "내 사주",
+    "editRow": {
+      "title": "내 정보 수정",
+      "sub": "생년월일·출생시간·별명"
+    },
     "hero": {
       "eyebrow": "일주",
       "edit": {

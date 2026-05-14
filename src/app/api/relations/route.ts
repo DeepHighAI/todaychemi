@@ -95,5 +95,5 @@ export async function POST(request: Request) {
     // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, relation_id: relationId });
 }
