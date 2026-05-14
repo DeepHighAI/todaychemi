@@ -8,10 +8,10 @@ import type { YunseCore } from '@/types/chart';
 const YUNSE: YunseCore = {
   daeun: {
     start_age: 7,
-    list: Array.from({ length: 10 }, (_, i) => ({ age: 7 + 10 * i, pillar: `甲子`, year: 1990 + 10 * i })),
+    list: Array.from({ length: 10 }, (_, i) => ({ age: 7 + 10 * i, pillar: `甲戌`, year: 1990 + 10 * i })),
     current_index: 3,
   },
-  seyun: { current_pillar: '병오', current_year: 2026 },
+  seyun: { current_pillar: '丙午', current_year: 2026 },
   wolun: { current_pillar: '계사', current_month: '2026-05' },
   iliun: { today_pillar: '갑자', today_date: '2026-05-07' },
 };
@@ -39,9 +39,16 @@ describe('YunseCard', () => {
     expect(current).toBeDefined();
   });
 
-  it('renders seyun current_pillar', async () => {
+  it('대운 한자 pillar(甲戌)를 한글 reading(갑술)으로 렌더 (ADR-038)', async () => {
+    await renderCard();
+    expect(screen.getAllByText('갑술').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('甲戌')).not.toBeInTheDocument();
+  });
+
+  it('seyun 한자 pillar(丙午)를 한글 reading(병오)으로 렌더 (ADR-038)', async () => {
     await renderCard();
     expect(screen.getByText('병오')).toBeInTheDocument();
+    expect(screen.queryByText('丙午')).not.toBeInTheDocument();
   });
 
   it('renders wolun current_pillar', async () => {

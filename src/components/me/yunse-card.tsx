@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { convertHanja } from '@/lib/glossary/post-process';
 import type { YunseCore } from '@/types/chart';
 
 type YunseCardProps = {
@@ -36,7 +37,7 @@ export default function YunseCard({ yunse }: YunseCardProps) {
                 }`}
               >
                 <span className="text-[10px]">{seg.age}</span>
-                <span className="text-sm font-semibold">{seg.pillar}</span>
+                <span className="text-sm font-semibold">{convertHanja(seg.pillar)}</span>
               </li>
             );
           })}
@@ -46,15 +47,15 @@ export default function YunseCard({ yunse }: YunseCardProps) {
       <dl className="space-y-2">
         <div className="flex items-center justify-between">
           <dt className="text-xs text-muted-foreground">{t('seyun.label')}</dt>
-          <dd className="text-sm font-semibold text-foreground">{yunse.seyun.current_pillar}</dd>
+          <dd className="text-sm font-semibold text-foreground">{convertHanja(yunse.seyun.current_pillar)}</dd>
         </div>
         <div className="flex items-center justify-between">
           <dt className="text-xs text-muted-foreground">{t('wolun.label')}</dt>
-          <dd className="text-sm font-semibold text-foreground">{yunse.wolun.current_pillar}</dd>
+          <dd className="text-sm font-semibold text-foreground">{convertHanja(yunse.wolun.current_pillar)}</dd>
         </div>
         <div className="flex items-center justify-between">
           <dt className="text-xs text-muted-foreground">{t('iliun.label')}</dt>
-          <dd className="text-sm font-semibold text-foreground">{yunse.iliun.today_pillar}</dd>
+          <dd className="text-sm font-semibold text-foreground">{convertHanja(yunse.iliun.today_pillar)}</dd>
         </div>
       </dl>
 
