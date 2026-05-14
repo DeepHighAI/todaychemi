@@ -92,7 +92,7 @@ describe('TodayPage (composition)', () => {
     setupRoutes({});
     await renderTodayPage();
     const dateLine = await screen.findByTestId('date-line');
-    expect(dateLine.textContent).toContain('甲戌일');
+    expect(dateLine.textContent).toContain('갑술일');
   });
 
   it('chart=null이면 DateLine을 렌더하지 않는다', async () => {

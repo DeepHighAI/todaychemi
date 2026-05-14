@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -32,6 +32,9 @@ export default defineConfig({
     setupFiles: ['./tests/setup/dom.ts'],
     testTimeout: 15000,
     hookTimeout: 15000,
+    // Claude agent worktrees 는 자체 테스트 파일을 포함하므로 메인 repo
+    // vitest 발견에서 제외. configDefaults.exclude 보존 의무.
+    exclude: [...configDefaults.exclude, '.claude/worktrees/**'],
   },
   resolve: {
     alias: {
