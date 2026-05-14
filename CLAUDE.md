@@ -380,6 +380,14 @@ C:\DEV\SAJU\
 - `docs/legal/pii_minimization.md` — PII 5필드 + gender 단일 truth source (ADR-004/ADR-011)
 - `MEMORY.md` — 결정·미결정 인덱스 (`C:\Users\batis\.claude\projects\C--DEV-SAJU\memory\`)
 
+## 15. Git 저장소
+
+- **Remote**: `origin` = `https://github.com/batisututu/coupleUnse.git`
+- **기본 브랜치**: `main` (배포 Production 브랜치 — `docs/specs/secrets.md` §3)
+- **커밋 규칙**: `C:\DEV\CLAUDE.md` "Git Conventions" 준수 — English, imperative mood, `type: description` (feat|fix|refactor|test|docs|chore), 72자 이내
+- **시크릿 금지**: `.env.local` 등 런타임 시크릿은 `.gitignore` 등록 완료. 추적 파일에 실제 키 값 commit 절대 금지 (`docs/specs/secrets.md` 참조)
+- **force-push / `main` 브랜치 삭제**: destructive 작업은 §1.1 사용자 승인 대상
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
