@@ -3,6 +3,9 @@
     "title": "합플",
     "tagline": "인연을 사주로 풀어보다"
   },
+  "common": {
+    "delete": "삭제"
+  },
   "auth": {
     "login": {
       "title": "합플 로그인",
@@ -80,7 +83,23 @@
     },
     "submitting": "저장 중...",
     "submit": "시작하기",
-    "privacy": "저장만 하고 공유하지 않아요"
+    "privacy": "저장만 하고 공유하지 않아요",
+    "step1": {
+      "headline": "처음 오셨네요\n별명부터 정해요",
+      "body": "본명 대신 별명으로 저장돼요. 생년월일도 함께 알려주세요."
+    },
+    "step2": {
+      "headline": "태어난 시간을\n알고 계신가요?",
+      "body": "시간을 알면 더 정확하게 풀이할 수 있어요."
+    },
+    "step3": {
+      "headline": "달력과 성별을\n확인할게요"
+    },
+    "step4": {
+      "headline": "입력한 정보를\n확인해주세요",
+      "body": "맞으면 시작하기를 눌러주세요."
+    },
+    "next": "다음"
   },
   "relations": {
     "new": {
@@ -138,7 +157,27 @@
       },
       "submitting": "저장 중...",
       "submit": "등록하기",
-      "privacy": "저장만 하고 공유하지 않아요"
+      "privacy": "저장만 하고 공유하지 않아요",
+      "step1": {
+        "headline": "어떤 인연을\n등록할까요?",
+        "body": "별명으로만 저장돼요. 실명은 받지 않아요."
+      },
+      "step2": {
+        "headline": "인연의 생년월일을\n알려주세요"
+      },
+      "step3": {
+        "headline": "이 인연과는\n어떤 사이예요?",
+        "body": "관계에 맞는 합을 풀어드릴게요."
+      },
+      "next": "다음",
+      "modeQuestion": {
+        "일합": "일로 만난 사이의 합이 궁금해요",
+        "친구합": "친구로서 잘 맞는지 궁금해요",
+        "돈합": "돈 거래해도 괜찮은 사이인지 궁금해요",
+        "첫합": "처음 만난 사이의 합이 궁금해요",
+        "썸합": "썸 타는 이 사람과의 합이 궁금해요",
+        "오래합": "오래된 사이의 합이 궁금해요"
+      }
     }
   },
   "feed": {
@@ -154,6 +193,15 @@
     },
     "badge": {
       "change_significant": "변화 큰 {delta}"
+    },
+    "change": {
+      "eyebrow": "흐름 변화 큼"
+    },
+    "delete": {
+      "confirmTitle": "{nickname} 인연을 삭제할까요?",
+      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "cancel": "취소",
+      "confirm": "삭제"
     }
   },
   "hapcard": {
@@ -230,6 +278,45 @@
         "cta": "피드로 돌아가기"
       },
       "generic": "합카드를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+    },
+    "menu": {
+      "rename": "별명 수정",
+      "share": "공유",
+      "delete": "인연 삭제"
+    },
+    "mode": {
+      "일합": "일 동료",
+      "친구합": "친구",
+      "돈합": "돈 거래",
+      "첫합": "첫만남",
+      "썸합": "썸",
+      "오래합": "오래된 사이"
+    },
+    "areas": {
+      "title": "영역별 합",
+      "talk": "대화",
+      "attract": "끌림",
+      "speed": "속도",
+      "money": "금전",
+      "future": "미래"
+    },
+    "expand": {
+      "cta": "더 자세히 펼쳐보기",
+      "title": "자세히 보기",
+      "tab": {
+        "summary": "요약",
+        "ohaeng": "오행",
+        "evidence": "근거",
+        "area": "영역",
+        "flow": "흐름"
+      }
+    },
+    "delete": {
+      "confirmTitle": "{nickname} 인연을 삭제할까요?",
+      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "cancel": "취소",
+      "confirm": "삭제",
+      "done": "삭제했어요"
     }
   },
   "glossary": {
@@ -251,6 +338,18 @@
     "avoid_phrase_label": "오늘 피할 말",
     "favorable_action_label": "오늘 좋은 행동",
     "reused_label": "어제 이어감",
+    "yesterday": "어제",
+    "recent": {
+      "title": "최근 인연",
+      "viewAll": "전체 보기",
+      "uninterpreted": "아직 해석 전"
+    },
+    "delete": {
+      "confirmTitle": "{nickname} 인연을 삭제할까요?",
+      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "cancel": "취소",
+      "confirm": "삭제"
+    },
     "compat": {
       "eyebrow": "궁합",
       "title": "다른 사람과의 사주"

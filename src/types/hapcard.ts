@@ -75,7 +75,14 @@ export interface HapcardResult {
     cause_factors: Array<{ name: string; effect: string }>;
     classic_citation: Array<{ source: string; original: string; modern: string }>;
     actions: string[];
-    why_cards: Array<{ title: string; reason: string }>;
+    why_cards: Array<{ title: string; reason: string; summary?: string }>;
+    area_scores?: {
+      talk?: number;
+      attract?: number;
+      speed?: number;
+      money?: number;
+      future?: number;
+    };
   };
   prompt_version: string;
   llm_model: LlmModel;

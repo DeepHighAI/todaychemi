@@ -1,5 +1,9 @@
 'use client';
 
+/* TabBar — canvas pattern: active item gets pill background on icon
+ * Canvas reference: type-d/primitives.jsx::TabBar + system.css .tabbar .ti.on .ic
+ */
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Sparkles, User } from 'lucide-react';
@@ -18,7 +22,7 @@ export function TabBar() {
       className="fixed bottom-0 inset-x-0 z-50 bg-background border-t border-border"
       style={{ height: 76, paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="grid grid-cols-3 h-full">
+      <div className="grid grid-cols-3 h-full pt-2">
         {TABS.map(({ href, label, Icon }) => {
           const isActive = pathname === href;
           return (
@@ -27,10 +31,21 @@ export function TabBar() {
               href={href}
               aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                isActive ? 'text-[var(--p-10)]' : 'text-muted-foreground'
               }`}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              {/* pill background on active (canvas: .tabbar .ti.on .ic { background: var(--p-90) }) */}
+              <span
+                className="flex items-center justify-center rounded-full transition-all"
+                style={{
+                  width: 56,
+                  height: 28,
+                  background: isActive ? 'var(--p-90)' : 'transparent',
+                  color: isActive ? 'var(--p-10)' : 'inherit',
+                }}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </span>
               {label}
             </Link>
           );

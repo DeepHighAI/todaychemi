@@ -1,8 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+/* Relations New — 3-step flow
+ * Canvas reference: type-d/screens-interactive.jsx::IRelName → IRelDob → IRelMode
+ *
+ * Before: 단일 페이지에 별명/모드/성별/생일/양력음력/시간정확도/시간/동의 모두
+ * After:
+ *   Step 1: 별명 + 동의
+ *   Step 2: 생일 + 시 + 양/음력 + 성별
+ *   Step 3: 6 모드 카드 그리드 (emoji + label + 한 줄 질문)
+ */
+
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { ChevronLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import type { RelationCreate } from '@/types/relation';
@@ -11,39 +22,43 @@ type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
 type Gender = 'M' | 'F' | '';
 type Calendar = 'solar' | 'lunar';
 type Mode = '' | '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
+type Step = 1 | 2 | 3;
 
-const MODES = [
-  { value: '일합', key: '일합' },
-  { value: '친구합', key: '친구합' },
-  { value: '돈합', key: '돈합' },
-  { value: '첫합', key: '첫합' },
-  { value: '썸합', key: '썸합' },
-  { value: '오래합', key: '오래합' },
-] as const;
+const MODE_META: { value: Exclude<Mode, ''>; emoji: string }[] = [
+  { value: '썸합', emoji: '💗' },
+  { value: '오래합', emoji: '❤️' },
+  { value: '일합', emoji: '💼' },
+  { value: '친구합', emoji: '👋' },
+  { value: '돈합', emoji: '💰' },
+  { value: '첫합', emoji: '✨' },
+];
 
 export default function RelationsNewPage() {
   const t = useTranslations('relations.new');
   const router = useRouter();
 
+  const [step, setStep] = useState<Step>(1);
   const [nickname, setNickname] = useState('');
-  const [mode, setMode] = useState<Mode>('');
-  const [gender, setGender] = useState<Gender>('');
+  const [consent, setConsent] = useState(false);
+
   const [birthDate, setBirthDate] = useState('');
   const [calendar, setCalendar] = useState<Calendar>('solar');
+  const [gender, setGender] = useState<Gender>('');
   const [knowledge, setKnowledge] = useState<TimeAccuracy>('exact');
   const [birthTime, setBirthTime] = useState('');
-  const [consent, setConsent] = useState(false);
+
+  const [mode, setMode] = useState<Mode>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit() {
-    if (!nickname.trim()) { setError(t('errors.nicknameRequired')); return; }
-    if (!mode) { setError(t('errors.modeRequired')); return; }
-    if (!birthDate) { setError(t('errors.dobRequired')); return; }
-    if (knowledge !== 'unknown' && !birthTime) { setError(t('errors.timeRequiredWhenKnown')); return; }
-    if (!gender) { setError(t('errors.genderRequired')); return; }
-    if (!consent) { setError(t('consent.requiredError')); return; }
+  const canAdvance = useMemo(() => {
+    if (step === 1) return nickname.trim().length > 0 && consent;
+    if (step === 2) return !!birthDate && !!gender && (knowledge === 'unknown' || !!birthTime);
+    if (step === 3) return !!mode;
+    return false;
+  }, [step, nickname, consent, birthDate, gender, knowledge, birthTime, mode]);
 
+  async function handleSubmit() {
     setSubmitting(true);
     setError(null);
     try {
@@ -61,15 +76,10 @@ export default function RelationsNewPage() {
         is_primary: false,
       };
       const res = await fetch('/api/relations', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        setError(t('errors.generic'));
-        setSubmitting(false);
-        return;
-      }
+      if (!res.ok) { setError(t('errors.generic')); setSubmitting(false); return; }
       const created = (await res.json().catch(() => null)) as { relation_id?: string } | null;
       router.push(created?.relation_id ? `/feed?focus=${created.relation_id}` : '/feed');
     } catch {
@@ -78,210 +88,139 @@ export default function RelationsNewPage() {
     }
   }
 
+  const next = () => {
+    if (step < 3) setStep((s) => (s + 1) as Step);
+    else handleSubmit();
+  };
+  const back = () => {
+    if (step > 1) setStep((s) => (s - 1) as Step);
+    else router.back();
+  };
+
   return (
-    <main className="bg-background min-h-screen pb-32 px-4">
-      <header className="pt-8 pb-6">
-        <p className="text-xs font-bold uppercase tracking-wide text-primary mb-2">
-          {t('eyebrow')}
-        </p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground whitespace-pre-line">
-          {t('headline')}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-2">{t('body')}</p>
+    <main className="bg-background min-h-screen pb-32">
+      <header className="px-4 pt-3 pb-4 space-y-3">
+        <button onClick={back} aria-label="back"
+          className="w-8 h-8 -ml-1 rounded-full flex items-center justify-center text-foreground active:opacity-60">
+          <ChevronLeft size={22} />
+        </button>
+        <div className="h-1 bg-[var(--surface-2)] rounded-full">
+          <div className="h-full bg-[var(--p-40)] rounded-full transition-[width] duration-300"
+            style={{ width: `${(step / 3) * 100}%` }} />
+        </div>
+        <p className="font-eyebrow text-primary">{t('eyebrow')} · {step} / 3</p>
       </header>
 
-      {/* 섹션 1: 인연 정보 */}
-      <section className="rounded-2xl bg-card p-4 mb-4">
-        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.basic')}</h2>
-
-        {/* 별명 */}
-        <div className="mb-4">
-          <label htmlFor="nickname" className="block text-xs text-muted-foreground mb-1">
-            {t('nickname.label')}
-          </label>
-          <input
-            id="nickname"
-            type="text"
-            placeholder={t('nickname.placeholder')}
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            maxLength={20}
-            className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-
-        {/* 관계 모드 (6분기) — UIDesign screens-relation.jsx::ScreenName Chip 6개 */}
-        <div className="mb-4">
-          <p className="text-xs text-muted-foreground mb-1">{t('mode.label')}</p>
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            {MODES.map(({ value, key }) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={mode === value}
-                onClick={() => setMode(value)}
-                className={`px-3 py-3 rounded-[var(--r-pill)] border text-sm font-semibold transition ${
-                  mode === value
-                    ? 'border-[var(--p-40)] bg-[var(--p-95)] text-[var(--p-30)]'
-                    : 'border-border bg-[var(--surface-1)] text-foreground'
-                }`}
-              >
-                {t(`mode.${key}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 성별 — UIDesign §1.6 Seg pill */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">{t('gender.label')}</p>
-          <div className="flex gap-2" role="radiogroup">
-            {(['M', 'F'] as const).map((g) => (
-              <button
-                key={g}
-                type="button"
-                role="radio"
-                aria-checked={gender === g}
-                aria-label={g === 'M' ? t('gender.male') : t('gender.female')}
-                onClick={() => setGender(g)}
-                className={`flex-1 rounded-[var(--r-pill)] px-4 py-3 text-sm font-semibold transition ${
-                  gender === g
-                    ? 'bg-[var(--p-40)] text-white'
-                    : 'bg-[var(--surface-2)] text-foreground'
-                }`}
-              >
-                {g === 'M' ? t('gender.male') : t('gender.female')}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 섹션 2: 생년월일 */}
-      <section className="rounded-2xl bg-card p-4 mb-4">
-        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.birth')}</h2>
-
-        {/* 생년월일 */}
-        <div className="mb-4">
-          <label htmlFor="birth-date" className="block text-xs text-muted-foreground mb-1">
-            {t('birth.date')}
-          </label>
-          <input
-            id="birth-date"
-            aria-label={t('birth.date')}
-            type="date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-
-        {/* 양/음력 — UIDesign §1.6 Seg pill */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">{t('birth.calendar')}</p>
-          <div className="flex gap-2" role="radiogroup">
-            {([
-              { value: 'solar', label: t('birth.calendarSolar') },
-              { value: 'lunar', label: t('birth.calendarLunar') },
-            ] as { value: Calendar; label: string }[]).map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={calendar === value}
-                onClick={() => setCalendar(value)}
-                className={`flex-1 rounded-[var(--r-pill)] px-4 py-3 text-sm font-semibold transition ${
-                  calendar === value
-                    ? 'bg-[var(--p-40)] text-white'
-                    : 'bg-[var(--surface-2)] text-foreground'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 섹션 3: 출생 시간 */}
-      <section className="rounded-2xl bg-card p-4 mb-4">
-        <h2 className="text-sm font-semibold text-foreground mb-3">{t('sections.time')}</h2>
-
-        {/* 시간 정확도 3분기 */}
-        <div className="mb-4">
-          <div className="flex gap-3" role="radiogroup">
-            {([
-              { value: 'exact', label: t('birth.timeAccuracy.exact') },
-              { value: 'approximate', label: t('birth.timeAccuracy.estimated') },
-              { value: 'unknown', label: t('birth.timeAccuracy.unknown') },
-            ] as { value: TimeAccuracy; label: string }[]).map(({ value, label }) => (
-              <label key={value} className="flex min-h-[44px] items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="birth-time-knowledge"
-                  value={value}
-                  checked={knowledge === value}
-                  onChange={() => setKnowledge(value)}
-                  aria-label={label}
-                  className="accent-primary"
-                />
-                <span className="text-sm text-foreground">{label}</span>
+      <div className="px-4 space-y-5">
+        {step === 1 && (
+          <>
+            <h1 className="font-h1 text-foreground whitespace-pre-line">{t('step1.headline')}</h1>
+            <p className="font-sub text-muted-foreground">{t('step1.body')}</p>
+            <div className="rounded-[var(--r-md)] bg-card p-4 space-y-3">
+              <label htmlFor="nickname" className="block text-[12px] font-semibold text-muted-foreground">
+                {t('nickname.label')}
               </label>
-            ))}
-          </div>
-        </div>
-
-        {/* 시간 입력 (unknown 아닐 때만) */}
-        {knowledge !== 'unknown' ? (
-          <div>
-            <label htmlFor="birth-time" className="block text-xs text-muted-foreground mb-1">
-              {t('birth.timeOptional')}
+              <input id="nickname" type="text" value={nickname} maxLength={20}
+                placeholder={t('nickname.placeholder')}
+                onChange={(e) => setNickname(e.target.value)}
+                className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <label className="flex items-center gap-2.5 px-1">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
+                className="h-4 w-4 accent-primary" />
+              <span className="text-[12px] text-muted-foreground">{t('consent.label')}</span>
             </label>
-            <input
-              id="birth-time"
-              aria-label={t('birth.timeOptional')}
-              type="time"
-              value={birthTime}
-              onChange={(e) => setBirthTime(e.target.value)}
-              className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">{t('birth.timeUnknownHint')}</p>
+          </>
         )}
-      </section>
 
-      {/* 동의 체크박스 */}
-      <div className="flex items-center gap-2 mb-4 px-1">
-        <input
-          id="consent"
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => setConsent(e.target.checked)}
-          className="h-4 w-4 accent-primary"
-        />
-        <label htmlFor="consent" className="text-xs text-muted-foreground">
-          {t('consent.label')}
-        </label>
+        {step === 2 && (
+          <>
+            <h1 className="font-h1 text-foreground whitespace-pre-line">{t('step2.headline')}</h1>
+            <div className="rounded-[var(--r-md)] bg-card p-4 space-y-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-muted-foreground mb-1.5">{t('birth.date')}</label>
+                <input type="date" value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup">
+                {(['solar', 'lunar'] as Calendar[]).map((v) => (
+                  <button key={v} type="button" role="radio" aria-checked={calendar === v}
+                    onClick={() => setCalendar(v)}
+                    className={`py-2.5 rounded-[var(--r-pill)] text-[13px] font-semibold ${
+                      calendar === v ? 'bg-[var(--p-40)] text-white' : 'bg-[var(--surface-2)] text-foreground'
+                    }`}>
+                    {t(v === 'solar' ? 'birth.calendarSolar' : 'birth.calendarLunar')}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup">
+                {(['M', 'F'] as const).map((g) => (
+                  <button key={g} type="button" role="radio" aria-checked={gender === g}
+                    onClick={() => setGender(g)}
+                    className={`py-2.5 rounded-[var(--r-pill)] text-[13px] font-semibold ${
+                      gender === g ? 'bg-[var(--p-40)] text-white' : 'bg-[var(--surface-2)] text-foreground'
+                    }`}>
+                    {t(g === 'M' ? 'gender.male' : 'gender.female')}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup">
+                {(['exact', 'approximate', 'unknown'] as TimeAccuracy[]).map((v) => (
+                  <button key={v} type="button" role="radio" aria-checked={knowledge === v}
+                    onClick={() => setKnowledge(v)}
+                    className={`py-2.5 rounded-[var(--r-sm)] text-[12px] font-semibold ${
+                      knowledge === v ? 'bg-[var(--p-40)] text-white' : 'bg-[var(--surface-1)] text-foreground border border-border'
+                    }`}>
+                    {t(`birth.timeAccuracy.${v === 'approximate' ? 'estimated' : v}`)}
+                  </button>
+                ))}
+              </div>
+              {knowledge !== 'unknown' && (
+                <input type="time" value={birthTime} aria-label={t('birth.timeOptional')}
+                  onChange={(e) => setBirthTime(e.target.value)}
+                  className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              )}
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <h1 className="font-h1 text-foreground whitespace-pre-line">{t('step3.headline')}</h1>
+            <p className="font-sub text-muted-foreground">{t('step3.body')}</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {MODE_META.map(({ value, emoji }) => {
+                const active = mode === value;
+                return (
+                  <button key={value} type="button"
+                    onClick={() => setMode(value)}
+                    className={`p-3.5 rounded-[var(--r-md)] text-left border transition flex flex-col gap-1.5 ${
+                      active
+                        ? 'border-[var(--p-40)] bg-[var(--p-90)]'
+                        : 'border-border bg-card'
+                    }`}>
+                    <span className="text-[22px] leading-none">{emoji}</span>
+                    <span className={`font-bold text-[14px] ${active ? 'text-[var(--p-10)]' : 'text-foreground'}`}>
+                      {t(`mode.${value}`)}
+                    </span>
+                    <span className={`text-[11px] ${active ? 'text-[var(--p-30)]' : 'text-muted-foreground'}`}>
+                      {t(`modeQuestion.${value}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* 인라인 에러 */}
-      {error && <p className="mb-4 text-center text-sm text-destructive">{error}</p>}
+      {error && <p className="px-4 mt-4 font-sub text-destructive text-center">{error}</p>}
 
-      {/* 개인정보 안내 */}
-      <p className="text-center text-xs text-muted-foreground mb-6">{t('privacy')}</p>
-
-      {/* 제출 버튼 (sticky) */}
       <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!consent || submitting}
-          variant="default"
-          className="h-11 w-full"
-        >
-          {submitting ? t('submitting') : t('submit')}
+        <Button onClick={next} disabled={!canAdvance || submitting}
+          variant="default" className="h-12 w-full rounded-[var(--r-pill)] font-bold">
+          {submitting ? t('submitting') : step === 3 ? t('submit') : t('next')}
         </Button>
       </div>
     </main>

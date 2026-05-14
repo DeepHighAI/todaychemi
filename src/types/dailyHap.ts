@@ -14,6 +14,9 @@ export interface DailyHapCard {
   favorable_action: string;
   favorable_action_reason: string;
   reused_from_yesterday: boolean;
+  compat_score?: number | null;
+  headline_strength?: number | null;
+  delta_vs_yesterday?: number | null;
 }
 
 export type DailyHapResult = DailyHapCard | null;

@@ -458,3 +458,12 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+@utility font-display {
+  font-family: var(--font-display);
+}
+
+.appbar {
+  position: sticky;
+  top: 0;
+  background: var(--background);
+}

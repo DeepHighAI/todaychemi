@@ -33,7 +33,9 @@ export const RelationCreateSchema = z.object({
 export type RelationCreate = z.infer<typeof RelationCreateSchema>;
 
 // 합피드 카드 항목 — S-04 인연 목록 그리드 표시용 subset
-export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'>;
+export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'> & {
+  compat_score?: number | null;
+};
 
 // Y4 ADR-036 — 합피드 응답 항목 (compat_score + change_score + badge flag, 서버 정렬 후 반환)
 export interface FeedItem {
