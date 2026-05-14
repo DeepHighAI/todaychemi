@@ -6,8 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 import { computeChart } from '@/lib/chart/compute';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 
-const TEST_EMAIL = 'Test1@test.com';
-const TEST_PASSWORD = 'test1234';
+const TEST_EMAIL = process.env.TEST_EMAIL ?? 'Test1@test.com';
+const TEST_PASSWORD = process.env.TEST_PASSWORD ?? 'test1234';
 
 function loadDotEnvLocal() {
   const envPath = resolve(process.cwd(), '.env.local');
