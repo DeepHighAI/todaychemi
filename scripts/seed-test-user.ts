@@ -51,8 +51,12 @@ async function main() {
   let userId: string;
 
   if (existing) {
-    console.log(`ℹ️  auth.users: ${TEST_EMAIL} 이미 존재 (id=${existing.id}) — skip createUser`);
     userId = existing.id;
+    const { error: updErr } = await admin.auth.admin.updateUserById(existing.id, {
+      password: TEST_PASSWORD,
+    });
+    if (updErr) throw new Error(`updateUserById(password) 실패: ${updErr.message}`);
+    console.log(`✅ auth.users: ${TEST_EMAIL} 이미 존재 (id=${existing.id}) — 비밀번호 sync 완료`);
   } else {
     const { data, error } = await admin.auth.admin.createUser({
       email: TEST_EMAIL,
