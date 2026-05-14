@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 
 import { TodayAppBar } from '@/components/today/today-app-bar';
@@ -12,6 +14,7 @@ import { RecentFeedRows } from '@/components/today/recent-feed-rows';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { todayKST } from '@/lib/today/kst-date';
+import { isErrorCode, type ErrorCode } from '@/lib/errors/error-codes';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 import type { FeedListItem } from '@/types/relation';
@@ -21,9 +24,13 @@ const TOP_N_RELATIONS = 5;
 
 async function fetchToday(): Promise<DailyHapCard> {
   const res = await fetch('/api/today');
-  if (!res.ok) throw new Error('TODAY_FETCH_FAILED');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const code = (body as { error?: { code?: string } })?.error?.code ?? 'INTERNAL_ERROR';
+    throw new Error(code);
+  }
   const body = (await res.json()) as { ok: boolean; card?: DailyHapCard };
-  if (!body.ok || !body.card) throw new Error('TODAY_FETCH_FAILED');
+  if (!body.ok || !body.card) throw new Error('INTERNAL_ERROR');
   return body.card;
 }
 
@@ -47,6 +54,7 @@ function formatKstDate(iso: string): string {
 }
 
 export default function TodayPage() {
+  const router = useRouter();
   const todayQuery = useQuery({ queryKey: ['today'], queryFn: fetchToday });
   const chartQuery = useQuery({ queryKey: ['me-chart'], queryFn: fetchMyChart });
   const relationsQuery = useQuery({ queryKey: ['relations'], queryFn: fetchRelations });
@@ -54,6 +62,16 @@ export default function TodayPage() {
   const card = todayQuery.data;
   const chart = chartQuery.data ?? null;
   const relations = relationsQuery.data ?? [];
+
+  const todayErrorMsg = todayQuery.error?.message;
+  const todayErrorCode: ErrorCode = isErrorCode(todayErrorMsg) ? todayErrorMsg : 'INTERNAL_ERROR';
+
+  // UNAUTHORIZED → 미들웨어 방어선이 있지만 race condition 대비 클라이언트 리다이렉트
+  useEffect(() => {
+    if (todayQuery.isError && todayErrorMsg === 'UNAUTHORIZED') {
+      router.push('/login');
+    }
+  }, [todayQuery.isError, todayErrorMsg, router]);
 
   // 인연은 서버가 created_at desc 로 반환하므로 그대로 잘라 Top-N
   const topRelations = relations.slice(0, TOP_N_RELATIONS).map((r) => ({
@@ -72,9 +90,9 @@ export default function TodayPage() {
         </div>
       )}
 
-      {todayQuery.isError && (
+      {todayQuery.isError && todayErrorMsg !== 'UNAUTHORIZED' && (
         <div className="px-4">
-          <ErrorCard code="LLM_TIMEOUT" onRetry={() => todayQuery.refetch()} />
+          <ErrorCard code={todayErrorCode} onRetry={() => todayQuery.refetch()} />
         </div>
       )}
 

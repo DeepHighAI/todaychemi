@@ -2,19 +2,23 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 
 vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(() => ({ push: vi.fn() })),
+  useRouter: vi.fn(),
 }));
+
+const mockPush = vi.fn();
 
 const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('fetch', mockFetch);
+  vi.mocked(useRouter).mockReturnValue({ push: mockPush } as unknown as ReturnType<typeof useRouter>);
 });
 
 afterEach(() => {
@@ -162,5 +166,30 @@ describe('TodayPage (composition)', () => {
     });
     await renderTodayPage();
     expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
+  });
+
+  it('/api/today 401 UNAUTHORIZED → router.push("/login") 호출', async () => {
+    setupRoutes({
+      today: { ok: false, status: 401, body: { error: { code: 'UNAUTHORIZED', message: '' } } },
+    });
+    await renderTodayPage();
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/login'));
+  });
+
+  it('/api/today 500 INTERNAL_ERROR → "잠시 문제가 생겼어요" 렌더 (LLM_TIMEOUT 아님)', async () => {
+    setupRoutes({
+      today: { ok: false, status: 500, body: { error: { code: 'INTERNAL_ERROR', message: '' } } },
+    });
+    await renderTodayPage();
+    expect(await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeInTheDocument();
+    expect(screen.queryByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeNull();
+  });
+
+  it('/api/today 500 LLM_TIMEOUT → "AI가 많이 생각 중이에요" 렌더', async () => {
+    setupRoutes({
+      today: { ok: false, status: 500, body: { error: { code: 'LLM_TIMEOUT', message: '' } } },
+    });
+    await renderTodayPage();
+    expect(await screen.findByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
   });
 });

@@ -17,6 +17,10 @@ export const ERROR_CODES = [
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
+export function isErrorCode(v: unknown): v is ErrorCode {
+  return typeof v === 'string' && (ERROR_CODES as ReadonlyArray<string>).includes(v);
+}
+
 export const ERROR_COPY: Record<ErrorCode, string> = {
   CALC_FAIL: '사주 계산에 실패했어요. 생년월일시를 한 번 더 확인해주세요.',
   CALC_UNKNOWN_TIME:
