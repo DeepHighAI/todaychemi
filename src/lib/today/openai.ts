@@ -19,9 +19,9 @@ export async function callDailyHapLlm(chart: ChartCore, openai: OpenAI): Promise
       { role: 'user', content: JSON.stringify({ chart_core: chart }) },
     ],
     response_format: { type: 'json_object' },
-    max_tokens: 300,
-    temperature: 0.7,
     store: false,
+    reasoning_effort: 'low',
+    max_completion_tokens: 800,
   });
 
   const text = response.choices[0].message.content ?? '{}';
