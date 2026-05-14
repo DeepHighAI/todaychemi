@@ -27,8 +27,8 @@ export function LoadingState({ onTimeout }: LoadingStateProps) {
   if (phase === 'timeout') {
     return (
       <div data-testid="loading-state">
-        <div data-testid="loading-timeout-card" className="rounded-2xl bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">{ERROR_COPY.LLM_TIMEOUT}</p>
+        <div data-testid="loading-timeout-card" className="rounded-[var(--r-md)] bg-[var(--warn-bg)] p-4">
+          <p className="font-sub text-[var(--warn)]">{ERROR_COPY.LLM_TIMEOUT}</p>
         </div>
       </div>
     );
@@ -37,12 +37,12 @@ export function LoadingState({ onTimeout }: LoadingStateProps) {
   return (
     <div data-testid="loading-state">
       <div data-testid="loading-skeleton" className="animate-pulse space-y-3">
-        <div className="h-8 bg-muted rounded-xl" />
-        <div className="h-4 bg-muted rounded-xl w-3/4" />
-        <div className="h-4 bg-muted rounded-xl w-1/2" />
+        <div className="h-8 bg-muted rounded-[var(--r-sm)]" />
+        <div className="h-4 bg-muted rounded-[var(--r-sm)] w-3/4" />
+        <div className="h-4 bg-muted rounded-[var(--r-sm)] w-1/2" />
       </div>
       {phase === 'slow' && (
-        <p className="text-xs text-muted-foreground text-center mt-4">조금 더 걸리고 있어요</p>
+        <p className="font-sub text-muted-foreground text-center mt-4">조금 더 걸리고 있어요</p>
       )}
     </div>
   );

@@ -15,8 +15,8 @@ export function ErrorCard({ code, onRetry, onReport }: ErrorCardProps) {
   // 에러 코드에 대응하는 CTA(충전하러 가기 등) 링크 조회
   const cta = ERROR_CTA[code];
   return (
-    <div data-testid="error-card" className="rounded-2xl bg-destructive/10 p-4 space-y-3">
-      <p className="text-sm text-destructive">{ERROR_COPY[code]}</p>
+    <div data-testid="error-card" className="rounded-[var(--r-md)] bg-[var(--warn-bg)] p-4 space-y-3">
+      <p className="font-sub text-[var(--warn)]">{ERROR_COPY[code]}</p>
       <div className="flex gap-2 flex-wrap">
         {cta && (
           // base-ui Button은 asChild 미지원 — buttonVariants 직접 적용
