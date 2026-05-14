@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import { MeHero } from '@/components/me/me-hero';
 import type { ChartCore } from '@/types/chart';
@@ -37,5 +37,18 @@ describe('MeHero', () => {
   it('eyebrow 라벨에 hanja title="日柱" (pillarDescriptor 사용 확인)', () => {
     const { container } = renderWithProviders(<MeHero chart={CHART} />);
     expect(container.querySelector('[title="日柱"]')).not.toBeNull();
+  });
+
+  it('onEditClick prop 없으면 연필 아이콘 버튼 미렌더', () => {
+    renderWithProviders(<MeHero chart={CHART} />);
+    expect(screen.queryByRole('button', { name: /수정/ })).toBeNull();
+  });
+
+  it('onEditClick prop 있을 때 연필 버튼 클릭 시 onEditClick 호출', () => {
+    const onEditClick = vi.fn();
+    renderWithProviders(<MeHero chart={CHART} onEditClick={onEditClick} />);
+    const btn = screen.getByRole('button', { name: /수정/ });
+    fireEvent.click(btn);
+    expect(onEditClick).toHaveBeenCalledOnce();
   });
 });

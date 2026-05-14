@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { MeHero } from '@/components/me/me-hero';
+import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
@@ -28,6 +30,7 @@ export default function MePage() {
     queryKey: ['me-chart'],
     queryFn: fetchMyChart,
   });
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -58,7 +61,8 @@ export default function MePage() {
 
   return (
     <div className="space-y-4 px-4 py-6">
-      <MeHero chart={chart} />
+      <MeHero chart={chart} onEditClick={() => setEditOpen(true)} />
+      <MeEditDrawer open={editOpen} onOpenChange={setEditOpen} />
       <PillarGrid chart={chart} />
       <OhaengBars data={chart.five_elements_counts} />
       <DayMasterCard element={chart.day_master_element} />
