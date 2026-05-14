@@ -6,9 +6,10 @@ import { renderWithProviders } from '../../utils/render-with-providers';
 import { DayMasterCard } from '@/components/me/day-master-card';
 
 describe('DayMasterCard', () => {
-  it('eyebrow "일간 (日干)" 렌더', () => {
+  it('eyebrow "일간" 렌더 — 한자 日干 미노출 (ADR-038)', () => {
     renderWithProviders(<DayMasterCard element="목" />);
-    expect(screen.getByText('일간 (日干)')).toBeInTheDocument();
+    expect(screen.getByText('일간')).toBeInTheDocument();
+    expect(screen.queryByText(/日干/)).not.toBeInTheDocument();
   });
 
   it('목 → 나무 기질 설명 렌더', () => {
