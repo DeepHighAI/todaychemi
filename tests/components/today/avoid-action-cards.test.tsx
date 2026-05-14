@@ -43,4 +43,24 @@ describe('AvoidActionCards', () => {
     const { container } = renderWithProviders(<AvoidActionCards card={card} />);
     expect(container.querySelectorAll('[data-card]')).toHaveLength(2);
   });
+
+  it('avoid_phrase의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<AvoidActionCards card={{ ...card, avoid_phrase: '火克金 충돌' }} />);
+    expect(screen.getByText('화극금 충돌')).toBeInTheDocument();
+  });
+
+  it('avoid_phrase_reason의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<AvoidActionCards card={{ ...card, avoid_phrase_reason: '酉金이 火를 누르는 흐름' }} />);
+    expect(screen.getByText('유금이 화를 누르는 흐름')).toBeInTheDocument();
+  });
+
+  it('favorable_action의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<AvoidActionCards card={{ ...card, favorable_action: '木의 기운 활용' }} />);
+    expect(screen.getByText('목의 기운 활용')).toBeInTheDocument();
+  });
+
+  it('favorable_action_reason의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<AvoidActionCards card={{ ...card, favorable_action_reason: '日主 火의 따뜻함' }} />);
+    expect(screen.getByText('일주 화의 따뜻함')).toBeInTheDocument();
+  });
 });

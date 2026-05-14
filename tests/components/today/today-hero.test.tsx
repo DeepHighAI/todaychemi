@@ -41,4 +41,14 @@ describe('TodayHero', () => {
     renderWithProviders(<TodayHero card={card} />);
     expect(screen.queryByText('어제 이어감')).toBeNull();
   });
+
+  it('headline의 한자(漢字)를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<TodayHero card={{ ...card, headline: '日主 火의 흐름' }} />);
+    expect(screen.getByText('일주 화의 흐름')).toBeInTheDocument();
+  });
+
+  it('headline_reason의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<TodayHero card={{ ...card, headline_reason: '酉金이 火를 누르는 흐름' }} />);
+    expect(screen.getByText('유금이 화를 누르는 흐름')).toBeInTheDocument();
+  });
 });

@@ -104,6 +104,12 @@ describe('convertHanja', () => {
   });
 });
 
+describe('convertHanja — ADR-038 회귀', () => {
+  it('日主 + ohaeng 패턴을 한글로 변환한다', () => {
+    expect(convertHanja('日主 火가 酉金의 제약을 받아요.')).toBe('일주 화가 유금의 제약을 받아요.');
+  });
+});
+
 describe('translateChapter', () => {
   it('"通神頌" → "통신송"', () => {
     expect(translateChapter('通神頌')).toBe('통신송');
