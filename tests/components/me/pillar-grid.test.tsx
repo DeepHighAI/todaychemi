@@ -26,11 +26,14 @@ describe('PillarGrid', () => {
     expect(screen.getByText('시주')).toBeInTheDocument();
   });
 
-  it('柱 값(辛未/癸卯/甲戌) 렌더', () => {
+  it('柱 값이 한글 reading으로 렌더 (ADR-038)', () => {
     renderWithProviders(<PillarGrid chart={CHART} />);
-    expect(screen.getByText('辛未')).toBeInTheDocument();
-    expect(screen.getByText('癸卯')).toBeInTheDocument();
-    expect(screen.getByText('甲戌')).toBeInTheDocument();
+    expect(screen.getByText('신미')).toBeInTheDocument();
+    expect(screen.getByText('계묘')).toBeInTheDocument();
+    expect(screen.getByText('갑술')).toBeInTheDocument();
+    expect(screen.queryByText('辛未')).not.toBeInTheDocument();
+    expect(screen.queryByText('癸卯')).not.toBeInTheDocument();
+    expect(screen.queryByText('甲戌')).not.toBeInTheDocument();
   });
 
   it('hour_pillar=null → "—" 렌더', () => {

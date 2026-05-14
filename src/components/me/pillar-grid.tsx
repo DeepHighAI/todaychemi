@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { pillarDescriptor, type PillarKey } from '@/lib/saju/pillarDescriptor';
+import { convertHanja } from '@/lib/glossary/post-process';
 import type { ChartCore } from '@/types/chart';
 
 interface PillarGridProps { chart: ChartCore }
@@ -23,7 +24,7 @@ export function PillarGrid({ chart }: PillarGridProps) {
         return (
           <div key={key} className="space-y-1">
             <p title={hanja} className="text-xs text-muted-foreground">{ko_short}</p>
-            <p className="text-sm font-semibold">{values[i] ?? '—'}</p>
+            <p className="text-sm font-semibold">{values[i] ? convertHanja(values[i]) : '—'}</p>
           </div>
         );
       })}
