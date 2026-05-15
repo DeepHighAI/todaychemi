@@ -17,6 +17,8 @@ import { ChevronLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import type { RelationCreate } from '@/types/relation';
+import { BirthDateField } from '@/components/picker/birth-date-field';
+import { BirthTimeField } from '@/components/picker/birth-time-field';
 
 type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
 type Gender = 'M' | 'F' | '';
@@ -137,12 +139,7 @@ export default function RelationsNewPage() {
           <>
             <h1 className="font-h1 text-foreground whitespace-pre-line">{t('step2.headline')}</h1>
             <div className="rounded-[var(--r-md)] bg-card p-4 space-y-4">
-              <div>
-                <label className="block text-[12px] font-semibold text-muted-foreground mb-1.5">{t('birth.date')}</label>
-                <input type="date" value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
+              <BirthDateField label={t('birth.date')} value={birthDate} onChange={setBirthDate} />
               <div className="grid grid-cols-2 gap-2" role="radiogroup">
                 {(['solar', 'lunar'] as Calendar[]).map((v) => (
                   <button key={v} type="button" role="radio" aria-checked={calendar === v}
@@ -177,9 +174,7 @@ export default function RelationsNewPage() {
                 ))}
               </div>
               {knowledge !== 'unknown' && (
-                <input type="time" value={birthTime} aria-label={t('birth.timeOptional')}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                <BirthTimeField label={t('birth.timeOptional')} value={birthTime} onChange={setBirthTime} />
               )}
             </div>
           </>

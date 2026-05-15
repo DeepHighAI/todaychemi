@@ -467,3 +467,129 @@
   top: 0;
   background: var(--background);
 }
+
+/* =========================================================================
+ * UIDesign §1.6 — Tray Picker (MockInput / Tray / WheelPicker / MiniCalendar)
+ * system.css에서 충실 이식. 프로덕션 적응: .tray position fixed + max-w 중앙 정렬.
+ * ========================================================================= */
+
+.mock-input {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--outline-variant);
+  cursor: pointer; gap: 12px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  width: 100%; text-align: left;
+}
+.mock-input:hover { border-color: var(--p-40); }
+.mock-input:active { background: var(--surface-2); transform: scale(0.985); }
+.mock-input.filled { border-color: var(--p-40); background: var(--surface-1); }
+.mock-input .lbl {
+  font: 600 11px/1 var(--font-display);
+  color: var(--on-surface-var);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.mock-input .val {
+  font: 600 15px/1.2 var(--font-display);
+  color: var(--on-surface);
+  text-align: right;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mock-input .val.placeholder { color: var(--outline); font-weight: 500; }
+.mock-input .chevron {
+  color: var(--outline);
+  font: 600 16px/1 var(--font-display);
+  flex-shrink: 0;
+}
+
+/* 와이어 position:absolute 는 폰 프레임 시뮬레이터 아티팩트.
+   프로덕션: position:fixed + 최대 너비 중앙 정렬로 변환. */
+.tray {
+  position: fixed; left: 50%; bottom: 0;
+  transform: translateX(-50%) translateY(100%);
+  max-width: 28rem; width: 100%;
+  background: var(--surface-1);
+  border-top: 1px solid var(--outline-variant);
+  border-radius: 20px 20px 0 0;
+  z-index: 80;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 60vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
+}
+.tray.on { transform: translateX(-50%) translateY(0); }
+.tray-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+.tray-head .ttl { font: 700 13px/1 var(--font-display); color: var(--on-surface); }
+.tray-head .done {
+  border: none; background: transparent;
+  color: var(--p-40); font: 700 14px/1 var(--font-display);
+  cursor: pointer; padding: 4px 8px;
+}
+.tray-body {
+  padding: 12px; overflow-y: auto; flex: 1;
+}
+
+.picker-cols {
+  display: flex; gap: 4px; height: 180px;
+  position: relative;
+}
+.picker-col {
+  flex: 1; overflow-y: auto; scroll-snap-type: y mandatory;
+  scrollbar-width: none; -ms-overflow-style: none;
+  text-align: center; padding: 70px 0;
+}
+.picker-col::-webkit-scrollbar { display: none; }
+.picker-col .opt {
+  scroll-snap-align: center;
+  font: 600 17px/40px var(--font-display);
+  color: var(--on-surface-var);
+  height: 40px; cursor: pointer;
+}
+.picker-col .opt.sel { color: var(--p-40); font-weight: 800; }
+.picker-band {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 40px; background: var(--p-40); opacity: 0.08;
+  pointer-events: none; border-radius: 8px;
+}
+
+.cal {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  padding: 8px;
+}
+.cal .h {
+  font: 600 11px/24px var(--font-display); color: var(--on-surface-var);
+  text-align: center; height: 24px;
+}
+.cal .d {
+  font: 500 14px/32px var(--font-display); color: var(--on-surface);
+  text-align: center; height: 32px; border-radius: 999px; cursor: pointer;
+}
+.cal .d:hover { background: var(--surface-2); }
+.cal .d.sel { background: var(--p-40); color: #fff; font-weight: 700; }
+.cal .d.muted { color: var(--outline); pointer-events: none; }
+.cal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 12px 12px;
+}
+.cal-head .mo {
+  font: 700 14px/1 var(--font-display); color: var(--on-surface);
+  border: none; background: transparent; cursor: pointer; padding: 4px 8px;
+  text-decoration: underline dotted; text-underline-offset: 3px;
+}
+.cal-head > button:not(.mo) {
+  border: none; background: transparent; cursor: pointer;
+  font: 700 18px/1 var(--font-display); color: var(--p-40);
+  padding: 4px 12px;
+}
+.picker-colon {
+  display: flex; align-items: center;
+  font: 700 18px/1 var(--font-display); color: var(--on-surface);
+  padding: 0 4px;
+}

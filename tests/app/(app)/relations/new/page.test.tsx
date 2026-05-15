@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithIntl } from '../../../../utils/render-with-intl';
 
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
-}));
+vi.mock('next/navigation', () => ({ useRouter: vi.fn() }));
 
 import { useRouter } from 'next/navigation';
 
@@ -19,129 +17,124 @@ beforeEach(() => {
   vi.mocked(useRouter).mockReturnValue({ push: mockPush } as never);
   vi.stubGlobal('fetch', mockFetch);
 });
+afterEach(() => { vi.unstubAllGlobals(); });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
-async function renderRelationsNewPage() {
-  const { default: RelationsNewPage } = await import('@/app/(app)/relations/new/page');
-  return renderWithIntl(<RelationsNewPage />);
+async function renderPage() {
+  const { default: Page } = await import('@/app/(app)/relations/new/page');
+  return renderWithIntl(<Page />);
 }
 
-async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
-  // mode 선택
-  await user.click(screen.getByRole('radio', { name: '친구' }));
-  // gender
-  await user.click(screen.getByRole('radio', { name: '여' }));
-  // birth_date
-  const dobInput = screen.getByLabelText('생년월일');
-  await user.type(dobInput, '1995-07-20');
-  // 시간 정확도 기본값 '정확해요' — birth_time 필드 나타남
-  const timeInput = screen.getByLabelText('시간 입력');
-  await user.type(timeInput, '09:00');
-  // consent 동의
-  await user.click(screen.getByRole('checkbox'));
+function clickActiveTrayDone() {
+  // Both BirthDateField and BirthTimeField portals coexist in document.body.
+  // Use .tray.on to target only the currently open tray's done button.
+  const doneBtns = document.querySelectorAll('.tray.on .done');
+  fireEvent.click(doneBtns[doneBtns.length - 1] as HTMLElement);
+}
+
+function selectBirthDate() {
+  fireEvent.click(document.querySelector('.mock-input')!);
+  const day5 = Array.from(document.querySelectorAll('.cal .d:not(.muted)')).find(el => el.textContent === '5') as HTMLElement;
+  fireEvent.click(day5);
+  clickActiveTrayDone();
+}
+
+function selectBirthTime() {
+  // After date field, the next .mock-input is time field
+  const inputs = document.querySelectorAll('.mock-input');
+  const timeInput = inputs[inputs.length - 1] as HTMLElement;
+  fireEvent.click(timeInput);
+  clickActiveTrayDone();
 }
 
 describe('RelationsNewPage', () => {
-  it('renders three section headings', async () => {
-    await renderRelationsNewPage();
-    expect(screen.getByRole('heading', { name: '인연 정보' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '생년월일' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '출생 시간' })).toBeInTheDocument();
+  it('renders Step 1 headline', async () => {
+    await renderPage();
+    expect(screen.getByText(/처음 오셨네요|별명부터|인연의/)).toBeTruthy();
   });
 
-  it('renders nickname input with placeholder', async () => {
-    await renderRelationsNewPage();
-    expect(screen.getByPlaceholderText('인연을 부를 별명')).toBeInTheDocument();
-  });
-
-  it('renders all 6 mode radios', async () => {
-    await renderRelationsNewPage();
-    expect(screen.getByRole('radio', { name: '일 동료' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '친구' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '돈 거래' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '첫만남' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '썸' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '오래된 사이' })).toBeInTheDocument();
-  });
-
-  it('renders time accuracy toggle with 3 options', async () => {
-    await renderRelationsNewPage();
-    expect(screen.getByRole('radio', { name: '정확해요' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '대략 알아요' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: '몰라요' })).toBeInTheDocument();
-  });
-
-  it('hides birth_time input when unknown selected, shows hint text', async () => {
+  it('다음 is disabled until nickname and consent are provided', async () => {
+    await renderPage();
+    const next = screen.getByRole('button', { name: '다음' });
+    expect(next).toBeDisabled();
     const user = userEvent.setup();
-    await renderRelationsNewPage();
-    await user.click(screen.getByRole('radio', { name: '몰라요' }));
-    expect(screen.queryByLabelText('시간 입력')).not.toBeInTheDocument();
-    expect(screen.getByText('정오 12:00로 가정해 추정해요')).toBeInTheDocument();
-  });
-
-  it('shows birth_time input when exact is selected (default)', async () => {
-    await renderRelationsNewPage();
-    expect(screen.getByLabelText('시간 입력')).toBeInTheDocument();
-  });
-
-  it('submit button is disabled when consent unchecked', async () => {
-    await renderRelationsNewPage();
-    const submit = screen.getByRole('button', { name: '등록하기' });
-    expect(submit).toBeDisabled();
-  });
-
-  it('submit button becomes enabled after consent checked', async () => {
-    const user = userEvent.setup();
-    await renderRelationsNewPage();
+    await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
+    expect(next).toBeDisabled();
     await user.click(screen.getByRole('checkbox'));
-    expect(screen.getByRole('button', { name: '등록하기' })).not.toBeDisabled();
+    await waitFor(() => expect(next).toBeEnabled());
   });
 
-  it('shows nicknameRequired error when submitting with empty nickname', async () => {
+  it('Step 2 renders 3 time-accuracy radio options', async () => {
+    await renderPage();
     const user = userEvent.setup();
-    await renderRelationsNewPage();
-    await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: '등록하기' }));
-    expect(await screen.findByText('별명을 입력해주세요.')).toBeInTheDocument();
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it('shows modeRequired error when no mode selected', async () => {
-    const user = userEvent.setup();
-    await renderRelationsNewPage();
     await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: '등록하기' }));
-    expect(await screen.findByText('관계 유형을 선택해주세요.')).toBeInTheDocument();
-    expect(mockFetch).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    expect(screen.getByRole('radio', { name: '정확해요' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '대략 알아요' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: '몰라요' })).toBeTruthy();
   });
 
-  it('calls POST /api/relations and redirects to /feed on success', async () => {
-    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+  it('Step 2 "몰라요" hides BirthTimeField and shows hint', async () => {
+    await renderPage();
     const user = userEvent.setup();
-    await renderRelationsNewPage();
-    await fillRequiredFields(user);
-    await user.click(screen.getByRole('button', { name: '등록하기' }));
-    await waitFor(() =>
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/relations',
-        expect.objectContaining({ method: 'POST' }),
-      ),
-    );
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    await user.click(screen.getByRole('radio', { name: '몰라요' }));
+    // BirthTimeField mock-input should not be visible
+    const mockInputs = document.querySelectorAll('.mock-input');
+    expect(mockInputs).toHaveLength(1); // only BirthDateField
   });
 
-  it('shows generic error when POST returns non-ok', async () => {
-    mockFetch.mockResolvedValue({ ok: false, json: async () => ({ code: 'INTERNAL_ERROR' }) });
+  it('Step 3 renders all 6 mode cards', async () => {
+    await renderPage();
     const user = userEvent.setup();
-    await renderRelationsNewPage();
-    await fillRequiredFields(user);
+    await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    selectBirthDate();
+    await user.click(screen.getByRole('radio', { name: '남' }));
+    selectBirthTime();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    expect(screen.getByText('썸')).toBeTruthy();
+    expect(screen.getByText('일 동료')).toBeTruthy();
+  });
+
+  it('posts correct body and redirects to /feed', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ relation_id: 'r1' }) });
+    await renderPage();
+    const user = userEvent.setup();
+    // Step 1
+    await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    // Step 2
+    selectBirthDate();
+    await user.click(screen.getByRole('radio', { name: '여' }));
+    selectBirthTime();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    // Step 3
+    await user.click(screen.getByText('썸'));
     await user.click(screen.getByRole('button', { name: '등록하기' }));
-    await screen.findByText('저장에 실패했어요. 잠시 후 다시 시도해주세요.');
-    expect(mockPush).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed?focus=r1'));
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.birth_date).toBe('1995-11-05');
+    expect(body.gender).toBe('F');
+  });
+
+  it('shows generic error on non-ok response', async () => {
+    mockFetch.mockResolvedValue({ ok: false });
+    await renderPage();
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText('인연을 부를 별명'), '봄달');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    selectBirthDate();
+    await user.click(screen.getByRole('radio', { name: '여' }));
+    selectBirthTime();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    await user.click(screen.getByText('썸'));
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+    await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
   });
 });

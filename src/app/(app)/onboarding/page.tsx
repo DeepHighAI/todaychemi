@@ -20,6 +20,8 @@ import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TOS_VERSION } from '@/lib/onboarding/tos';
 import type { OnboardingRequest } from '@/types/onboarding';
+import { BirthDateField } from '@/components/picker/birth-date-field';
+import { BirthTimeField } from '@/components/picker/birth-time-field';
 
 type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
 type Gender = 'M' | 'F' | '';
@@ -155,14 +157,7 @@ function Step1({ nickname, setNickname, birthDate, setBirthDate, t }: {
             onChange={(e) => setNickname(e.target.value)}
             className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
-        <div>
-          <label htmlFor="birth-date" className="block text-[12px] font-semibold text-muted-foreground mb-1.5">
-            {t('birth.date')}
-          </label>
-          <input id="birth-date" type="date" value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
+        <BirthDateField label={t('birth.date')} value={birthDate} onChange={setBirthDate} />
       </div>
     </>
   );
@@ -193,9 +188,7 @@ function Step2({ knowledge, setKnowledge, birthTime, setBirthTime, t }: {
           ))}
         </div>
         {knowledge !== 'unknown' && (
-          <input type="time" value={birthTime} aria-label={t('birth.timeOptional')}
-            onChange={(e) => setBirthTime(e.target.value)}
-            className="w-full rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-border px-3.5 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          <BirthTimeField label={t('birth.timeOptional')} value={birthTime} onChange={setBirthTime} />
         )}
         {knowledge === 'unknown' && (
           <p className="text-[12px] text-muted-foreground">{t('birth.timeUnknownHint')}</p>

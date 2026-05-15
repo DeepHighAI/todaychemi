@@ -4,7 +4,9 @@
     "tagline": "인연을 사주로 풀어보다"
   },
   "common": {
-    "delete": "삭제"
+    "delete": "삭제",
+    "cancel": "취소",
+    "done": "완료"
   },
   "auth": {
     "login": {
@@ -84,6 +86,22 @@
     "submitting": "저장 중...",
     "submit": "시작하기",
     "privacy": "저장만 하고 공유하지 않아요",
+    "tray": {
+      "tapToSelect": "탭해서 선택",
+      "confirmYear": "확인",
+      "hourColumn": "시",
+      "minuteColumn": "분",
+      "yearColumn": "년",
+      "monthColumn": "월"
+    },
+    "calendar": {
+      "monthLabel": "{year}년 {month}월",
+      "selectedDate": "{year}년 {month}월 {day}일",
+      "weekday": {
+        "sun": "일", "mon": "월", "tue": "화", "wed": "수",
+        "thu": "목", "fri": "금", "sat": "토"
+      }
+    },
     "step1": {
       "headline": "처음 오셨네요\n별명부터 정해요",
       "body": "본명 대신 별명으로 저장돼요. 생년월일도 함께 알려주세요."

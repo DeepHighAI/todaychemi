@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import type { MeUpdateRequest } from '@/types/me';
+import { BirthDateField } from '@/components/picker/birth-date-field';
+import { BirthTimeField } from '@/components/picker/birth-time-field';
 
 type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
 type Gender = 'M' | 'F' | '';
@@ -124,19 +126,7 @@ function MeEditForm({
       </div>
 
       {/* 생년월일 */}
-      <div>
-        <label htmlFor="edit-birth-date" className="block text-xs text-muted-foreground mb-1">
-          {tOb('birth.date')}
-        </label>
-        <input
-          id="edit-birth-date"
-          aria-label={tOb('birth.date')}
-          type="date"
-          value={form.birthDate}
-          onChange={(e) => setField('birthDate', e.target.value)}
-          className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-      </div>
+      <BirthDateField label={tOb('birth.date')} value={form.birthDate} onChange={(v) => setField('birthDate', v)} />
 
       {/* 양/음력 */}
       <div>
@@ -215,19 +205,7 @@ function MeEditForm({
 
       {/* 출생 시간 */}
       {form.knowledge !== 'unknown' && (
-        <div>
-          <label htmlFor="edit-birth-time" className="block text-xs text-muted-foreground mb-1">
-            {tOb('birth.timeOptional')}
-          </label>
-          <input
-            id="edit-birth-time"
-            aria-label={tOb('birth.timeOptional')}
-            type="time"
-            value={form.birthTime}
-            onChange={(e) => setField('birthTime', e.target.value)}
-            className="w-full rounded-[var(--r-sm)] border border-border bg-[var(--surface-1)] px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
+        <BirthTimeField label={tOb('birth.timeOptional')} value={form.birthTime} onChange={(v) => setField('birthTime', v)} />
       )}
 
       {/* 저장 버튼 */}
