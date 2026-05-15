@@ -9,6 +9,7 @@ const mockFetch = vi.fn();
 let mockMode: string | null = '친구합';
 
 vi.mock('next/navigation', () => ({
+  useRouter: () => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() }),
   useParams: () => ({ id: 'r1' }),
   useSearchParams: () => ({ get: (key: string) => (key === 'mode' ? mockMode : null) }),
 }));
@@ -50,8 +51,8 @@ describe('HapcardPage', () => {
   it('shows placeholder on successful fetch', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => mockHapcardResult });
     await renderHapcardPage();
-    expect(await screen.findByTestId('hapcard-placeholder')).toBeInTheDocument();
-    expect(screen.getByText('합카드 본문은 곧 준비됩니다.')).toBeInTheDocument();
+    // Placeholder div has no testid; assert by its unique text content
+    expect(await screen.findByText('합카드 본문은 곧 준비됩니다.')).toBeInTheDocument();
   });
 
   it('sends correct POST body with DEFAULT_THEORY_PROFILE_VERSION', async () => {

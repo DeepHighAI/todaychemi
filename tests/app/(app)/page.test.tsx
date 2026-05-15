@@ -109,12 +109,12 @@ describe('TodayPage (composition)', () => {
 
   it('relations 별명들을 RecentFeedRows에 전달', async () => {
     const items = [
-      { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       { relation_id: 'r2', nickname: '여름새', mode: '오래합', created_at: '2026-05-04T08:00:00Z' },
     ];
     setupRoutes({ relations: { ok: true, body: { items } } });
     await renderTodayPage();
-    expect(await screen.findByText('봄달')).toBeInTheDocument();
+    expect(await screen.findByText('봄달이')).toBeInTheDocument();
     expect(screen.getByText('여름새')).toBeInTheDocument();
   });
 

@@ -6,6 +6,10 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../../utils/render-with-providers';
 import type { FeedItem } from '@/types/relation';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+}));
+
 const mockFetch = vi.fn();
 
 beforeEach(() => {
@@ -50,13 +54,14 @@ describe('FeedPage', () => {
   });
 
   it('card link includes mode query param', async () => {
+    // has_significant_change=true renders as Liquid Glass <Link>; SwipeRow items use onClick
     const items: FeedItem[] = [
-      { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 65, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '친구합', compat_score: 65, change_score: 5, has_significant_change: true, created_at: '2026-05-05T10:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    const link = await screen.findByRole('link', { name: /봄달/ });
+    const link = await screen.findByRole('link', { name: /봄달이/ });
     expect(link).toHaveAttribute('href', `/hapcard/r1?mode=${encodeURIComponent('친구합')}`);
   });
 
@@ -105,58 +110,57 @@ describe('FeedPage', () => {
     expect(await screen.findByText(/72/)).toBeInTheDocument();
   });
 
-  it('has_significant_change=true → ChangeBadge 렌더됨', async () => {
+  it('has_significant_change=true → 흐름 변화 큼 하이라이트 카드 렌더됨', async () => {
+    // Redesign: highlight card (Liquid Glass <Link>) replaces ChangeBadge component
     const items: FeedItem[] = [
-      { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 82, change_score: 15, has_significant_change: true, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '친구합', compat_score: 82, change_score: 15, has_significant_change: true, created_at: '2026-05-05T10:00:00Z' },
       { relation_id: 'r2', nickname: '여름새', mode: '오래합', compat_score: 60, change_score: 3, has_significant_change: false, created_at: '2026-05-04T08:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    // r1만 significant=true → badge 1개
-    await waitFor(() => {
-      const badges = screen.getAllByTestId('change-badge');
-      expect(badges).toHaveLength(1);
-    });
+    // r1만 significant=true → Liquid Glass 하이라이트 카드의 eyebrow 1개
+    expect(await screen.findByText(/흐름 변화 큼/)).toBeInTheDocument();
   });
 
-  it('has_significant_change=false 전용 목록 → ChangeBadge 없음', async () => {
+  it('has_significant_change=false 전용 목록 → 하이라이트 카드 없음', async () => {
+    // Redesign: no Liquid Glass highlight card when has_significant_change=false
     const items: FeedItem[] = [
-      { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 65, change_score: 3, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '친구합', compat_score: 65, change_score: 3, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    await screen.findByText('봄달');
-    expect(screen.queryByTestId('change-badge')).toBeNull();
+    await screen.findByText('봄달이');
+    expect(screen.queryByText(/흐름 변화 큼/)).toBeNull();
   });
 
   it('필터 클릭 시 해당 모드 항목만 표시된다', async () => {
     const user = userEvent.setup();
     const items: FeedItem[] = [
-      { relation_id: 'r1', nickname: '봄달', mode: '썸합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '썸합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
       { relation_id: 'r2', nickname: '여름새', mode: '친구합', compat_score: 60, change_score: 0, has_significant_change: false, created_at: '2026-05-04T08:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    await screen.findByText('봄달');
+    await screen.findByText('봄달이');
     const 썸합btn = screen.getByRole('radio', { name: '썸' });
     await user.click(썸합btn);
 
-    expect(screen.getByText('봄달')).toBeInTheDocument();
+    expect(screen.getByText('봄달이')).toBeInTheDocument();
     expect(screen.queryByText('여름새')).not.toBeInTheDocument();
   });
 
   it('필터 0건이면 emptyFilter 메시지 표시, 전체 빈 상태 CTA는 미노출', async () => {
     const user = userEvent.setup();
     const items: FeedItem[] = [
-      { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r1', nickname: '봄달이', mode: '친구합', compat_score: 70, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    await screen.findByText('봄달');
+    await screen.findByText('봄달이');
     const 썸합btn = screen.getByRole('radio', { name: '썸' });
     await user.click(썸합btn);
 
