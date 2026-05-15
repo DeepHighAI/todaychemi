@@ -56,7 +56,7 @@ export default function FeedPage() {
     { value: '친구합', label: tMode('친구합') },
   ], [t, tMode]);
 
-  const items = data ?? [];
+  const items = useMemo(() => data ?? [], [data]);
   const filtered = activeFilter === 'all' ? items : items.filter(i => i.mode === activeFilter);
 
   // 흐름 변화 큰 인연 1개 (canvas의 cool Liquid Glass card)

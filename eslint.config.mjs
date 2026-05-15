@@ -4,6 +4,7 @@ const config = [
   {
     ignores: [
       'UIDesign/**',
+      'coupleUnse-redesign/**',
     ],
   },
   ...nextConfig,
