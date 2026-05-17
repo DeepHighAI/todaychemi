@@ -431,6 +431,15 @@
         "interpretationFooter": "더 자세한 해석은 합카드와 다시합에서 풀어요."
       }
     },
+    "settings": {
+      "appearance": "테마"
+    },
+    "theme": {
+      "label": "테마 선택",
+      "light": "라이트",
+      "dark": "다크",
+      "system": "시스템"
+    },
     "empty": {
       "title": "본명식이 아직 등록되지 않았어요.",
       "body": "온보딩에서 사주 정보를 입력해주세요.",

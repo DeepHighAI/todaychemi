@@ -12,6 +12,7 @@ import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
 import YunseCard from '@/components/me/yunse-card';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { EmptyState } from '@/components/feedback/EmptyState';
@@ -69,6 +70,10 @@ export default function MePage() {
       <OhaengBars data={chart.five_elements_counts} />
       <DayMasterCard element={chart.day_master_element} />
       <YunseCard yunse={chart.yunse} />
+      <section className="rounded-[var(--r-md)] bg-card p-4 space-y-3">
+        <p className="font-h3 text-foreground">{t('settings.appearance')}</p>
+        <ThemeToggle />
+      </section>
     </div>
   );
 }

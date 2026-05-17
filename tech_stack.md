@@ -28,6 +28,7 @@
 | **상태 관리** | TanStack Query + Zustand | 서버 상태(Supabase fetch 자동 캐싱) + UI 상태 분리 |
 | **차트** | Recharts | 오행맵(결과 카드 [3]) + 변화 그래프(ADR-033) |
 | **i18n** | next-intl | Phase 3 vi/th 확장 1급 지원 |
+| **테마** | next-themes v0.4 | 다크 모드 토글 (2026-05-17 §1.1 결정, ADR-037 예외) |
 | **PWA** | vite-plugin-pwa 대안 = next-pwa 또는 자체 Service Worker | §8.3 캐시 정책 구현 |
 | **Backend API** | Next.js Route Handlers | 별도 서버 X, 한 프로젝트 통합 |
 | **DB·Auth·Storage** | Supabase Free (Postgres + Auth + RLS + Storage) | DB 500MB / 파일 1GB / MAU 50K 무료 |
