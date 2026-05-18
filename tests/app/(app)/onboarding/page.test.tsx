@@ -1,31 +1,36 @@
 // @vitest-environment jsdom
+// Tests for URL-based onboarding step pages
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithIntl } from '../../../utils/render-with-intl';
 
-vi.mock('next/navigation', () => ({ useRouter: vi.fn() }));
+// persist → passthrough so zustand store works normally without localStorage
+vi.mock('zustand/middleware', () => ({
+  persist: (fn: (set: unknown, get: unknown, api: unknown) => unknown) => fn,
+}));
+
+vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn() }));
 vi.mock('@/lib/onboarding/tos', () => ({ TOS_VERSION: 'v0.1' }));
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const mockPush = vi.fn();
 const mockFetch = vi.fn();
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
-  vi.mocked(useRouter).mockReturnValue({ push: mockPush } as never);
+  vi.mocked(useRouter).mockReturnValue({ push: mockPush, back: vi.fn() } as never);
+  vi.mocked(usePathname).mockReturnValue('/onboarding/dob');
   vi.stubGlobal('fetch', mockFetch);
+  // Reset draft store
+  const { useOnboardingDraft } = await import('@/lib/onboarding/draft-store');
+  useOnboardingDraft.getState().reset();
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
-async function renderPage() {
-  const { default: Page } = await import('@/app/(app)/onboarding/page');
-  return renderWithIntl(<Page />);
-}
-
-/** Opens the BirthDateField tray and clicks day 5 in the default 1995/11 view. */
+/** Opens the BirthDateField tray and clicks day 5. */
 function selectBirthDate() {
   fireEvent.click(document.querySelector('.mock-input')!);
   const day5 = Array.from(document.querySelectorAll('.cal .d:not(.muted)')).find(el => el.textContent === '5') as HTMLElement;
@@ -33,68 +38,94 @@ function selectBirthDate() {
   fireEvent.click(screen.getByText('완료'));
 }
 
-/** Opens the BirthTimeField tray and picks 14:20 (defaults), then confirms. */
+/** Opens the BirthTimeField tray and confirms default 14:20. */
 function selectBirthTime() {
   fireEvent.click(document.querySelector('.mock-input')!);
-  // Default 14:20 is already set — just confirm
   fireEvent.click(screen.getByText('완료'));
 }
 
-describe('OnboardingPage', () => {
+describe('OnboardingDobPage (Step 1)', () => {
   it('renders Step 1 headline', async () => {
-    await renderPage();
+    const { default: Page } = await import('@/app/(app)/onboarding/dob/page');
+    renderWithIntl(<Page />);
     expect(screen.getByText(/처음 오셨네요/)).toBeTruthy();
   });
 
   it('다음 is disabled until nickname and date are filled', async () => {
-    await renderPage();
+    const { default: Page } = await import('@/app/(app)/onboarding/dob/page');
+    renderWithIntl(<Page />);
     const next = screen.getByRole('button', { name: '다음' });
     expect(next).toBeDisabled();
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText('나를 부를 별명'), '하늘달');
-    expect(next).toBeDisabled(); // still need date
+    expect(next).toBeDisabled();
     selectBirthDate();
     await waitFor(() => expect(next).toBeEnabled());
   });
 
-  it('advances to Step 2 and shows time picker', async () => {
-    await renderPage();
+  it('다음 navigates to /onboarding/time', async () => {
+    const { default: Page } = await import('@/app/(app)/onboarding/dob/page');
+    renderWithIntl(<Page />);
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText('나를 부를 별명'), '하늘달');
     selectBirthDate();
-    const next = screen.getByRole('button', { name: '다음' });
-    await waitFor(() => expect(next).toBeEnabled());
-    await user.click(next);
-    expect(screen.getByText(/태어난 시간/)).toBeTruthy();
-    expect(document.querySelector('.mock-input')).toBeTruthy(); // BirthTimeField MockInput
-  });
-
-  it('Step 2 "몰라요" hides BirthTimeField MockInput and shows hint', async () => {
-    await renderPage();
-    const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('나를 부를 별명'), '하늘달');
-    selectBirthDate();
+    await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: '다음' }));
+    expect(mockPush).toHaveBeenCalledWith('/onboarding/time');
+  });
+});
+
+describe('OnboardingTimePage (Step 2)', () => {
+  it('renders Step 2 headline', async () => {
+    const { default: Page } = await import('@/app/(app)/onboarding/time/page');
+    renderWithIntl(<Page />);
+    expect(screen.getByText(/태어난 시간/)).toBeTruthy();
+  });
+
+  it('"몰라요" hides BirthTimeField and shows hint', async () => {
+    const { default: Page } = await import('@/app/(app)/onboarding/time/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
     await user.click(screen.getByRole('radio', { name: '몰라요' }));
-    expect(document.querySelector('.mock-input')).toBeNull();
+    await waitFor(() => expect(document.querySelector('.mock-input')).toBeNull());
     expect(screen.getByText(/정오 12:00/)).toBeTruthy();
   });
+});
 
-  it('posts correct birth_date and birth_time and redirects to /feed', async () => {
-    mockFetch.mockResolvedValue({ ok: true });
-    await renderPage();
+describe('OnboardingCalGenderPage (Step 3)', () => {
+  it('renders gender options', async () => {
+    const { default: Page } = await import('@/app/(app)/onboarding/cal-gender/page');
+    renderWithIntl(<Page />);
+    expect(screen.getAllByRole('radio').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('다음 is disabled until gender is selected', async () => {
+    const { default: Page } = await import('@/app/(app)/onboarding/cal-gender/page');
+    renderWithIntl(<Page />);
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
     const user = userEvent.setup();
-    // Step 1
-    await user.type(screen.getByPlaceholderText('나를 부를 별명'), '하늘달');
-    selectBirthDate();
-    await user.click(screen.getByRole('button', { name: '다음' }));
-    // Step 2: confirm default time 14:20
-    selectBirthTime();
-    await user.click(screen.getByRole('button', { name: '다음' }));
-    // Step 3: gender
     await user.click(screen.getByRole('radio', { name: '남' }));
-    await user.click(screen.getByRole('button', { name: '다음' }));
-    // Step 4: ToS
+    await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+  });
+});
+
+describe('OnboardingReviewPage (Step 4)', () => {
+  beforeEach(async () => {
+    const { useOnboardingDraft } = await import('@/lib/onboarding/draft-store');
+    const s = useOnboardingDraft.getState();
+    s.setNickname('하늘달');
+    s.setBirthDate('1995-11-05');
+    s.setBirthTime('14:20');
+    s.setKnowledge('exact');
+    s.setGender('M');
+    s.setCalendar('solar');
+  });
+
+  it('시작하기 submits and redirects to /feed', async () => {
+    mockFetch.mockResolvedValue({ ok: true });
+    const { default: Page } = await import('@/app/(app)/onboarding/review/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: '시작하기' }));
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
@@ -105,15 +136,9 @@ describe('OnboardingPage', () => {
 
   it('shows generic error on non-ok response', async () => {
     mockFetch.mockResolvedValue({ ok: false });
-    await renderPage();
+    const { default: Page } = await import('@/app/(app)/onboarding/review/page');
+    renderWithIntl(<Page />);
     const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('나를 부를 별명'), '하늘달');
-    selectBirthDate();
-    await user.click(screen.getByRole('button', { name: '다음' }));
-    selectBirthTime();
-    await user.click(screen.getByRole('button', { name: '다음' }));
-    await user.click(screen.getByRole('radio', { name: '남' }));
-    await user.click(screen.getByRole('button', { name: '다음' }));
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: '시작하기' }));
     await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
