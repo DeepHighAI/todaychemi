@@ -108,9 +108,11 @@ function makeAuthedSupabaseClient(opts: {
     error: opts.relationChartError ?? null,
   });
 
-  // 두 query 모두 .eq().eq().maybeSingle() chain
+  // 두 query 모두 .eq().eq().order().limit().maybeSingle() chain (fetchLatest*ForVersion 헬퍼)
   const makeChain = (maybeSingle: ReturnType<typeof vi.fn>) => {
-    const second = { maybeSingle };
+    const limitFn = vi.fn().mockReturnValue({ maybeSingle });
+    const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
+    const second = { order: orderFn };
     const firstEq = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(second) });
     return { select: vi.fn().mockReturnValue({ eq: firstEq }) };
   };
@@ -308,6 +310,21 @@ describe('POST /api/hapcards', () => {
 
     const [input] = vi.mocked(buildHapcard).mock.calls[0];
     expect(input.question_slot).toBe('연애 갈등 해결');
+  });
+
+  it('MeEdit 후 user_charts 복수 row → latest row 반환으로 200 (USER_CHART_LOOKUP_FAILED 회귀)', async () => {
+    // MeEditDrawer 로 생년월일 변경 시 user_charts 에 신규 row INSERT (ADR-016 FK 보존).
+    // 구 버전(.maybeSingle() 직접)은 2개 row 에서 PostgREST 에러 발생.
+    // fetchLatestUserChartForVersion 이 .order(desc).limit(1) 로 latest 반환.
+    const supabase = makeAuthedSupabaseClient({
+      userChart: { chart_core: SELF_CHART_CORE, chart_hash: 'post-edit-hash' },
+    });
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(200);
+    const [input] = vi.mocked(buildHapcard).mock.calls[0];
+    expect(input.self_chart_hash).toBe('post-edit-hash');
   });
 
   it('JSON parse 실패 → 400 INVALID_BODY', async () => {

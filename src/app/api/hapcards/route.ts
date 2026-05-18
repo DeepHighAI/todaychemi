@@ -5,6 +5,10 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { buildHapcard, type BuildHapcardInput, type BuildHapcardDeps } from '@/lib/hapcard/builder';
 import { buildRagQueryText } from '@/lib/rag/query-text';
+import {
+  fetchLatestUserChartForVersion,
+  fetchLatestRelationChartForVersion,
+} from '@/lib/chart/queries';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse } from '@/lib/errors/route-response';
@@ -38,19 +42,11 @@ export async function POST(request: NextRequest) {
   const userId = userData.user.id;
 
   // 3+4. user_charts / relation_charts 는 독립 쿼리 — 병렬 fetch (RLS 자동 enforce)
+  // MeEdit 시 chart_hash 변경으로 신규 row INSERT (ADR-016 FK 보존) → 복수 row 가능.
+  // fetchLatest*ForVersion 은 .order(desc).limit(1) 로 latest row 를 안전하게 선택.
   const [userChartRes, relationChartRes] = await Promise.all([
-    supabaseUserClient
-      .from('user_charts')
-      .select('chart_core, chart_hash')
-      .eq('user_id', userId)
-      .eq('theory_profile_version', body.theory_profile_version)
-      .maybeSingle(),
-    supabaseUserClient
-      .from('relation_charts')
-      .select('chart_core, chart_hash')
-      .eq('relation_id', body.relation_id)
-      .eq('theory_profile_version', body.theory_profile_version)
-      .maybeSingle(),
+    fetchLatestUserChartForVersion(supabaseUserClient, userId, body.theory_profile_version),
+    fetchLatestRelationChartForVersion(supabaseUserClient, body.relation_id, body.theory_profile_version),
   ]);
 
   if (userChartRes.error) {
