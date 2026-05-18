@@ -13,3 +13,33 @@ export async function fetchLatestUserChart(
     .limit(1)
     .maybeSingle();
 }
+
+export async function fetchLatestUserChartForVersion(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  theoryProfileVersion: string,
+) {
+  return supabase
+    .from('user_charts')
+    .select('chart_core, chart_hash')
+    .eq('user_id', userId)
+    .eq('theory_profile_version', theoryProfileVersion)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
+
+export async function fetchLatestRelationChartForVersion(
+  supabase: SupabaseClient<Database>,
+  relationId: string,
+  theoryProfileVersion: string,
+) {
+  return supabase
+    .from('relation_charts')
+    .select('chart_core, chart_hash')
+    .eq('relation_id', relationId)
+    .eq('theory_profile_version', theoryProfileVersion)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
