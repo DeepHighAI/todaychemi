@@ -10,6 +10,10 @@ import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
+import {
+  fetchLatestUserChartForVersion,
+  fetchLatestRelationChartForVersion,
+} from '@/lib/chart/queries';
 
 const JINJIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -83,19 +87,18 @@ export async function buildReplay(
   const replaySystemPrompt = buildReplaySystemPrompt(prompt.content, input.jinjin_date);
 
   // user_charts / relation_charts 는 독립 쿼리 — 병렬 fetch
+  // MeEdit 시 신규 row INSERT (ADR-016 FK 보존) → fetchLatest*ForVersion 으로 latest 선택
   const [ucResult, rcResult] = await Promise.all([
-    deps.supabaseUserClient
-      .from('user_charts')
-      .select('chart_core')
-      .eq('user_id', hapcard.user_id)
-      .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
-      .maybeSingle(),
-    deps.supabaseUserClient
-      .from('relation_charts')
-      .select('chart_core')
-      .eq('relation_id', hapcard.relation_id)
-      .eq('theory_profile_version', DEFAULT_THEORY_PROFILE_VERSION)
-      .maybeSingle(),
+    fetchLatestUserChartForVersion(
+      deps.supabaseUserClient as Parameters<typeof fetchLatestUserChartForVersion>[0],
+      hapcard.user_id,
+      DEFAULT_THEORY_PROFILE_VERSION,
+    ),
+    fetchLatestRelationChartForVersion(
+      deps.supabaseUserClient as Parameters<typeof fetchLatestRelationChartForVersion>[0],
+      hapcard.relation_id,
+      DEFAULT_THEORY_PROFILE_VERSION,
+    ),
   ]);
 
   const { data: ucRow, error: ucErr } = ucResult;
@@ -109,8 +112,8 @@ export async function buildReplay(
   }
 
   const basePayload = buildLlmPayload({
-    self: (ucRow as ChartRow).chart_core,
-    relation: (rcRow as ChartRow).chart_core,
+    self: (ucRow as unknown as ChartRow).chart_core,
+    relation: (rcRow as unknown as ChartRow).chart_core,
     mode: hapcard.mode,
     theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
   });

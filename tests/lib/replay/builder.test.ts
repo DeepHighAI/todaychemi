@@ -191,9 +191,12 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     };
     const replayRow = { replay_id: 'replay-001', created_at: '2026-05-06T00:00:00Z' };
 
-    // 두 번 연속 .eq() 체인을 지원하는 빌더 — user_charts / relation_charts 공용
+    // fetchLatestUserChartForVersion / fetchLatestRelationChartForVersion 체인:
+    // .select().eq().eq().order().limit().maybeSingle()
     const maybeSingle = vi.fn().mockResolvedValue({ data: chartRow, error: null });
-    const eq2 = vi.fn().mockReturnValue({ maybeSingle });
+    const limitFn = vi.fn().mockReturnValue({ maybeSingle });
+    const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
+    const eq2 = vi.fn().mockReturnValue({ order: orderFn });
     const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
     const selectChart = vi.fn().mockReturnValue({ eq: eq1 });
 
@@ -258,6 +261,25 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     expect(citations[0].original).toBe('갑자');
     // modern_translation 그대로
     expect(citations[0].modern).toBe('갑자년을 논하다');
+  });
+
+  it('MeEdit 후 user_charts 복수 row → latest row 반환으로 buildReplay 성공 (USER_CHART_LOOKUP_FAILED 회귀)', async () => {
+    // MeEdit 로 신규 user_chart row 가 INSERT (ADR-016 FK 보존) → 복수 row 시나리오.
+    // fetchLatestUserChartForVersion 이 .order(desc).limit(1) 로 안전하게 latest 선택.
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      output: { main_text: '갑목일간', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
+      usage: { token_in: 10, token_out: 20, total_usd: 0 },
+      model: 'gpt-5',
+    });
+
+    const { userClient, serviceClient } = makeMockClients();
+
+    await expect(
+      buildReplay(
+        { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
+        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+      ),
+    ).resolves.toBeDefined();
   });
 
   it('classic_citation 빈 배열이면 변환 없이 빈 배열 그대로', async () => {
