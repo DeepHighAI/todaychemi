@@ -56,7 +56,7 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
         </div>
 
         {typeof deltaVsYesterday === 'number' && deltaVsYesterday !== 0 && (
-          <span className="shrink-0 inline-flex items-center bg-white/22 text-white text-[11px] font-bold leading-[1.3] rounded-full px-2.5 py-1 whitespace-nowrap">
+          <span className="shrink-0 inline-flex items-center bg-white/20 text-white text-[11px] font-bold leading-[1.3] rounded-full px-2.5 py-1 whitespace-nowrap">
             {deltaVsYesterday > 0 ? '▲' : '▼'} {deltaSign}{deltaVsYesterday} vs {t('yesterday')}
           </span>
         )}

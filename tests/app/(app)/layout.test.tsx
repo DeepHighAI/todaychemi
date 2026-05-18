@@ -13,6 +13,16 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: (ns: string) => (key: string) => {
+    const map: Record<string, Record<string, string>> = {
+      'nav.tab': { home: '홈', feed: '합피드', me: '내사주' },
+      home: { greeting: '오늘의 합', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
+    };
+    return map[ns]?.[key] ?? key;
+  },
+}));
+
 describe('AppLayout', () => {
   it('TabBar를 렌더한다', async () => {
     const { default: AppLayout } = await import('@/app/(app)/layout');

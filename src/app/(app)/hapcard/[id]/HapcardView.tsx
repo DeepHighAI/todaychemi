@@ -181,8 +181,7 @@ export default function HapcardView() {
 
       <main className="bg-background min-h-screen px-4 pt-2 pb-32 space-y-3">
         {/* ── Liquid Glass hero: 점수 + 결론 + 강점/주의 ── */}
-        <section className="rounded-[var(--r-xl)] p-5 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #FF5E00 0%, #FF2E63 50%, #9333EA 110%)' }}>
+        <section className="bg-liquid-hero rounded-[var(--r-xl)] p-5 relative overflow-hidden">
           <span aria-hidden className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
           <div className="relative z-[1]">
@@ -198,7 +197,7 @@ export default function HapcardView() {
             <p className="font-h2 text-white mt-3 whitespace-pre-line">{data.content.main_text.split('\n').slice(0, 2).join('\n')}</p>
             <div className="flex gap-1.5 mt-3 flex-wrap">
               {data.content.why_cards?.slice(0, 3).map((c, i) => (
-                <span key={i} className="bg-white/22 text-white text-[11px] font-bold leading-[1.2] rounded-full px-2.5 py-1.5">
+                <span key={i} className="bg-white/20 text-white text-[11px] font-bold leading-[1.2] rounded-full px-2.5 py-1.5">
                   {c.title ?? c.summary ?? ''}
                 </span>
               ))}

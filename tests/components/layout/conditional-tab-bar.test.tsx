@@ -15,6 +15,15 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: (ns: string) => (key: string) => {
+    const map: Record<string, Record<string, string>> = {
+      'nav.tab': { home: '홈', feed: '합피드', me: '내사주' },
+    };
+    return map[ns]?.[key] ?? key;
+  },
+}));
+
 async function renderConditionalTabBar(pathname: string) {
   mockPathname = pathname;
   const { ConditionalTabBar } = await import('@/components/layout/conditional-tab-bar');

@@ -3,6 +3,13 @@
     "title": "합플",
     "tagline": "인연을 사주로 풀어보다"
   },
+  "nav": {
+    "tab": {
+      "home": "홈",
+      "feed": "합피드",
+      "me": "내사주"
+    }
+  },
   "common": {
     "delete": "삭제",
     "cancel": "취소",

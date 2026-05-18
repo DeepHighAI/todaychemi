@@ -70,6 +70,12 @@
   --color-semantic-info: var(--info);
   --color-semantic-info-bg: var(--info-bg);
 
+  /* M3 surface container levels — bg-surface, bg-surface-1, bg-surface-2, bg-surface-3 */
+  --color-surface: var(--surface);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
   /* sidebar — shadcn dashboard 호환 */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);

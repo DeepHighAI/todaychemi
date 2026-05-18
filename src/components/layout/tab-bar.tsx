@@ -6,16 +6,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Home, Sparkles, User } from 'lucide-react';
 
-const TABS = [
-  { href: '/', label: '홈', Icon: Home },
-  { href: '/feed', label: '합피드', Icon: Sparkles },
-  { href: '/me', label: '내사주', Icon: User },
+const TAB_HREFS = [
+  { href: '/',     key: 'home', Icon: Home },
+  { href: '/feed', key: 'feed', Icon: Sparkles },
+  { href: '/me',   key: 'me',   Icon: User },
 ] as const;
 
 export function TabBar() {
   const pathname = usePathname();
+  const t = useTranslations('nav.tab');
 
   return (
     <nav
@@ -23,7 +25,7 @@ export function TabBar() {
       style={{ height: 76, paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-3 h-full pt-2">
-        {TABS.map(({ href, label, Icon }) => {
+        {TAB_HREFS.map(({ href, key, Icon }) => {
           const isActive = pathname === href;
           return (
             <Link
@@ -46,7 +48,7 @@ export function TabBar() {
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               </span>
-              {label}
+              {t(key)}
             </Link>
           );
         })}
