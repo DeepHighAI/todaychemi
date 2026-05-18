@@ -244,6 +244,7 @@ export function MeEditDrawer({ open, onOpenChange }: Props) {
           <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-[var(--surface-2)]" />
           <div className="px-4 pt-4 pb-2">
             <Drawer.Title className="text-lg font-bold text-foreground">{t('title')}</Drawer.Title>
+            <Drawer.Description className="sr-only">{t('description')}</Drawer.Description>
           </div>
           {error && (
             <p role="alert" className="px-4 text-center text-sm text-destructive">{error}</p>

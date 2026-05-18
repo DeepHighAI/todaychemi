@@ -7,6 +7,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
 } from '@/components/ui/drawer';
 import { DIAGNOSTIC_TYPE, type DiagnosticType } from '@/types/diagnostic';
 
@@ -26,9 +27,12 @@ export function WhatifSheet({ open, onOpenChange }: WhatifSheetProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent role="dialog" aria-labelledby="whatif-sheet-title">
+      <DrawerContent role="dialog" aria-labelledby="whatif-sheet-title" aria-describedby="whatif-sheet-desc">
         <DrawerHeader>
           <DrawerTitle id="whatif-sheet-title">{t('sheet.title')}</DrawerTitle>
+          <DrawerDescription id="whatif-sheet-desc" className="sr-only">
+            {t('sheet.description')}
+          </DrawerDescription>
         </DrawerHeader>
         <div className="px-4 pb-4 space-y-2">
           {Object.values(DIAGNOSTIC_TYPE).map((type) => (

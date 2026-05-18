@@ -9,6 +9,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
   DrawerClose,
   DrawerFooter,
 } from '@/components/ui/drawer';
@@ -21,7 +22,7 @@ export function GlossarySheet() {
 
   return (
     <Drawer open={!!sheetTerm} onOpenChange={(open) => { if (!open) closeSheet(); }}>
-      <DrawerContent role="dialog" aria-labelledby="glossary-sheet-title">
+      <DrawerContent role="dialog" aria-labelledby="glossary-sheet-title" aria-describedby="glossary-sheet-desc">
         <DrawerHeader>
           <DrawerTitle id="glossary-sheet-title">
             {entry?.term}
@@ -31,6 +32,9 @@ export function GlossarySheet() {
               </span>
             )}
           </DrawerTitle>
+          <DrawerDescription id="glossary-sheet-desc" className="sr-only">
+            {t('sheet.description')}
+          </DrawerDescription>
         </DrawerHeader>
         <div className="px-4 pb-4 space-y-3">
           <p className="text-sm text-foreground whitespace-pre-line">

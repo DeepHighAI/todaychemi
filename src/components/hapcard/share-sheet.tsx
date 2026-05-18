@@ -7,6 +7,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
   DrawerFooter,
   DrawerClose,
 } from '@/components/ui/drawer';
@@ -33,9 +34,12 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare }: ShareSheetP
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent role="dialog" aria-labelledby="share-sheet-title">
+      <DrawerContent role="dialog" aria-labelledby="share-sheet-title" aria-describedby="share-sheet-desc">
         <DrawerHeader>
           <DrawerTitle id="share-sheet-title">{t('title')}</DrawerTitle>
+          <DrawerDescription id="share-sheet-desc" className="sr-only">
+            {t('description')}
+          </DrawerDescription>
         </DrawerHeader>
         <HapcardSharePreviewTile hapcard={hapcard} range={range} />
         <div className="px-4 pb-2 space-y-2">

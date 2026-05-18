@@ -231,6 +231,7 @@
     "share": "공유하기",
     "shareSheet": {
       "title": "공유 범위 선택",
+      "description": "공유 범위를 선택하고 미리보기를 확인합니다",
       "range": {
         "nicknameOnly": "별명만",
         "withOhaeng": "별명 + 오행",
@@ -344,6 +345,7 @@
     "learn_more": "더 알아보기",
     "sheet": {
       "title": "용어 설명",
+      "description": "용어의 뜻과 관련 용어를 확인합니다",
       "learn_more_cta": "더 자세히 보기",
       "related_terms_label": "관련 용어"
     }
@@ -393,6 +395,7 @@
     },
     "edit": {
       "title": "내 정보 수정",
+      "description": "별명·생년월일·성별을 수정합니다",
       "save": "저장",
       "saving": "저장 중…",
       "success": "저장됐어요.",
@@ -449,6 +452,7 @@
   "whatif": {
     "sheet": {
       "title": "이런건 어때 ✨",
+      "description": "원하는 만약합 모드를 선택합니다",
       "trigger": "이런건 어때"
     },
     "card": {
