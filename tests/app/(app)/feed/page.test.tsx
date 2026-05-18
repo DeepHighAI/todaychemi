@@ -175,4 +175,37 @@ describe('FeedPage', () => {
     expect(await screen.findByRole('button', { name: '첫 인연 등록하기' })).toBeInTheDocument();
     expect(screen.queryByText('이 관계 유형의 인연이 없어요.')).not.toBeInTheDocument();
   });
+
+  it('필터 라디오그룹은 전체 + 6모드 = 7개 옵션을 노출한다', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    await renderFeedPage();
+    const radios = await screen.findAllByRole('radio');
+    expect(radios).toHaveLength(7);
+  });
+
+  it.each([
+    ['돈합', '돈 거래'],
+    ['첫합', '첫만남'],
+    ['오래합', '오래된 사이'],
+  ])('%s 필터 클릭 시 해당 모드 항목만 표시된다', async (modeKey, labelText) => {
+    const user = userEvent.setup();
+    // 닉네임 3글자 이상: avatar slice(0,2)='대상' ≠ p='대상이' 충돌 방지
+    const items: FeedItem[] = [
+      { relation_id: 'r1', nickname: '대상이', mode: modeKey as FeedItem['mode'],
+        compat_score: 70, change_score: 0, has_significant_change: false,
+        created_at: '2026-05-05T10:00:00Z' },
+      { relation_id: 'r2', nickname: '제외야', mode: '친구합',
+        compat_score: 60, change_score: 0, has_significant_change: false,
+        created_at: '2026-05-04T08:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    await screen.findByText('대상이');
+    const btn = screen.getByRole('radio', { name: labelText });
+    await user.click(btn);
+
+    expect(screen.getByText('대상이')).toBeInTheDocument();
+    expect(screen.queryByText('제외야')).not.toBeInTheDocument();
+  });
 });

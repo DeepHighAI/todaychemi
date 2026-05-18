@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/swipe-row';
 import type { FeedItem } from '@/types/relation';
 
-type FilterMode = 'all' | '썸합' | '일합' | '친구합';
+type FilterMode = 'all' | '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
 
 async function fetchFeed(): Promise<FeedItem[]> {
   const res = await fetch('/api/feed');
@@ -51,9 +51,12 @@ export default function FeedPage() {
 
   const filters = useMemo<{ value: FilterMode; label: string }[]>(() => [
     { value: 'all', label: t('filter.all') },
-    { value: '썸합', label: tMode('썸합') },
     { value: '일합', label: tMode('일합') },
     { value: '친구합', label: tMode('친구합') },
+    { value: '돈합', label: tMode('돈합') },
+    { value: '첫합', label: tMode('첫합') },
+    { value: '썸합', label: tMode('썸합') },
+    { value: '오래합', label: tMode('오래합') },
   ], [t, tMode]);
 
   const items = useMemo(() => data ?? [], [data]);
