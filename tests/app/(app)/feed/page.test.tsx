@@ -184,9 +184,9 @@ describe('FeedPage', () => {
   });
 
   it.each([
-    ['돈합', '돈 거래'],
-    ['첫합', '첫만남'],
-    ['오래합', '오래된 사이'],
+    ['돈합', '돈'],
+    ['첫합', '첫'],
+    ['오래합', '오래'],
   ])('%s 필터 클릭 시 해당 모드 항목만 표시된다', async (modeKey, labelText) => {
     const user = userEvent.setup();
     // 닉네임 3글자 이상: avatar slice(0,2)='대상' ≠ p='대상이' 충돌 방지
@@ -207,5 +207,13 @@ describe('FeedPage', () => {
 
     expect(screen.getByText('대상이')).toBeInTheDocument();
     expect(screen.queryByText('제외야')).not.toBeInTheDocument();
+  });
+
+  it('필터 7개 pill 모두 단축 라벨로 표시된다', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    await renderFeedPage();
+    for (const name of ['전체', '일', '친구', '돈', '첫', '썸', '오래']) {
+      expect(await screen.findByRole('radio', { name })).toBeInTheDocument();
+    }
   });
 });

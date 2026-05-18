@@ -37,6 +37,7 @@ async function deleteRelation(id: string) {
 export default function FeedPage() {
   const t = useTranslations('feed');
   const tMode = useTranslations('relations.new.mode');
+  const tFilter = useTranslations('feed.filter.modes');
   const router = useRouter();
   const qc = useQueryClient();
 
@@ -51,13 +52,13 @@ export default function FeedPage() {
 
   const filters = useMemo<{ value: FilterMode; label: string }[]>(() => [
     { value: 'all', label: t('filter.all') },
-    { value: '일합', label: tMode('일합') },
-    { value: '친구합', label: tMode('친구합') },
-    { value: '돈합', label: tMode('돈합') },
-    { value: '첫합', label: tMode('첫합') },
-    { value: '썸합', label: tMode('썸합') },
-    { value: '오래합', label: tMode('오래합') },
-  ], [t, tMode]);
+    { value: '일합', label: tFilter('일합') },
+    { value: '친구합', label: tFilter('친구합') },
+    { value: '돈합', label: tFilter('돈합') },
+    { value: '첫합', label: tFilter('첫합') },
+    { value: '썸합', label: tFilter('썸합') },
+    { value: '오래합', label: tFilter('오래합') },
+  ], [t, tFilter]);
 
   const items = useMemo(() => data ?? [], [data]);
   const filtered = activeFilter === 'all' ? items : items.filter(i => i.mode === activeFilter);
