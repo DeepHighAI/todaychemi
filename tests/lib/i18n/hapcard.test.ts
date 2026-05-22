@@ -22,8 +22,8 @@ describe('i18n hapcard 네임스페이스 soft-term 변환 (ko)', () => {
     expect(breakdown).toMatch(/\{m\}/);
   });
 
-  it('evidence.title 이 "끌림의 이유"', () => {
+  it('evidence.title 이 "왜 이런 사이?"', () => {
     const evidence = hapcard?.evidence as Record<string, unknown> | undefined;
-    expect(evidence?.title).toBe('끌림의 이유');
+    expect(evidence?.title).toBe('왜 이런 사이?');
   });
 });

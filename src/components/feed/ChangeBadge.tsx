@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { formatTemperatureDelta } from '@/lib/scoring/temperature';
 
 interface ChangeBadgeProps {
   significant: boolean;
@@ -12,7 +13,7 @@ export function ChangeBadge({ significant, changeScore }: ChangeBadgeProps) {
 
   if (!significant) return null;
 
-  const delta = changeScore > 0 ? `+${changeScore}` : `${changeScore}`;
+  const delta = formatTemperatureDelta(changeScore);
 
   return (
     <span

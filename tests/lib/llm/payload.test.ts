@@ -58,6 +58,18 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       });
       expect(payload.question_slot).toBe('first_meeting');
     });
+
+    it('target_date 제공 시 time_context.target_date 만 추가', () => {
+      const payload = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+        target_date: '2026-05-21',
+      });
+      expect(payload.time_context).toEqual({ target_date: '2026-05-21' });
+      expect(JSON.stringify(payload)).not.toMatch(/birth_date/i);
+    });
   });
 
   describe('PII 부재 (CLAUDE.md §5)', () => {

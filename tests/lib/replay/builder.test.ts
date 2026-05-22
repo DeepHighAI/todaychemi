@@ -140,11 +140,23 @@ describe('buildReplayCacheKey', () => {
 
 // Phase B T3 — buildReplay classic_citation Korean 변환 (RAG 없음, convertHanja 항상 적용)
 describe('buildReplay — classic_citation Korean 변환', () => {
+  const MOCK_OHAENG_INTERPRETATION = {
+    title: '병인 ↔ 병인 오행 해석',
+    summary: '두 사람의 중심 기질이 모두 화라 표현과 추진을 보는 기준이 비슷합니다.',
+    points: [
+      { label: '중심 기질', body: '두 사람 모두 표현을 중심으로 움직입니다.' },
+      { label: '균형 포인트', body: '서로 부족한 부분을 나누어 채울 수 있습니다.' },
+      { label: '관계 흐름', body: '역할을 나누면 관계 흐름이 안정됩니다.' },
+    ],
+    tip: '역할과 결정 기준을 먼저 문서로 맞춰보세요.',
+  };
+
   const MOCK_HAPCARD: HapcardResult = {
     hapcard_id: 'hapcard-001',
     user_id: 'user-001',
     relation_id: 'rel-001',
     mode: '일합',
+    target_date: '2026-05-20',
     compat_score: 72,
     score_breakdown: { hap_chung_hyung_hae: 70, sipsin: 75, ohaeng: 68, yunse_adjustment: 0, mode_adjustment: 5 },
     content: {
@@ -240,6 +252,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
         ],
         actions: [],
         why_cards: [],
+        ohaeng_interpretation: MOCK_OHAENG_INTERPRETATION,
       },
       usage: { token_in: 100, token_out: 200, total_usd: 0 },
       model: 'gpt-5',
@@ -261,6 +274,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     expect(citations[0].original).toBe('갑자');
     // modern_translation 그대로
     expect(citations[0].modern).toBe('갑자년을 논하다');
+    expect(insertCall.content.ohaeng_interpretation).toEqual(MOCK_OHAENG_INTERPRETATION);
   });
 
   it('MeEdit 후 user_charts 복수 row → latest row 반환으로 buildReplay 성공 (USER_CHART_LOOKUP_FAILED 회귀)', async () => {

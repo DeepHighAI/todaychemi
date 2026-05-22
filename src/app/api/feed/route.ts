@@ -6,6 +6,12 @@ import { createClient } from '@/lib/supabase/server';
 import type { FeedItem, RelationErrorCode } from '@/types/relation';
 import { CHANGE_SCORE_THRESHOLD } from '@/lib/scoring/constants';
 import { computeChangeScore } from '@/lib/scoring/changeScore';
+import { todayKST } from '@/lib/today/kst-date';
+
+function kstDateDaysAgo(days: number): string {
+  const [year, month, day] = todayKST().split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day - days)).toISOString().slice(0, 10);
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -24,19 +30,20 @@ export async function GET() {
     .limit(200);
   if (relErr) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
-  // 2. 사용자 전체 스냅샷 — 단일 round-trip (RLS가 user_id 필터, 인덱스 활용)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  // 2. 사용자 전체 스냅샷 — KST target_date 기준 단일 round-trip
+  const thirtyDaysAgo = kstDateDaysAgo(30);
   const { data: snapshots, error: snapErr } = await db
     .from('hapcard_score_snapshots')
-    .select('relation_id, mode, compat_score, created_at')
-    .gte('created_at', thirtyDaysAgo)
+    .select('relation_id, mode, compat_score, target_date, created_at')
+    .gte('target_date', thirtyDaysAgo)
+    .order('target_date', { ascending: false })
     .order('created_at', { ascending: false })
     // .gte 30일 윈도우 + limit(1000): 비활성 사용자 데이터 제외, Supabase Free 규모에서 충분
     .limit(1000);
   if (snapErr) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
-  // 3. (relation_id::mode) 키별 최신 2건만 유지 (already sorted desc)
-  type SnapRow = { relation_id: string; mode: string; compat_score: number };
+  // 3. (relation_id::mode) 키별 target_date 최신 2건만 유지 (already sorted desc)
+  type SnapRow = { relation_id: string; mode: string; compat_score: number; target_date: string };
   const byKey = new Map<string, Array<{ compat_score: number }>>();
   for (const s of (snapshots ?? []) as SnapRow[]) {
     const key = `${s.relation_id}::${s.mode}`;

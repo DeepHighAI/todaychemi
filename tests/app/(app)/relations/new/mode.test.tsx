@@ -37,12 +37,12 @@ describe('RelationsModePage (Step 3)', () => {
   it('renders 6 mode cards', async () => {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
     renderWithIntl(<Page />);
-    expect(screen.getByText('썸')).toBeTruthy();
-    expect(screen.getByText('오래된 사이')).toBeTruthy();
-    expect(screen.getByText('일 동료')).toBeTruthy();
-    expect(screen.getByText('친구')).toBeTruthy();
-    expect(screen.getByText('돈 거래')).toBeTruthy();
-    expect(screen.getByText('첫만남')).toBeTruthy();
+    expect(screen.getByText('끌리는 사이')).toBeTruthy();
+    expect(screen.getByText('오래 알고 지낸 사이')).toBeTruthy();
+    expect(screen.getByText('일로 연결된 사이')).toBeTruthy();
+    expect(screen.getByText('친구 사이')).toBeTruthy();
+    expect(screen.getByText('돈이 오가는 사이')).toBeTruthy();
+    expect(screen.getByText('처음 보는 사이')).toBeTruthy();
   });
 
   it('등록하기 is disabled until mode and consent are set', async () => {
@@ -51,7 +51,7 @@ describe('RelationsModePage (Step 3)', () => {
     const submit = screen.getByRole('button', { name: '등록하기' });
     expect(submit).toBeDisabled();
     const user = userEvent.setup();
-    await user.click(screen.getByText('썸'));
+    await user.click(screen.getByText('끌리는 사이'));
     expect(submit).toBeDisabled(); // consent 미체크
     await user.click(screen.getByRole('checkbox'));
     await waitFor(() => expect(submit).toBeEnabled());
@@ -65,7 +65,7 @@ describe('RelationsModePage (Step 3)', () => {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
     renderWithIntl(<Page />);
     const user = userEvent.setup();
-    await user.click(screen.getByText('썸'));
+    await user.click(screen.getByText('끌리는 사이'));
     await user.click(screen.getByRole('checkbox'));
     await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: '등록하기' }));
@@ -83,7 +83,7 @@ describe('RelationsModePage (Step 3)', () => {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
     renderWithIntl(<Page />);
     const user = userEvent.setup();
-    await user.click(screen.getByText('썸'));
+    await user.click(screen.getByText('끌리는 사이'));
     await user.click(screen.getByRole('checkbox'));
     await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: '등록하기' }));

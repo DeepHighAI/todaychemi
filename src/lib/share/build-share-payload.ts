@@ -1,3 +1,5 @@
+import { formatTodayTemperature } from '@/lib/scoring/temperature';
+
 export type ShareRange = 'nickname-only' | 'nickname-ohaeng' | 'nickname-gender';
 
 export interface SharePayloadInput {
@@ -17,6 +19,14 @@ export interface SharePayload {
 }
 
 const OHAENG_ORDER = ['목', '화', '토', '금', '수'];
+const MODE_LABELS: Record<string, string> = {
+  일합: '일로 연결된 사이',
+  친구합: '친구 사이',
+  돈합: '돈이 오가는 사이',
+  첫합: '처음 보는 사이',
+  썸합: '끌리는 사이',
+  오래합: '오래 알고 지낸 사이',
+};
 
 function truncateNickname(nickname: string): string {
   if (nickname.length <= 30) return nickname;
@@ -35,7 +45,8 @@ export function buildSharePayload(input: SharePayloadInput & { range: ShareRange
   const { hapcard_id, mode, nickname, score, range, gender_normalized, ohaeng_counts, origin } = input;
   const nick = truncateNickname(nickname);
   const url = `${origin}/h/${hapcard_id}?mode=${mode}&range=${range}`;
-  const title = `${nick}님과의 ${mode}`;
+  const modeLabel = MODE_LABELS[mode] ?? mode;
+  const title = `${nick}님과의 ${modeLabel}`;
 
   let extra = '';
   if (range === 'nickname-ohaeng') {
@@ -44,7 +55,7 @@ export function buildSharePayload(input: SharePayloadInput & { range: ShareRange
     extra = ` · ${genderLabel(gender_normalized)}`;
   }
 
-  const text = `${nick}님과의 합게이지: ${score}점${extra}`;
+  const text = `${nick}님과의 오늘온도: ${formatTodayTemperature(score)}${extra} · 오늘사이에서 확인해봐`;
 
   return { title, text, url };
 }

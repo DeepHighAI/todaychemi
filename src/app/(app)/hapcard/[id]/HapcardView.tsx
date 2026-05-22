@@ -7,7 +7,7 @@
  * After:
  *   메인: Liquid Glass hero(점수+결론+영역바) + 강점/주의 2분할 + CTA
  *   ⋯ 메뉴: 별명 수정 / 공유 / 인연 삭제 (확인 다이얼로그)
- *   "펼침" sheet: 요약 · 오행 · 근거 · 영역 · 흐름 5탭
+ *   "펼침" panel: 요약 · 오행 · 근거 · 영역 · 흐름 5탭
  */
 
 import Link from 'next/link';
@@ -15,13 +15,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MoreHorizontal, Trash2, Edit2, Share2, Check, X } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, Share2, Check } from 'lucide-react';
 
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
-import { HapcardMiniRadar } from '@/components/hapcard/mini-radar';
+import { HapcardRoleAnalysis } from '@/components/hapcard/role-analysis';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
@@ -30,6 +30,10 @@ import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { HapcardShare } from '@/components/hapcard/share';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
+import { convertHanja } from '@/lib/glossary/post-process';
+import { formatDetailSummaryLines, formatHapcardActionItems, formatHeroCoachLines } from '@/lib/hapcard/hero-main-text';
+import { scoreToTemperature } from '@/lib/scoring/temperature';
+import { todayKST } from '@/lib/today/kst-date';
 
 const CHART_PENDING_CODES: HapcardErrorCode[] = ['RELATION_CHART_NOT_FOUND', 'USER_CHART_NOT_FOUND'];
 
@@ -65,9 +69,10 @@ export default function HapcardView() {
   const router = useRouter();
   const qc = useQueryClient();
   const t = useTranslations('hapcard');
+  const targetDate = todayKST();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['hapcard', id, mode],
+    queryKey: ['hapcard', id, mode, targetDate],
     queryFn: () => callHapcard(id, mode!),
     enabled: !!mode, retry: false,
   });
@@ -141,7 +146,18 @@ export default function HapcardView() {
   }
 
   const { visuals } = data;
-  const headerNote = `${data.relation_nickname} · ${visuals.user.day_pillar} ↔ ${visuals.relation.day_pillar}`;
+  const todayTemperature = scoreToTemperature(data.compat_score);
+  const headerNote = `${data.relation_nickname} · ${convertHanja(visuals.user.day_pillar)} ↔ ${convertHanja(visuals.relation.day_pillar)}`;
+  const heroCoachLines = formatHeroCoachLines({
+    mainText: data.content.main_text,
+    whyCards: data.content.why_cards,
+    actions: data.content.actions,
+  });
+  const actionItems = formatHapcardActionItems({
+    mainText: data.content.main_text,
+    whyCards: data.content.why_cards,
+    actions: data.content.actions,
+  });
 
   return (
     <GlossaryProvider>
@@ -180,7 +196,7 @@ export default function HapcardView() {
       )}
 
       <main className="bg-background min-h-screen px-4 pt-2 pb-32 space-y-3">
-        {/* ── Liquid Glass hero: 점수 + 결론 + 강점/주의 ── */}
+        {/* ── Liquid Glass hero: 오늘온도 + 결론 + 강점/주의 ── */}
         <section className="bg-liquid-hero rounded-[var(--r-xl)] p-5 relative overflow-hidden">
           <span aria-hidden className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
@@ -190,11 +206,22 @@ export default function HapcardView() {
             </p>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-display font-black text-[72px] leading-[0.95] tracking-[-0.04em] text-white tabular-nums">
-                {data.compat_score}
+                {todayTemperature.toFixed(1)}
               </span>
-              <span className="text-white/85 text-sm">/100</span>
+              <span className="text-white/85 text-[18px] font-bold">°C</span>
             </div>
-            <p className="font-h2 text-white mt-3 whitespace-pre-line">{data.content.main_text.split('\n').slice(0, 2).join('\n')}</p>
+            <div data-testid="hapcard-hero-main-text" className="mt-4 space-y-2.5 text-white">
+              {heroCoachLines.map(line => (
+                <p
+                  key={line.key}
+                  data-testid={`hapcard-hero-line-${line.key}`}
+                  className="text-[16px] leading-[1.55] font-semibold text-white/95"
+                >
+                  <strong className="font-black text-[var(--p-10)] drop-shadow-sm">{line.label}</strong>{' '}
+                  <span>{line.body}</span>
+                </p>
+              ))}
+            </div>
             <div className="flex gap-1.5 mt-3 flex-wrap">
               {data.content.why_cards?.slice(0, 3).map((c, i) => (
                 <span key={i} className="bg-white/20 text-white text-[11px] font-bold leading-[1.2] rounded-full px-2.5 py-1.5">
@@ -205,7 +232,7 @@ export default function HapcardView() {
           </div>
         </section>
 
-        {/* ── 영역별 합 (5축) ── */}
+        {/* ── 영역별 온도 (5축) ── */}
         {data.content.area_scores && (
           <section className="rounded-[var(--r-md)] bg-card p-3.5 space-y-2.5">
             <p className="font-eyebrow text-primary">{t('areas.title')}</p>
@@ -218,7 +245,9 @@ export default function HapcardView() {
                   <span className="flex-1 h-1.5 bg-[var(--surface-1)] rounded-full overflow-hidden">
                     <span className="block h-full rounded-full" style={{ width: `${v}%`, background: color }} />
                   </span>
-                  <span className="w-6 text-right font-display font-bold text-[13px] text-foreground tabular-nums">{v}</span>
+                  <span className="w-12 text-right font-display font-bold text-[13px] text-foreground tabular-nums">
+                    {scoreToTemperature(v).toFixed(1)}°
+                  </span>
                 </div>
               );
             })}
@@ -227,29 +256,31 @@ export default function HapcardView() {
 
         {/* ── 펼침 진입 버튼 ── */}
         <button
-          onClick={() => setExpandOpen(true)}
+          type="button"
+          aria-expanded={expandOpen}
+          aria-controls="hapcard-expand-panel"
+          onClick={() => setExpandOpen(open => !open)}
           className="w-full rounded-[var(--r-pill)] py-3.5 font-bold text-[15px] active:scale-[0.99] transition-transform"
           style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}>
-          {t('expand.cta')}
+          {expandOpen ? t('expand.collapse') : t('expand.cta')}
         </button>
 
-        {/* ── 메인 CTA — "일단 이거 해봐" ── */}
-        <HapcardActions actions={data.content.actions} />
+        {/* ── 인라인 펼침 panel: 5탭 ── */}
+        {expandOpen && (
+          <ExpandPanel
+            data={data}
+            mode={mode!}
+            tab={expandTab}
+            onTab={setExpandTab}
+          />
+        )}
 
-        {/* ── 다시합 ── */}
+        {/* ── 메인 CTA — "일단 이거 해봐" ── */}
+        <HapcardActions actions={actionItems} />
+
+        {/* ── 그럴리 없어! 다시 ── */}
         <HapcardReplayButton hapcardId={data.hapcard_id} mode={mode!} />
       </main>
-
-      {/* ── 펼침 sheet: 5탭 ── */}
-      {expandOpen && (
-        <ExpandSheet
-          data={data}
-          mode={mode!}
-          tab={expandTab}
-          onTab={setExpandTab}
-          onClose={() => setExpandOpen(false)}
-        />
-      )}
 
       {/* ── 삭제 확인 ── */}
       {confirmDel && (
@@ -286,17 +317,17 @@ export default function HapcardView() {
   );
 }
 
-/* ── 펼침 sheet — 5개 탭 안에 기존 컴포넌트 재사용 ── */
-function ExpandSheet({
-  data, mode, tab, onTab, onClose,
+/* ── 인라인 펼침 panel — 5개 탭 안에 기존 컴포넌트 재사용 ── */
+function ExpandPanel({
+  data, mode, tab, onTab,
 }: {
   data: HapcardResult;
   mode: string;
   tab: ExpandTab;
   onTab: (t: ExpandTab) => void;
-  onClose: () => void;
 }) {
   const t = useTranslations('hapcard.expand');
+  const summaryLines = formatDetailSummaryLines(data.content.main_text);
   const tabs: { k: ExpandTab; label: string }[] = [
     { k: 'summary', label: t('tab.summary') },
     { k: 'ohaeng', label: t('tab.ohaeng') },
@@ -306,59 +337,64 @@ function ExpandSheet({
   ];
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 animate-in fade-in" />
-      <div
-        className="relative w-full bg-background rounded-t-[28px] max-h-[90vh] flex flex-col animate-in slide-in-from-bottom"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span aria-hidden className="w-9 h-1 rounded-full bg-border mx-auto mt-2 mb-1" />
-        <header className="flex items-center justify-between px-4 py-2">
-          <h2 className="font-h2 text-foreground">{t('title')}</h2>
-          <button onClick={onClose} aria-label="close"
-            className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center">
-            <X size={18} />
+    <section
+      id="hapcard-expand-panel"
+      aria-labelledby="hapcard-expand-panel-title"
+      data-testid="hapcard-expand-panel"
+      className="bg-card border border-border rounded-[var(--r-xl)] overflow-hidden shadow-[var(--e-1)] animate-in fade-in slide-in-from-top-2"
+    >
+      <header className="px-4 pt-4 pb-3">
+        <h2 id="hapcard-expand-panel-title" className="font-h2 text-foreground">{t('title')}</h2>
+      </header>
+      <nav className="flex gap-0.5 bg-[var(--surface-1)] rounded-[12px] p-[3px] mx-4 mb-3">
+        {tabs.map(tb => (
+          <button key={tb.k} type="button" onClick={() => onTab(tb.k)}
+            className={`flex-1 py-2.5 rounded-[9px] text-[12px] font-semibold transition ${
+              tab === tb.k
+                ? 'bg-[var(--surface)] text-primary shadow-[var(--e-1)] font-extrabold'
+                : 'text-muted-foreground'
+            }`}>
+            {tb.label}
           </button>
-        </header>
-        <nav className="flex gap-0.5 bg-[var(--surface-1)] rounded-[12px] p-[3px] mx-4 mb-3">
-          {tabs.map(tb => (
-            <button key={tb.k} onClick={() => onTab(tb.k)}
-              className={`flex-1 py-2.5 rounded-[9px] text-[12px] font-semibold transition ${
-                tab === tb.k
-                  ? 'bg-[var(--surface)] text-primary shadow-[var(--e-1)] font-extrabold'
-                  : 'text-muted-foreground'
-              }`}>
-              {tb.label}
-            </button>
-          ))}
-        </nav>
-        <div className="flex-1 overflow-auto px-4 pb-8 space-y-3">
-          {tab === 'summary' && (
-            <p className="font-h2 text-foreground whitespace-pre-line">{data.content.main_text}</p>
-          )}
-          {tab === 'ohaeng' && (
-            <HapcardOhaeng
-              userCounts={data.visuals!.user.five_elements_counts}
-              relationCounts={data.visuals!.relation.five_elements_counts}
-            />
-          )}
-          {tab === 'evidence' && (
-            <>
-              <HapcardEvidence cards={data.content.why_cards} />
-              <HapcardClassic citations={data.content.classic_citation} />
-            </>
-          )}
-          {tab === 'area' && (
-            <HapcardMiniRadar
-              user={data.visuals!.user.five_elements_counts}
-              relation={data.visuals!.relation.five_elements_counts}
-            />
-          )}
-          {tab === 'flow' && (
-            <HapcardTimeline hapcardId={data.hapcard_id} mode={mode} />
-          )}
-        </div>
+        ))}
+      </nav>
+      <div className="px-4 pb-5 space-y-3">
+        {tab === 'summary' && (
+          <div data-testid="hapcard-expand-summary-text" className="space-y-4">
+            {summaryLines.map(line => (
+              <p
+                key={line.key}
+                data-testid={`hapcard-expand-summary-line-${line.key}`}
+                className="text-[15px] leading-[1.75] font-semibold text-foreground"
+              >
+                <strong className="font-black text-primary">{line.label}</strong>
+                <span aria-hidden className="font-black text-primary"> = </span>
+                <span>{line.body}</span>
+              </p>
+            ))}
+          </div>
+        )}
+        {tab === 'ohaeng' && (
+          <HapcardOhaeng
+            hapcardId={data.hapcard_id}
+            userCounts={data.visuals!.user.five_elements_counts}
+            relationCounts={data.visuals!.relation.five_elements_counts}
+            interpretation={data.content.ohaeng_interpretation}
+          />
+        )}
+        {tab === 'evidence' && (
+          <>
+            <HapcardEvidence cards={data.content.why_cards} />
+            <HapcardClassic citations={data.content.classic_citation} />
+          </>
+        )}
+        {tab === 'area' && (
+          <HapcardRoleAnalysis hapcardId={data.hapcard_id} analysis={data.content.role_analysis} />
+        )}
+        {tab === 'flow' && (
+          <HapcardTimeline hapcardId={data.hapcard_id} mode={mode} />
+        )}
       </div>
-    </div>
+    </section>
   );
 }

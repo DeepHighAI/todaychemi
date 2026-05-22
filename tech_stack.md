@@ -38,7 +38,7 @@
 | **사주 엔진** | 자체 TypeScript fortune-core (monorepo 패키지) | ADR-035 `compatibility_scoring_spec.md` 구현. 결정형 점수 보장 |
 | **LLM 핵심** | **OpenAI API** (4단 분리) | 본 문서 §3 |
 | **LLM Fallback** | Anthropic Claude (Sonnet 4.6 / Haiku 4.5) | §11.4 다운그레이드 경로 |
-| **결제** | 토스페이먼츠 (KR) / Stripe (Phase 3 SEA) | ADR-005 |
+| **결제** | 토스페이먼츠 V2 `@tosspayments/tosspayments-sdk` (KR) / Stripe (Phase 3 SEA) | ADR-005. v1은 부적 지갑 + redirect confirm 경로 |
 | **분석** | GA4 + Sentry Free + PostHog Free (Phase 1.5+) | ADR-019 |
 | **테스트** | Vitest + Playwright + Zod | 단위·E2E·스키마 검증, 바이브코딩 회귀 방지 |
 | **Hosting** | Vercel Hobby | Next.js 1급. Phase 3 SEA 진입 전 Cloudflare 전환 검토 |

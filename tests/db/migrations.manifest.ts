@@ -552,4 +552,20 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     foreignKeys: [{ col: 'user_id', refs: 'public.users' }],
     rls: { enabled: true, policies: ['whatif_results_own'] },
   },
+
+  // §20260521011419 hapcards daily target_date — KST 날짜별 오늘 우리는 캐시
+  {
+    index: 20260521011419,
+    file: '20260521011419_hapcards_target_date.sql',
+    kind: 'dml',
+    description: 'hapcards.target_date backfill + daily lookup index',
+  },
+
+  // §20260521060000 wallet payments — TossPayments V2 pending/confirm RPC
+  {
+    index: 20260521060000,
+    file: '20260521060000_wallet_payments.sql',
+    kind: 'function',
+    functionName: 'confirm_token_purchase',
+  },
 ];

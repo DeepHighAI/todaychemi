@@ -10,6 +10,7 @@ import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
+import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
 import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
@@ -49,7 +50,7 @@ export function buildReplayPayload(
   payload: LlmPayload,
   jinjin_date: string,
 ): LlmPayload {
-  return { ...payload, time_context: { jinjin_date } };
+  return { ...payload, time_context: { ...payload.time_context, jinjin_date } };
 }
 
 export interface BuildReplayInput {
@@ -111,9 +112,12 @@ export async function buildReplay(
     throw new Error(`RELATION_CHART_NOT_FOUND: ${rcErr?.message ?? 'no chart'}`);
   }
 
+  const selfChart = (ucRow as unknown as ChartRow).chart_core;
+  const relationChart = (rcRow as unknown as ChartRow).chart_core;
+
   const basePayload = buildLlmPayload({
-    self: (ucRow as unknown as ChartRow).chart_core,
-    relation: (rcRow as unknown as ChartRow).chart_core,
+    self: selfChart,
+    relation: relationChart,
     mode: hapcard.mode,
     theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
   });
@@ -134,6 +138,11 @@ export async function buildReplay(
     }),
     actions: llm.output.actions,
     why_cards: llm.output.why_cards,
+    ohaeng_interpretation: llm.output.ohaeng_interpretation ?? buildOhaengInterpretation({
+      self: selfChart,
+      relation: relationChart,
+      mode: hapcard.mode,
+    }),
   };
 
   const { data: row, error } = await deps.supabaseServiceClient

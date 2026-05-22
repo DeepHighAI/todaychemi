@@ -126,7 +126,12 @@ function MeEditForm({
       </div>
 
       {/* 생년월일 */}
-      <BirthDateField label={tOb('birth.date')} value={form.birthDate} onChange={(v) => setField('birthDate', v)} />
+      <BirthDateField
+        label={tOb('birth.date')}
+        value={form.birthDate}
+        onChange={(v) => setField('birthDate', v)}
+        portal={false}
+      />
 
       {/* 양/음력 */}
       <div>
@@ -205,7 +210,12 @@ function MeEditForm({
 
       {/* 출생 시간 */}
       {form.knowledge !== 'unknown' && (
-        <BirthTimeField label={tOb('birth.timeOptional')} value={form.birthTime} onChange={(v) => setField('birthTime', v)} />
+        <BirthTimeField
+          label={tOb('birth.timeOptional')}
+          value={form.birthTime}
+          onChange={(v) => setField('birthTime', v)}
+          portal={false}
+        />
       )}
 
       {/* 저장 버튼 */}

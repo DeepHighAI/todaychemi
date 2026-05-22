@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { convertHanja } from '@/lib/glossary/post-process';
 import type { DiagnosticType } from '@/types/diagnostic';
 
 interface WhatifHeroProps {
@@ -15,7 +16,7 @@ export function WhatifHero({ type, body }: WhatifHeroProps) {
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {t(`${type}.title`)}
       </p>
-      <p className="text-base text-foreground whitespace-pre-line">{body}</p>
+      <p className="text-base text-foreground whitespace-pre-line">{convertHanja(body)}</p>
     </div>
   );
 }

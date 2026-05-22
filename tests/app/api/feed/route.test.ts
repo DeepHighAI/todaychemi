@@ -5,11 +5,14 @@ vi.mock('@/lib/supabase/server');
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { GET } from '@/app/api/feed/route';
 
+vi.mock('@/lib/today/kst-date', () => ({ todayKST: () => '2026-05-21' }));
+
 // 스냅샷 fixture 행 형식 (hapcard_score_snapshots 컬럼 subset)
 interface SnapshotRow {
   relation_id: string;
   mode: string;
   compat_score: number;
+  target_date: string;
   created_at: string;
 }
 
@@ -43,12 +46,13 @@ function makeClient(opts: {
   const relationsOrder = vi.fn().mockReturnValue({ limit: relationsLimit });
   const relationsSelect = vi.fn().mockReturnValue({ order: relationsOrder });
 
-  // snapshots 체인: select → gte → order → limit → {data, error}
+  // snapshots 체인: select → gte → order → order → limit → {data, error}
   const snapshotsLimit = vi.fn().mockResolvedValue({
     data: opts.snapshots ?? [],
     error: opts.snapshotsError ?? null,
   });
-  const snapshotsOrder = vi.fn().mockReturnValue({ limit: snapshotsLimit });
+  const snapshotsOrder = vi.fn();
+  snapshotsOrder.mockReturnValue({ order: snapshotsOrder, limit: snapshotsLimit });
   const snapshotsGte = vi.fn().mockReturnValue({ order: snapshotsOrder });
   const snapshotsSelect = vi.fn().mockReturnValue({ gte: snapshotsGte });
 
@@ -96,7 +100,7 @@ describe('GET /api/feed', () => {
         { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       ],
       snapshots: [
-        { relation_id: 'r1', mode: '친구합', compat_score: 72.5, created_at: '2026-05-05T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 72.5, target_date: '2026-05-21', created_at: '2026-05-05T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -117,7 +121,10 @@ describe('GET /api/feed', () => {
     expect(item).toHaveProperty('created_at');
     // limit/gte 호출 인수 검증
     expect(client._relationsLimit).toHaveBeenCalledWith(200);
-    expect(client._snapshotsGte).toHaveBeenCalledWith('created_at', expect.any(String));
+    expect(client._snapshotsSelect).toHaveBeenCalledWith('relation_id, mode, compat_score, target_date, created_at');
+    expect(client._snapshotsGte).toHaveBeenCalledWith('target_date', '2026-04-21');
+    expect(client._snapshotsOrder).toHaveBeenNthCalledWith(1, 'target_date', { ascending: false });
+    expect(client._snapshotsOrder).toHaveBeenNthCalledWith(2, 'created_at', { ascending: false });
     expect(client._snapshotsLimit).toHaveBeenCalledWith(1000);
   });
 
@@ -146,7 +153,7 @@ describe('GET /api/feed', () => {
         { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       ],
       snapshots: [
-        { relation_id: 'r1', mode: '친구합', compat_score: 65, created_at: '2026-05-05T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 65, target_date: '2026-05-21', created_at: '2026-05-05T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -166,9 +173,9 @@ describe('GET /api/feed', () => {
         { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       ],
       snapshots: [
-        // created_at desc 순으로 이미 정렬됨 (API가 이렇게 받는다)
-        { relation_id: 'r1', mode: '친구합', compat_score: 72, created_at: '2026-05-06T09:00:00Z' },
-        { relation_id: 'r1', mode: '친구합', compat_score: 67, created_at: '2026-05-05T09:00:00Z' },
+        // target_date desc 순으로 이미 정렬됨 (API가 이렇게 받는다)
+        { relation_id: 'r1', mode: '친구합', compat_score: 72, target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 67, target_date: '2026-05-20', created_at: '2026-05-05T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -188,8 +195,8 @@ describe('GET /api/feed', () => {
         { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       ],
       snapshots: [
-        { relation_id: 'r1', mode: '친구합', compat_score: 82, created_at: '2026-05-06T09:00:00Z' },
-        { relation_id: 'r1', mode: '친구합', compat_score: 65, created_at: '2026-05-05T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 82, target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 65, target_date: '2026-05-20', created_at: '2026-05-05T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -208,8 +215,8 @@ describe('GET /api/feed', () => {
         { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
       ],
       snapshots: [
-        { relation_id: 'r1', mode: '친구합', compat_score: 50, created_at: '2026-05-06T09:00:00Z' },
-        { relation_id: 'r1', mode: '친구합', compat_score: 68, created_at: '2026-05-05T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 50, target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 68, target_date: '2026-05-20', created_at: '2026-05-05T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -229,7 +236,7 @@ describe('GET /api/feed', () => {
       ],
       snapshots: [
         // mode 불일치 — 친구합 인연인데 썸합 스냅샷
-        { relation_id: 'r1', mode: '썸합', compat_score: 90, created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '썸합', compat_score: 90, target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
       ],
     });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -254,11 +261,11 @@ describe('GET /api/feed', () => {
       ],
       snapshots: [
         // r2 — badge 대상 (+15점)
-        { relation_id: 'r2', mode: '오래합', compat_score: 85, created_at: '2026-05-07T08:00:00Z' },
-        { relation_id: 'r2', mode: '오래합', compat_score: 70, created_at: '2026-05-06T08:00:00Z' },
+        { relation_id: 'r2', mode: '오래합', compat_score: 85, target_date: '2026-05-21', created_at: '2026-05-07T08:00:00Z' },
+        { relation_id: 'r2', mode: '오래합', compat_score: 70, target_date: '2026-05-20', created_at: '2026-05-06T08:00:00Z' },
         // r1 — badge 없음 (+3점)
-        { relation_id: 'r1', mode: '친구합', compat_score: 73, created_at: '2026-05-07T07:00:00Z' },
-        { relation_id: 'r1', mode: '친구합', compat_score: 70, created_at: '2026-05-06T07:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 73, target_date: '2026-05-21', created_at: '2026-05-07T07:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 70, target_date: '2026-05-20', created_at: '2026-05-06T07:00:00Z' },
         // r3 — 스냅샷 없음
       ],
     });

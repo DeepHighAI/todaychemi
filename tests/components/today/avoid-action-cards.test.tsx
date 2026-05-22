@@ -63,4 +63,23 @@ describe('AvoidActionCards', () => {
     renderWithProviders(<AvoidActionCards card={{ ...card, favorable_action_reason: '日主 火의 따뜻함' }} />);
     expect(screen.getByText('일주 화의 따뜻함')).toBeInTheDocument();
   });
+
+  it('빈 문구가 내려와도 기본 안내를 렌더한다', () => {
+    renderWithProviders(
+      <AvoidActionCards
+        card={{
+          ...card,
+          avoid_phrase: '',
+          avoid_phrase_reason: '',
+          favorable_action: '',
+          favorable_action_reason: '',
+        }}
+      />,
+    );
+
+    expect(screen.getByText('급하게 단정하는 말')).toBeInTheDocument();
+    expect(screen.getByText(/중요한 판단은 조금 천천히/)).toBeInTheDocument();
+    expect(screen.getByText('가벼운 정리부터 하기')).toBeInTheDocument();
+    expect(screen.getByText(/하루 흐름을 안정적으로/)).toBeInTheDocument();
+  });
 });

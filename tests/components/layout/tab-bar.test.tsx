@@ -18,7 +18,7 @@ vi.mock('next/link', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {
-      'nav.tab': { home: '홈', feed: '합피드', me: '내사주' },
+      'nav.tab': { home: '홈', feed: '너랑나랑', me: '내 사주맵' },
     };
     return map[ns]?.[key] ?? key;
   },
@@ -31,11 +31,11 @@ async function renderTabBar(pathname = '/') {
 }
 
 describe('TabBar', () => {
-  it('3개 탭(홈·합피드·내사주)을 렌더한다', async () => {
+  it('3개 탭(홈·너랑나랑·내 사주맵)을 렌더한다', async () => {
     await renderTabBar('/');
     expect(screen.getByRole('link', { name: /홈/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /합피드/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /내사주/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /너랑나랑/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /내 사주맵/ })).toBeInTheDocument();
   });
 
   it('홈 탭의 href는 /이다', async () => {
@@ -44,15 +44,15 @@ describe('TabBar', () => {
     expect(home).toHaveAttribute('href', '/');
   });
 
-  it('합피드 탭의 href는 /feed이다', async () => {
+  it('너랑나랑 탭의 href는 /feed이다', async () => {
     await renderTabBar('/');
-    const feed = screen.getByRole('link', { name: /합피드/ });
+    const feed = screen.getByRole('link', { name: /너랑나랑/ });
     expect(feed).toHaveAttribute('href', '/feed');
   });
 
-  it('내사주 탭의 href는 /me이다', async () => {
+  it('내 사주맵 탭의 href는 /me이다', async () => {
     await renderTabBar('/');
-    const me = screen.getByRole('link', { name: /내사주/ });
+    const me = screen.getByRole('link', { name: /내 사주맵/ });
     expect(me).toHaveAttribute('href', '/me');
   });
 
@@ -62,15 +62,15 @@ describe('TabBar', () => {
     expect(home).toHaveAttribute('aria-current', 'page');
   });
 
-  it('현재 경로가 /feed이면 합피드 탭이 aria-current="page"이다', async () => {
+  it('현재 경로가 /feed이면 너랑나랑 탭이 aria-current="page"이다', async () => {
     await renderTabBar('/feed');
-    const feed = screen.getByRole('link', { name: /합피드/ });
+    const feed = screen.getByRole('link', { name: /너랑나랑/ });
     expect(feed).toHaveAttribute('aria-current', 'page');
   });
 
-  it('현재 경로가 /me이면 내사주 탭이 aria-current="page"이다', async () => {
+  it('현재 경로가 /me이면 내 사주맵 탭이 aria-current="page"이다', async () => {
     await renderTabBar('/me');
-    const me = screen.getByRole('link', { name: /내사주/ });
+    const me = screen.getByRole('link', { name: /내 사주맵/ });
     expect(me).toHaveAttribute('aria-current', 'page');
   });
 });

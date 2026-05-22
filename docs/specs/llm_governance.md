@@ -42,14 +42,14 @@ if ((usage?.total_usd ?? 0) >= dailyBudget) {
 | 유저별 일 상한 | `user_quotas` 테이블 증분 | 비회원 3회, 회원 20회 |
 | 유저별 월 상한 | 동 | 회원 300회 |
 | 글로벌 일 상한 | `llm_cost_tracking` + 자동 차단 | $20 (OpenAI) |
-| 결과 캐시 | `hapcards.cache_key` | TTL 30일 |
+| 결과 캐시 | `hapcards.cache_key` | KST `target_date`별 |
 | Daily Hap 캐시 | `daily_haps` 테이블 | 당일만 |
 
 ### 1.3 캐시 키
 
 ```typescript
 const cacheKey = sha256(
-  user_chart_hash + relation_chart_hash + mode + prompt_version + theory_profile_version
+  user_chart_hash + relation_chart_hash + mode + prompt_version + theory_profile_version + target_date
 );
 ```
 

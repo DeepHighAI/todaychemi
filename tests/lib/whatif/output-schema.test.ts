@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { WhatifLlmOutputSchema } from '@/lib/whatif/output-schema';
 
-const VALID_BODY = '가'.repeat(360); // 360자 (350-450 범위)
+const VALID_BODY = '가'.repeat(360); // 360자 (80-700 범위)
 
 const BASE = {
   body: VALID_BODY,
@@ -29,15 +29,20 @@ describe('WhatifLlmOutputSchema', () => {
     ).toThrow();
   });
 
-  it('body 349자 (350 미만) → REJECT', () => {
+  it('body 80자 → PASS', () => {
+    const result = WhatifLlmOutputSchema.parse({ ...BASE, body: '가'.repeat(80) });
+    expect(result.body).toHaveLength(80);
+  });
+
+  it('body 79자 (80 미만) → REJECT', () => {
     expect(() =>
-      WhatifLlmOutputSchema.parse({ ...BASE, body: '가'.repeat(349) }),
+      WhatifLlmOutputSchema.parse({ ...BASE, body: '가'.repeat(79) }),
     ).toThrow();
   });
 
-  it('body 451자 (450 초과) → REJECT', () => {
+  it('body 701자 (700 초과) → REJECT', () => {
     expect(() =>
-      WhatifLlmOutputSchema.parse({ ...BASE, body: '가'.repeat(451) }),
+      WhatifLlmOutputSchema.parse({ ...BASE, body: '가'.repeat(701) }),
     ).toThrow();
   });
 

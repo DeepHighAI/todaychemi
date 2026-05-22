@@ -6,13 +6,14 @@ interface WheelPickerProps {
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  onSelect?: (v: string) => void;
   'aria-label'?: string;
 }
 
 // .picker-col .opt { height: 40px } — must match this CSS value
 const ITEM_HEIGHT = 40;
 
-export function WheelPicker({ options, value, onChange, 'aria-label': ariaLabel }: WheelPickerProps) {
+export function WheelPicker({ options, value, onChange, onSelect, 'aria-label': ariaLabel }: WheelPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export function WheelPicker({ options, value, onChange, 'aria-label': ariaLabel 
   function select(o: string, i: number) {
     if (ref.current) ref.current.scrollTop = i * ITEM_HEIGHT;
     onChange(o);
+    onSelect?.(o);
   }
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {

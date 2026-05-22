@@ -24,11 +24,13 @@ describe('HapcardSharePreviewTile', () => {
     expect(tile.className).toMatch(/aspect-square/);
   });
 
-  it('닉네임 + 모드 + 점수 노출', () => {
+  it('닉네임 + 모드 + 오늘온도 노출', () => {
     renderWithProviders(<HapcardSharePreviewTile hapcard={MOCK} range="nickname-only" />);
     expect(screen.getByText(/봄달/)).toBeInTheDocument();
-    expect(screen.getByText(/썸합/)).toBeInTheDocument();
-    expect(screen.getByText('73')).toBeInTheDocument();
+    expect(screen.getByText(/끌리는 사이/)).toBeInTheDocument();
+    expect(screen.getByText('38.2')).toBeInTheDocument();
+    expect(screen.getByText('°C')).toBeInTheDocument();
+    expect(screen.queryByText('73')).toBeNull();
   });
 
   it('range=nickname-ohaeng → 오행 counts 보임', () => {

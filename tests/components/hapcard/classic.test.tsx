@@ -13,7 +13,7 @@ describe('HapcardClassic', () => {
 
   it('빈 배열 → empty 카피', () => {
     renderWithProviders(<HapcardClassic citations={[]} />);
-    expect(screen.getByText('관련 고전이 아직 준비되지 않았어요.')).toBeInTheDocument();
+    expect(screen.getByText('관련 풀이 근거가 아직 준비되지 않았어요.')).toBeInTheDocument();
   });
 
   it('인용 1개 → source/original/modern 표시', () => {

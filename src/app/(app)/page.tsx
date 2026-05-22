@@ -1,10 +1,10 @@
 'use client';
 
-/* Today page — Liquid Glass hero with score + delta + swipe-to-delete relations
+/* Today page — Liquid Glass hero with today temperature + delta + swipe-to-delete relations
  * Canvas reference: type-d/screens-interactive.jsx::IHome
  *
  * Improvements:
- *  - TodayHero에 compat_score 전달 → 56px 큰 숫자 + delta pill
+ *  - TodayHero에 compat_score 전달 → 56px 오늘온도 + delta pill
  *  - 인연 row를 SwipeRow로 — 좌측 스와이프 시 삭제
  *  - 빠른 인연 등록 카드 prominent하게
  */
@@ -25,6 +25,7 @@ import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { SwipeRow } from '@/components/layout/swipe-row';
 
+import { formatTodayTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
 import { isErrorCode, type ErrorCode } from '@/lib/errors/error-codes';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -119,7 +120,7 @@ export default function TodayPage() {
         <>
           {chart && <DateLine date={formatKstDate(todayKST())} dayPillar={chart.day_pillar} />}
 
-          {/* canvas hero: 큰 점수 + delta pill */}
+          {/* canvas hero: 큰 오늘온도 + delta pill */}
           <TodayHero
             card={card}
             score={card.compat_score ?? card.headline_strength ?? null}
@@ -169,7 +170,9 @@ export default function TodayPage() {
                         </div>
                         <div className="text-right shrink-0">
                           {r.compat_score !== null && r.compat_score !== undefined ? (
-                            <p className="font-display font-extrabold text-[18px] leading-none text-foreground tabular-nums">{r.compat_score}</p>
+                            <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
+                              {formatTodayTemperature(r.compat_score)}
+                            </p>
                           ) : (
                             <Lock size={18} className="text-[var(--p-40)] inline-block" />
                           )}

@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '합플 — 인연을 사주로 풀어보다',
+  title: '오늘사이 — 우리 오늘 무슨 사이야?',
   description:
-    '관계 사주 CRM. 별명만으로 인연을 등록하고 6모드(일합·친구합·돈합·첫합·썸합·오래합)로 해석.',
+    '오늘 만나는 사람과의 흐름을 미리 확인해봐. 별명만으로 인연을 등록하고 오늘의 사이를 확인합니다.',
 };
 
 export default async function RootLayout({

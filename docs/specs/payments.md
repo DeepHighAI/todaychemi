@@ -1,7 +1,7 @@
 # Toss Payments Integration Spec
 
 > Phase 1 KR 결제 전용. Phase 3 SEA 확장 시 Stripe 추가 (CLAUDE.md §4).
-> ADR-037 스택 잠금: `@tosspayments/payment-widget-sdk` 고정.
+> ADR-037 스택 잠금: TossPayments V2 `@tosspayments/tosspayments-sdk` 사용.
 
 ---
 
@@ -9,10 +9,10 @@
 
 ```bash
 # 설치
-pnpm add @tosspayments/payment-widget-sdk
+pnpm add @tosspayments/tosspayments-sdk
 
 # 버전 잠금 (pnpm.lock으로 고정)
-# "@tosspayments/payment-widget-sdk": "^0.12.x"
+# "@tosspayments/tosspayments-sdk": "^2.7.x"
 ```
 
 환경변수:
@@ -20,8 +20,9 @@ pnpm add @tosspayments/payment-widget-sdk
 ```bash
 TOSS_PAYMENTS_CLIENT_KEY=test_ck_...    # 클라이언트 (NEXT_PUBLIC 아님 — 서버에서 widget 초기화)
 TOSS_PAYMENTS_SECRET_KEY=test_sk_...    # 서버 전용 (결제 승인/취소)
-TOSS_WEBHOOK_SECRET=whsec_...           # webhook 서명 검증
 ```
+
+참조 기준: TossPayments V2 [LLMs Guide](https://docs.tosspayments.com/guides/v2/get-started/llms-guide), [LLM Quick Reference](https://docs.tosspayments.com/guides/v2/get-started/llms-quick-reference), [llms.txt](https://docs.tosspayments.com/llms.txt).
 
 ---
 
@@ -32,38 +33,33 @@ TOSS_WEBHOOK_SECRET=whsec_...           # webhook 서명 검증
 ```typescript
 'use client';
 
-import { loadPaymentWidget, PaymentWidgetInstance } from '@tosspayments/payment-widget-sdk';
+import { loadTossPayments, type TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 import { useEffect, useRef } from 'react';
-
-const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!;
 
 interface PaymentWidgetProps {
   orderId: string;
-  orderName: string;        // 예: "합포인트 30p"
+  orderName: string;        // 예: "부적 55개"
   amount: number;           // 원 단위 (KRW)
   customerKey: string;      // user_id (익명화된 식별자)
-  onSuccess: (paymentKey: string) => void;
-  onError: (code: string, message: string) => void;
+  clientKey: string;        // TOSS_PAYMENTS_CLIENT_KEY를 서버 API로 전달
 }
 
-export function PaymentWidget({
-  orderId, orderName, amount, customerKey, onSuccess, onError
-}: PaymentWidgetProps) {
-  const widgetRef = useRef<PaymentWidgetInstance | null>(null);
+export function PaymentWidget({ orderId, orderName, amount, customerKey, clientKey }: PaymentWidgetProps) {
+  const widgetRef = useRef<TossPaymentsWidgets | null>(null);
 
   useEffect(() => {
     async function initWidget() {
-      const widget = await loadPaymentWidget(CLIENT_KEY, customerKey);
-      widgetRef.current = widget;
+      const tossPayments = await loadTossPayments(clientKey);
+      const widgets = tossPayments.widgets({ customerKey });
+      widgetRef.current = widgets;
 
-      // 결제 수단 위젯 렌더링
-      await widget.renderPaymentMethods('#payment-method', { value: amount });
-      // 이용약관 위젯 렌더링
-      await widget.renderAgreement('#agreement');
+      await widgets.setAmount({ currency: 'KRW', value: amount });
+      await widgets.renderPaymentMethods({ selector: '#payment-methods', variantKey: 'DEFAULT' });
+      await widgets.renderAgreement({ selector: '#payment-agreement', variantKey: 'AGREEMENT' });
     }
 
-    initWidget();
-  }, [customerKey, amount]);
+    void initWidget();
+  }, [amount, clientKey, customerKey]);
 
   const handlePayment = async () => {
     if (!widgetRef.current) return;
@@ -74,20 +70,16 @@ export function PaymentWidget({
         orderName,
         successUrl: `${window.location.origin}/payment/success`,
         failUrl: `${window.location.origin}/payment/fail`,
-        customerEmail: undefined,   // PII 수집 금지 (CLAUDE.md §5)
-        customerName: undefined,    // PII 수집 금지 (CLAUDE.md §5)
       });
-    } catch (err) {
-      if (err instanceof Error) {
-        onError('PAYMENT_FAILED', err.message);
-      }
+    } catch {
+      // UI에서 재시도 안내
     }
   };
 
   return (
     <div>
-      <div id="payment-method" />
-      <div id="agreement" />
+      <div id="payment-methods" />
+      <div id="payment-agreement" />
       <button onClick={handlePayment}>결제하기</button>
     </div>
   );
@@ -98,7 +90,7 @@ export function PaymentWidget({
 
 ```typescript
 import { redirect } from 'next/navigation';
-import { confirmPayment } from '@/actions/confirmPayment';
+import { confirmPaymentForUser } from '@/lib/payments/complete';
 
 interface SuccessPageProps {
   searchParams: {
@@ -111,45 +103,53 @@ interface SuccessPageProps {
 export default async function PaymentSuccessPage({ searchParams }: SuccessPageProps) {
   const { paymentKey, orderId, amount } = searchParams;
 
-  // 서버에서 결제 최종 승인
-  const result = await confirmPayment({ paymentKey, orderId, amount: Number(amount) });
+  // amount는 successUrl 값 그대로 신뢰하지 않는다.
+  // confirmPaymentForUser가 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm을 호출한다.
+  await confirmPaymentForUser({ userId, paymentKey, orderId, amount: Number(amount) });
 
-  if (!result.ok) redirect(`/payment/fail?code=${result.error}`);
-
-  redirect('/feed?payment=success');
+  redirect('/me?payment=success');
 }
 ```
 
+### 2.3 현재 구현 API
+
+| 라우트 | 역할 |
+|---|---|
+| `GET /api/me/wallet` | 보유 부적, 최근 원장, 최근 사용량 조회 |
+| `POST /api/payments/init` | 서버 상품 카탈로그 기준 pending 주문 생성 |
+| `GET /api/payments/order?orderId=` | checkout 페이지가 본인 주문 + Toss client key 조회 |
+| `/payment/checkout` | V2 widget 렌더링 및 `requestPayment` |
+| `/payment/success` | Toss confirm API 호출 후 `confirm_token_purchase` RPC 실행 |
+| `/payment/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
+
+상품 카탈로그: `tokens_10` 10부적/1,000원, `tokens_50` 55부적/4,500원, `tokens_100` 120부적/8,000원.
+
 ---
 
-## 3. 결제 승인 Webhook Handler
+## 3. Webhook Handler
+
+이번 v1 지갑 구현의 1차 진실 경로는 `/payment/success` redirect confirm이다. `POST /api/payments/webhook`은 환불·취소 자동화 단계에서 활성화한다.
 
 `POST /api/payments/webhook`
 
-### 3.1 서명 검증 + 처리 흐름
+### 3.1 일반 결제 webhook 검증 흐름
+
+TossPayments V2 LLM Quick Reference 기준으로 일반 결제 webhook(`PAYMENT_STATUS_CHANGED`, `DEPOSIT_CALLBACK`, `CANCEL_STATUS_CHANGED`)에는 `tosspayments-webhook-signature` HMAC 검증을 적용하지 않는다. webhook payload의 `paymentKey`로 Toss Payments 결제 조회 API(`GET /v1/payments/{paymentKey}`)를 다시 호출해 상태를 검증한다.
 
 ```typescript
-import crypto from 'crypto';
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getTossPayment } from '@/lib/payments/toss-server';
 
-export const runtime = 'nodejs';  // Edge runtime은 crypto 미지원
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  const payload = await req.text();
-  const signature = req.headers.get('toss-signature') ?? '';
+  const event = await req.json();
 
-  // 1단계: Toss 서명 검증
-  if (!verifyTossSignature(payload, signature, process.env.TOSS_WEBHOOK_SECRET!)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-  }
-
-  const event = JSON.parse(payload);
-
-  // 2단계: 이벤트 타입 처리
   switch (event.eventType) {
     case 'PAYMENT_STATUS_CHANGED':
-      await handlePaymentStatusChanged(event.data);
+    case 'DEPOSIT_CALLBACK':
+    case 'CANCEL_STATUS_CHANGED':
+      await handlePaymentWebhook(event.data);
       break;
     default:
       // 알 수 없는 이벤트 — 무시하고 200 반환 (Toss 재시도 방지)
@@ -159,51 +159,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 
-function verifyTossSignature(payload: string, signature: string, secret: string): boolean {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-}
-
-async function handlePaymentStatusChanged(data: {
+async function handlePaymentWebhook(data: {
   paymentKey: string;
   orderId: string;
   status: string;
   totalAmount: number;
-  approvedAt: string;
 }) {
-  if (data.status !== 'DONE') return;  // 완료 상태만 처리
+  const payment = await getTossPayment(data.paymentKey);
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+  if (payment.orderId !== data.orderId || payment.totalAmount !== data.totalAmount) {
+    throw new Error('PAYMENT_WEBHOOK_MISMATCH');
+  }
 
-  const supabase = createClient();
-
-  // 3단계: payments 테이블 INSERT (멱등성: orderId 중복 시 skip)
-  const { error: paymentError } = await supabase
-    .from('payments')
-    .upsert({
-      order_id: data.orderId,
-      payment_key: data.paymentKey,
-      amount: data.totalAmount,
-      status: 'completed',
-      approved_at: data.approvedAt,
-    }, { onConflict: 'order_id' });
-
-  if (paymentError) throw paymentError;
-
-  // 4단계: token_ledger 크레딧 추가
-  const tokens = amountToTokens(data.totalAmount);
-
-  await supabase.from('token_ledger').insert({
-    order_id: data.orderId,
-    delta: tokens,
-    reason: 'purchase',
-  });
-}
-
-// 원 → 포인트 변환 (예: 1,000원 = 10p)
-function amountToTokens(amountKRW: number): number {
-  return Math.floor(amountKRW / 100);
+  // 환불·취소 자동화 정책 결정 후 DB 반영 로직을 추가한다.
 }
 ```
 
@@ -252,31 +220,35 @@ async function refundPayment({ paymentKey, cancelReason, cancelAmount }: RefundP
 ```sql
 -- 결제 기록
 CREATE TABLE payments (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       uuid NOT NULL REFERENCES auth.users(id),
-  order_id      text UNIQUE NOT NULL,   -- 토스 orderId (멱등성 키)
-  payment_key   text UNIQUE,            -- 토스 paymentKey
-  amount        integer NOT NULL,       -- KRW 단위
-  status        text NOT NULL,          -- 'pending' | 'completed' | 'cancelled' | 'refunded'
-  approved_at   timestamptz,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  payment_id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          uuid NOT NULL REFERENCES public.users(user_id),
+  toss_order_id    text UNIQUE NOT NULL,     -- Toss orderId (멱등성 키)
+  toss_payment_key text UNIQUE,              -- 승인 전 NULL 가능
+  product_id       text,
+  amount_krw       integer NOT NULL,         -- KRW 단위
+  token_amount     integer NOT NULL,         -- 충전 부적 수
+  status           text NOT NULL,            -- 'pending' | 'confirmed' | 'failed' | 'refunded'
+  failure_code     text,
+  failure_message  text,
+  receipt_url      text,
+  confirmed_at     timestamptz,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
 -- 포인트 원장 (double-entry 스타일)
 CREATE TABLE token_ledger (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid NOT NULL REFERENCES auth.users(id),
-  order_id    text REFERENCES payments(order_id),
-  delta       integer NOT NULL,         -- 양수: 충전, 음수: 사용
-  reason      text NOT NULL,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
-  created_at  timestamptz NOT NULL DEFAULT now()
+  ledger_id     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid NOT NULL REFERENCES public.users(user_id),
+  delta         integer NOT NULL,       -- 양수: 충전, 음수: 사용
+  reason        text NOT NULL,          -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
+  reference_id  text,                   -- payment_id 또는 hapcard_id
+  balance_after integer NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- 현재 잔액 (집계 뷰)
-CREATE VIEW user_token_balance AS
-SELECT user_id, SUM(delta) AS balance
-FROM token_ledger
-GROUP BY user_id;
+-- 결제 확정은 confirm_token_purchase RPC로만 처리한다.
+-- 중복 success redirect는 toss_order_id/status 기준으로 멱등 처리한다.
 ```
 
 ---
@@ -317,7 +289,7 @@ npx ngrok http 3000
 
 - [ ] `test_ck_*` → `live_ck_*` 키 교체 (Vercel Production 환경변수)
 - [ ] `test_sk_*` → `live_sk_*` 키 교체 (Vercel Production 환경변수)
-- [ ] Toss 대시보드 → webhook URL 프로덕션 URL로 변경
+- [ ] 환불·취소 자동화 활성화 시 Toss 대시보드 → webhook URL 프로덕션 URL로 변경
 - [ ] Toss 대시보드 → 사업자 정보 등록 완료
 - [ ] 환불 정책 약관 페이지 등록 (`/terms/refund`)
 - [ ] 결제 금액 × 수량 조합 서버 검증 로직 확인 (클라이언트 조작 방지)

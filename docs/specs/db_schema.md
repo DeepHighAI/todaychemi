@@ -218,6 +218,7 @@ create table public.hapcards (
   compat_score     numeric(5,2) not null,   -- ADR-035: 결정형 점수, LLM 개입 금지
   score_breakdown  jsonb   not null,        -- 항목별 점수 (category_scores)
   content          jsonb   not null,        -- main_text, cause_factors, classic_citation, actions, why_cards
+  target_date      date    not null,        -- KST 기준 분석 대상 날짜 (20260521011419 추가)
   prompt_version   text    not null,
   llm_model        text    not null,        -- gpt-5o | gpt-5 | gpt-5-mini | claude-fallback
   cache_key        text    not null unique,
@@ -229,6 +230,7 @@ create table public.hapcards (
 );
 
 create index on public.hapcards (user_id, relation_id, mode);
+create index hapcards_daily_lookup_idx on public.hapcards (user_id, relation_id, mode, target_date desc);
 create index on public.hapcards (user_id, created_at desc);
 create index on public.hapcards (cache_key);
 
@@ -333,28 +335,38 @@ create policy "ledger_own_read" on public.token_ledger for select using (auth.ui
 
 ### 9. payments
 
-결제 이력. 토스페이먼츠 Phase 1.
+결제 이력. 토스페이먼츠 V2 위젯 pending 주문과 confirm 결과를 추적한다.
 
 ```sql
 -- supabase/migrations/0010_payments.sql
 create table public.payments (
   payment_id       uuid    primary key default gen_random_uuid(),
   user_id          uuid    not null references public.users(user_id) on delete cascade,
-  toss_payment_key text    not null unique,
+  toss_payment_key text    unique,          -- 결제 승인 전 NULL 가능
   toss_order_id    text    not null unique,
+  product_id       text,
   amount_krw       int     not null,
   token_amount     int     not null,
   status           text    not null check (status in ('pending', 'confirmed', 'failed', 'refunded')),
+  failure_code     text,
+  failure_message  text,
+  receipt_url      text,
   confirmed_at     timestamptz,
-  created_at       timestamptz not null default now()
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
 );
 
 create index on public.payments (user_id, created_at desc);
 create index on public.payments (toss_order_id);
+create index on public.payments (user_id, status, created_at desc);
 
 alter table public.payments enable row level security;
 create policy "payments_own_read" on public.payments for select using (auth.uid() = user_id);
--- insert/update는 service_role 전용 (webhook)
+-- insert/update는 service_role 전용 (/api/payments/init, /payment/success confirm)
+
+-- supabase/migrations/20260521060000_wallet_payments.sql
+create or replace function public.confirm_token_purchase(...)
+returns int;
 ```
 
 ---

@@ -45,18 +45,18 @@ export function HapcardSharePreviewTile({ hapcard, range }: Props) {
         {/* 상단: 아이브로 + 제목 */}
         <div>
           <div className="text-xs font-semibold opacity-85 tracking-wide">
-            합플 · {payload.mode}
+            오늘사이 · {payload.mode}
           </div>
           <div className="mt-1.5 text-[22px] font-extrabold leading-tight">
             나 ↔ {payload.nickname}
           </div>
         </div>
 
-        {/* 중앙: 88px 점수 + 조건부 오행/성별 */}
+        {/* 중앙: 오늘온도 + 조건부 오행/성별 */}
         <div className="text-center">
           <div className="font-extrabold leading-none tracking-[-0.05em] text-[88px]">
-            {payload.score}
-            <span className="ml-1 text-[22px] font-bold opacity-85">점</span>
+            {payload.temperature_label.replace('°C', '')}
+            <span className="ml-1 text-[22px] font-bold opacity-85">°C</span>
           </div>
           {range === 'nickname-ohaeng' && payload.ohaeng_counts && (
             <div className="mt-2 flex justify-center gap-2 text-sm font-semibold opacity-90">
@@ -75,11 +75,11 @@ export function HapcardSharePreviewTile({ hapcard, range }: Props) {
           )}
         </div>
 
-        {/* 하단: 날짜 + happle.app 핀 */}
+        {/* 하단: 날짜 + 오늘사이 핀 */}
         <div className="flex items-end justify-between">
           <div className="text-sm opacity-90">{todayKstString()}</div>
           <div className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold">
-            happle.app
+            오늘사이에서 확인해봐
           </div>
         </div>
       </div>

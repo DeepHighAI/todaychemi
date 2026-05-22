@@ -18,13 +18,30 @@ const WhyCardSchema = z
   })
   .strict();
 
+const OhaengInterpretationPointSchema = z
+  .object({
+    label: z.string().min(1),
+    body: z.string().min(1),
+  })
+  .strict();
+
+export const OhaengInterpretationSchema = z
+  .object({
+    title: z.string().min(1),
+    summary: z.string().min(1),
+    points: z.array(OhaengInterpretationPointSchema).length(3),
+    tip: z.string().min(1),
+  })
+  .strict();
+
 export const HapcardLlmOutputSchema = z
   .object({
     main_text: z.string().min(120).max(280),
     cause_factors: z.array(CauseFactorSchema).length(3),
     classic_citation: z.array(HapcardClassicCitationSchema),
-    actions: z.array(z.string().min(1)).length(3),
+    actions: z.array(z.string().min(1)).length(4),
     why_cards: z.array(WhyCardSchema).min(1),
+    ohaeng_interpretation: OhaengInterpretationSchema,
   })
   .strict();
 

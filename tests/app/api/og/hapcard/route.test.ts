@@ -141,7 +141,7 @@ describe('GET /api/og/hapcard/[id]', () => {
     expect(res.status).toBe(404);
   });
 
-  it('200 — ImageResponse 호출 시 PII 페이로드 미전달 (nickname/score/mode/range만)', async () => {
+  it('200 — ImageResponse 호출 시 PII 페이로드 미전달 (nickname/score/오늘온도/mode/range만)', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
     await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });

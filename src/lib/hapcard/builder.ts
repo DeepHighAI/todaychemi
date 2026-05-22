@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChartCore, ChartHash } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 import type { HapcardResult } from '@/types/hapcard';
+import { withYunseAtDate, type ChartBirthForYunse } from '@/lib/chart/yunse-at-date';
 import { computeScore } from '@/lib/scoring/index';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
 import { deriveCacheKey } from '@/lib/hapcard/cache-key';
@@ -12,8 +13,8 @@ import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
+import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
 import { SCORING_VERSION } from '@/lib/scoring/constants';
-import { todayKST } from '@/lib/today/kst-date';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 
 export interface BuildHapcardInput {
@@ -25,6 +26,7 @@ export interface BuildHapcardInput {
   relation: ChartCore;
   relation_chart_hash: ChartHash;
   theory_profile_version: string;
+  target_date: string;
   question_slot?: string;
 }
 
@@ -53,30 +55,86 @@ async function fetchRelationNickname(
   return (data as { nickname?: string } | null)?.nickname;
 }
 
+interface BirthRow {
+  birth_date: string;
+  birth_date_calendar: 'solar' | 'lunar';
+  is_lunar_leap: boolean;
+  birth_time_knowledge: 'exact' | 'approximate' | 'unknown';
+  birth_time: string | null;
+  gender: 'M' | 'F';
+}
+
+function toBirthForYunse(row: BirthRow): ChartBirthForYunse {
+  return {
+    birth_date: row.birth_date,
+    birth_date_calendar: row.birth_date_calendar,
+    is_lunar_leap: row.is_lunar_leap,
+    birth_time_knowledge: row.birth_time_knowledge,
+    birth_time: row.birth_time,
+    gender: row.gender,
+  };
+}
+
+async function fetchUserBirth(
+  client: SupabaseClient,
+  user_id: string,
+): Promise<ChartBirthForYunse> {
+  const { data, error } = await client
+    .from('users')
+    .select('birth_date,birth_date_calendar,is_lunar_leap,birth_time_knowledge,birth_time,gender')
+    .eq('user_id', user_id)
+    .maybeSingle();
+  if (error) throw new Error(`USER_BIRTH_LOOKUP_FAILED: ${error.message}`);
+  if (!data) throw new Error('USER_BIRTH_NOT_FOUND');
+  return toBirthForYunse(data as BirthRow);
+}
+
+async function fetchRelationBirth(
+  client: SupabaseClient,
+  relation_id: string,
+): Promise<ChartBirthForYunse> {
+  const { data, error } = await client
+    .from('relations')
+    .select('birth_date,birth_date_calendar,is_lunar_leap,birth_time_knowledge,birth_time,gender')
+    .eq('relation_id', relation_id)
+    .maybeSingle();
+  if (error) throw new Error(`RELATION_BIRTH_LOOKUP_FAILED: ${error.message}`);
+  if (!data) throw new Error('RELATION_BIRTH_NOT_FOUND');
+  return toBirthForYunse(data as BirthRow);
+}
+
+async function buildTargetDateCharts(
+  input: BuildHapcardInput,
+  client: SupabaseClient,
+): Promise<{ self: ChartCore; relation: ChartCore }> {
+  const [selfBirth, relationBirth] = await Promise.all([
+    fetchUserBirth(client, input.user_id),
+    fetchRelationBirth(client, input.relation_id),
+  ]);
+  return {
+    self: withYunseAtDate(input.self, selfBirth, input.target_date),
+    relation: withYunseAtDate(input.relation, relationBirth, input.target_date),
+  };
+}
+
 export async function buildHapcard(
   input: BuildHapcardInput,
   deps: BuildHapcardDeps,
 ): Promise<HapcardResult> {
-  // 1. 결정형 점수 — ADR-035, LLM 점수 개입 금지
-  const scoreOutput = computeScore({
-    self: input.self,
-    relation: input.relation,
-    mode: input.mode,
-  });
-
-  // 2. active prompt 로드 (supabaseUserClient — status='active' 단일 행)
+  // 1. active prompt 로드 (supabaseUserClient — status='active' 단일 행)
   const prompt = await loadActivePrompt(deps.supabaseUserClient, input.mode);
 
-  // 3. cache key 파생
+  // 2. cache key 파생 — target_date 포함: 같은 인연/모드도 KST 날짜별 별도 결과
   const cacheKey = deriveCacheKey({
     user_chart_hash: input.self_chart_hash,
     relation_chart_hash: input.relation_chart_hash,
     mode: input.mode,
     prompt_version: prompt.version,
     theory_profile_version: input.theory_profile_version,
+    target_date: input.target_date,
   });
 
-  // 4. cache lookup — hit 이면 즉시 반환
+  // 3. cache lookup — hit 이면 즉시 반환
   const cacheRes = await deps.supabaseUserClient
     .from('hapcards')
     .select('*')
@@ -98,28 +156,44 @@ export async function buildHapcard(
     };
   }
 
-  // 5. LLM payload 빌드 (PII 5필드 제외 — CLAUDE.md §5)
+  // 4. target_date 기준 운세층 재계산 — birth row는 서버 내부에서만 사용, LLM에는 원본 생년월일 전송 금지
+  const datedCharts = await buildTargetDateCharts(input, deps.supabaseUserClient);
+
+  // 5. 결정형 점수 — ADR-035, LLM 점수 개입 금지
+  const scoreOutput = computeScore({
+    self: datedCharts.self,
+    relation: datedCharts.relation,
+    mode: input.mode,
+  });
+
+  // 6. LLM payload 빌드 (PII 5필드 제외 — CLAUDE.md §5)
   const payload = buildLlmPayload({
-    self: input.self,
-    relation: input.relation,
+    self: datedCharts.self,
+    relation: datedCharts.relation,
     mode: input.mode,
     theory_profile_version: input.theory_profile_version,
+    target_date: input.target_date,
     question_slot: input.question_slot,
   });
 
-  // 6. RAG retrieval
-  const queryText = deps.ragQueryText(input);
+  // 7. RAG retrieval
+  const datedInput: BuildHapcardInput = {
+    ...input,
+    self: datedCharts.self,
+    relation: datedCharts.relation,
+  };
+  const queryText = deps.ragQueryText(datedInput);
   const queryVec = await embedQuery(queryText, { embeddings: deps.embeddingsClient });
   const ragHits = await retrieveClassics(deps.supabaseServiceClient, queryVec);
 
-  // 7. system prompt 조합 (RAG hits scaffolding — 0-hit 시 LLM hallucination 차단)
+  // 8. system prompt 조합 (RAG hits scaffolding — 0-hit 시 LLM hallucination 차단)
   const ragSection =
     ragHits.length === 0
       ? `## RAG hits\n\nNo classical references match this query.\nSet \`classic_citation: []\` in your response.\nDO NOT invent asset_ids — empty array is the correct output here.`
       : `## Available RAG hits — use ONLY these asset_ids verbatim\n\nAny asset_id NOT in this list will fail validation and the request will be rejected.\n\n<rag_hits>\n${JSON.stringify(ragHits, null, 2)}\n</rag_hits>`;
   const systemPrompt = `${prompt.content}\n\n${ragSection}`;
 
-  // 8. LLM 호출 + grounding 검증 (최대 1회 재시도)
+  // 9. LLM 호출 + grounding 검증 (최대 1회 재시도)
   const callDeps = {
     openaiClient: deps.openaiClient,
     supabaseServiceRole: deps.supabaseServiceClient,
@@ -140,7 +214,7 @@ export async function buildHapcard(
     }
   }
 
-  // 9. LLM classic_citation 형식 → HapcardResult.content.classic_citation 형식 변환
+  // 10. LLM classic_citation 형식 → HapcardResult.content.classic_citation 형식 변환
   const content: HapcardResult['content'] = {
     main_text: llmResult.output.main_text,
     cause_factors: llmResult.output.cause_factors,
@@ -152,15 +226,21 @@ export async function buildHapcard(
     }),
     actions: llmResult.output.actions,
     why_cards: llmResult.output.why_cards,
+    ohaeng_interpretation: llmResult.output.ohaeng_interpretation ?? buildOhaengInterpretation({
+      self: datedCharts.self,
+      relation: datedCharts.relation,
+      mode: input.mode,
+    }),
   };
 
-  // 10. INSERT → HapcardResult 반환
+  // 11. INSERT → HapcardResult 반환
   const insertRes = await deps.supabaseUserClient
     .from('hapcards')
     .insert({
       user_id: input.user_id,
       relation_id: input.relation_id,
       mode: input.mode,
+      target_date: input.target_date,
       compat_score: scoreOutput.score,
       score_breakdown: {
         hap_chung_hyung_hae: scoreOutput.components.hap_chung_hyung_hae,
@@ -185,7 +265,7 @@ export async function buildHapcard(
     throw new Error(`HAPCARD_INSERT_FAILED: ${insertRes.error.message}`);
   }
 
-  // 11. snapshot upsert — ADR-036 change_score 기준점
+  // 12. snapshot upsert — ADR-036 change_score 기준점
   const snapRes = await deps.supabaseServiceClient
     .from('hapcard_score_snapshots')
     .upsert({
@@ -194,7 +274,7 @@ export async function buildHapcard(
       mode: input.mode,
       scoring_version: String(SCORING_VERSION),
       prompt_version: prompt.version,
-      target_date: todayKST(),
+      target_date: input.target_date,
       compat_score: scoreOutput.score,
       score_breakdown: {
         hap_chung_hyung_hae: scoreOutput.components.hap_chung_hyung_hae,
@@ -212,8 +292,8 @@ export async function buildHapcard(
   );
   return {
     ...(insertRes.data as HapcardResult),
-    visuals: deriveVisuals(input.self, input.relation),
+    visuals: deriveVisuals(datedCharts.self, datedCharts.relation),
     relation_nickname,
-    relation_gender_normalized: input.relation.gender_normalized,
+    relation_gender_normalized: datedCharts.relation.gender_normalized,
   };
 }

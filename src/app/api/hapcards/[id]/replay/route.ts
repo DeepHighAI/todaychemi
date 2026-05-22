@@ -62,7 +62,7 @@ export async function POST(
     console.error('hapcard_db_row_invalid', { id, issues: parseResult.error.issues });
     return apiErrorResponse('INTERNAL_ERROR', 'hapcard data shape invalid', 500);
   }
-  const hapcard = { ...hapcardRes.data, ...parseResult.data } as HapcardResult;
+  const hapcard = { ...hapcardRes.data, ...parseResult.data } as unknown as HapcardResult;
 
   // 4. idempotency 체크 — 오늘 이미 replay 존재 시 토큰 차감 없이 기존 반환
   const jinjin_date = todayKST();

@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SharePayload } from '@/lib/share/build-share-payload';
 
 const MOCK_PAYLOAD: SharePayload = {
-  title: '봄달님과의 친구합',
-  text: '봄달님과의 합게이지: 78점',
+  title: '봄달님과의 친구 사이',
+  text: '봄달님과의 오늘온도: 38.4°C · 오늘사이에서 확인해봐',
   url: 'https://hap.plae/h/hap-uuid-001?mode=친구합',
 };
 

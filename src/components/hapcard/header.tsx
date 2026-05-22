@@ -23,12 +23,13 @@ export function HapcardHeader({
   nickname,
 }: HapcardHeaderProps) {
   const t = useTranslations('hapcard');
+  const modeLabel = t(`mode.${mode}` as never);
   return (
     <div data-testid="hapcard-header" className="flex items-center justify-center gap-3 py-4">
       <IljuChip pillar={userPillar} element={userElement} />
       <div className="flex flex-col items-center gap-1">
         <span className="text-xs text-muted-foreground">{t('header.vs')}</span>
-        <span className="text-xs font-medium text-foreground">{mode}</span>
+        <span className="text-xs font-medium text-foreground">{modeLabel}</span>
         {nickname && (
           <span
             data-testid="hapcard-header-nickname"

@@ -30,4 +30,14 @@ describe('WhatifKeywords', () => {
       expect(screen.getByText(keyword)).toBeInTheDocument();
     }
   });
+
+  it('키워드의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<WhatifKeywords keywords={['戊申', '土', '木', '金', '水']} />);
+    expect(screen.getByText('무신')).toBeInTheDocument();
+    expect(screen.getByText('토')).toBeInTheDocument();
+    expect(screen.getByText('목')).toBeInTheDocument();
+    expect(screen.getByText('금')).toBeInTheDocument();
+    expect(screen.getByText('수')).toBeInTheDocument();
+    expect(screen.queryByText('戊申')).not.toBeInTheDocument();
+  });
 });

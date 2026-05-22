@@ -52,6 +52,7 @@ export const mockHapcardResult: HapcardResult = {
   user_id: 'u1',
   relation_id: 'r1',
   mode: '친구합',
+  target_date: '2026-05-07',
   compat_score: 73,
   score_breakdown: { hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, yunse_adjustment: 0, mode_adjustment: 13 },
   content: {

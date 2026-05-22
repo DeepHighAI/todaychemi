@@ -1,11 +1,11 @@
 'use client';
 
-/* Feed — 1-col list with swipe-to-delete + 흐름 변화 큰 인연 강조 카드
+/* Feed — 1-col list with swipe-to-delete + 오늘 변화 큼 인연 강조 카드
  * Canvas reference: type-d/screens-interactive.jsx::IHome SwipeRow list
  *
  * Improvements over original 2-col grid:
- *  - Rich rows: avatar (일주 chip), 별명, 모드+시간, 점수, delta
- *  - Top "흐름 변화 큼" 인연 1개를 mini Liquid Glass card로 강조
+ *  - Rich rows: avatar (일주 chip), 별명, 모드+시간, 오늘온도, delta
+ *  - Top "오늘 변화 큼" 인연 1개를 mini Liquid Glass card로 강조
  *  - 좌측 스와이프 → 삭제 (확인 모달)
  */
 
@@ -18,6 +18,7 @@ import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/swipe-row';
+import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
 import type { FeedItem } from '@/types/relation';
 
 type FilterMode = 'all' | '일합' | '친구합' | '돈합' | '첫합' | '썸합' | '오래합';
@@ -63,7 +64,7 @@ export default function FeedPage() {
   const items = useMemo(() => data ?? [], [data]);
   const filtered = activeFilter === 'all' ? items : items.filter(i => i.mode === activeFilter);
 
-  // 흐름 변화 큰 인연 1개 (canvas의 cool Liquid Glass card)
+  // 오늘 변화 큼 인연 1개 (canvas의 cool Liquid Glass card)
   const highlight = useMemo(() => items.find(i => i.has_significant_change), [items]);
   const rest = highlight ? filtered.filter(i => i.relation_id !== highlight.relation_id) : filtered;
 
@@ -115,7 +116,7 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* 흐름 변화 큼 강조 카드 (mini Liquid Glass) */}
+      {/* 오늘 변화 큼 강조 카드 (mini Liquid Glass) */}
       {highlight && (activeFilter === 'all' || highlight.mode === activeFilter) && (
         <Link
           href={`/hapcard/${highlight.relation_id}?mode=${encodeURIComponent(highlight.mode)}`}
@@ -129,7 +130,7 @@ export default function FeedPage() {
               <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">⚡ {t('change.eyebrow')}</p>
               <p className="font-display font-extrabold text-[18px] leading-[1.2] tracking-[-0.018em] text-white mt-1.5 truncate">{highlight.nickname}</p>
               <p className="text-[13px] text-white/85 mt-1">
-                {tMode(highlight.mode)} · {highlight.change_score && highlight.change_score > 0 ? '+' : ''}{highlight.change_score ?? 0}
+                {tMode(highlight.mode)} · {formatTemperatureDelta(highlight.change_score ?? 0)}
               </p>
             </div>
             <span className="font-display font-extrabold text-[32px] leading-none tracking-[-0.04em] text-white">↗</span>
@@ -163,13 +164,15 @@ export default function FeedPage() {
                   </div>
                   <div className="text-right shrink-0">
                     {item.compat_score !== null ? (
-                      <p className="font-display font-extrabold text-[18px] leading-none text-foreground tabular-nums">{item.compat_score}</p>
+                      <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
+                        {formatTodayTemperature(item.compat_score)}
+                      </p>
                     ) : (
                       <p className="text-[13px] text-muted-foreground">—</p>
                     )}
                     {typeof item.change_score === 'number' && item.change_score !== 0 && (
                       <p className={`text-[10px] font-bold mt-1 ${item.change_score > 0 ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>
-                        {item.change_score > 0 ? '↑' : '↓'} {Math.abs(item.change_score)}
+                        {item.change_score > 0 ? '↑' : '↓'} {formatTemperatureDelta(item.change_score)}
                       </p>
                     )}
                   </div>

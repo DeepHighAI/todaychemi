@@ -43,4 +43,23 @@ describe('WhatifClassicCitation', () => {
     expect(screen.getByText(MOCK_CITATION.source_title)).toBeInTheDocument();
     expect(screen.getByText(MOCK_CITATION_2.source_title)).toBeInTheDocument();
   });
+
+  it('원문을 제외한 인용 필드의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(
+      <WhatifClassicCitation
+        citations={[{
+          asset_id: 'asset-3',
+          source_title: '子平眞詮',
+          source_chapter: '日主',
+          original_text: '戊土는 厚重하다',
+          modern_translation: '戊土는 안정적이라는 뜻이에요',
+        }]}
+      />,
+    );
+
+    expect(screen.getByText('자평진전')).toBeInTheDocument();
+    expect(screen.getByText('일주')).toBeInTheDocument();
+    expect(screen.getByText('무토는 안정적이라는 뜻이에요')).toBeInTheDocument();
+    expect(screen.getByText('戊土는 厚重하다')).toBeInTheDocument();
+  });
 });

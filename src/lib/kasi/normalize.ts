@@ -12,7 +12,7 @@ function formatKstDate(now: Date): string {
   return new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
-function mapSsajuToYunse(sajuResult: ReturnType<typeof calculateSaju>, now: Date): YunseCore {
+export function mapSsajuToYunse(sajuResult: ReturnType<typeof calculateSaju>, now: Date): YunseCore {
   const daeunCurrent = sajuResult.daeun.current;
   return {
     daeun: {

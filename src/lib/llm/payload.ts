@@ -3,7 +3,7 @@ import type { Mode } from '@/types/mode';
 
 // CLAUDE.md §5 — LLM 페이로드 화이트리스트:
 // chart_core(self) + chart_core(relation) + mode + question_slot? + theory_profile.profile_version
-// replay 전용: time_context (일진 날짜 — PII 아님, 모든 사용자 공통 공개 정보)
+// time_context: target_date / replay 일진 날짜 (PII 아님, 모든 사용자 공통 공개 정보)
 // 절대 포함 금지: birth_date, name, nickname, email, birth_place, raw gender,
 // 점수 (compat_score, score_breakdown — ADR-035)
 
@@ -29,7 +29,7 @@ export interface LlmPayload {
   mode: Mode;
   theory_profile: { profile_version: string };
   question_slot?: string;
-  time_context?: { jinjin_date: string }; // replay 전용 (YYYY-MM-DD UTC+9)
+  time_context?: { target_date?: string; jinjin_date?: string }; // YYYY-MM-DD KST
 }
 
 export interface BuildLlmPayloadInput {
@@ -38,6 +38,7 @@ export interface BuildLlmPayloadInput {
   mode: Mode;
   theory_profile_version: string;
   question_slot?: string;
+  target_date?: string;
 }
 
 function projectYunseForLlm(yunse: YunseCore): LlmYunse {
@@ -68,6 +69,9 @@ export function buildLlmPayload(input: BuildLlmPayloadInput): LlmPayload {
   };
   if (input.question_slot !== undefined) {
     payload.question_slot = input.question_slot;
+  }
+  if (input.target_date !== undefined) {
+    payload.time_context = { target_date: input.target_date };
   }
   return payload;
 }

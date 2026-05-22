@@ -29,9 +29,9 @@ describe('HapcardHeader', () => {
     expect(screen.getByText('병오')).toBeInTheDocument();
   });
 
-  it('mode 라벨 표시 (친구합)', () => {
+  it('mode 라벨 표시 (친구 사이)', () => {
     renderWithProviders(<HapcardHeader {...defaultProps} />);
-    expect(screen.getByText('친구합')).toBeInTheDocument();
+    expect(screen.getByText('친구 사이')).toBeInTheDocument();
   });
 
   it('nickname 미전달 시 기존 렌더 회귀 없음', () => {
@@ -54,7 +54,7 @@ describe('HapcardHeader', () => {
   it('닉네임은 mode 텍스트와 별개 DOM 노드', () => {
     renderWithProviders(<HapcardHeader {...defaultProps} nickname="별이" />);
     const nicknameEl = screen.getByTestId('hapcard-header-nickname');
-    const modeEl = screen.getByText('친구합');
+    const modeEl = screen.getByText('친구 사이');
     expect(nicknameEl).not.toBe(modeEl);
   });
 });

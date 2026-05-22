@@ -64,6 +64,42 @@ describe('BirthDateField', () => {
     expect(document.querySelector('.tray.on')).toBeTruthy();
   });
 
+  it('연도 옵션을 선택하면 일 선택 달력으로 돌아간다', () => {
+    renderWithIntl(<BirthDateField value="" onChange={vi.fn()} label="생년월일" />);
+    fireEvent.click(document.querySelector('.mock-input')!);
+    fireEvent.click(screen.getByText('1995년 11월'));
+
+    fireEvent.click(screen.getByText('2001'));
+
+    expect(document.querySelector('.cal')).toBeTruthy();
+    expect(screen.getByText('2001년 11월')).toBeTruthy();
+    expect(document.querySelector('.picker-cols')).toBeNull();
+  });
+
+  it('월 옵션을 선택하면 일 선택 달력으로 돌아간다', () => {
+    renderWithIntl(<BirthDateField value="" onChange={vi.fn()} label="생년월일" />);
+    fireEvent.click(document.querySelector('.mock-input')!);
+    fireEvent.click(screen.getByText('1995년 11월'));
+
+    fireEvent.click(screen.getByText('3'));
+
+    expect(document.querySelector('.cal')).toBeTruthy();
+    expect(screen.getByText('1995년 3월')).toBeTruthy();
+    expect(document.querySelector('.picker-cols')).toBeNull();
+  });
+
+  it('연도/월 화면에서 상단 완료를 누르면 닫지 않고 일 선택 달력으로 돌아간다', () => {
+    renderWithIntl(<BirthDateField value="" onChange={vi.fn()} label="생년월일" />);
+    fireEvent.click(document.querySelector('.mock-input')!);
+    fireEvent.click(screen.getByText('1995년 11월'));
+
+    fireEvent.click(screen.getByText('완료'));
+
+    expect(document.querySelector('.cal')).toBeTruthy();
+    expect(document.querySelector('.tray.on')).toBeTruthy();
+    expect(document.querySelector('.picker-cols')).toBeNull();
+  });
+
   it('취소 closes the tray without calling onChange', () => {
     const onChange = vi.fn();
     renderWithIntl(<BirthDateField value="" onChange={onChange} label="생년월일" />);
@@ -73,11 +109,12 @@ describe('BirthDateField', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('re-opening resets to calendar mode', () => {
+  it('calendar mode에서 완료를 누르면 닫히고 다시 열 때 calendar mode로 열린다', () => {
     renderWithIntl(<BirthDateField value="" onChange={vi.fn()} label="생년월일" />);
     fireEvent.click(document.querySelector('.mock-input')!);
     fireEvent.click(screen.getByText('1995년 11월')); // go to yearMonth
-    fireEvent.click(screen.getByText('완료')); // close (resets mode)
+    fireEvent.click(screen.getByText('완료')); // back to calendar
+    fireEvent.click(screen.getByText('완료')); // close
     fireEvent.click(document.querySelector('.mock-input')!); // reopen
     expect(document.querySelector('.cal')).toBeTruthy();
     expect(document.querySelector('.picker-cols')).toBeNull();

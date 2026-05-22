@@ -42,20 +42,20 @@ describe('HapcardShare', () => {
     expect(document.querySelector('[data-testid="hapcard-share"]')).not.toBeNull();
   });
 
-  it('"공유합카드 만들기" 버튼 표시', () => {
+  it('"오늘 우리는 공유하기" 버튼 표시', () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    expect(screen.getByRole('button', { name: '공유합카드 만들기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '오늘 우리는 공유하기' })).toBeInTheDocument();
   });
 
   it('버튼 클릭 → ShareSheet 열림 (별명만 라디오 표시)', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '공유합카드 만들기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
     await waitFor(() => expect(screen.getByLabelText('별명만')).toBeInTheDocument());
   });
 
   it('ShareSheet 공유하기 클릭 → shareOrCopy 호출', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '공유합카드 만들기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
     await waitFor(() => screen.getByRole('button', { name: '공유하기' }));
     fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
     await waitFor(() => expect(shareOrCopy).toHaveBeenCalledOnce());
@@ -64,7 +64,7 @@ describe('HapcardShare', () => {
   it('shareOrCopy "shared" → 성공 메시지 표시', async () => {
     vi.mocked(shareOrCopy).mockResolvedValue('shared');
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '공유합카드 만들기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
     await waitFor(() => screen.getByRole('button', { name: '공유하기' }));
     fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
     await waitFor(() =>

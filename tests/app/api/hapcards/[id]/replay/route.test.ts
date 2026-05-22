@@ -22,6 +22,7 @@ const HAPCARD_ROW: HapcardResult = {
   user_id: USER_ID,
   relation_id: 'relation-uuid-001',
   mode: '일합',
+  target_date: '2026-05-20',
   compat_score: 72,
   score_breakdown: { hap_chung_hyung_hae: 70, sipsin: 75, ohaeng: 68, yunse_adjustment: 0, mode_adjustment: 5 },
   content: {

@@ -16,8 +16,14 @@ describe('WhatifHero', () => {
     expect(screen.getByText('일할 때 나')).toBeInTheDocument();
   });
 
-  it('body 문자열 그대로 노출', () => {
+  it('body 문자열을 노출한다', () => {
     renderWithProviders(<WhatifHero type="work" body="이것은 본문 텍스트입니다." />);
     expect(screen.getByText('이것은 본문 텍스트입니다.')).toBeInTheDocument();
+  });
+
+  it('body의 한자를 한글로 변환한다 (ADR-038)', () => {
+    renderWithProviders(<WhatifHero type="work" body="戊申 일간으로서 土의 안정감이 강해요." />);
+    expect(screen.getByText('무신 일간으로서 토의 안정감이 강해요.')).toBeInTheDocument();
+    expect(screen.queryByText(/戊申|土/)).not.toBeInTheDocument();
   });
 });

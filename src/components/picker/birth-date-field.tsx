@@ -12,6 +12,7 @@ interface BirthDateFieldProps {
   value: string; // 'YYYY-MM-DD' | ''
   onChange: (v: string) => void;
   label: string;
+  portal?: boolean;
 }
 
 function formatDate(y: number, m: number, d: number) {
@@ -36,7 +37,7 @@ function monthWrap(view: { y: number; m: number }, dir: -1 | 1) {
   return { y, m };
 }
 
-export function BirthDateField({ value, onChange, label }: BirthDateFieldProps) {
+export function BirthDateField({ value, onChange, label, portal = true }: BirthDateFieldProps) {
   const t = useTranslations('onboarding');
   const currentYear = new Date().getFullYear();
 
@@ -62,6 +63,18 @@ export function BirthDateField({ value, onChange, label }: BirthDateFieldProps) 
     setTrayMode('calendar');
   }
 
+  function returnToCalendar() {
+    setTrayMode('calendar');
+  }
+
+  function done() {
+    if (trayMode === 'yearMonth') {
+      returnToCalendar();
+      return;
+    }
+    close();
+  }
+
   const displayValue = parsed
     ? t('calendar.selectedDate', { year: parsed.y, month: parsed.m + 1, day: parsed.d })
     : null;
@@ -79,7 +92,8 @@ export function BirthDateField({ value, onChange, label }: BirthDateFieldProps) 
         open={open}
         title={label}
         onClose={close}
-        onDone={close}
+        onDone={done}
+        portal={portal}
       >
         {trayMode === 'calendar' ? (
           <MiniCalendar
@@ -98,16 +112,18 @@ export function BirthDateField({ value, onChange, label }: BirthDateFieldProps) 
                 options={years}
                 value={String(view.y)}
                 onChange={(v) => setView({ y: Number(v), m: view.m })}
+                onSelect={returnToCalendar}
                 aria-label={t('tray.yearColumn')}
               />
               <WheelPicker
                 options={months}
                 value={String(view.m + 1)}
                 onChange={(v) => setView({ y: view.y, m: Number(v) - 1 })}
+                onSelect={returnToCalendar}
                 aria-label={t('tray.monthColumn')}
               />
             </div>
-            <button type="button" onClick={() => setTrayMode('calendar')}>
+            <button type="button" onClick={returnToCalendar}>
               {t('tray.confirmYear')}
             </button>
           </>

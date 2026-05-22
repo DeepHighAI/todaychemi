@@ -68,6 +68,7 @@ const BASE_INPUT: BuildHapcardInput = {
   relation: RELATION,
   relation_chart_hash: 'rel-hash-def',
   theory_profile_version: 'v1.0-late_zi',
+  target_date: '2026-05-21',
 };
 
 const MOCK_PROMPT = {
@@ -91,6 +92,17 @@ const MOCK_SCORE = {
 
 const MOCK_EMBEDDING = Array.from({ length: 1536 }, () => 0.1);
 
+const MOCK_OHAENG_INTERPRETATION = {
+  title: '병인 ↔ 신사 오행 해석',
+  summary: '본인의 화 기운이 인연의 금 기운을 다듬는 긴장 구조입니다.',
+  points: [
+    { label: '중심 기질', body: '본인은 표현, 인연은 기준을 중심으로 움직입니다.' },
+    { label: '균형 포인트', body: '서로 부족한 부분을 나누어 채울 수 있습니다.' },
+    { label: '관계 흐름', body: '역할을 나누면 관계 흐름이 안정됩니다.' },
+  ],
+  tip: '역할과 결정 기준을 먼저 문서로 맞춰보세요.',
+};
+
 const MOCK_LLM_OUTPUT = {
   main_text: '갑목일간'.repeat(40).slice(0, 160),
   cause_factors: [
@@ -99,8 +111,9 @@ const MOCK_LLM_OUTPUT = {
     { name: '원인3', effect: '결과3' },
   ],
   classic_citation: [],
-  actions: ['행동1', '행동2', '행동3'],
+  actions: ['대표 행동', '행동1', '행동2', '행동3'],
   why_cards: [{ title: '제목1', reason: '이유1' }],
+  ohaeng_interpretation: MOCK_OHAENG_INTERPRETATION,
 };
 
 const MOCK_LLM_RESULT = {
@@ -115,6 +128,7 @@ const EXPECTED_CACHE_KEY = deriveCacheKey({
   mode: BASE_INPUT.mode,
   prompt_version: MOCK_PROMPT.version,
   theory_profile_version: BASE_INPUT.theory_profile_version,
+  target_date: BASE_INPUT.target_date,
 });
 
 // DB 삽입 후 반환될 행
@@ -124,6 +138,7 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
     user_id: BASE_INPUT.user_id,
     relation_id: BASE_INPUT.relation_id,
     mode: BASE_INPUT.mode,
+    target_date: BASE_INPUT.target_date,
     compat_score: MOCK_SCORE.score,
     score_breakdown: {
       hap_chung_hyung_hae: MOCK_SCORE.components.hap_chung_hyung_hae,
@@ -138,6 +153,7 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
       classic_citation: [],
       actions: MOCK_LLM_OUTPUT.actions,
       why_cards: MOCK_LLM_OUTPUT.why_cards,
+      ohaeng_interpretation: MOCK_LLM_OUTPUT.ohaeng_interpretation,
     },
     prompt_version: MOCK_PROMPT.version,
     llm_model: 'gpt-5',
@@ -180,15 +196,39 @@ function makeMockUserClient(opts: {
   const eqForCache = vi.fn().mockReturnValue({ maybeSingle });
   const selectForCache = vi.fn().mockReturnValue({ eq: eqForCache });
 
-  // relations (nickname 조회) 체인 — opts.relationNickname 미제공 시 null 반환
+  // users/relations birth row 조회 — target_date 기준 yunse 재계산용
+  const birthRow = {
+    birth_date: '1990-01-01',
+    birth_date_calendar: 'solar',
+    is_lunar_leap: false,
+    birth_time_knowledge: 'unknown',
+    birth_time: null,
+    gender: 'M',
+  };
+  const relationBirthRow = { ...birthRow, gender: 'F' };
+  const userBirthMaybeSingle = vi.fn().mockResolvedValue({ data: birthRow, error: null });
+  const userBirthEq = vi.fn().mockReturnValue({ maybeSingle: userBirthMaybeSingle });
+  const userBirthSelect = vi.fn().mockReturnValue({ eq: userBirthEq });
+
+  // relations (birth + nickname 조회) 체인 — opts.relationNickname 미제공 시 null 반환
   const relMaybeSingle = vi.fn().mockResolvedValue({
     data: opts.relationNickname ? { nickname: opts.relationNickname } : null,
     error: null,
   });
-  const relEq = vi.fn().mockReturnValue({ maybeSingle: relMaybeSingle });
-  const relSelect = vi.fn().mockReturnValue({ eq: relEq });
+  const relationBirthMaybeSingle = vi.fn().mockResolvedValue({
+    data: relationBirthRow,
+    error: null,
+  });
+  const relSelect = vi.fn().mockImplementation((fields: string) => {
+    const maybeSingle = fields.includes('nickname') ? relMaybeSingle : relationBirthMaybeSingle;
+    const relEq = vi.fn().mockReturnValue({ maybeSingle });
+    return { eq: relEq };
+  });
 
   const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'users') {
+      return { select: userBirthSelect };
+    }
     if (table === 'relations') {
       return { select: relSelect };
     }
@@ -202,6 +242,8 @@ function makeMockUserClient(opts: {
     maybeSingle,
     single,
     relMaybeSingle,
+    userBirthMaybeSingle,
+    relationBirthMaybeSingle,
   };
 }
 
@@ -242,7 +284,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
+describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () => {
   it('cache hit → 기존 행 반환, callOpenAi 호출 0회, INSERT 0회', async () => {
     const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
     const { client, insert } = makeMockUserClient({ cachedRow: existingRow });
@@ -271,8 +313,18 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
 
     expect(result.compat_score).toBe(MOCK_SCORE.score);
     expect(computeScore).toHaveBeenCalledWith({
-      self: BASE_INPUT.self,
-      relation: BASE_INPUT.relation,
+      self: expect.objectContaining({
+        day_pillar: BASE_INPUT.self.day_pillar,
+        yunse: expect.objectContaining({
+          iliun: expect.objectContaining({ today_date: BASE_INPUT.target_date }),
+        }),
+      }),
+      relation: expect.objectContaining({
+        day_pillar: BASE_INPUT.relation.day_pillar,
+        yunse: expect.objectContaining({
+          iliun: expect.objectContaining({ today_date: BASE_INPUT.target_date }),
+        }),
+      }),
       mode: BASE_INPUT.mode,
     });
   });
@@ -291,7 +343,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     });
   });
 
-  it('cache_key = sha256(self_hash + rel_hash + mode + prompt.version + theory_profile_version)', async () => {
+  it('cache_key = sha256(self_hash + rel_hash + mode + prompt.version + theory_profile_version + target_date)', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));
@@ -399,7 +451,25 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
 
     await buildHapcard(BASE_INPUT, deps);
 
-    expect(queryFn).toHaveBeenCalledWith(BASE_INPUT);
+    expect(queryFn).toHaveBeenCalledWith(expect.objectContaining({
+      user_id: BASE_INPUT.user_id,
+      relation_id: BASE_INPUT.relation_id,
+      mode: BASE_INPUT.mode,
+      target_date: BASE_INPUT.target_date,
+      self_chart_hash: BASE_INPUT.self_chart_hash,
+      relation_chart_hash: BASE_INPUT.relation_chart_hash,
+      theory_profile_version: BASE_INPUT.theory_profile_version,
+      self: expect.objectContaining({
+        yunse: expect.objectContaining({
+          iliun: expect.objectContaining({ today_date: BASE_INPUT.target_date }),
+        }),
+      }),
+      relation: expect.objectContaining({
+        yunse: expect.objectContaining({
+          iliun: expect.objectContaining({ today_date: BASE_INPUT.target_date }),
+        }),
+      }),
+    }));
     expect(embedQuery).toHaveBeenCalledWith('내 RAG 쿼리', expect.anything());
   });
 
@@ -413,6 +483,17 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(callArgs.supabaseServiceRole).toBe(deps.supabaseServiceClient);
   });
 
+  it('LLM payload에 target_date와 날짜별 yunse를 전달한다', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.userPayload.time_context).toEqual({ target_date: BASE_INPUT.target_date });
+    expect(callArgs.userPayload.self_chart_core.yunse.iliun.today_date).toBe(BASE_INPUT.target_date);
+    expect(callArgs.userPayload.relation_chart_core.yunse.iliun.today_date).toBe(BASE_INPUT.target_date);
+  });
+
   it('INSERT row에 user_id, relation_id, mode, user_chart_hash, relation_chart_hash 포함', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
@@ -422,8 +503,18 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(row.user_id).toBe(BASE_INPUT.user_id);
     expect(row.relation_id).toBe(BASE_INPUT.relation_id);
     expect(row.mode).toBe(BASE_INPUT.mode);
+    expect(row.target_date).toBe(BASE_INPUT.target_date);
     expect(row.user_chart_hash).toBe(BASE_INPUT.self_chart_hash);
     expect(row.relation_chart_hash).toBe(BASE_INPUT.relation_chart_hash);
+  });
+
+  it('cache miss → LLM ohaeng_interpretation을 content에 저장', async () => {
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const row = insert.mock.calls[0][0];
+    expect(row.content.ohaeng_interpretation).toEqual(MOCK_OHAENG_INTERPRETATION);
   });
 
   it('cache miss → 반환된 HapcardResult에 visuals 첨부 (user/relation 슬라이스)', async () => {
@@ -512,8 +603,7 @@ describe('buildHapcard — 합카드 빌더 오케스트레이터', () => {
     expect(row.compat_score).toBe(MOCK_SCORE.score);
     expect(row.scoring_version).toBe('1');
     expect(row.prompt_version).toBe(MOCK_PROMPT.version);
-    expect(typeof row.target_date).toBe('string');
-    expect(row.target_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(row.target_date).toBe(BASE_INPUT.target_date);
   });
 
   it('cache hit → hapcard_score_snapshots upsert 0회', async () => {

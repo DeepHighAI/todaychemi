@@ -1,13 +1,13 @@
 {
   "app": {
-    "title": "합플",
-    "tagline": "인연을 사주로 풀어보다"
+    "title": "오늘사이",
+    "tagline": "우리 오늘 무슨 사이야?"
   },
   "nav": {
     "tab": {
       "home": "홈",
-      "feed": "합피드",
-      "me": "내사주"
+      "feed": "너랑나랑",
+      "me": "내 사주맵"
     }
   },
   "common": {
@@ -17,7 +17,7 @@
   },
   "auth": {
     "login": {
-      "title": "합플 로그인",
+      "title": "오늘사이 로그인",
       "googleButton": "Google로 시작하기",
       "loading": "연결 중...",
       "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
@@ -31,7 +31,7 @@
       "signupLink": "계정이 없으신가요? 가입하기"
     },
     "signup": {
-      "title": "합플 회원가입",
+      "title": "오늘사이 회원가입",
       "emailLabel": "이메일",
       "passwordLabel": "비밀번호",
       "passwordHint": "영문과 숫자를 모두 포함, 8자 이상",
@@ -47,9 +47,9 @@
     }
   },
   "onboarding": {
-    "eyebrow": "본명식 입력",
-    "headline": "오늘의 합을\n계산하려면",
-    "body": "본인 사주가 필요해요. 1분이면 끝납니다.",
+    "eyebrow": "내 사주맵 입력",
+    "headline": "오늘의 사이를\n확인하려면",
+    "body": "내 사주맵이 필요해요. 1분이면 끝납니다.",
     "sections": {
       "basic": "기본 정보",
       "time": "출생 시간"
@@ -128,9 +128,9 @@
   },
   "relations": {
     "new": {
-      "eyebrow": "인연 본명식",
+      "eyebrow": "인연 사주맵",
       "headline": "인연의 사주를\n입력해주세요",
-      "body": "합카드 계산에 사용돼요.",
+      "body": "오늘 우리는 계산에 사용돼요.",
       "title": "인연 등록",
       "sections": {
         "basic": "인연 정보",
@@ -161,12 +161,12 @@
       },
       "mode": {
         "label": "어떤 사이예요?",
-        "일합": "일 동료",
-        "친구합": "친구",
-        "돈합": "돈 거래",
-        "첫합": "첫만남",
-        "썸합": "썸",
-        "오래합": "오래된 사이"
+        "일합": "일로 연결된 사이",
+        "친구합": "친구 사이",
+        "돈합": "돈이 오가는 사이",
+        "첫합": "처음 보는 사이",
+        "썸합": "끌리는 사이",
+        "오래합": "오래 알고 지낸 사이"
       },
       "consent": {
         "label": "인연의 정보를 저장하는 데 동의합니다",
@@ -192,21 +192,21 @@
       },
       "step3": {
         "headline": "이 인연과는\n어떤 사이예요?",
-        "body": "관계에 맞는 합을 풀어드릴게요."
+        "body": "관계에 맞는 오늘의 사이를 풀어드릴게요."
       },
       "next": "다음",
       "modeQuestion": {
-        "일합": "일로 만난 사이의 합이 궁금해요",
-        "친구합": "친구로서 잘 맞는지 궁금해요",
-        "돈합": "돈 거래해도 괜찮은 사이인지 궁금해요",
-        "첫합": "처음 만난 사이의 합이 궁금해요",
-        "썸합": "썸 타는 이 사람과의 합이 궁금해요",
-        "오래합": "오래된 사이의 합이 궁금해요"
+        "일합": "일로 연결된 사이의 오늘 흐름이 궁금해요",
+        "친구합": "친구 사이의 오늘 흐름이 궁금해요",
+        "돈합": "돈이 오가는 사이의 오늘 흐름이 궁금해요",
+        "첫합": "처음 보는 사이의 첫 흐름이 궁금해요",
+        "썸합": "끌리는 사이의 오늘 흐름이 궁금해요",
+        "오래합": "오래 알고 지낸 사이의 오늘 흐름이 궁금해요"
       }
     }
   },
   "feed": {
-    "title": "합피드",
+    "title": "너랑나랑",
     "empty": "아직 등록된 인연이 없어요. 첫 인연을 추가해보세요.",
     "emptyCta": "첫 인연 등록하기",
     "emptyFilter": "이 관계 유형의 인연이 없어요.",
@@ -219,30 +219,30 @@
         "일합": "일",
         "친구합": "친구",
         "돈합": "돈",
-        "첫합": "첫",
-        "썸합": "썸",
+        "첫합": "처음",
+        "썸합": "끌림",
         "오래합": "오래"
       }
     },
     "badge": {
-      "change_significant": "변화 큰 {delta}"
+      "change_significant": "오늘 변화 큼 {delta}"
     },
     "change": {
-      "eyebrow": "흐름 변화 큼"
+      "eyebrow": "오늘 변화 큼"
     },
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
-      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "confirmBody": "삭제하면 오늘 우리는과 흐름 기록도 함께 사라져요.",
       "cancel": "취소",
       "confirm": "삭제"
     }
   },
   "hapcard": {
-    "loading": "합카드를 불러오는 중...",
-    "score": "합게이지",
-    "reasons": "합의 이유",
+    "loading": "오늘 우리는을 불러오는 중...",
+    "score": "오늘온도",
+    "reasons": "맞는 이유",
     "actions": "오늘의 조언",
-    "classic": "고전에서 찾은 지혜",
+    "classic": "왜 이런 사이?",
     "share": "공유하기",
     "shareSheet": {
       "title": "공유 범위 선택",
@@ -256,8 +256,8 @@
       "cta": "공유하기",
       "cancel": "취소"
     },
-    "replay": "다시 해석하기",
-    "placeholder": "합카드 본문은 곧 준비됩니다.",
+    "replay": "그럴리 없어! 다시",
+    "placeholder": "오늘 우리는 본문은 곧 준비됩니다.",
     "header": { "vs": "↔" },
     "gauge": {
       "tier": { "weak": "약함", "fair": "보통", "good": "좋음", "great": "매우 좋음" },
@@ -279,19 +279,24 @@
     },
     "sharePreview": { "ariaLabel": "공유 미리보기" },
     "replayButton": {
-      "label": "다시합 (재해석)",
-      "confirmTitle": "다시합으로 재해석할까요?",
+      "label": "그럴리 없어! 다시",
+      "confirmTitle": "그럴리 없어! 다시 볼까요?",
       "confirmBody": "토큰 1개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
       "confirmCta": "재해석 받기",
       "cancel": "취소",
       "successToast": "재해석 완료. 흐름이 갱신되었어요.",
       "insufficientTokens": "토큰이 부족합니다. 충전 후 다시 시도해 주세요."
     },
-    "appBar": { "title": "합카드", "back": "뒤로", "share": "공유" },
+    "appBar": { "title": "오늘 우리는", "back": "뒤로", "share": "공유" },
     "ohaeng": {
       "title": "오행 흐름",
       "labelMe": "본인",
       "labelRelation": "인연",
+      "interpretation": {
+        "title": "서로의 흐름",
+        "loading": "서로의 흐름을 불러오는 중...",
+        "error": "서로의 흐름을 불러오지 못했어요."
+      },
       "elements": { "목": "목", "화": "화", "토": "토", "금": "금", "수": "수" }
     },
     "miniRadar": {
@@ -299,19 +304,24 @@
       "labelMe": "본인",
       "labelRelation": "인연"
     },
-    "evidence": { "title": "끌림의 이유", "empty": "근거가 아직 준비되지 않았어요." },
+    "roleAnalysis": {
+      "title": "관계 유지",
+      "loading": "관계 유지를 불러오는 중...",
+      "error": "관계 유지를 불러오지 못했어요."
+    },
+    "evidence": { "title": "왜 이런 사이?", "empty": "근거가 아직 준비되지 않았어요." },
     "actionsList": { "title": "오늘의 조언", "empty": "조언이 아직 준비되지 않았어요." },
-    "classicList": { "title": "고전에서 찾은 지혜", "empty": "관련 고전이 아직 준비되지 않았어요." },
+    "classicList": { "title": "왜 이런 사이?", "empty": "관련 풀이 근거가 아직 준비되지 않았어요." },
     "footer": {
       "disclaimer": "본 콘텐츠는 참고용이며, 의료·재정·법적 결정의 근거가 될 수 없습니다."
     },
     "errors": {
       "chartPending": {
-        "title": "합카드 준비 중",
-        "body": "인연의 사주 계산이 아직 준비되지 않았어요. 곧 자동으로 생성됩니다.",
+        "title": "오늘 우리는 준비 중",
+        "body": "인연의 사주맵 계산이 아직 준비되지 않았어요. 곧 자동으로 생성됩니다.",
         "cta": "피드로 돌아가기"
       },
-      "generic": "합카드를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+      "generic": "오늘 우리는을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
     },
     "menu": {
       "rename": "별명 수정",
@@ -319,15 +329,15 @@
       "delete": "인연 삭제"
     },
     "mode": {
-      "일합": "일 동료",
-      "친구합": "친구",
-      "돈합": "돈 거래",
-      "첫합": "첫만남",
-      "썸합": "썸",
-      "오래합": "오래된 사이"
+      "일합": "일로 연결된 사이",
+      "친구합": "친구 사이",
+      "돈합": "돈이 오가는 사이",
+      "첫합": "처음 보는 사이",
+      "썸합": "끌리는 사이",
+      "오래합": "오래 알고 지낸 사이"
     },
     "areas": {
-      "title": "영역별 합",
+      "title": "영역별 온도",
       "talk": "대화",
       "attract": "끌림",
       "speed": "속도",
@@ -336,6 +346,7 @@
     },
     "expand": {
       "cta": "더 자세히 펼쳐보기",
+      "collapse": "접기",
       "title": "자세히 보기",
       "tab": {
         "summary": "요약",
@@ -347,7 +358,7 @@
     },
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
-      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "confirmBody": "삭제하면 오늘 우리는과 흐름 기록도 함께 사라져요.",
       "cancel": "취소",
       "confirm": "삭제",
       "done": "삭제했어요"
@@ -366,14 +377,22 @@
     }
   },
   "home": {
-    "greeting": "오늘의 합",
+    "greeting": "오늘의 사이",
     "add_relation": "인연 등록",
-    "add_relation_sub": "썸합 · 일합 · 친구합 · 가족합",
+    "theme_to_light": "라이트 모드로 전환",
+    "theme_to_dark": "다크 모드로 전환",
+    "add_relation_sub": "끌리는 사이 · 일로 연결된 사이 · 친구 사이",
     "recent_picks": "오늘 흐름이 좋은 인연",
     "avoid_phrase_label": "오늘 피할 말",
     "favorable_action_label": "오늘 좋은 행동",
     "reused_label": "어제 이어감",
     "yesterday": "어제",
+    "fallback": {
+      "avoid_phrase": "급하게 단정하는 말",
+      "avoid_phrase_reason": "오늘 맞춤 해석을 불러오지 못했어요. 중요한 판단은 조금 천천히 확인해 주세요.",
+      "favorable_action": "가벼운 정리부터 하기",
+      "favorable_action_reason": "일정과 마음을 먼저 정돈하면 하루 흐름을 안정적으로 가져갈 수 있어요."
+    },
     "recent": {
       "title": "최근 인연",
       "viewAll": "전체 보기",
@@ -381,23 +400,23 @@
     },
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
-      "confirmBody": "삭제하면 합카드와 흐름 기록도 함께 사라져요.",
+      "confirmBody": "삭제하면 오늘 우리는과 흐름 기록도 함께 사라져요.",
       "cancel": "취소",
       "confirm": "삭제"
     },
     "compat": {
-      "eyebrow": "궁합",
+      "eyebrow": "오늘사이",
       "title": "다른 사람과의 사주"
     },
     "empty": {
       "title": "아직 등록된 인연이 없어요.",
-      "body": "동료·이성·가족을 등록하면 궁합 사주를 볼 수 있어요.",
+      "body": "동료·이성·가족을 등록하면 오늘의 사이를 볼 수 있어요.",
       "cta": "인연 등록하기"
     }
   },
   "me": {
-    "placeholder": "내사주 준비 중",
-    "title": "내 사주",
+      "placeholder": "내 사주맵 준비 중",
+      "title": "내 사주맵",
     "editRow": {
       "title": "내 정보 수정",
       "sub": "생년월일·출생시간·별명"
@@ -421,7 +440,7 @@
     },
     "section": {
       "bonmyeongsik": {
-        "eyebrow": "본명식",
+        "eyebrow": "내 사주맵",
         "year": "년주",
         "month": "월주",
         "day": "일주",
@@ -441,16 +460,38 @@
       },
       "yunse": {
         "title": "운세 흐름",
-        "subtitle": "본명식 위에 흐르는 시간의 운",
+        "subtitle": "내 사주맵 위에 흐르는 시간의 운",
         "daeun": { "label": "대운", "currentLabel": "현재 대운" },
         "seyun": { "label": "올해 운(세운)" },
         "wolun": { "label": "이번 달 운(월운)" },
         "iliun": { "label": "오늘 운(일운)" },
-        "interpretationFooter": "더 자세한 해석은 합카드와 다시합에서 풀어요."
+        "interpretationFooter": "더 자세한 해석은 오늘 우리는과 그럴리 없어! 다시에서 풀어요."
       }
     },
     "settings": {
       "appearance": "테마"
+    },
+    "wallet": {
+      "eyebrow": "부적 지갑",
+      "unit": "부적",
+      "validUntil": "다음 만료일 {date}",
+      "monthlyUsed": "최근 사용량",
+      "charge": "충전",
+      "history": "사용 기록",
+      "emptyHistory": "아직 사용 기록이 없어요.",
+      "error": "결제 주문을 만들지 못했어요. 잠시 후 다시 시도해주세요."
+    },
+    "info": {
+      "eyebrow": "서비스 정보",
+      "language": "언어 변경",
+      "languageSub": "한국어 우선 지원",
+      "privacy": "개인정보처리방침",
+      "privacySub": "정식 문서 공개 전 메뉴 위치만 준비",
+      "terms": "이용약관",
+      "termsSub": "정식 문서 공개 전 메뉴 위치만 준비",
+      "about": "회사소개",
+      "aboutSub": "(주) 딥하이",
+      "contact": "대표번호"
     },
     "theme": {
       "label": "테마 선택",
@@ -459,16 +500,25 @@
       "system": "시스템"
     },
     "empty": {
-      "title": "본명식이 아직 등록되지 않았어요.",
+      "title": "내 사주맵이 아직 등록되지 않았어요.",
       "body": "온보딩에서 사주 정보를 입력해주세요.",
       "cta": "시작하기"
     }
   },
+  "wallet": {
+    "charge": {
+      "title": "부적 충전",
+      "currentBalance": "현재 보유",
+      "tossNotice": "결제는 TossPayments 보안 결제창에서 진행됩니다.",
+      "loading": "결제 준비 중…",
+      "payCta": "₩{amount} 결제하기"
+    }
+  },
   "whatif": {
     "sheet": {
-      "title": "이런건 어때 ✨",
-      "description": "원하는 만약합 모드를 선택합니다",
-      "trigger": "이런건 어때"
+      "title": "또 다른 나",
+      "description": "원하는 또 다른 나를 선택합니다",
+      "trigger": "또 다른 나"
     },
     "card": {
       "work": {
@@ -483,16 +533,16 @@
         "title": "싸울 때 나",
         "cta": "알아보기"
       },
-      "leadership": {
-        "title": "리더합",
-        "cta": "알아보기"
-      },
+        "leadership": {
+          "title": "리더일 때 나",
+          "cta": "알아보기"
+        },
       "money": {
         "title": "돈쓰는 나",
         "cta": "알아보기"
       },
       "first_meet": {
-        "title": "첫만남 플레이",
+        "title": "처음 보는 나",
         "cta": "알아보기"
       }
     },

@@ -154,6 +154,7 @@ describe('POST /api/whatif/[type]', () => {
   });
 
   it('422 GROUNDING_FAILED → buildWhatif 가 GROUNDING_FAILED throw', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const supabase = makeAuthedClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
     vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
@@ -163,6 +164,11 @@ describe('POST /api/whatif/[type]', () => {
     expect(res.status).toBe(422);
     const body = await res.json();
     expect(body.error.code).toBe('GROUNDING_FAILED');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'whatif_build_failed',
+      expect.objectContaining({ type: 'work', error: 'GROUNDING_FAILED: []' }),
+    );
+    consoleSpy.mockRestore();
   });
 
   it('500 INTERNAL_ERROR → buildWhatif 가 WHATIF_INSERT_FAILED throw', async () => {
@@ -218,120 +224,93 @@ describe('POST /api/whatif/[type]', () => {
   });
 });
 
-describe('토큰 deduct/refund', () => {
-  function makeAuthedForToken() {
+describe('포인트 무료 이용', () => {
+  function makeAuthedForFreeUse() {
     const supabase = makeAuthedClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
     return supabase;
   }
 
-  it('잔액 부족 → 402 INSUFFICIENT_TOKENS, buildWhatif 미호출', async () => {
+  it('포인트 RPC가 실패해도 buildWhatif를 호출하고 200을 반환한다', async () => {
     rpcFn.mockResolvedValueOnce({ error: { message: 'insufficient balance', code: 'P0001' } });
-    makeAuthedForToken();
-
-    const res = await POST(makeRequest(), makeParams('work'));
-
-    expect(res.status).toBe(402);
-    const body = await res.json();
-    expect(body.error.code).toBe('INSUFFICIENT_TOKENS');
-    expect(buildWhatif).not.toHaveBeenCalled();
-  });
-
-  it('정상 빌드(fromCache:false) → deduct_tokens({ delta:-4, reason:"whatif_use", ref:"work" }), 200', async () => {
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(200);
-    expect(rpcFn).toHaveBeenCalledWith(
-      'deduct_tokens',
-      expect.objectContaining({ delta: -4, reason: 'whatif_use', ref: 'work' }),
-    );
+    expect(buildWhatif).toHaveBeenCalledOnce();
   });
 
-  it('GROUNDING_FAILED throw → 422 + refund_tokens({ delta:4, reason:"whatif_refund" })', async () => {
+  it('정상 빌드(fromCache:false) → deduct_tokens/refund_tokens 미호출, 200', async () => {
+    makeAuthedForFreeUse();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(200);
+    expect(rpcFn).not.toHaveBeenCalled();
+  });
+
+  it('GROUNDING_FAILED throw → 422 + refund_tokens 미호출', async () => {
     vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(422);
-    expect(rpcFn).toHaveBeenCalledWith(
-      'refund_tokens',
-      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
-    );
+    expect(rpcFn).not.toHaveBeenCalled();
   });
 
-  it('generic throw → 500 + refund_tokens 1회', async () => {
+  it('generic throw → 500 + refund_tokens 미호출', async () => {
     vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(500);
-    expect(rpcFn).toHaveBeenCalledWith(
-      'refund_tokens',
-      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
-    );
+    expect(rpcFn).not.toHaveBeenCalled();
   });
 
-  it('캐시 적중(fromCache:true) → deduct 후 즉시 환불, 200 반환', async () => {
+  it('캐시 적중(fromCache:true) → 포인트 RPC 없이 200 반환', async () => {
     vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(200);
-    expect(rpcFn).toHaveBeenCalledWith(
-      'deduct_tokens',
-      expect.objectContaining({ delta: -4, reason: 'whatif_use' }),
-    );
-    expect(rpcFn).toHaveBeenCalledWith(
-      'refund_tokens',
-      expect.objectContaining({ delta: 4, reason: 'whatif_refund' }),
-    );
+    expect(rpcFn).not.toHaveBeenCalled();
   });
 
-  it('캐시 적중 + 환불 RPC 실패 → console.error("whatif_refund_failed", { phase: "cache_hit", ... })', async () => {
+  it('캐시 적중이어도 환불 실패 로그를 남기지 않는다', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // deduct succeeds, then refund fails
-    rpcFn.mockResolvedValueOnce({ error: null }); // deduct
-    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } }); // refund
+    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } });
     vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     await POST(makeRequest(), makeParams('love'));
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'whatif_refund_failed',
-      expect.objectContaining({ phase: 'cache_hit', error: 'refund failed' }),
-    );
+    expect(consoleSpy).not.toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
     consoleSpy.mockRestore();
   });
 
-  it('빌드 실패 + 환불 RPC 실패 → console.error("whatif_refund_failed", { phase: "build_error", ... })', async () => {
+  it('빌드 실패여도 환불 실패 로그를 남기지 않는다', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    rpcFn.mockResolvedValueOnce({ error: null }); // deduct
-    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } }); // refund
+    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } });
     vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     await POST(makeRequest(), makeParams('work'));
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'whatif_refund_failed',
-      expect.objectContaining({ phase: 'build_error', refund_error: 'refund failed' }),
-    );
+    expect(consoleSpy).not.toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
     consoleSpy.mockRestore();
   });
 
-  it('환불 성공 시 console.error 미호출', async () => {
+  it('포인트 무료 이용 경로에서는 console.error 미호출', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
-    makeAuthedForToken();
+    makeAuthedForFreeUse();
 
     await POST(makeRequest(), makeParams('work'));
 

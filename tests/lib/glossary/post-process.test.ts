@@ -43,6 +43,9 @@ describe('transliterateHanja', () => {
   it('"正印" → "정인" (sipsin)', () => {
     expect(transliterateHanja('正印')).toBe('정인');
   });
+  it('"子平眞詮" → "자평진전" (chapter/classic title match)', () => {
+    expect(transliterateHanja('子平眞詮')).toBe('자평진전');
+  });
   it('"桃花殺" → "도화살" (shinsal)', () => {
     expect(transliterateHanja('桃花殺')).toBe('도화살');
   });

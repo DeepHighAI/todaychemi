@@ -12,6 +12,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { convertHanja } from '@/lib/glossary/post-process';
+import { formatTemperatureDelta, scoreToTemperature } from '@/lib/scoring/temperature';
 import type { DailyHapCard } from '@/types/dailyHap';
 
 interface TodayHeroProps {
@@ -23,7 +24,7 @@ interface TodayHeroProps {
 export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
   const t = useTranslations('home');
   const hasScore = typeof score === 'number';
-  const deltaSign = (deltaVsYesterday ?? 0) >= 0 ? '+' : '';
+  const temperature = hasScore ? scoreToTemperature(score) : null;
 
   return (
     <Link
@@ -45,8 +46,8 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
           </p>
           {hasScore ? (
             <p className="font-display font-black text-[56px] leading-none tracking-[-0.045em] text-white mt-1.5 tabular-nums">
-              {score}
-              <span className="text-[18px] font-bold text-white/85 ml-1 tracking-normal align-baseline">/100</span>
+              {temperature?.toFixed(1)}
+              <span className="text-[18px] font-bold text-white/85 ml-1 tracking-normal align-baseline">°C</span>
             </p>
           ) : (
             <p className="font-display font-extrabold text-[28px] leading-[1.18] tracking-[-0.025em] text-white mt-2 whitespace-pre-line">
@@ -57,7 +58,7 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
 
         {typeof deltaVsYesterday === 'number' && deltaVsYesterday !== 0 && (
           <span className="shrink-0 inline-flex items-center bg-white/20 text-white text-[11px] font-bold leading-[1.3] rounded-full px-2.5 py-1 whitespace-nowrap">
-            {deltaVsYesterday > 0 ? '▲' : '▼'} {deltaSign}{deltaVsYesterday} vs {t('yesterday')}
+            {deltaVsYesterday > 0 ? '▲' : '▼'} {formatTemperatureDelta(deltaVsYesterday)} vs {t('yesterday')}
           </span>
         )}
       </div>

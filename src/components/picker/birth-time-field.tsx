@@ -11,13 +11,14 @@ interface BirthTimeFieldProps {
   value: string; // 'HH:mm' | ''
   onChange: (v: string) => void;
   label: string;
+  portal?: boolean;
 }
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
-export function BirthTimeField({ value, onChange, label }: BirthTimeFieldProps) {
+export function BirthTimeField({ value, onChange, label, portal = true }: BirthTimeFieldProps) {
   const t = useTranslations('onboarding');
 
   const [open, setOpen] = useState(false);
@@ -58,6 +59,7 @@ export function BirthTimeField({ value, onChange, label }: BirthTimeFieldProps) 
           onChange(`${pad(draftHour)}:${pad(draftMin)}`);
           setOpen(false);
         }}
+        portal={portal}
       >
         <div className="picker-cols">
           <div className="picker-band" />

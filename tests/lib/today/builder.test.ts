@@ -62,6 +62,10 @@ describe('buildDailyHap', () => {
     const result = await buildDailyHap(deps);
     expect(result).not.toBeNull();
     expect(typeof result?.headline).toBe('string');
+    expect(result?.avoid_phrase).toBeTruthy();
+    expect(result?.avoid_phrase_reason).toBeTruthy();
+    expect(result?.favorable_action).toBeTruthy();
+    expect(result?.favorable_action_reason).toBeTruthy();
   });
 
   it('chart 없으면 템플릿 카드 반환 (callLlm 미호출)', async () => {
@@ -69,5 +73,7 @@ describe('buildDailyHap', () => {
     const result = await buildDailyHap(deps);
     expect(deps.callLlm).not.toHaveBeenCalled();
     expect(result).not.toBeNull();
+    expect(result?.avoid_phrase).toBeTruthy();
+    expect(result?.favorable_action).toBeTruthy();
   });
 });

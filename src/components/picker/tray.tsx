@@ -11,6 +11,7 @@ interface TrayProps {
   children: React.ReactNode;
   cancelLabel?: string;
   doneLabel?: string;
+  portal?: boolean;
 }
 
 export function Tray({
@@ -21,6 +22,7 @@ export function Tray({
   children,
   cancelLabel = '취소',
   doneLabel = '완료',
+  portal = true,
 }: TrayProps) {
   const [mounted, setMounted] = useState(false);
   const trayRef = useRef<HTMLDivElement>(null);
@@ -51,14 +53,15 @@ export function Tray({
     }
   }, [open]);
 
-  if (!mounted) return null;
+  if (!mounted || !open) return null;
 
-  return createPortal(
+  const content = (
     <>
       <div
         className={`fixed inset-0 z-[79] bg-black/40 transition-opacity duration-300${open ? '' : ' opacity-0 pointer-events-none'}`}
         aria-hidden="true"
         onClick={onClose}
+        data-vaul-no-drag=""
       />
       <div
         ref={trayRef}
@@ -66,15 +69,17 @@ export function Tray({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        data-vaul-no-drag=""
       >
         <div className="tray-head">
           <button className="done" type="button" onClick={onClose}>{cancelLabel}</button>
           <div className="ttl">{title}</div>
           <button className="done" type="button" onClick={onDone}>{doneLabel}</button>
         </div>
-        <div className="tray-body">{children}</div>
+        <div className="tray-body" data-vaul-no-drag="">{children}</div>
       </div>
-    </>,
-    document.body,
+    </>
   );
+
+  return portal ? createPortal(content, document.body) : content;
 }

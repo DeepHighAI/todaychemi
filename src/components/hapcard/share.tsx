@@ -61,7 +61,7 @@ export function HapcardShare({
         onClick={() => setSheetOpen(true)}
         className="rounded-full bg-primary text-primary-foreground px-6 py-3 text-sm font-semibold"
       >
-        공유합카드 만들기
+        오늘 우리는 공유하기
       </button>
       {status === 'shared' && (
         <p className="text-xs text-muted-foreground">공유했어요!</p>

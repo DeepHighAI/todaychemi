@@ -18,16 +18,16 @@ describe('ChangeBadge', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('change_score > 0 → "+{n}" 포함 표시', async () => {
+  it('change_score > 0 → 온도 변화량 포함 표시', async () => {
     const { ChangeBadge } = await import('@/components/feed/ChangeBadge');
     renderWithIntl(<ChangeBadge significant={true} changeScore={15} />);
-    expect(screen.getByTestId('change-badge').textContent).toContain('+15');
+    expect(screen.getByTestId('change-badge').textContent).toContain('+0.8°C');
   });
 
-  it('change_score < 0 → "-{n}" 포함 표시 (음수 그대로)', async () => {
+  it('change_score < 0 → 음수 온도 변화량 포함 표시', async () => {
     const { ChangeBadge } = await import('@/components/feed/ChangeBadge');
     renderWithIntl(<ChangeBadge significant={true} changeScore={-12} />);
-    expect(screen.getByTestId('change-badge').textContent).toContain('-12');
+    expect(screen.getByTestId('change-badge').textContent).toContain('-0.6°C');
   });
 
   it('change_score = threshold 경계값(10) → 배지 렌더됨', async () => {
@@ -44,6 +44,6 @@ describe('ChangeBadge', () => {
         <ChangeBadge significant={true} changeScore={15} />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('change-badge').textContent).toBe('BIG +15');
+    expect(screen.getByTestId('change-badge').textContent).toBe('BIG +0.8°C');
   });
 });

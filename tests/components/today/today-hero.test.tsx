@@ -51,4 +51,12 @@ describe('TodayHero', () => {
     renderWithProviders(<TodayHero card={{ ...card, headline_reason: '酉金이 火를 누르는 흐름' }} />);
     expect(screen.getByText('유금이 화를 누르는 흐름')).toBeInTheDocument();
   });
+
+  it('score가 있으면 100점 만점 대신 오늘온도 °C로 렌더한다', () => {
+    renderWithProviders(<TodayHero card={card} score={62} deltaVsYesterday={15} />);
+    expect(screen.getByText('37.6')).toBeInTheDocument();
+    expect(screen.getByText('°C')).toBeInTheDocument();
+    expect(screen.getByText(/▲ \+0\.8°C vs 어제/)).toBeInTheDocument();
+    expect(screen.queryByText('/100')).toBeNull();
+  });
 });

@@ -80,10 +80,10 @@ async function renderTodayPage() {
 }
 
 describe('TodayPage (composition)', () => {
-  it('TodayAppBar 제목 "오늘의 합" 렌더', async () => {
+  it('TodayAppBar 제목 "오늘의 사이" 렌더', async () => {
     setupRoutes({});
     await renderTodayPage();
-    expect(await screen.findByRole('heading', { level: 1, name: '오늘의 합' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '오늘의 사이' })).toBeInTheDocument();
   });
 
   it('TodayHero headline을 card.headline에서 가져와 렌더', async () => {
@@ -146,14 +146,14 @@ describe('TodayPage (composition)', () => {
   it('chart 있을 때 WhatifTrigger 카드 렌더', async () => {
     setupRoutes({});
     await renderTodayPage();
-    expect(await screen.findByRole('button', { name: '이런건 어때' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '또 다른 나' })).toBeInTheDocument();
   });
 
   it('chart=null 이면 WhatifTrigger를 렌더하지 않는다', async () => {
     setupRoutes({ meChart: { ok: true, body: { ok: true, chart: null } } });
     await renderTodayPage();
     await screen.findByText('좋은 에너지가 흐르는 날');
-    expect(screen.queryByRole('button', { name: '이런건 어때' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '또 다른 나' })).toBeNull();
   });
 
   it('today 로딩 중에는 LoadingState 렌더', async () => {

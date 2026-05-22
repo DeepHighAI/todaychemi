@@ -22,10 +22,28 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('each row has version v0.8', () => {
+  it('each row has version v0.13', () => {
     const rows = loadPromptFiles(dir);
     for (const row of rows) {
-      expect(row.version, `${row.prompt_name} version`).toBe('v0.8');
+      expect(row.version, `${row.prompt_name} version`).toBe('v0.13');
+    }
+  });
+
+  it('each row requires newline-separated main_text and plain-language user-facing fields', () => {
+    const rows = loadPromptFiles(dir);
+    for (const row of rows) {
+      expect(row.content, `${row.prompt_name} main_text newline rule`).toContain('JSON 문자열 안에서 `\\n`으로 줄바꿈');
+      expect(row.content, `${row.prompt_name} plain-language rule`).toContain('Plain-language v0.12');
+      expect(row.content, `${row.prompt_name} action role split rule`).toContain('Action role split v0.12');
+      expect(row.content, `${row.prompt_name} ohaeng interpretation field`).toContain('"ohaeng_interpretation"');
+      expect(row.content, `${row.prompt_name} ohaeng interpretation rule`).toContain('`ohaeng_interpretation`은 **반드시 출력**');
+      expect(row.content, `${row.prompt_name} card actions rule`).toContain('actions[1~3]`은 `actions[0]`을 반복하지 말고');
+      expect(row.content, `${row.prompt_name} four actions rule`).toMatch(
+        /`actions`(?:는 \*\*반드시 4개\*\*|: 반드시 4개)/u,
+      );
+      expect(row.content, `${row.prompt_name} technical-term rewrite examples`).toContain('`일간`→`타고난 중심 기질`');
+      expect(row.content, `${row.prompt_name} daily flow rule`).toContain('Daily relationship flow v0.13');
+      expect(row.content, `${row.prompt_name} target date context`).toContain('time_context.target_date');
     }
   });
 

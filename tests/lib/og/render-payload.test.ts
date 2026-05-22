@@ -10,11 +10,12 @@ const BASE: OgPayloadInput = {
 };
 
 describe('buildOgPayload', () => {
-  it('nickname-only → nickname/score/mode/range만 포함, ohaeng/gender 미포함', () => {
+  it('nickname-only → nickname/score/오늘온도/mode/range만 포함, ohaeng/gender 미포함', () => {
     const result = buildOgPayload(BASE, 'nickname-only');
     expect(result.nickname).toBe('봄달');
     expect(result.score).toBe(78);
-    expect(result.mode).toBe('친구합');
+    expect(result.temperature_label).toBe('38.4°C');
+    expect(result.mode).toBe('친구 사이');
     expect(result.range).toBe('nickname-only');
     expect(result.ohaeng_counts).toBeUndefined();
     expect(result.gender_normalized).toBeUndefined();

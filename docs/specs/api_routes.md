@@ -9,12 +9,15 @@
 
 | Route | Type | Auth | Request | Response | Notes |
 |---|---|---|---|---|---|
-| `POST /api/hapcard` | Route Handler (streaming) | required | `{relationId, mode}` | SSE `HapcardBody` chunks | LLM 진입점, GPT-5o 우선 |
+| `POST /api/hapcards` | Route Handler | required | `{relation_id, mode, theory_profile_version, question_slot?}` | `HapcardResult` JSON | KST `target_date` 서버 산출, 날짜별 캐시/재분석 |
 | `GET /api/today` | Route Handler | required | — | `DailyHap` JSON | lazy-first 캐시 (자정 만료) |
 | `POST /actions/createRelation` | Server Action | required | `RelationCreate` | `RelationRow` | Zod validated, 닉네임만 저장 |
 | `POST /api/hapcards/[id]/replay` | Route Handler | required | `{replay_reason?}` | `HapcardReplayResult` | 4p 차감, idempotency(jinjin_date UNIQUE), 보상 트랜잭션 |
 | `POST /actions/archiveRelation` | Server Action | required | `{relationId}` | `{ok: true}` | soft delete (archived_at 설정) |
-| `POST /api/payments/webhook` | Route Handler | toss signature | toss payload | `200 OK` | Toss Payments 결제 승인 |
+| `GET /api/me/wallet` | Route Handler | required | — | `WalletResponse` | 보유 부적, 최근 원장, 최근 사용량 |
+| `POST /api/payments/init` | Route Handler | required | `{product_id}` | `PaymentInitResponse` | 서버 상품 카탈로그로 pending 주문 생성 |
+| `GET /api/payments/order` | Route Handler | required | `?orderId=` | `PaymentOrderResponse` | checkout이 본인 주문 + Toss client key 조회 |
+| `POST /api/payments/webhook` | Route Handler | Toss 재조회 검증 | toss payload | `200 OK` | 후속 환불/취소 자동화 |
 | `POST /api/push/subscribe` | Route Handler | required | `PushSubscription` | `201` | FCM/Web Push 구독 등록 |
 | `GET /api/og/hapcard/[id]` | Route Handler (next/og) | optional | — | `image/png` | 공유용 OG 이미지 생성 |
 | `GET /admin/sre` | Server Component | admin role | — | HTML | SRE 대시보드 (§monitoring) |
@@ -36,7 +39,7 @@
 - 외부 시스템 webhook 수신 (Toss Payments, FCM)
 - 이미지/바이너리 응답 (next/og)
 - 캐시 헤더를 정밀하게 제어해야 하는 경우
-- 예: `/api/hapcard`, `/api/today`, `/api/payments/webhook`, `/api/og/*`
+- 예: `/api/hapcard`, `/api/today`, `/api/payments/init`, `/api/payments/webhook`, `/api/og/*`
 
 ---
 
@@ -141,7 +144,8 @@ CREATE INDEX ON anon_requests (ip_hash, route, requested_at);
 | `POST /api/hapcard` | 30 req/hour | 5 req/hour |
 | `GET /api/today` | 60 req/hour | 10 req/hour |
 | `POST /actions/createRelation` | 20 req/hour | — |
-| `POST /api/payments/webhook` | — (Toss IP allowlist) | — |
+| `POST /api/payments/init` | 10 req/10min | — |
+| `POST /api/payments/webhook` | — (Toss paymentKey 재조회) | — |
 
 ### 초과 시 응답
 
@@ -205,35 +209,29 @@ PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 
 
 ---
 
-## 7. POST /api/payments/webhook 상세
+## 7. 결제 라우트 상세
 
-### Toss Payments 서명 검증
+### v1 지갑/충전 라우트
 
-```typescript
-import crypto from 'crypto';
+1. `POST /api/payments/init`: `product_id`만 받고 서버의 상품 카탈로그에서 금액·부적 수를 결정한다.
+2. `/payment/checkout`: TossPayments V2 `loadTossPayments → widgets({ customerKey }) → setAmount → renderPaymentMethods/renderAgreement → requestPayment`.
+3. `/payment/success`: successUrl의 `amount`를 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm API를 호출하고 `confirm_token_purchase` RPC로 `payments.status='confirmed'`와 `token_ledger.reason='purchase'` 충전을 한 트랜잭션으로 처리한다.
+4. 중복 success redirect는 `toss_order_id`/confirmed 상태 기준으로 부적 중복 지급 없이 멱등 처리한다.
 
-function verifyTossSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
-  );
-}
-```
+### POST /api/payments/webhook 상세
+
+Webhook은 후속 환불·취소 자동화 단계에서 활성화한다.
+
+### Toss Payments webhook 검증
 
 ### webhook 처리 흐름
 
-1. Toss 서명 검증 실패 → `400` 즉시 반환
-2. `paymentKey` + `orderId` + `amount` 일치 검증
-3. `payments` 테이블 INSERT
-4. `token_ledger` 테이블 크레딧 추가
+TossPayments V2 최신 LLM Quick Reference 기준으로 일반 결제 webhook(`PAYMENT_STATUS_CHANGED`, `DEPOSIT_CALLBACK`, `CANCEL_STATUS_CHANGED`)은 HMAC signature header 검증 대상이 아니다. webhook payload의 `paymentKey`로 Toss Payments 결제 조회 API를 다시 호출해 상태를 검증한다.
+
+1. payload에서 `paymentKey` 추출
+2. `GET /v1/payments/{paymentKey}` 재조회
+3. 조회 결과의 `paymentKey` + `orderId` + `amount` + `status` 일치 검증
+4. 환불·취소 자동화 정책 결정 후 DB 반영
 5. `200 OK` 반환 (5초 이내 — Toss 타임아웃)
 
 ---

@@ -30,8 +30,8 @@ export interface ClassicCitation {
 }
 
 // 마이플레이 LLM 출력 구조 (FGI §12.1)
-// body: 350-450자, keywords: 5개, do_first: 3개
-// 첫만남(first_meet)만 first_meet_tips 추가
+// body: 80-700자, keywords: 5개, do_first: 3개
+// 처음 보는 나(first_meet)만 first_meet_tips 추가
 export interface WhatifContent {
   body: string;
   keywords: [string, string, string, string, string];

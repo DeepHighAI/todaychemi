@@ -61,29 +61,12 @@ export async function POST(
     ragQueryText: buildWhatifRagQueryText,
   };
 
-  // 5. 토큰 차감 (-4p, §1.1 결정 5)
-  const { error: deductErr } = await serviceClient.rpc('deduct_tokens', {
-    uid: userId,
-    delta: -4,
-    reason: 'whatif_use',
-    ref: type,
-  });
-  if (deductErr) {
-    return apiErrorResponse('INSUFFICIENT_TOKENS', (deductErr as { message: string }).message, 402);
-  }
-
   try {
-    const { result, fromCache } = await buildWhatif(input, deps);
-    if (fromCache) {
-      // 캐시 적중: 즉시 환불 (§1.1 결정 6 — 캐시 적중 = 무료)
-      const { error: refundErr } = await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
-      if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'cache_hit', error: (refundErr as { message: string }).message });
-    }
+    const { result } = await buildWhatif(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
-    const { error: refundErr } = await serviceClient.rpc('refund_tokens', { uid: userId, delta: 4, reason: 'whatif_refund', ref: type });
     const message = toErrorMessage(err);
-    if (refundErr) console.error('whatif_refund_failed', { user_id: userId, type, phase: 'build_error', original_error: message, refund_error: (refundErr as { message: string }).message });
+    console.error('whatif_build_failed', { user_id: userId, type, error: message });
     if (message.startsWith('GROUNDING_FAILED')) {
       return apiErrorResponse('GROUNDING_FAILED', message, 422);
     }

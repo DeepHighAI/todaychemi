@@ -51,6 +51,7 @@ const HAPCARD_RESULT: HapcardResult = {
   user_id: 'user-uuid-001',
   relation_id: VALID_BODY.relation_id,
   mode: '일합',
+  target_date: '2026-05-21',
   compat_score: 72,
   score_breakdown: {
     hap_chung_hyung_hae: 70,
@@ -293,6 +294,7 @@ describe('POST /api/hapcards', () => {
     expect(input.relation).toEqual(RELATION_CHART_CORE);
     expect(input.relation_chart_hash).toBe('rel-hash-def');
     expect(input.theory_profile_version).toBe('v1.0-late_zi');
+    expect(input.target_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(deps.supabaseUserClient).toBe(supabase);
     expect(deps.supabaseServiceClient).toBe(SERVICE_CLIENT);
     expect(deps.openaiClient).toBe(OPENAI_CLIENT);

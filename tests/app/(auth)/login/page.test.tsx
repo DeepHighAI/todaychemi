@@ -42,7 +42,7 @@ describe('LoginPage', () => {
   it('renders title and Google button text from ko.json', async () => {
     await renderLoginPage();
 
-    expect(screen.getByRole('heading', { name: '합플 로그인' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '오늘사이 로그인' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeInTheDocument();
   });
 

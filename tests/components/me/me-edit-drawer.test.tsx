@@ -66,6 +66,47 @@ describe('MeEditDrawer', () => {
     expect(saveBtn).toBeDisabled();
   });
 
+  it('생년월일 picker를 drawer 안에서 터치해 날짜를 변경할 수 있다', async () => {
+    mockFetch();
+    renderWithProviders(<MeEditDrawer open={true} onOpenChange={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /생년월일.*1991년 3월 15일/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /생년월일.*1991년 3월 15일/ }));
+    expect(document.querySelector('.tray.on')).toBeTruthy();
+
+    const day20 = Array.from(document.querySelectorAll('.cal .d:not(.muted)'))
+      .find((el) => el.textContent === '20') as HTMLElement;
+    fireEvent.click(day20);
+
+    expect(screen.getByRole('button', { name: /생년월일.*1991년 3월 20일/ })).toBeInTheDocument();
+  });
+
+  it('시간 picker를 drawer 안에서 터치해 시간을 변경할 수 있다', async () => {
+    mockFetch();
+    renderWithProviders(<MeEditDrawer open={true} onOpenChange={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /시간 입력.*14:30/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /시간 입력.*14:30/ }));
+    expect(document.querySelector('.tray.on')).toBeTruthy();
+
+    const hour09 = Array.from(document.querySelectorAll('.picker-col')[0].querySelectorAll('.opt'))
+      .find((el) => el.textContent === '09') as HTMLElement;
+    fireEvent.click(hour09);
+
+    const min00 = Array.from(document.querySelectorAll('.picker-col')[1].querySelectorAll('.opt'))
+      .find((el) => el.textContent === '00') as HTMLElement;
+    fireEvent.click(min00);
+    fireEvent.click(screen.getByText('완료'));
+
+    expect(screen.getByRole('button', { name: /시간 입력.*09:00/ })).toBeInTheDocument();
+  });
+
   it('저장 성공 → onOpenChange(false) 호출', async () => {
     mockFetch({ patchOk: true });
     const onOpenChange = vi.fn();

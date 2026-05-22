@@ -31,4 +31,10 @@ describe('WhatifNumberedList', () => {
     const { container } = render(<WhatifNumberedList testid="empty" titleKey="k" items={[]} />);
     expect(container.querySelectorAll('li').length).toBe(0);
   });
+
+  it('items의 한자를 한글로 변환한다 (ADR-038)', () => {
+    render(<WhatifNumberedList testid="test-list" titleKey="section.test" items={['日主 火를 살피기']} />);
+    expect(screen.getByText('일주 화를 살피기')).toBeTruthy();
+    expect(screen.queryByText(/日主|火/)).toBeNull();
+  });
 });

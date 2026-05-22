@@ -21,7 +21,7 @@ describe('HapcardFooter', () => {
   it('replayHint 제거됨 — 별도 ReplayButton으로 대체', () => {
     renderWithProviders(<HapcardFooter />);
     expect(
-      screen.queryByText('D+1 다시합 알림은 다음 단계에서 설정할 수 있어요.'),
+      screen.queryByText('D+1 그럴리 없어! 다시 알림은 다음 단계에서 설정할 수 있어요.'),
     ).not.toBeInTheDocument();
   });
 });

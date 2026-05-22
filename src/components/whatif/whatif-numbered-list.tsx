@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { convertHanja } from '@/lib/glossary/post-process';
 
 interface WhatifNumberedListProps {
   testid: string;
@@ -17,7 +18,7 @@ export function WhatifNumberedList({ testid, titleKey, items }: WhatifNumberedLi
         {items.map((item, i) => (
           <li key={i} className="flex gap-3 items-start">
             <span className="text-sm font-bold text-primary">{i + 1}</span>
-            <span className="text-sm text-foreground">{item}</span>
+            <span className="text-sm text-foreground">{convertHanja(item)}</span>
           </li>
         ))}
       </ol>

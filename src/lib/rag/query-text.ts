@@ -1,6 +1,6 @@
 import type { BuildHapcardInput } from '@/lib/hapcard/builder';
 
-// 합카드 RAG 검색용 쿼리 텍스트.
+// 오늘 우리는 RAG 검색용 쿼리 텍스트.
 // PII §5: chart_core + mode 만 사용. user_id/relation_id/hash 누출 금지.
 export function buildRagQueryText(input: BuildHapcardInput): string {
   const { mode, self, relation } = input;

@@ -17,25 +17,25 @@ beforeEach(() => {
 });
 
 describe('WhatifTrigger', () => {
-  it('트리거 버튼 라벨 = "이런건 어때"', () => {
+  it('트리거 버튼 라벨 = "또 다른 나"', () => {
     renderWithProviders(<WhatifTrigger />);
-    expect(screen.getByRole('button', { name: '이런건 어때' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '또 다른 나' })).toBeInTheDocument();
   });
 
   it('초기 상태: WhatifSheet 미노출', () => {
     renderWithProviders(<WhatifTrigger />);
-    expect(screen.queryByText('이런건 어때 ✨')).toBeNull();
+    expect(screen.queryByRole('heading', { name: '또 다른 나' })).toBeNull();
   });
 
-  it('트리거 클릭 → WhatifSheet 노출 ("이런건 어때 ✨")', () => {
+  it('트리거 클릭 → WhatifSheet 노출 ("또 다른 나")', () => {
     renderWithProviders(<WhatifTrigger />);
-    fireEvent.click(screen.getByRole('button', { name: '이런건 어때' }));
-    expect(screen.getByText('이런건 어때 ✨')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '또 다른 나' }));
+    expect(screen.getByRole('heading', { name: '또 다른 나' })).toBeInTheDocument();
   });
 
   it('시트 열린 후 work 행 클릭 → router.push("/whatif/work")', () => {
     renderWithProviders(<WhatifTrigger />);
-    fireEvent.click(screen.getByRole('button', { name: '이런건 어때' }));
+    fireEvent.click(screen.getByRole('button', { name: '또 다른 나' }));
     fireEvent.click(screen.getByTestId('whatif-row-work'));
     expect(mockPush).toHaveBeenCalledWith('/whatif/work');
   });

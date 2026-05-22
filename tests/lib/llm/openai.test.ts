@@ -6,6 +6,19 @@ import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // 최소 유효 LLM 출력 (150~200자 main_text, 각 배열 제약 충족)
+function makeValidOhaengInterpretation() {
+  return {
+    title: '갑인 ↔ 병오 오행 해석',
+    summary: '본인의 목 기운이 인연의 화 기운을 살려 주는 흐름입니다.',
+    points: [
+      { label: '중심 기질', body: '본인은 성장, 인연은 표현을 중심으로 움직입니다.' },
+      { label: '균형 포인트', body: '서로 부족한 부분을 나누어 채울 수 있습니다.' },
+      { label: '관계 흐름', body: '역할을 나누면 관계 흐름이 안정됩니다.' },
+    ],
+    tip: '대화 전에 기대치를 한 줄로 맞춰보세요.',
+  };
+}
+
 function makeValidOutputJson() {
   const mainText = '갑목일간'.repeat(40).slice(0, 160); // 160자
   return JSON.stringify({
@@ -16,8 +29,9 @@ function makeValidOutputJson() {
       { name: '원인3', effect: '결과3' },
     ],
     classic_citation: [],
-    actions: ['행동1', '행동2', '행동3'],
+    actions: ['대표 행동', '행동1', '행동2', '행동3'],
     why_cards: [{ title: '제목1', reason: '이유1' }],
+    ohaeng_interpretation: makeValidOhaengInterpretation(),
   });
 }
 
@@ -175,8 +189,9 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
         { name: '원인3', effect: '결과3' },
       ],
       classic_citation: [],
-      actions: ['행동1', '행동2', '행동3'],
+      actions: ['대표 행동', '행동1', '행동2', '행동3'],
       why_cards: [{ title: '제목1', reason: '이유1' }],
+      ohaeng_interpretation: makeValidOhaengInterpretation(),
       score: 95, // unknown 키 — strict() 위반
     });
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(zodViolation));
@@ -254,8 +269,9 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
         { name: '원인3', effect: '결과3' },
       ],
       classic_citation: [],
-      actions: ['행동1', '행동2', '행동3'],
+      actions: ['대표 행동', '행동1', '행동2', '행동3'],
       why_cards: [{ title: '제목1', reason: '이유1' }],
+      ohaeng_interpretation: makeValidOhaengInterpretation(),
     });
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(scoreLeak));
     const { client: supabase } = makeMockServiceClient();
@@ -444,8 +460,9 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
         { name: '원인3', effect: '결과3' },
       ],
       classic_citation: [],
-      actions: ['행동1', '행동2', '행동3'],
+      actions: ['대표 행동', '행동1', '행동2', '행동3'],
       why_cards: [{ title: '제목1', reason: '이유1' }],
+      ohaeng_interpretation: makeValidOhaengInterpretation(),
     });
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(hanjaJson));
     const { client: supabase } = makeMockServiceClient();

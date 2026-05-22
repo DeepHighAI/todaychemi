@@ -9,6 +9,7 @@ import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
 } from '@/lib/chart/queries';
+import { todayKST } from '@/lib/today/kst-date';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse } from '@/lib/errors/route-response';
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
     relation: relationChart.chart_core,
     relation_chart_hash: relationChart.chart_hash,
     theory_profile_version: body.theory_profile_version,
+    target_date: todayKST(),
     question_slot: body.question_slot,
   };
 

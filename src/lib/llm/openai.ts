@@ -13,7 +13,7 @@ import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { retryOnce } from '@/lib/llm/retry';
 
 // CLAUDE.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
-// time_context: replay 전용 일진 날짜 (공개 정보, PII 아님)
+// time_context: 오늘 우리는 target_date / replay 일진 날짜 (공개 정보, PII 아님)
 export const HAPCARD_PAYLOAD_WHITELIST = new Set([
   'self_chart_core',
   'relation_chart_core',

@@ -17,9 +17,9 @@ beforeEach(() => {
 });
 
 describe('WhatifSheet', () => {
-  it('open=true 시 시트 제목 "이런건 어때 ✨" 표시', () => {
+  it('open=true 시 시트 제목 "또 다른 나" 표시', () => {
     renderWithProviders(<WhatifSheet open={true} onOpenChange={vi.fn()} />);
-    expect(screen.getByText('이런건 어때 ✨')).toBeInTheDocument();
+    expect(screen.getByText('또 다른 나')).toBeInTheDocument();
   });
 
   it('정확히 6개 행이 DIAGNOSTIC_TYPE 순서로 렌더', () => {
@@ -42,9 +42,9 @@ describe('WhatifSheet', () => {
     expect(screen.getByTestId('whatif-row-work')).toHaveTextContent('일할 때 나');
     expect(screen.getByTestId('whatif-row-love')).toHaveTextContent('연애할 때 나');
     expect(screen.getByTestId('whatif-row-conflict')).toHaveTextContent('싸울 때 나');
-    expect(screen.getByTestId('whatif-row-leadership')).toHaveTextContent('리더합');
+    expect(screen.getByTestId('whatif-row-leadership')).toHaveTextContent('리더일 때 나');
     expect(screen.getByTestId('whatif-row-money')).toHaveTextContent('돈쓰는 나');
-    expect(screen.getByTestId('whatif-row-first_meet')).toHaveTextContent('첫만남 플레이');
+    expect(screen.getByTestId('whatif-row-first_meet')).toHaveTextContent('처음 보는 나');
   });
 
   it('work 행 클릭 → router.push("/whatif/work") 호출', () => {
@@ -61,6 +61,6 @@ describe('WhatifSheet', () => {
 
   it('open=false 시 시트 제목 미렌더', () => {
     renderWithProviders(<WhatifSheet open={false} onOpenChange={vi.fn()} />);
-    expect(screen.queryByText('이런건 어때 ✨')).toBeNull();
+    expect(screen.queryByText('또 다른 나')).toBeNull();
   });
 });

@@ -15,6 +15,11 @@ export function stripHanjaInParens(text: string): string {
 // Standalone Hanja sequences → Korean reading (longest match first)
 export function transliterateHanja(text: string): string {
   let result = text;
+  const sortedChapters = Object.entries(CHAPTER_READINGS)
+    .sort((a, b) => b[0].length - a[0].length);
+  for (const [hanja, reading] of sortedChapters) {
+    result = result.split(hanja).join(reading);
+  }
   // 복합어 우선 — 키 길이 내림차순 정렬 후 치환 (긴 키가 짧은 키보다 먼저 매치되도록)
   const sortedCompounds = Object.entries(COMPOUND_READINGS)
     .sort((a, b) => b[0].length - a[0].length);

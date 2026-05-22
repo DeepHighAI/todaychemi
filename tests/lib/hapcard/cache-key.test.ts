@@ -8,6 +8,7 @@ const BASE = {
   mode: '일합' as Mode,
   prompt_version: 'v0.2',
   theory_profile_version: '2026-05',
+  target_date: '2026-05-21',
 };
 
 describe('deriveCacheKey — llm_governance §1.3', () => {
@@ -31,7 +32,7 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
     });
   });
 
-  describe('필드 민감도 — 5필드 변경 시 다른 키', () => {
+  describe('필드 민감도 — 6필드 변경 시 다른 키', () => {
     it('user_chart_hash 변경 → 다른 키', () => {
       const a = deriveCacheKey(BASE);
       const b = deriveCacheKey({ ...BASE, user_chart_hash: 'c'.repeat(64) });
@@ -61,6 +62,12 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
       const b = deriveCacheKey({ ...BASE, theory_profile_version: '2026-06' });
       expect(a).not.toBe(b);
     });
+
+    it('target_date 변경 → 다른 키', () => {
+      const a = deriveCacheKey(BASE);
+      const b = deriveCacheKey({ ...BASE, target_date: '2026-05-22' });
+      expect(a).not.toBe(b);
+    });
   });
 
   describe('6모드 모두 별도 키', () => {
@@ -79,8 +86,10 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
         mode: BASE.mode,
         prompt_version: BASE.prompt_version,
         theory_profile_version: BASE.theory_profile_version,
+        target_date: BASE.target_date,
       });
       const b = deriveCacheKey({
+        target_date: BASE.target_date,
         theory_profile_version: BASE.theory_profile_version,
         prompt_version: BASE.prompt_version,
         mode: BASE.mode,

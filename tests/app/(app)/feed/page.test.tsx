@@ -30,7 +30,7 @@ describe('FeedPage', () => {
   it('renders feed title', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
     await renderFeedPage();
-    expect(await screen.findByText('합피드')).toBeInTheDocument();
+    expect(await screen.findByText('너랑나랑')).toBeInTheDocument();
   });
 
   it('shows empty state when no relations exist', async () => {
@@ -100,17 +100,18 @@ describe('FeedPage', () => {
     expect(mockFetch).not.toHaveBeenCalledWith('/api/relations');
   });
 
-  it('compat_score가 있는 인연 — 점수 화면에 표시됨', async () => {
+  it('compat_score가 있는 인연 — 오늘온도로 표시됨', async () => {
     const items: FeedItem[] = [
       { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 72, change_score: 5, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    expect(await screen.findByText(/72/)).toBeInTheDocument();
+    expect(await screen.findByText('38.1°C')).toBeInTheDocument();
+    expect(screen.queryByText('72')).toBeNull();
   });
 
-  it('has_significant_change=true → 흐름 변화 큼 하이라이트 카드 렌더됨', async () => {
+  it('has_significant_change=true → 오늘 변화 큼 하이라이트 카드 렌더됨', async () => {
     // Redesign: highlight card (Liquid Glass <Link>) replaces ChangeBadge component
     const items: FeedItem[] = [
       { relation_id: 'r1', nickname: '봄달이', mode: '친구합', compat_score: 82, change_score: 15, has_significant_change: true, created_at: '2026-05-05T10:00:00Z' },
@@ -120,7 +121,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     // r1만 significant=true → Liquid Glass 하이라이트 카드의 eyebrow 1개
-    expect(await screen.findByText(/흐름 변화 큼/)).toBeInTheDocument();
+    expect(await screen.findByText(/오늘 변화 큼/)).toBeInTheDocument();
   });
 
   it('has_significant_change=false 전용 목록 → 하이라이트 카드 없음', async () => {
@@ -132,7 +133,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     await screen.findByText('봄달이');
-    expect(screen.queryByText(/흐름 변화 큼/)).toBeNull();
+    expect(screen.queryByText(/오늘 변화 큼/)).toBeNull();
   });
 
   it('필터 클릭 시 해당 모드 항목만 표시된다', async () => {
@@ -145,7 +146,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     await screen.findByText('봄달이');
-    const 썸합btn = screen.getByRole('radio', { name: '썸' });
+    const 썸합btn = screen.getByRole('radio', { name: '끌림' });
     await user.click(썸합btn);
 
     expect(screen.getByText('봄달이')).toBeInTheDocument();
@@ -161,7 +162,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     await screen.findByText('봄달이');
-    const 썸합btn = screen.getByRole('radio', { name: '썸' });
+    const 썸합btn = screen.getByRole('radio', { name: '끌림' });
     await user.click(썸합btn);
 
     expect(await screen.findByText('이 관계 유형의 인연이 없어요.')).toBeInTheDocument();
@@ -185,7 +186,7 @@ describe('FeedPage', () => {
 
   it.each([
     ['돈합', '돈'],
-    ['첫합', '첫'],
+    ['첫합', '처음'],
     ['오래합', '오래'],
   ])('%s 필터 클릭 시 해당 모드 항목만 표시된다', async (modeKey, labelText) => {
     const user = userEvent.setup();
@@ -212,7 +213,7 @@ describe('FeedPage', () => {
   it('필터 7개 pill 모두 단축 라벨로 표시된다', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
     await renderFeedPage();
-    for (const name of ['전체', '일', '친구', '돈', '첫', '썸', '오래']) {
+    for (const name of ['전체', '일', '친구', '돈', '처음', '끌림', '오래']) {
       expect(await screen.findByRole('radio', { name })).toBeInTheDocument();
     }
   });

@@ -16,8 +16,8 @@ vi.mock('next/link', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {
-      'nav.tab': { home: '홈', feed: '합피드', me: '내사주' },
-      home: { greeting: '오늘의 합', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
+      'nav.tab': { home: '홈', feed: '너랑나랑', me: '내 사주맵' },
+      home: { greeting: '오늘의 사이', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
     };
     return map[ns]?.[key] ?? key;
   },
@@ -29,8 +29,8 @@ describe('AppLayout', () => {
     render(<AppLayout><div data-testid="child" /></AppLayout>);
     expect(screen.getByRole('navigation')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /홈/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /합피드/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /내사주/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /너랑나랑/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /내 사주맵/ })).toBeInTheDocument();
   });
 
   it('children을 렌더한다', async () => {

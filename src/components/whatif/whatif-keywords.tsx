@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { convertHanja } from '@/lib/glossary/post-process';
 
 interface WhatifKeywordsProps {
   keywords: readonly string[];
@@ -17,7 +18,7 @@ export function WhatifKeywords({ keywords }: WhatifKeywordsProps) {
             key={i}
             className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-primary/10 text-primary"
           >
-            {keyword}
+            {convertHanja(keyword)}
           </span>
         ))}
       </div>

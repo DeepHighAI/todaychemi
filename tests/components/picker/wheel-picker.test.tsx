@@ -25,6 +25,22 @@ describe('WheelPicker', () => {
     expect(onChange).toHaveBeenCalledWith('03');
   });
 
+  it('calls onSelect on explicit click only', () => {
+    const onChange = vi.fn();
+    const onSelect = vi.fn();
+    const { getByText, container } = render(
+      <WheelPicker options={OPTIONS} value="00" onChange={onChange} onSelect={onSelect} />,
+    );
+
+    fireEvent.click(getByText('03'));
+    expect(onSelect).toHaveBeenCalledWith('03');
+
+    Object.defineProperty(container.querySelector('.picker-col')!, 'scrollTop', { value: 80, configurable: true });
+    fireEvent.scroll(container.querySelector('.picker-col')!);
+    expect(onChange).toHaveBeenCalledWith('02');
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it('calls onChange on Enter keydown', () => {
     const onChange = vi.fn();
     const { getByText } = render(<WheelPicker options={OPTIONS} value="00" onChange={onChange} />);

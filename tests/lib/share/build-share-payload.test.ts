@@ -23,10 +23,11 @@ describe('buildSharePayload', () => {
     expect(typeof result.url).toBe('string');
   });
 
-  it('nickname-only → text에 nickname·score 포함, 생일·시간·장소 0건', () => {
+  it('nickname-only → text에 nickname·오늘온도 포함, 생일·시간·장소 0건', () => {
     const result = buildSharePayload({ ...BASE_INPUT, range: 'nickname-only' });
     expect(result.text).toContain('봄달');
-    expect(result.text).toContain('78');
+    expect(result.text).toContain('38.4°C');
+    expect(result.text).not.toContain('78점');
     expect(result.text).not.toMatch(/생일|birth_date|\d{4}-\d{2}-\d{2}/);
     expect(result.text).not.toMatch(/\d{2}:\d{2}/);
     expect(result.text).not.toMatch(/장소|birth_place/);

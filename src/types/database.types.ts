@@ -350,6 +350,7 @@ export type Database = {
           relation_chart_hash: string
           relation_id: string
           score_breakdown: Json
+          target_date: string
           user_chart_hash: string
           user_id: string
           version_label: string | null
@@ -367,6 +368,7 @@ export type Database = {
           relation_chart_hash: string
           relation_id: string
           score_breakdown: Json
+          target_date: string
           user_chart_hash: string
           user_id: string
           version_label?: string | null
@@ -384,6 +386,7 @@ export type Database = {
           relation_chart_hash?: string
           relation_id?: string
           score_breakdown?: Json
+          target_date?: string
           user_chart_hash?: string
           user_id?: string
           version_label?: string | null
@@ -514,33 +517,48 @@ export type Database = {
           amount_krw: number
           confirmed_at: string | null
           created_at: string
+          failure_code: string | null
+          failure_message: string | null
           payment_id: string
+          product_id: string | null
+          receipt_url: string | null
           status: string
           token_amount: number
           toss_order_id: string
-          toss_payment_key: string
+          toss_payment_key: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           amount_krw: number
           confirmed_at?: string | null
           created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
           payment_id?: string
+          product_id?: string | null
+          receipt_url?: string | null
           status: string
           token_amount: number
           toss_order_id: string
-          toss_payment_key: string
+          toss_payment_key?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           amount_krw?: number
           confirmed_at?: string | null
           created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
           payment_id?: string
+          product_id?: string | null
+          receipt_url?: string | null
           status?: string
           token_amount?: number
           toss_order_id?: string
-          toss_payment_key?: string
+          toss_payment_key?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -866,6 +884,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_token_purchase: {
+        Args: {
+          p_amount_krw: number
+          p_confirmed_at?: string | null
+          p_product_id: string
+          p_receipt_url?: string | null
+          p_token_amount: number
+          p_toss_order_id: string
+          p_toss_payment_key: string
+          uid: string
+        }
+        Returns: number
+      }
       deduct_tokens: {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: number
