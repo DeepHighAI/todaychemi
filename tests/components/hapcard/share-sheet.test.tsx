@@ -34,23 +34,32 @@ describe('ShareSheet', () => {
     expect(radio.checked).toBe(true);
   });
 
-  it('"공유하기" 버튼 클릭 → onShare(range) 호출', () => {
+  it('"카카오톡" 버튼 클릭 → onShare(range, kakao) 호출', () => {
     const onShare = vi.fn();
     renderWithProviders(
       <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
-    expect(onShare).toHaveBeenCalledWith('nickname-only');
+    fireEvent.click(screen.getByRole('button', { name: '카카오톡' }));
+    expect(onShare).toHaveBeenCalledWith('nickname-only', 'kakao');
   });
 
-  it('라디오 변경 후 "공유하기" → 변경된 range로 onShare 호출', () => {
+  it('라디오 변경 후 "인스타그램/카드" → 변경된 range로 onShare 호출', () => {
     const onShare = vi.fn();
     renderWithProviders(
       <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
     );
     fireEvent.click(screen.getByLabelText('별명 + 오행'));
-    fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
-    expect(onShare).toHaveBeenCalledWith('nickname-ohaeng');
+    fireEvent.click(screen.getByRole('button', { name: '인스타그램/카드' }));
+    expect(onShare).toHaveBeenCalledWith('nickname-ohaeng', 'instagram');
+  });
+
+  it('"링크 복사" 버튼 클릭 → onShare(range, copy_link) 호출', () => {
+    const onShare = vi.fn();
+    renderWithProviders(
+      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '링크 복사' }));
+    expect(onShare).toHaveBeenCalledWith('nickname-only', 'copy_link');
   });
 
   it('"취소" 버튼 클릭 → onOpenChange(false) 호출', () => {

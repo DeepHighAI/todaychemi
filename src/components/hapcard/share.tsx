@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import type { HapcardVisuals } from '@/types/hapcard';
-import { buildSharePayload, type ShareRange } from '@/lib/share/build-share-payload';
-import { shareOrCopy } from '@/lib/share/share-handler';
-import { ShareSheet } from '@/components/hapcard/share-sheet';
+import type { ShareRange } from '@/lib/share/build-share-payload';
+import { shareToKakao } from '@/lib/share/kakao-sdk';
+import { copyShareLink, shareCardOrDownload } from '@/lib/share/share-handler';
+import { ShareSheet, type ShareSheetAction } from '@/components/hapcard/share-sheet';
 
 export interface HapcardShareProps {
   hapcardId: string;
@@ -15,6 +16,16 @@ export interface HapcardShareProps {
   visuals: HapcardVisuals;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+}
+
+interface ShareCreateResponse {
+  ok: true;
+  share_id: string;
+  url: string;
+  og_image_url: string;
+  title: string;
+  text: string;
+  expires_at: string;
 }
 
 export function HapcardShare({
@@ -31,7 +42,8 @@ export function HapcardShare({
   const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
   const sheetOpen = isControlled ? controlledOpen : internalOpen;
   const setSheetOpen = isControlled ? onOpenChange : setInternalOpen;
-  const [status, setStatus] = useState<'idle' | 'shared' | 'copied' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'kakao' | 'shared' | 'copied' | 'downloaded' | 'error'>('idle');
+  const [busyAction, setBusyAction] = useState<ShareSheetAction | null>(null);
 
   const hapcardInput = {
     hapcard_id: hapcardId,
@@ -43,14 +55,47 @@ export function HapcardShare({
     origin: typeof window !== 'undefined' ? window.location.origin : 'https://hap.plae',
   };
 
-  async function handleShare(range: ShareRange) {
-    const payload = buildSharePayload({ ...hapcardInput, range });
+  async function handleShare(range: ShareRange, action: ShareSheetAction) {
+    setBusyAction(action);
+    setStatus('idle');
     try {
-      const result = await shareOrCopy(payload);
-      setStatus(result === 'shared' ? 'shared' : result === 'copied' ? 'copied' : 'idle');
+      const created = await createShare(hapcardId, range, action);
+      const payload = {
+        title: created.title,
+        text: created.text,
+        url: created.url,
+        og_image_url: created.og_image_url,
+      };
+
+      if (action === 'kakao') {
+        await shareToKakao({ ...payload, share_id: created.share_id });
+        setStatus('kakao');
+        setSheetOpen(false);
+        return;
+      }
+
+      if (action === 'instagram') {
+        const result = await shareCardOrDownload(payload);
+        if (result === 'aborted') {
+          setStatus('idle');
+          return;
+        }
+        if (result === 'shared') {
+          setStatus('shared');
+        } else {
+          setStatus('downloaded');
+        }
+        setSheetOpen(false);
+        return;
+      }
+
+      await copyShareLink(payload);
+      setStatus('copied');
       setSheetOpen(false);
     } catch {
       setStatus('error');
+    } finally {
+      setBusyAction(null);
     }
   }
 
@@ -66,8 +111,14 @@ export function HapcardShare({
       {status === 'shared' && (
         <p className="text-xs text-muted-foreground">공유했어요!</p>
       )}
+      {status === 'kakao' && (
+        <p className="text-xs text-muted-foreground">카카오톡 공유창을 열었어요.</p>
+      )}
       {status === 'copied' && (
         <p className="text-xs text-muted-foreground">링크를 복사했어요!</p>
+      )}
+      {status === 'downloaded' && (
+        <p className="text-xs text-muted-foreground">카드 이미지를 저장했어요.</p>
       )}
       {status === 'error' && (
         <p className="text-xs text-destructive">공유에 실패했어요.</p>
@@ -77,7 +128,22 @@ export function HapcardShare({
         onOpenChange={setSheetOpen}
         hapcard={hapcardInput}
         onShare={handleShare}
+        busyAction={busyAction}
       />
     </div>
   );
+}
+
+async function createShare(
+  hapcardId: string,
+  range: ShareRange,
+  action: ShareSheetAction,
+): Promise<ShareCreateResponse> {
+  const res = await fetch(`/api/hapcards/${encodeURIComponent(hapcardId)}/share`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ range, channel: action }),
+  });
+  if (!res.ok) throw new Error('SHARE_CREATE_FAILED');
+  return res.json() as Promise<ShareCreateResponse>;
 }

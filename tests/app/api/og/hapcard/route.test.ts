@@ -63,7 +63,7 @@ function makeClient(opts: {
           select: () => ({
             eq: () => ({
               maybeSingle: () => Promise.resolve({
-                data: { nickname: '봄달', gender_normalized: 'F' },
+                data: { nickname: '봄달', gender: 'F' },
                 error: null,
               }),
             }),

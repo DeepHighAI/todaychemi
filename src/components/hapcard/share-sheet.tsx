@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Copy, ImageDown, MessageCircle } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -15,11 +16,14 @@ import { Button } from '@/components/ui/button';
 import { HapcardSharePreviewTile } from '@/components/hapcard/share-preview-tile';
 import type { SharePayloadInput, ShareRange } from '@/lib/share/build-share-payload';
 
+export type ShareSheetAction = 'kakao' | 'instagram' | 'copy_link';
+
 interface ShareSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hapcard: SharePayloadInput;
-  onShare: (range: ShareRange) => void;
+  onShare: (range: ShareRange, action: ShareSheetAction) => void;
+  busyAction?: ShareSheetAction | null;
 }
 
 const RANGE_OPTIONS: Array<{ value: ShareRange; labelKey: string }> = [
@@ -28,7 +32,7 @@ const RANGE_OPTIONS: Array<{ value: ShareRange; labelKey: string }> = [
   { value: 'nickname-gender', labelKey: 'withGender' },
 ];
 
-export function ShareSheet({ open, onOpenChange, hapcard, onShare }: ShareSheetProps) {
+export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = null }: ShareSheetProps) {
   const t = useTranslations('hapcard.shareSheet');
   const [range, setRange] = useState<ShareRange>('nickname-only');
 
@@ -58,8 +62,31 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare }: ShareSheetP
           ))}
         </div>
         <DrawerFooter>
-          <Button className="w-full" onClick={() => onShare(range)}>
-            {t('cta')}
+          <Button
+            className="w-full gap-2 border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
+            onClick={() => onShare(range, 'kakao')}
+            disabled={busyAction !== null}
+          >
+            <MessageCircle size={18} />
+            {busyAction === 'kakao' ? t('sending') : t('ctaKakao')}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => onShare(range, 'instagram')}
+            disabled={busyAction !== null}
+          >
+            <ImageDown size={18} />
+            {busyAction === 'instagram' ? t('sending') : t('ctaInstagram')}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => onShare(range, 'copy_link')}
+            disabled={busyAction !== null}
+          >
+            <Copy size={18} />
+            {busyAction === 'copy_link' ? t('sending') : t('ctaCopy')}
           </Button>
           <DrawerClose asChild>
             <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>

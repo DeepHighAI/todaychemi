@@ -53,6 +53,18 @@ describe('buildSharePayload', () => {
     expect(result.url).toBe('https://hap.plae/h/hap-uuid-001?mode=친구합&range=nickname-only');
   });
 
+  it('public_url 제공 시 raw hapcard_id 대신 공개 토큰 URL 사용', () => {
+    const result = buildSharePayload({
+      ...BASE_INPUT,
+      range: 'nickname-only',
+      public_url: 'https://hap.plae/h/share-token-001',
+      og_image_url: 'https://hap.plae/api/og/share/share-token-001',
+    });
+    expect(result.url).toBe('https://hap.plae/h/share-token-001');
+    expect(result.og_image_url).toBe('https://hap.plae/api/og/share/share-token-001');
+    expect(result.url).not.toContain(BASE_INPUT.hapcard_id);
+  });
+
   it('url에 range 쿼리 포함 — 3종 모두', () => {
     const ranges: ShareRange[] = ['nickname-only', 'nickname-ohaeng', 'nickname-gender'];
     for (const range of ranges) {

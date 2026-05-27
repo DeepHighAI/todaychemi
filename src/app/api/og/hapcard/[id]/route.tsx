@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { loadNotoSansKrRegularFont } from '@/lib/og/font';
 import { buildOgPayload } from '@/lib/og/render-payload';
 import { OgTemplate } from '@/lib/og/template';
 import type { ShareRange } from '@/lib/share/build-share-payload';
@@ -49,12 +50,12 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
 
     const { data: relRow } = await supabase
       .from('relations')
-      .select('nickname, gender_normalized')
+      .select('nickname, gender')
       .eq('relation_id', hap.relation_id)
       .maybeSingle();
-    const rel = (relRow ?? { nickname: '인연', gender_normalized: 'F' }) as {
+    const rel = (relRow ?? { nickname: '인연', gender: 'F' }) as {
       nickname: string;
-      gender_normalized: 'F' | 'M';
+      gender: string;
     };
 
     let ohaengCounts: Record<string, number> | undefined;
@@ -74,14 +75,13 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
         score: hap.compat_score,
         mode: hap.mode,
         ohaeng_counts: ohaengCounts,
-        gender_normalized: rel.gender_normalized,
+        gender_normalized: rel.gender === 'M' ? 'M' : 'F',
       },
       range,
     );
 
     // Satori 기본 폰트(Geist)는 Latin-only — Hangul 렌더링을 위해 Noto Sans KR 등록
-    const fontUrl = new URL('/fonts/NotoSansKR-Regular.otf', request.url);
-    const fontData = await fetch(fontUrl).then((r) => r.arrayBuffer());
+    const fontData = await loadNotoSansKrRegularFont(request.url);
 
     return new ImageResponse(<OgTemplate payload={payload} />, {
       width: 1200,

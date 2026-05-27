@@ -1,0 +1,88 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/lib/share/public-share');
+
+const imageResponseSpy = vi.fn();
+
+vi.mock('next/og', () => ({
+  ImageResponse: class MockImageResponse extends Response {
+    constructor(...args: unknown[]) {
+      imageResponseSpy(...args);
+      super('fake-png', {
+        status: 200,
+        headers: { 'Content-Type': 'image/png' },
+      });
+    }
+  },
+}));
+
+import { buildPublicShareOgPayload, getPublicShareByToken } from '@/lib/share/public-share';
+import { GET } from '@/app/api/og/share/[token]/route';
+
+const PUBLIC_SHARE = {
+  share_id: '550e8400-e29b-41d4-a716-446655440001',
+  user_id: '550e8400-e29b-41d4-a716-446655440099',
+  hapcard_id: '550e8400-e29b-41d4-a716-446655440000',
+  relation_id: '550e8400-e29b-41d4-a716-446655440088',
+  range: 'nickname-only',
+  title: '봄달님과의 친구 사이',
+  text: '봄달님과의 오늘온도: 38.4°C · 오늘사이에서 확인해봐',
+  url: 'https://hap.plae/h/share-token',
+  og_image_url: 'https://hap.plae/api/og/share/share-token',
+  mode: '친구합',
+  compat_score: 78,
+  nickname: '봄달',
+  gender_normalized: 'F',
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(getPublicShareByToken).mockResolvedValue(PUBLIC_SHARE as never);
+  vi.mocked(buildPublicShareOgPayload).mockReturnValue({
+    nickname: '봄달',
+    temperature_label: '38.4°C',
+    mode: '친구합',
+    range: 'nickname-only',
+  } as never);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(new Response(new ArrayBuffer(8))),
+  );
+});
+
+describe('GET /api/og/share/[token]', () => {
+  it('200 image/png — public share OG card', async () => {
+    const res = await GET(new Request('https://hap.plae/api/og/share/share-token'), {
+      params: Promise.resolve({ token: 'share-token' }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/png');
+    expect(getPublicShareByToken).toHaveBeenCalledWith('share-token');
+    expect(imageResponseSpy).toHaveBeenCalledOnce();
+  });
+
+  it('404 when token is invalid or expired', async () => {
+    vi.mocked(getPublicShareByToken).mockResolvedValue(null);
+
+    const res = await GET(new Request('https://hap.plae/api/og/share/missing'), {
+      params: Promise.resolve({ token: 'missing' }),
+    });
+
+    expect(res.status).toBe(404);
+    expect(imageResponseSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not pass raw PII fields to OG payload builder', async () => {
+    await GET(new Request('https://hap.plae/api/og/share/share-token'), {
+      params: Promise.resolve({ token: 'share-token' }),
+    });
+
+    const shareArg = vi.mocked(buildPublicShareOgPayload).mock.calls[0][0] as unknown as Record<string, unknown>;
+    expect(Object.keys(shareArg)).not.toContain('birth_date');
+    expect(Object.keys(shareArg)).not.toContain('name');
+    expect(Object.keys(shareArg)).not.toContain('email');
+    expect(Object.keys(shareArg)).not.toContain('birth_place');
+    expect(Object.keys(shareArg)).not.toContain('gender');
+  });
+});
