@@ -1,1 +1,1 @@
-export const TOS_VERSION = 'v0.1';
+export { LEGAL_TERMS_VERSION as TOS_VERSION } from '@/lib/legal/consent';
