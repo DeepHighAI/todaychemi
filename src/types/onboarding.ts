@@ -13,7 +13,6 @@ export const OnboardingRequestSchema = z
     birth_time_knowledge: BirthTimeKnowledgeSchema,
     birth_time: z.string().regex(TimeStringRegex).nullable(),
     gender: GenderSchema,
-    consented_tos_version: z.string().min(1),
   })
   .strict();
 
@@ -22,6 +21,7 @@ export type OnboardingRequest = z.infer<typeof OnboardingRequestSchema>;
 export const ONBOARDING_ERROR_CODES = [
   'INVALID_BODY',
   'UNAUTHORIZED',
+  'LEGAL_CONSENT_REQUIRED',
   'USER_ALREADY_ONBOARDED',
   'INTERNAL_ERROR',
 ] as const;

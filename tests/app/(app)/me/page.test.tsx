@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../../../utils/render-with-providers';
 import type { ChartCore } from '@/types/chart';
 
@@ -56,8 +56,20 @@ const WALLET = {
 };
 
 function mockChartAndWallet(chart: ChartCore | null = CHART) {
-  mockFetch.mockImplementation((input: RequestInfo | URL) => {
+  mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    const method = (init?.method ?? 'GET').toUpperCase();
+    if (url.includes('/api/me/delete-request') && method === 'POST') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          deletion_requested_at: '2026-05-25T00:00:00.000Z',
+          already_requested: false,
+        }),
+      });
+    }
     if (url.includes('/api/me/wallet')) {
       return Promise.resolve({
         ok: true,
@@ -114,6 +126,33 @@ describe('MePage (내 사주맵 화면)', () => {
     await waitFor(() => expect(screen.getByTestId('talisman-card')).toBeInTheDocument());
     expect(screen.getByText('55')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /충전/ })).toBeInTheDocument();
+  });
+
+  it('chart 있을 때 개인정보 권리 행사 링크와 계정 삭제 요청을 제공한다', async () => {
+    mockChartAndWallet();
+    await renderMePage();
+    await waitFor(() => expect(screen.getByText('내 데이터 내려받기')).toBeInTheDocument());
+
+    expect(screen.getByRole('link', { name: /내 데이터 내려받기/ })).toHaveAttribute(
+      'href',
+      '/api/me/export',
+    );
+    expect(screen.getByRole('button', { name: /계정 삭제 요청/ })).toBeInTheDocument();
+  });
+
+  it('계정 삭제 요청 확인 시 POST /api/me/delete-request 호출 후 접수 메시지를 보여준다', async () => {
+    mockChartAndWallet();
+    await renderMePage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /계정 삭제 요청/ })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /계정 삭제 요청/ }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '삭제 요청' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: '삭제 요청' }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/me/delete-request', { method: 'POST' });
+      expect(screen.getByText('계정 삭제 요청이 접수됐어요.')).toBeInTheDocument();
+    });
   });
 
   it('fetch 실패 → error-card 렌더', async () => {

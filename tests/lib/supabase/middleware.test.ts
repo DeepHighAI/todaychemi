@@ -24,16 +24,20 @@ describe('updateSession middleware helper', () => {
     process.env = { ...ORIGINAL_ENV };
   });
 
-  function makeRequest(pathname: string) {
+  function makeRequest(pathname: string, cookies: Array<{ name: string; value: string }> = []) {
     const url = new URL(`http://localhost${pathname}`);
     return {
       nextUrl: url,
       url: url.toString(),
       cookies: {
-        getAll: () => [] as Array<{ name: string; value: string }>,
+        getAll: () => cookies,
         set: vi.fn(),
       },
     };
+  }
+
+  function makeAuthedRequest(pathname: string) {
+    return makeRequest(pathname, [{ name: 'sb-test-auth-token', value: 'token' }]);
   }
 
   // '' 반환으로 null-safe toMatch 보장
@@ -47,12 +51,13 @@ describe('updateSession middleware helper', () => {
 
   // ── 보호 경로 (미인증 → /login 리다이렉트) ──
 
-  it('미인증: / → /login 리다이렉트 (Today 홈 보호)', async () => {
+  it('미인증: / → /start 리다이렉트 (신규/기존 분기)', async () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
     const { updateSession } = await import('@/lib/supabase/middleware');
     // @ts-expect-error — partial mock
     const res = await updateSession(makeRequest('/'));
-    expect(getLocation(res)).toMatch(/\/login/);
+    expect(getLocation(res)).toMatch(/\/start/);
+    expect(getUserMock).not.toHaveBeenCalled();
   });
 
   it('미인증: /me → /login 리다이렉트', async () => {
@@ -89,6 +94,33 @@ describe('updateSession middleware helper', () => {
     expect(getLocation(res)).not.toMatch(/\/login/);
   });
 
+  it('미인증: /start → 리다이렉트 없음 (신규/기존 분기 공개)', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeRequest('/start'));
+    expect(getLocation(res)).not.toMatch(/\/login/);
+  });
+
+  it('인증됨: /start → / 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/start'));
+    expect(getLocation(res)).toBe('http://localhost/');
+  });
+
+  it('미인증: /onboarding/dob, /today/me, /guest/complete 공개 경로 통과', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+
+    for (const path of ['/onboarding/dob', '/today/me', '/guest/complete']) {
+      // @ts-expect-error — partial mock
+      const res = await updateSession(makeRequest(path));
+      expect(getLocation(res), path).not.toMatch(/\/login/);
+    }
+  });
+
   it('미인증: /auth/callback?code=X → 리다이렉트 없음 (OAuth 콜백 통과)', async () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
     const { updateSession } = await import('@/lib/supabase/middleware');
@@ -105,14 +137,30 @@ describe('updateSession middleware helper', () => {
     expect(getLocation(res)).not.toMatch(/\/login/);
   });
 
+  it('미인증: /h/share-token → 리다이렉트 없음 (공개 공유 링크)', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeRequest('/h/share-token'));
+    expect(getLocation(res)).not.toMatch(/\/login/);
+  });
+
   // ── 인증 경로 (리다이렉트 없음) ──
 
   it('인증됨: / → 리다이렉트 없음 (Today 합류 화면 통과)', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
     const { updateSession } = await import('@/lib/supabase/middleware');
     // @ts-expect-error — partial mock
-    const res = await updateSession(makeRequest('/'));
+    const res = await updateSession(makeAuthedRequest('/'));
     expect(res).toBeDefined();
     expect(getLocation(res)).not.toMatch(/\/login/);
+  });
+});
+
+describe('middleware config', () => {
+  it('루트 / 요청도 실제 matcher에 포함한다', async () => {
+    const { config } = await import('../../../middleware');
+
+    expect(config.matcher).toContain('/');
   });
 });

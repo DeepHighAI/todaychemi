@@ -9,7 +9,6 @@ const validBodyExact = {
   birth_time_knowledge: 'exact',
   birth_time: '14:30',
   gender: 'F',
-  consented_tos_version: 'v0.1',
 };
 
 describe('OnboardingRequestSchema', () => {
@@ -99,12 +98,6 @@ describe('OnboardingRequestSchema', () => {
     ).toBe(false);
   });
 
-  it('rejects empty consented_tos_version', () => {
-    expect(
-      OnboardingRequestSchema.safeParse({ ...validBodyExact, consented_tos_version: '' }).success,
-    ).toBe(false);
-  });
-
   it('rejects extra field birth_place — PII .strict() 가드', () => {
     expect(
       OnboardingRequestSchema.safeParse({ ...validBodyExact, birth_place: '서울' }).success,
@@ -113,8 +106,8 @@ describe('OnboardingRequestSchema', () => {
 });
 
 describe('ONBOARDING_ERROR_CODES', () => {
-  it('contains exactly 4 error codes', () => {
-    expect(ONBOARDING_ERROR_CODES).toHaveLength(4);
+  it('contains exactly 5 error codes', () => {
+    expect(ONBOARDING_ERROR_CODES).toHaveLength(5);
   });
 
   it('includes INVALID_BODY', () => {
@@ -123,6 +116,10 @@ describe('ONBOARDING_ERROR_CODES', () => {
 
   it('includes UNAUTHORIZED', () => {
     expect(ONBOARDING_ERROR_CODES).toContain('UNAUTHORIZED');
+  });
+
+  it('includes LEGAL_CONSENT_REQUIRED', () => {
+    expect(ONBOARDING_ERROR_CODES).toContain('LEGAL_CONSENT_REQUIRED');
   });
 
   it('includes USER_ALREADY_ONBOARDED', () => {

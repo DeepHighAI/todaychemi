@@ -285,6 +285,54 @@ export type Database = {
           },
         ]
       }
+      legal_consents: {
+        Row: {
+          age_confirmed: boolean
+          auth_user_id: string | null
+          claimed_at: string | null
+          consent_id: string
+          consented_at: string
+          created_at: string
+          expires_at: string
+          flow: string
+          privacy_version: string
+          provider: string | null
+          terms_version: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          age_confirmed?: boolean
+          auth_user_id?: string | null
+          claimed_at?: string | null
+          consent_id?: string
+          consented_at?: string
+          created_at?: string
+          expires_at: string
+          flow: string
+          privacy_version: string
+          provider?: string | null
+          terms_version: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          age_confirmed?: boolean
+          auth_user_id?: string | null
+          claimed_at?: string | null
+          consent_id?: string
+          consented_at?: string
+          created_at?: string
+          expires_at?: string
+          flow?: string
+          privacy_version?: string
+          provider?: string | null
+          terms_version?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hapcard_replays: {
         Row: {
           content: Json
@@ -329,6 +377,141 @@ export type Database = {
           },
           {
             foreignKeyName: "hapcard_replays_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hapcard_share_rewards: {
+        Row: {
+          awarded_at: string
+          channel: string
+          hapcard_id: string
+          ledger_id: string | null
+          reward_date_kst: string
+          reward_id: string
+          share_id: string
+          user_id: string
+          webhook_resource_id: string | null
+        }
+        Insert: {
+          awarded_at?: string
+          channel: string
+          hapcard_id: string
+          ledger_id?: string | null
+          reward_date_kst?: string
+          reward_id?: string
+          share_id: string
+          user_id: string
+          webhook_resource_id?: string | null
+        }
+        Update: {
+          awarded_at?: string
+          channel?: string
+          hapcard_id?: string
+          ledger_id?: string | null
+          reward_date_kst?: string
+          reward_id?: string
+          share_id?: string
+          user_id?: string
+          webhook_resource_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hapcard_share_rewards_hapcard_id_fkey"
+            columns: ["hapcard_id"]
+            isOneToOne: false
+            referencedRelation: "hapcards"
+            referencedColumns: ["hapcard_id"]
+          },
+          {
+            foreignKeyName: "hapcard_share_rewards_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "token_ledger"
+            referencedColumns: ["ledger_id"]
+          },
+          {
+            foreignKeyName: "hapcard_share_rewards_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: true
+            referencedRelation: "hapcard_shares"
+            referencedColumns: ["share_id"]
+          },
+          {
+            foreignKeyName: "hapcard_share_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hapcard_shares: {
+        Row: {
+          channel: string
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          hapcard_id: string
+          message_text: string
+          range: string
+          relation_id: string
+          revoked_at: string | null
+          share_id: string
+          title: string
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          hapcard_id: string
+          message_text: string
+          range: string
+          relation_id: string
+          revoked_at?: string | null
+          share_id?: string
+          title: string
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          hapcard_id?: string
+          message_text?: string
+          range?: string
+          relation_id?: string
+          revoked_at?: string | null
+          share_id?: string
+          title?: string
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hapcard_shares_hapcard_id_fkey"
+            columns: ["hapcard_id"]
+            isOneToOne: false
+            referencedRelation: "hapcards"
+            referencedColumns: ["hapcard_id"]
+          },
+          {
+            foreignKeyName: "hapcard_shares_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "hapcard_shares_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -829,6 +1012,7 @@ export type Database = {
           birth_time_range_from: string | null
           birth_time_range_to: string | null
           consented_at: string
+          consented_privacy_version: string
           consented_tos_version: string
           created_at: string
           deletion_requested_at: string | null
@@ -848,6 +1032,7 @@ export type Database = {
           birth_time_range_from?: string | null
           birth_time_range_to?: string | null
           consented_at?: string
+          consented_privacy_version: string
           consented_tos_version: string
           created_at?: string
           deletion_requested_at?: string | null
@@ -867,6 +1052,7 @@ export type Database = {
           birth_time_range_from?: string | null
           birth_time_range_to?: string | null
           consented_at?: string
+          consented_privacy_version?: string
           consented_tos_version?: string
           created_at?: string
           deletion_requested_at?: string | null
@@ -896,6 +1082,22 @@ export type Database = {
           uid: string
         }
         Returns: number
+      }
+      award_hapcard_share_reward: {
+        Args: {
+          p_channel: string
+          p_share_id: string
+          p_webhook_resource_id?: string | null
+        }
+        Returns: Json
+      }
+      award_free_talisman_session_rewards: {
+        Args: {
+          p_auth_created_at?: string | null
+          p_policy_effective_at?: string
+          uid: string
+        }
+        Returns: Json
       }
       deduct_tokens: {
         Args: { delta: number; reason: string; ref?: string; uid: string }

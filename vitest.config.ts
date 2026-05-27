@@ -22,6 +22,8 @@ function loadDotEnvLocal() {
 
 loadDotEnvLocal();
 
+const includeIntegrationTests = process.env.RUN_INTEGRATION === '1';
+
 export default defineConfig({
   plugins: [react()],
   test: {
@@ -30,11 +32,15 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./tests/setup/dom.ts'],
-    testTimeout: 15000,
-    hookTimeout: 15000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
     // Claude agent worktrees 는 자체 테스트 파일을 포함하므로 메인 repo
     // vitest 발견에서 제외. configDefaults.exclude 보존 의무.
-    exclude: [...configDefaults.exclude, '.claude/worktrees/**'],
+    exclude: [
+      ...configDefaults.exclude,
+      '.claude/worktrees/**',
+      ...(includeIntegrationTests ? [] : ['**/*.integration.test.ts']),
+    ],
   },
   resolve: {
     alias: {

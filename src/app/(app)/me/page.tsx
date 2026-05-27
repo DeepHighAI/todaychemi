@@ -12,8 +12,15 @@ import { TalismanCard } from '@/components/me/talisman-card';
 import { InfoCard } from '@/components/me/info-card';
 import { ChargeSheet } from '@/components/dialogs/charge-sheet';
 import { AboutDialog } from '@/components/dialogs/about-dialog';
-import { LegalSheet } from '@/components/dialogs/legal-sheet';
 import { LangSheet } from '@/components/dialogs/lang-sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
@@ -49,6 +56,12 @@ async function initPayment(productId: WalletProduct['product_id']): Promise<Paym
   return (await res.json()) as PaymentInitResponse;
 }
 
+async function requestAccountDeletion(): Promise<{ deletion_requested_at: string }> {
+  const res = await fetch('/api/me/delete-request', { method: 'POST' });
+  if (!res.ok) throw new Error('ACCOUNT_DELETE_REQUEST_FAILED');
+  return (await res.json()) as { deletion_requested_at: string };
+}
+
 const PRODUCTS: WalletProduct[] = listTossProducts();
 
 export default function MePage() {
@@ -66,12 +79,14 @@ export default function MePage() {
   });
   const [editOpen, setEditOpen] = useState(false);
   const [chargeOpen, setChargeOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
 
   async function handleConfirmPay(productId: WalletProduct['product_id']) {
     setPaying(true);
@@ -84,6 +99,19 @@ export default function MePage() {
       setPaymentError(t('wallet.error'));
     } finally {
       setPaying(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      const result = await requestAccountDeletion();
+      setDeleteRequestedAt(result.deletion_requested_at);
+    } catch {
+      setDeleteError(t('privacyControls.deleteError'));
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -135,10 +163,11 @@ export default function MePage() {
         <ThemeToggle />
       </section>
       <InfoCard
-        onPrivacy={() => setPrivacyOpen(true)}
-        onTerms={() => setTermsOpen(true)}
+        onPrivacy={() => router.push('/legal/privacy')}
+        onTerms={() => router.push('/legal/terms')}
         onAbout={() => setAboutOpen(true)}
         onLang={() => setLangOpen(true)}
+        onDeleteAccount={() => setDeleteOpen(true)}
       />
       <ChargeSheet
         open={chargeOpen}
@@ -150,9 +179,42 @@ export default function MePage() {
         onConfirmPay={handleConfirmPay}
       />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
-      <LegalSheet variant="privacy" open={privacyOpen} onOpenChange={setPrivacyOpen} />
-      <LegalSheet variant="terms" open={termsOpen} onOpenChange={setTermsOpen} />
       <LangSheet open={langOpen} onOpenChange={setLangOpen} />
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('privacyControls.deleteTitle')}</DialogTitle>
+            <DialogDescription>{t('privacyControls.deleteBody')}</DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <p role="alert" className="rounded-[var(--r-sm)] bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+              {deleteError}
+            </p>
+          )}
+          {deleteRequestedAt && (
+            <p className="rounded-[var(--r-sm)] bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+              {t('privacyControls.deleteSuccess')}
+            </p>
+          )}
+          <DialogFooter>
+            <button
+              type="button"
+              className="rounded-[var(--r-sm)] px-4 py-2 text-sm font-bold text-muted-foreground"
+              onClick={() => setDeleteOpen(false)}
+            >
+              {t('privacyControls.cancel')}
+            </button>
+            <button
+              type="button"
+              className="rounded-[var(--r-sm)] bg-destructive px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              disabled={deleteLoading || Boolean(deleteRequestedAt)}
+              onClick={handleDeleteAccount}
+            >
+              {deleteLoading ? t('privacyControls.deleting') : t('privacyControls.confirmDelete')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

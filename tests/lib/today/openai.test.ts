@@ -33,6 +33,7 @@ describe('callDailyHapLlm — gpt-5-mini params', () => {
     };
     await callDailyHapLlm(chart as unknown as Parameters<typeof callDailyHapLlm>[0], mockOpenai);
     const payload = mockCreate.mock.calls[0][0];
+    expect(payload.model).toBe('gpt-5-mini');
     expect(payload).toHaveProperty('max_completion_tokens');
     expect(payload).not.toHaveProperty('max_tokens');
   });

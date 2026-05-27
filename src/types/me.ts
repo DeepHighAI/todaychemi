@@ -1,9 +1,7 @@
 import { z } from 'zod';
 import { OnboardingRequestSchema } from './onboarding';
 
-export const MeUpdateRequestSchema = OnboardingRequestSchema.omit({
-  consented_tos_version: true,
-}).strict();
+export const MeUpdateRequestSchema = OnboardingRequestSchema.strict();
 
 export type MeUpdateRequest = z.infer<typeof MeUpdateRequestSchema>;
 

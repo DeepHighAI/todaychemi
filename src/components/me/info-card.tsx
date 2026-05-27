@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, FileText, Globe2, Info, Mail, Shield } from 'lucide-react';
+import { ChevronRight, Download, FileText, Globe2, Info, Mail, Shield, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface InfoCardProps {
@@ -8,9 +8,10 @@ interface InfoCardProps {
   onTerms: () => void;
   onAbout: () => void;
   onLang: () => void;
+  onDeleteAccount: () => void;
 }
 
-export function InfoCard({ onPrivacy, onTerms, onAbout, onLang }: InfoCardProps) {
+export function InfoCard({ onPrivacy, onTerms, onAbout, onLang, onDeleteAccount }: InfoCardProps) {
   const t = useTranslations('me.info');
 
   return (
@@ -26,6 +27,8 @@ export function InfoCard({ onPrivacy, onTerms, onAbout, onLang }: InfoCardProps)
       <InfoRow Icon={Globe2} label={t('language')} sub={t('languageSub')} onClick={onLang} />
       <InfoRow Icon={Shield} label={t('privacy')} sub={t('privacySub')} onClick={onPrivacy} />
       <InfoRow Icon={FileText} label={t('terms')} sub={t('termsSub')} onClick={onTerms} />
+      <InfoRow Icon={Download} label={t('dataExport')} sub={t('dataExportSub')} href="/api/me/export" />
+      <InfoRow Icon={Trash2} label={t('deleteAccount')} sub={t('deleteAccountSub')} onClick={onDeleteAccount} danger />
       <InfoRow Icon={Info} label={t('about')} sub={t('aboutSub')} onClick={onAbout} />
       <InfoRow Icon={Mail} label={t('contact')} sub="02 3443 1028" href="tel:0234431028" />
     </section>
@@ -38,20 +41,22 @@ function InfoRow({
   sub,
   onClick,
   href,
+  danger = false,
 }: {
   Icon: React.ComponentType<{ size?: number }>;
   label: string;
   sub: string;
   onClick?: () => void;
   href?: string;
+  danger?: boolean;
 }) {
   const content = (
     <>
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--surface-2)] text-primary">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--surface-2)] ${danger ? 'text-destructive' : 'text-primary'}`}>
         <Icon size={19} />
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-sm font-bold text-foreground">{label}</span>
+        <span className={`block text-sm font-bold ${danger ? 'text-destructive' : 'text-foreground'}`}>{label}</span>
         <span className="mt-0.5 block text-xs text-muted-foreground">{sub}</span>
       </span>
       <ChevronRight size={18} className="text-muted-foreground" />

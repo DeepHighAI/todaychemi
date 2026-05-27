@@ -2,9 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/chart/compute');
+vi.mock('next/headers');
+vi.mock('@/lib/legal/server-consent');
+vi.mock('@/lib/supabase/service-role');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { computeChart } from '@/lib/chart/compute';
+import { cookies } from 'next/headers';
+import { resolveLegalConsentForOnboarding } from '@/lib/legal/server-consent';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { POST } from '@/app/api/onboarding/route';
 import type { ChartCore } from '@/types/chart';
 
@@ -16,8 +22,14 @@ const VALID_BODY = {
   birth_time_knowledge: 'exact',
   birth_time: '14:30',
   gender: 'F',
-  consented_tos_version: 'v0.1',
 };
+
+const VALID_LEGAL_CONSENT = {
+  termsVersion: '2026-06-01',
+  privacyVersion: '2026-06-01',
+  ageConfirmed: true,
+  consentedAt: '2026-06-01T00:00:00.000Z',
+} as const;
 
 const MOCK_CHART_CORE: ChartCore = {
   year_pillar: '辛未',
@@ -40,7 +52,11 @@ function makeClient(opts: {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
 
   const getUser = vi.fn().mockResolvedValue({
-    data: { user: userId ? { id: userId } : null },
+    data: {
+      user: userId
+        ? { id: userId }
+        : null,
+    },
     error: null,
   });
 
@@ -73,6 +89,9 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(cookies).mockResolvedValue({ get: vi.fn(), set: vi.fn() } as never);
+  vi.mocked(createServiceRoleClient).mockReturnValue({ from: vi.fn() } as never);
+  vi.mocked(resolveLegalConsentForOnboarding).mockResolvedValue(VALID_LEGAL_CONSENT);
   vi.mocked(computeChart).mockResolvedValue({ chart_core: MOCK_CHART_CORE, chart_hash: MOCK_CHART_HASH });
 });
 
@@ -101,6 +120,40 @@ describe('POST /api/onboarding', () => {
     expect(inserted.birth_date).toBe('1991-03-15');
     expect(inserted.birth_time_knowledge).toBe('exact');
     expect(inserted.gender).toBe('F');
+    expect(inserted.consented_tos_version).toBe('2026-06-01');
+    expect(inserted.consented_privacy_version).toBe('2026-06-01');
+    expect(inserted.consented_at).toBe('2026-06-01T00:00:00.000Z');
+    expect(inserted.age_confirmed).toBe(true);
+  });
+
+  it('403 → LEGAL_CONSENT_REQUIRED (server consent record 누락)', async () => {
+    vi.mocked(resolveLegalConsentForOnboarding).mockResolvedValue(null);
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error.code).toBe('LEGAL_CONSENT_REQUIRED');
+    expect(client._insert).not.toHaveBeenCalled();
+  });
+
+  it('server consent resolver receives service client, cookies, and auth user id', async () => {
+    const service = { from: vi.fn() };
+    vi.mocked(createServiceRoleClient).mockReturnValue(service as never);
+    const cookieStore = { get: vi.fn(), set: vi.fn() };
+    vi.mocked(cookies).mockResolvedValue(cookieStore as never);
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    await POST(makeRequest(VALID_BODY));
+
+    expect(resolveLegalConsentForOnboarding).toHaveBeenCalledWith({
+      serviceClient: service,
+      cookieStore,
+      userId: 'user-uuid-001',
+    });
   });
 
   it('400 → INVALID_BODY (nickname 없음)', async () => {

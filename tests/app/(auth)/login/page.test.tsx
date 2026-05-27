@@ -9,18 +9,25 @@ vi.mock('@/lib/auth/google', () => ({
   signInWithGoogle: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/kakao', () => ({
+  signInWithKakao: vi.fn(),
+}));
+
 vi.mock('@/lib/auth/email', () => ({
   signInWithEmail: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 import { signInWithGoogle } from '@/lib/auth/google';
+import { signInWithKakao } from '@/lib/auth/kakao';
 import { signInWithEmail } from '@/lib/auth/email';
 
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
+const mockSignInWithKakao = vi.mocked(signInWithKakao);
 const mockSignInWithEmail = vi.mocked(signInWithEmail);
 const mockRouterPush = vi.fn();
 
@@ -39,11 +46,17 @@ async function renderLoginPage() {
 }
 
 describe('LoginPage', () => {
-  it('renders title and Google button text from ko.json', async () => {
+  it('renders title and OAuth button texts from ko.json', async () => {
     await renderLoginPage();
 
     expect(screen.getByRole('heading', { name: '오늘사이 로그인' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
+    expect(screen.queryByText('소셜 로그인 필수 동의')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '잠깐 둘러보기' })).toHaveAttribute(
+      'href',
+      '/guest/start',
+    );
   });
 
   it('clicking Google button calls signInWithGoogle', async () => {
@@ -53,7 +66,16 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
-    await waitFor(() => expect(mockSignInWithGoogle).toHaveBeenCalledOnce());
+    await waitFor(() =>
+      expect(mockSignInWithGoogle).toHaveBeenCalledWith(
+        {
+          terms: false,
+          privacy: false,
+          age: false,
+        },
+        { next: '/', deferLegalConsent: true },
+      ),
+    );
   });
 
   it('shows loading text while signInWithGoogle is pending', async () => {
@@ -64,7 +86,7 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
-    expect(screen.getByRole('button', { name: '연결 중...' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '연결 중...' }).length).toBeGreaterThan(0);
     resolve!();
   });
 
@@ -76,7 +98,9 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
-    expect(screen.getByRole('button', { name: '연결 중...' })).toBeDisabled();
+    for (const button of screen.getAllByRole('button', { name: '연결 중...' })) {
+      expect(button).toBeDisabled();
+    }
     resolve!();
   });
 
@@ -88,6 +112,25 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
     await screen.findByText('로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
+  });
+
+  it('clicking Kakao button calls signInWithKakao', async () => {
+    mockSignInWithKakao.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    await renderLoginPage();
+
+    await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
+
+    await waitFor(() =>
+      expect(mockSignInWithKakao).toHaveBeenCalledWith(
+        {
+          terms: false,
+          privacy: false,
+          age: false,
+        },
+        { next: '/', deferLegalConsent: true },
+      ),
+    );
   });
 });
 

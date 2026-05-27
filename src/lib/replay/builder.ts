@@ -8,6 +8,7 @@ import type { HapcardResult, HapcardReplayResult, LlmModel } from '@/types/hapca
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
+import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadActivePrompt } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
@@ -122,9 +123,10 @@ export async function buildReplay(
     theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
   });
   const replayPayload = buildReplayPayload(basePayload, input.jinjin_date);
+  const llmModel = selectLlmModel('replay');
 
   const llm = await callOpenAi(
-    { systemPrompt: replaySystemPrompt, userPayload: replayPayload },
+    { systemPrompt: replaySystemPrompt, userPayload: replayPayload, model: llmModel },
     { openaiClient: deps.openaiClient, supabaseServiceRole: deps.supabaseServiceClient },
   );
 

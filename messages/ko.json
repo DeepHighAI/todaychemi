@@ -19,6 +19,7 @@
     "login": {
       "title": "오늘사이 로그인",
       "googleButton": "Google로 시작하기",
+      "kakaoButton": "카카오로 시작하기",
       "loading": "연결 중...",
       "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
       "privacy": "로그인 시 개인정보 처리방침에 동의합니다",
@@ -28,7 +29,17 @@
       "errorInvalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
       "errorEmailRequired": "이메일을 입력해주세요.",
       "errorPasswordRequired": "비밀번호를 입력해주세요.",
-      "signupLink": "계정이 없으신가요? 가입하기"
+      "signupLink": "계정이 없으신가요? 가입하기",
+      "browseButton": "잠깐 둘러보기",
+      "legalTitle": "소셜 로그인 필수 동의"
+    },
+    "socialConsent": {
+      "title": "소셜 로그인 필수 동의",
+      "body": "처음 오신 분은 오늘사이 이용을 시작하기 전에 필수 동의가 필요해요.",
+      "legalTitle": "필수 동의",
+      "submitButton": "동의하고 시작하기",
+      "loading": "저장 중...",
+      "errorGeneric": "동의를 저장하지 못했어요. 잠시 후 다시 시도해주세요."
     },
     "signup": {
       "title": "오늘사이 회원가입",
@@ -43,7 +54,8 @@
       "errorPasswordWeak": "영문과 숫자를 모두 포함해주세요.",
       "errorEmailTaken": "이미 사용 중인 이메일이에요.",
       "errorRateLimited": "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
-      "errorGeneric": "가입에 실패했어요. 잠시 후 다시 시도해주세요."
+      "errorGeneric": "가입에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "legalTitle": "회원가입 필수 동의"
     }
   },
   "onboarding": {
@@ -254,6 +266,10 @@
       },
       "preview": "미리보기",
       "cta": "공유하기",
+      "ctaKakao": "카카오톡",
+      "ctaInstagram": "인스타그램/카드",
+      "ctaCopy": "링크 복사",
+      "sending": "준비 중...",
       "cancel": "취소"
     },
     "replay": "그럴리 없어! 다시",
@@ -486,12 +502,25 @@
       "language": "언어 변경",
       "languageSub": "한국어 우선 지원",
       "privacy": "개인정보처리방침",
-      "privacySub": "정식 문서 공개 전 메뉴 위치만 준비",
+      "privacySub": "시행일 2026.06.01",
       "terms": "이용약관",
-      "termsSub": "정식 문서 공개 전 메뉴 위치만 준비",
+      "termsSub": "시행일 2026.06.01",
+      "dataExport": "내 데이터 내려받기",
+      "dataExportSub": "JSON 파일로 저장",
+      "deleteAccount": "계정 삭제 요청",
+      "deleteAccountSub": "30일 후 영구 삭제",
       "about": "회사소개",
       "aboutSub": "(주) 딥하이",
       "contact": "대표번호"
+    },
+    "privacyControls": {
+      "deleteTitle": "계정 삭제를 요청할까요?",
+      "deleteBody": "요청 후 30일 동안 복구 가능한 상태로 보관되며, 이후 개인정보가 영구 삭제됩니다.",
+      "cancel": "취소",
+      "confirmDelete": "삭제 요청",
+      "deleting": "요청 중…",
+      "deleteSuccess": "계정 삭제 요청이 접수됐어요.",
+      "deleteError": "계정 삭제 요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요."
     },
     "theme": {
       "label": "테마 선택",

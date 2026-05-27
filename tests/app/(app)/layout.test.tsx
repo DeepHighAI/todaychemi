@@ -13,6 +13,10 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/components/rewards/free-talisman-reward-gate', () => ({
+  FreeTalismanRewardGate: () => null,
+}));
+
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {

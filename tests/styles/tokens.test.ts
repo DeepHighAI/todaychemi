@@ -50,9 +50,10 @@ describe('UIDesign 토큰 — globals.css (§1.6)', () => {
     expect(css).toMatch(/--e-3:/);
   });
 
-  it('Pretendard JP --font-display 포함', () => {
+  it('로컬 한글 폰트 --font-display 포함', () => {
     expect(css).toMatch(/--font-display:/);
-    expect(css).toMatch(/Pretendard/);
+    expect(css).toMatch(/Osa Noto Sans KR/);
+    expect(css).not.toMatch(/cdn\.jsdelivr/);
   });
 
   it('스페이싱 토큰 포함 (--s-1 ~ --s-10)', () => {

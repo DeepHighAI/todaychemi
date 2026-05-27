@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { OnboardingAccessGuard } from '@/components/onboarding/onboarding-access-guard';
 
 const STEPS = ['/onboarding/dob', '/onboarding/time', '/onboarding/cal-gender', '/onboarding/review'];
 
@@ -26,7 +27,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
         </div>
         <p className="font-eyebrow text-primary">{current} / {total}</p>
       </header>
-      {children}
+      <OnboardingAccessGuard>{children}</OnboardingAccessGuard>
     </main>
   );
 }

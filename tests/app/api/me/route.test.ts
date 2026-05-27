@@ -191,7 +191,7 @@ describe('PATCH /api/me', () => {
     expect(client._update).not.toHaveBeenCalled();
   });
 
-  it('200 → users UPDATE 시 nickname, birth_date 포함 (consented_tos_version 제외)', async () => {
+  it('200 → users UPDATE 시 nickname, birth_date 포함 (legal consent 필드 제외)', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
     await PATCH(makePatchRequest(VALID_UPDATE_BODY));
@@ -199,6 +199,7 @@ describe('PATCH /api/me', () => {
     expect(updated.nickname).toBe('하늘달');
     expect(updated.birth_date).toBe('1991-03-15');
     expect(updated.consented_tos_version).toBeUndefined();
+    expect(updated.consented_privacy_version).toBeUndefined();
   });
 
   it('500 → users UPDATE 실패 시 INTERNAL_ERROR', async () => {

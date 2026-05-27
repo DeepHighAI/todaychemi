@@ -9,7 +9,7 @@ import { deriveCacheKey } from '@/lib/hapcard/cache-key';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
-import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
+import { selectLlmModel } from '@/lib/llm/model-router';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
@@ -198,13 +198,15 @@ export async function buildHapcard(
     openaiClient: deps.openaiClient,
     supabaseServiceRole: deps.supabaseServiceClient,
   };
-  let llmResult = await callOpenAi({ systemPrompt, userPayload: payload }, callDeps);
+  const llmModel = selectLlmModel('hapcard');
+  const callInput = { systemPrompt, userPayload: payload, model: llmModel };
+  let llmResult = await callOpenAi(callInput, callDeps);
   let grounding = validateClassicCitations(
     { classic_citation: llmResult.output.classic_citation },
     ragHits,
   );
   if (!grounding.valid) {
-    llmResult = await callOpenAi({ systemPrompt, userPayload: payload }, callDeps);
+    llmResult = await callOpenAi(callInput, callDeps);
     grounding = validateClassicCitations(
       { classic_citation: llmResult.output.classic_citation },
       ragHits,
@@ -251,7 +253,7 @@ export async function buildHapcard(
       },
       content,
       prompt_version: prompt.version,
-      llm_model: DEFAULT_LLM_MODEL,
+      llm_model: llmResult.model,
       cache_key: cacheKey,
       user_chart_hash: input.self_chart_hash,
       relation_chart_hash: input.relation_chart_hash,

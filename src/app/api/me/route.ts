@@ -34,7 +34,7 @@ export async function GET() {
   }
 }
 
-// PATCH /api/me — 온보딩 7필드 재기입 (consented_tos_version 제외)
+// PATCH /api/me — 온보딩 7필드 재기입 (legal consent fields 제외)
 // 순서: compute → UPDATE users → upsert user_charts → DELETE today daily_haps
 export async function PATCH(request: Request) {
   const json = await request.json().catch(() => null);
@@ -77,7 +77,7 @@ export async function PATCH(request: Request) {
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
-  // users UPDATE (consented_tos_version 은 건드리지 않음)
+  // users UPDATE (legal consent fields 는 건드리지 않음)
   const { error: updateError } = await db
     .from('users')
     .update({

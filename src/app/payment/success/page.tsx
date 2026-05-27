@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,10 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
       ? err.code
       : 'PAYMENT_CONFIRM_FAILED';
     const message = err instanceof Error ? err.message : '결제 승인에 실패했습니다.';
+    Sentry.captureException(err, {
+      tags: { area: 'payments', payment_step: 'confirm' },
+      extra: { order_id: orderId, code },
+    });
     redirect(`/payment/fail?orderId=${encodeURIComponent(orderId)}&code=${encodeURIComponent(code)}&message=${encodeURIComponent(message)}`);
   }
 

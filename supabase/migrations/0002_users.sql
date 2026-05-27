@@ -13,6 +13,7 @@ create table public.users (
   -- 개인정보 동의
   consented_at     timestamptz not null default now(),
   consented_tos_version text   not null,
+  consented_privacy_version text not null,
   age_confirmed    boolean     not null default false,
   -- 온보딩
   first_result_viewed_at timestamptz,

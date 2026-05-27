@@ -75,7 +75,7 @@ function setupRoutes(routes: {
 }
 
 async function renderTodayPage() {
-  const { default: TodayPage } = await import('@/app/(app)/page');
+  const { default: TodayPage } = await import('@/app/(app)/today-page-client');
   return renderWithProviders(<TodayPage />);
 }
 
@@ -168,12 +168,12 @@ describe('TodayPage (composition)', () => {
     expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
   });
 
-  it('/api/today 401 UNAUTHORIZED → router.push("/login") 호출', async () => {
+  it('/api/today 401 UNAUTHORIZED → router.push("/start") 호출', async () => {
     setupRoutes({
       today: { ok: false, status: 401, body: { error: { code: 'UNAUTHORIZED', message: '' } } },
     });
     await renderTodayPage();
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/login'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/start'));
   });
 
   it('/api/today 500 INTERNAL_ERROR → "잠시 문제가 생겼어요" 렌더 (LLM_TIMEOUT 아님)', async () => {

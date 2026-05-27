@@ -34,6 +34,18 @@ const SERVICE_ROLE_ONLY_TABLES = tableMigrations
   .map((s) => s.tableName);
 
 // ── 헬퍼 ──────────────────────────────────────────────────────────────────────
+function fetchWithTimeout(timeoutMs: number = 5000): typeof fetch {
+  return async (input, init = {}) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(input, { ...init, signal: init.signal ?? controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+}
+
 async function expectAnonDenied(anon: SupabaseClient, table: string) {
   const { data, error } = await anon.from(table).select('*').limit(5);
   // PostgREST: RLS 필터링 → 0 rows, error null
@@ -55,8 +67,9 @@ describe.skipIf(!hasEnv)('C-7 RLS 통합 테스트', () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    anon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-    svc = createClient(url, svcKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const global = { fetch: fetchWithTimeout() };
+    anon = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false }, global });
+    svc = createClient(url, svcKey, { auth: { persistSession: false, autoRefreshToken: false }, global });
   });
 
   // ── A. Owner-only: anon SELECT 0 rows ──────────────────────────────────────

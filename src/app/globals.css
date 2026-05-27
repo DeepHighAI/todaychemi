@@ -1,13 +1,16 @@
-/* Pretendard JP — UIDesign §1.6 기준 폰트 (KR 최적, Roboto fallback)
- * @import url() 는 다른 모든 @import 와 일반 규칙보다 앞에 와야 PostCSS 가
- * 인라인된 @layer 와 함께 두어도 CSS 스펙 위반(2283:8) 을 일으키지 않는다.
- */
-@import url('https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: 'Osa Noto Sans KR';
+  src: url('/fonts/NotoSansKR-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* =========================================================================
  * 오늘사이 디자인 토큰 — PRD §7.2 (라이트/다크) + FRONTEND-PREP §디자인 토큰
@@ -116,6 +119,9 @@
  * 라이트 모드 — PRD §7.2
  * ========================================================================= */
 :root {
+  --font-noto-sans-kr: 'Osa Noto Sans KR';
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   /* PRD §7.2 오늘사이 브랜드 surface */
   --bg-canvas: #fbf8f3;
   --bg-card: #ffffff;
@@ -169,6 +175,9 @@
   --warn-bg: #ffdad6;
   --info: #0066ff;
   --info-bg: #eaf2fe;
+  --kakao-yellow: #fee500;
+  --kakao-yellow-hover: #f6dc00;
+  --kakao-foreground: #191919;
 
   /* Liquid Glass */
   --lg-1: #4f46e5;
@@ -227,9 +236,9 @@
   --outline: #79747e;
   --outline-variant: #cac4d0;
 
-  /* Font — Pretendard JP (UIDesign 기준) */
-  --font-display: 'Pretendard JP', 'Pretendard', var(--font-sans);
-  --font-body: 'Pretendard JP', 'Pretendard', var(--font-sans);
+  /* Font — local Korean webfont to avoid third-party font requests */
+  --font-display: 'Osa Noto Sans KR', var(--font-sans);
+  --font-body: 'Osa Noto Sans KR', var(--font-sans);
 
   /* Type scale (Toss-influenced — UIDesign system.css 동일) */
   --t-display-l: 800 32px/1.2 var(--font-display);
@@ -369,8 +378,8 @@
   --outline: #938f99;
   --outline-variant: #49454f;
 
-  --font-display: 'Pretendard JP', 'Pretendard', var(--font-sans);
-  --font-body: 'Pretendard JP', 'Pretendard', var(--font-sans);
+  --font-display: 'Osa Noto Sans KR', var(--font-sans);
+  --font-body: 'Osa Noto Sans KR', var(--font-sans);
 
   --t-display-l: 800 32px/1.2 var(--font-display);
   --t-display:   800 28px/1.24 var(--font-display);

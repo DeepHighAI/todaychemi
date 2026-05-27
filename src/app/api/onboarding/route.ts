@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
-import { OnboardingRequestSchema, type OnboardingErrorCode } from '@/types/onboarding';
+import { OnboardingRequestSchema } from '@/types/onboarding';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import { computeChart } from '@/lib/chart/compute';
+import { resolveLegalConsentForOnboarding } from '@/lib/legal/server-consent';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
@@ -17,6 +20,13 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
+
+  const legalConsent = await resolveLegalConsentForOnboarding({
+    serviceClient: createServiceRoleClient(),
+    cookieStore: await cookies(),
+    userId: user.id,
+  });
+  if (!legalConsent) return apiErrorResponse('LEGAL_CONSENT_REQUIRED', '', 403);
 
   // chart compute 먼저 — 성공 시에만 users INSERT (partial state 방지)
   let computeResult;
@@ -49,7 +59,10 @@ export async function POST(request: Request) {
     birth_time_knowledge: parsed.data.birth_time_knowledge,
     birth_time: parsed.data.birth_time,
     gender: parsed.data.gender,
-    consented_tos_version: parsed.data.consented_tos_version,
+    consented_at: legalConsent.consentedAt,
+    consented_tos_version: legalConsent.termsVersion,
+    consented_privacy_version: legalConsent.privacyVersion,
+    age_confirmed: legalConsent.ageConfirmed,
   });
 
   if (error) {

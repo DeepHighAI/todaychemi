@@ -9,7 +9,7 @@ const VALID_UPDATE = {
   birth_time_knowledge: 'exact',
   birth_time: '14:30',
   gender: 'F',
-  // consented_tos_version 없음 — 편집에서 제외
+  // legal consent fields 없음 — 편집에서 제외
 } as const;
 
 describe('MeUpdateRequestSchema', () => {
@@ -20,6 +20,12 @@ describe('MeUpdateRequestSchema', () => {
 
   it('consented_tos_version 포함 시 strict 거절', () => {
     const bad = { ...VALID_UPDATE, consented_tos_version: 'v0.1' };
+    const result = MeUpdateRequestSchema.safeParse(bad);
+    expect(result.success).toBe(false);
+  });
+
+  it('consented_privacy_version 포함 시 strict 거절', () => {
+    const bad = { ...VALID_UPDATE, consented_privacy_version: '2026-06-01' };
     const result = MeUpdateRequestSchema.safeParse(bad);
     expect(result.success).toBe(false);
   });

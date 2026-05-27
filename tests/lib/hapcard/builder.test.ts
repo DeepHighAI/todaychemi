@@ -119,7 +119,7 @@ const MOCK_LLM_OUTPUT = {
 const MOCK_LLM_RESULT = {
   output: MOCK_LLM_OUTPUT,
   usage: { token_in: 100, token_out: 200, total_usd: 0 },
-  model: 'gpt-5' as const,
+  model: 'gpt-5o' as const,
 };
 
 const EXPECTED_CACHE_KEY = deriveCacheKey({
@@ -156,7 +156,7 @@ function makeInsertedRow(cacheKey: string): HapcardResult {
       ohaeng_interpretation: MOCK_LLM_OUTPUT.ohaeng_interpretation,
     },
     prompt_version: MOCK_PROMPT.version,
-    llm_model: 'gpt-5',
+    llm_model: 'gpt-5o',
     cache_key: cacheKey,
     user_chart_hash: BASE_INPUT.self_chart_hash,
     relation_chart_hash: BASE_INPUT.relation_chart_hash,
@@ -361,13 +361,15 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     expect(insertCall.prompt_version).toBe(MOCK_PROMPT.version);
   });
 
-  it('llm_model = DEFAULT_LLM_MODEL 고정', async () => {
+  it('오늘 우리는 모델은 gpt-5o로 호출하고 저장한다', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));
 
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const insertCall = insert.mock.calls[0][0];
-    expect(insertCall.llm_model).toBe('gpt-5-mini');
+    expect(callArgs.model).toBe('gpt-5o');
+    expect(insertCall.llm_model).toBe('gpt-5o');
   });
 
   it('grounding 실패(errors.length>0) → 1회 retry → 2차 성공', async () => {

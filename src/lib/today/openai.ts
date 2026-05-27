@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type OpenAI from 'openai';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
+import { selectLlmModel } from '@/lib/llm/model-router';
 
 function loadSystemPrompt(): string {
   const promptPath = join(process.cwd(), 'prompts', 'system', 'daily_hap.md');
@@ -26,7 +27,7 @@ export async function callDailyHapLlm(chart: ChartCore, openai: OpenAI): Promise
   const systemPrompt = loadSystemPrompt();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-5-mini',
+    model: selectLlmModel('today'),
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: JSON.stringify({ chart_core: chart }) },

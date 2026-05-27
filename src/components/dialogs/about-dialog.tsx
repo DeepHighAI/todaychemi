@@ -28,7 +28,7 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
         <DialogHeader>
           <DialogTitle className="text-xl font-extrabold">오늘사이</DialogTitle>
           <DialogDescription className="text-sm leading-6">
-            우리 오늘 무슨 사이야? 오늘 만나는 사람과의 흐름을 미리 확인하는 관계 사주 서비스입니다.
+            TWODAY. 우리 오늘 무슨 사이야? 오늘 만나는 사람과의 흐름을 미리 확인하는 관계 사주 서비스입니다.
           </DialogDescription>
         </DialogHeader>
         <dl className="mt-4 space-y-2 border-t border-[var(--hairline)] pt-4">

@@ -23,85 +23,85 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('signInWithGoogle', () => {
-  it('calls signInWithOAuth with google provider and correct redirectTo', async () => {
+describe('signInWithKakao', () => {
+  it('calls signInWithOAuth with kakao provider and shared auth callback', async () => {
     mockSignInWithOAuth.mockResolvedValue({ error: null });
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await signInWithGoogle(ACCEPTED_LEGAL_CONSENT);
+    await signInWithKakao(ACCEPTED_LEGAL_CONSENT);
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       '/api/legal/consent',
       expect.objectContaining({
         method: 'POST',
         credentials: 'same-origin',
-        body: JSON.stringify({ ...ACCEPTED_LEGAL_CONSENT, flow: 'oauth', provider: 'google' }),
+        body: JSON.stringify({ ...ACCEPTED_LEGAL_CONSENT, flow: 'oauth', provider: 'kakao' }),
       }),
     );
     expect(mockSignInWithOAuth).toHaveBeenCalledOnce();
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
+      provider: 'kakao',
       options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=google',
+        redirectTo: 'https://test.example.com/auth/callback?provider=kakao',
       },
     });
   });
 
   it('preserves a safe next path in the OAuth callback URL', async () => {
     mockSignInWithOAuth.mockResolvedValue({ error: null });
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await signInWithGoogle(ACCEPTED_LEGAL_CONSENT, { next: '/guest/complete' });
+    await signInWithKakao(ACCEPTED_LEGAL_CONSENT, { next: '/guest/complete' });
 
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
+      provider: 'kakao',
       options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=google&next=%2Fguest%2Fcomplete',
+        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2Fguest%2Fcomplete',
       },
     });
   });
 
   it('can reuse an existing guest consent nonce without recording a new OAuth consent', async () => {
     mockSignInWithOAuth.mockResolvedValue({ error: null });
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await signInWithGoogle(
+    await signInWithKakao(
       { terms: false, privacy: false, age: false },
       { next: '/guest/complete', reuseExistingConsent: true },
     );
 
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
+      provider: 'kakao',
       options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=google&next=%2Fguest%2Fcomplete',
+        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2Fguest%2Fcomplete',
       },
     });
   });
 
   it('can defer legal consent until after the OAuth callback', async () => {
     mockSignInWithOAuth.mockResolvedValue({ error: null });
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await signInWithGoogle(
+    await signInWithKakao(
       { terms: false, privacy: false, age: false },
       { next: '/', deferLegalConsent: true },
     );
 
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
+      provider: 'kakao',
       options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=google&next=%2F',
+        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2F',
       },
     });
   });
 
   it('throws before OAuth when legal consent is incomplete', async () => {
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
     await expect(
-      signInWithGoogle({ terms: true, privacy: false, age: true }),
+      signInWithKakao({ terms: true, privacy: false, age: true }),
     ).rejects.toThrow('LEGAL_CONSENT_REQUIRED');
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
     expect(mockSignInWithOAuth).not.toHaveBeenCalled();
@@ -110,8 +110,8 @@ describe('signInWithGoogle', () => {
   it('throws when signInWithOAuth returns an error', async () => {
     const fakeError = { message: 'provider disabled' };
     mockSignInWithOAuth.mockResolvedValue({ error: fakeError });
-    const { signInWithGoogle } = await import('@/lib/auth/google');
+    const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await expect(signInWithGoogle(ACCEPTED_LEGAL_CONSENT)).rejects.toEqual(fakeError);
+    await expect(signInWithKakao(ACCEPTED_LEGAL_CONSENT)).rejects.toEqual(fakeError);
   });
 });

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type TimeAccuracy = 'exact' | 'approximate' | 'unknown';
 export type Gender = 'M' | 'F' | '';
@@ -46,6 +46,9 @@ export const useOnboardingDraft = create<OnboardingDraft>()(
       setTos: (v) => set({ tos: v }),
       reset: () => set(INITIAL),
     }),
-    { name: 'onboarding-draft-v1' },
+    {
+      name: 'onboarding-draft-v1',
+      storage: createJSONStorage(() => sessionStorage),
+    },
   ),
 );

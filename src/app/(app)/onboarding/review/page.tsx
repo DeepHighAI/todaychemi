@@ -4,15 +4,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { TOS_VERSION } from '@/lib/onboarding/tos';
+import {
+  hasGuestLegalConsentReady,
+  saveGuestOnboarding,
+  saveGuestToday,
+} from '@/lib/guest/session';
 import { useOnboardingDraft } from '@/lib/onboarding/draft-store';
+import type { ChartCore } from '@/types/chart';
+import type { DailyHapCard } from '@/types/dailyHap';
 import type { OnboardingRequest } from '@/types/onboarding';
 
 export default function OnboardingReviewPage() {
   const t = useTranslations('onboarding');
   const router = useRouter();
   const draft = useOnboardingDraft();
-  const [tos, setTos] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,15 +43,43 @@ export default function OnboardingReviewPage() {
         birth_time_knowledge: knowledge,
         birth_time: knowledge === 'unknown' ? null : birthTime,
         gender: gender as 'M' | 'F',
-        consented_tos_version: TOS_VERSION,
       };
+      if (hasGuestLegalConsentReady()) {
+        saveGuestOnboarding(body);
+        const res = await fetch('/api/guest/today', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) { setError(t('errors.generic')); setSubmitting(false); return; }
+        const payload = (await res.json()) as {
+          ok?: boolean;
+          card?: DailyHapCard;
+          chart?: ChartCore;
+        };
+        if (!payload.ok || !payload.card || !payload.chart) {
+          setError(t('errors.generic'));
+          setSubmitting(false);
+          return;
+        }
+        saveGuestToday({
+          onboarding: body,
+          card: payload.card,
+          chart: payload.chart,
+          generatedAt: new Date().toISOString(),
+        });
+        draft.reset();
+        router.push('/today/me');
+        return;
+      }
+
       const res = await fetch('/api/onboarding', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (!res.ok) { setError(t('errors.generic')); setSubmitting(false); return; }
       draft.reset();
-      router.push('/feed');
+      router.push('/');
     } catch {
       setError(t('errors.generic'));
       setSubmitting(false);
@@ -65,15 +98,10 @@ export default function OnboardingReviewPage() {
           </div>
         ))}
       </div>
-      <label className="flex items-center gap-2.5 px-1">
-        <input type="checkbox" checked={tos} onChange={(e) => setTos(e.target.checked)}
-          className="h-4 w-4 accent-primary" />
-        <span className="text-[12px] text-muted-foreground">{t('tos.label')}</span>
-      </label>
       <p className="text-center text-[11px] text-muted-foreground">{t('privacy')}</p>
       {error && <p className="font-sub text-destructive text-center">{error}</p>}
       <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">
-        <Button onClick={handleSubmit} disabled={!tos || submitting}
+        <Button onClick={handleSubmit} disabled={submitting}
           variant="default" className="h-12 w-full rounded-[var(--r-pill)] font-bold">
           {submitting ? t('submitting') : t('submit')}
         </Button>

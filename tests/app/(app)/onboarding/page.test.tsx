@@ -9,10 +9,10 @@ import { renderWithIntl } from '../../../utils/render-with-intl';
 // persist → passthrough so zustand store works normally without localStorage
 vi.mock('zustand/middleware', () => ({
   persist: (fn: (set: unknown, get: unknown, api: unknown) => unknown) => fn,
+  createJSONStorage: () => undefined,
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn() }));
-vi.mock('@/lib/onboarding/tos', () => ({ TOS_VERSION: 'v0.1' }));
 
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -21,6 +21,7 @@ const mockFetch = vi.fn();
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  window.sessionStorage.clear();
   vi.mocked(useRouter).mockReturnValue({ push: mockPush, back: vi.fn() } as never);
   vi.mocked(usePathname).mockReturnValue('/onboarding/dob');
   vi.stubGlobal('fetch', mockFetch);
@@ -121,17 +122,59 @@ describe('OnboardingReviewPage (Step 4)', () => {
     s.setCalendar('solar');
   });
 
-  it('시작하기 submits and redirects to /feed', async () => {
+  it('시작하기 submits and redirects to /', async () => {
     mockFetch.mockResolvedValue({ ok: true });
     const { default: Page } = await import('@/app/(app)/onboarding/review/page');
     renderWithIntl(<Page />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: '시작하기' }));
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/feed'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/'));
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.birth_date).toBe('1995-11-05');
     expect(body.birth_time).toBe('14:20');
+  });
+
+  it('게스트 동의 상태에서는 오늘 나의 흐름을 생성하고 /today/me로 이동한다', async () => {
+    window.sessionStorage.setItem('osa_guest_legal_ready', '1');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        card: {
+          headline: '오늘은 정리하기 좋아요.',
+          headline_reason: '차분한 흐름입니다.',
+          avoid_phrase: '급한 말',
+          avoid_phrase_reason: '서두르지 마세요.',
+          favorable_action: '정리하기',
+          favorable_action_reason: '작은 정리가 좋아요.',
+          reused_from_yesterday: false,
+        },
+        chart: {
+          year_pillar: '갑자',
+          month_pillar: '을축',
+          day_pillar: '병인',
+          hour_pillar: null,
+          day_master_element: '화',
+          five_elements_counts: { 목: 2, 화: 1, 토: 0, 금: 0, 수: 1 },
+          gender_normalized: 'M',
+          yunse: {
+            daeun: { start_age: 7, list: [{ age: 7, pillar: '갑자', year: 1990 }], current_index: 0 },
+            seyun: { current_pillar: '병오', current_year: 2026 },
+            wolun: { current_pillar: '계사', current_month: '2026-05' },
+            iliun: { today_pillar: '갑자', today_date: '2026-05-07' },
+          },
+        },
+      }),
+    });
+    const { default: Page } = await import('@/app/(app)/onboarding/review/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: '시작하기' }));
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/guest/today', expect.any(Object)));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/today/me'));
+    expect(window.sessionStorage.getItem('osa_guest_today')).toContain('오늘은 정리하기 좋아요.');
   });
 
   it('shows generic error on non-ok response', async () => {
@@ -139,7 +182,6 @@ describe('OnboardingReviewPage (Step 4)', () => {
     const { default: Page } = await import('@/app/(app)/onboarding/review/page');
     renderWithIntl(<Page />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: '시작하기' }));
     await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
   });

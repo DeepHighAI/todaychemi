@@ -1,18 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import Link from 'next/link';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { signInWithGoogle } from '@/lib/auth/google';
+import { signInWithKakao } from '@/lib/auth/kakao';
 import { signInWithEmail } from '@/lib/auth/email';
+import { cn } from '@/lib/utils';
+import { EMPTY_LEGAL_CONSENT } from '@/lib/legal/consent';
 
 export default function LoginPage() {
   const t = useTranslations('auth.login');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawNext = searchParams.get('next') ?? '/';
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +30,18 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError(null);
-      await signInWithGoogle();
+      await signInWithGoogle(EMPTY_LEGAL_CONSENT, { next, deferLegalConsent: true });
+    } catch {
+      setError(t('errorGeneric'));
+      setLoading(false);
+    }
+  }
+
+  async function handleKakao() {
+    try {
+      setLoading(true);
+      setError(null);
+      await signInWithKakao(EMPTY_LEGAL_CONSENT, { next, deferLegalConsent: true });
     } catch {
       setError(t('errorGeneric'));
       setLoading(false);
@@ -44,7 +61,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       await signInWithEmail(email, password);
-      router.push('/');
+      router.push(next);
     } catch {
       setError(t('errorInvalidCredentials'));
       setLoading(false);
@@ -109,6 +126,26 @@ export default function LoginPage() {
         >
           {loading ? t('loading') : t('googleButton')}
         </Button>
+
+        <Button
+          type="button"
+          onClick={handleKakao}
+          disabled={loading}
+          variant="outline"
+          className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
+        >
+          {loading ? t('loading') : t('kakaoButton')}
+        </Button>
+
+        <Link
+          href="/guest/start"
+          className={cn(
+            buttonVariants({ variant: 'ghost' }),
+            'mt-2 h-11 w-full text-muted-foreground',
+          )}
+        >
+          {t('browseButton')}
+        </Link>
 
         {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
 
