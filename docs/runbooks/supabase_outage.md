@@ -26,7 +26,7 @@
    새로운 결과 생성이 일시 중단됩니다.
    ```
 5. **캐시된 데이터 서빙**: 이미 로드된 hapcards/daily_haps는 브라우저 캐시에서 표시 가능
-6. Sentry·PostHog write 일시 중단 (DB 연결 사용)
+6. Sentry 알림 확인 및 DB write 의존 작업 일시 중단
 
 ---
 

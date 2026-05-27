@@ -1,6 +1,6 @@
 # supabase_callback.md — Supabase Auth Callback 라우트
 
-> **용도**: Google OAuth, 향후 Kakao OAuth (Phase 2) 공통 콜백
+> **용도**: Google OAuth, Kakao OAuth 공통 콜백
 
 ---
 
@@ -16,7 +16,7 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/app';
+  const next = searchParams.get('next') ?? '/';
 
   if (code) {
     const cookieStore = await cookies();
@@ -66,23 +66,25 @@ async function migrateAnonymousProfile(supabase: SupabaseClient, userId: string)
 
 ```typescript
 // src/lib/auth/google.ts
-import { createClient } from '@/lib/supabase/client';
+import type { LegalConsentState } from '@/lib/legal/consent';
+import { signInWithOAuthProvider } from '@/lib/auth/oauth';
 
-export async function signInWithGoogle() {
-  const supabase = createClient();
+export async function signInWithGoogle(legalConsent: LegalConsentState) {
+  await signInWithOAuthProvider('google', legalConsent);
+}
+```
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      },
-    },
-  });
+---
 
-  if (error) throw error;
+## 2.1 Kakao OAuth 시작
+
+```typescript
+// src/lib/auth/kakao.ts
+import type { LegalConsentState } from '@/lib/legal/consent';
+import { signInWithOAuthProvider } from '@/lib/auth/oauth';
+
+export async function signInWithKakao(legalConsent: LegalConsentState) {
+  await signInWithOAuthProvider('kakao', legalConsent);
 }
 ```
 
@@ -92,15 +94,28 @@ export async function signInWithGoogle() {
 
 ```
 Authentication → URL Configuration:
-  Site URL: https://<domain>
+  Site URL: https://<production-domain>
   Redirect URLs:
-    https://<domain>/auth/callback
+    https://<production-domain>/auth/callback
     https://staging.<domain>/auth/callback
     http://localhost:3000/auth/callback
 
 Authentication → Providers → Google:
   Client ID: <Google Cloud Console OAuth Client ID>
   Client Secret: <Google Cloud Console OAuth Client Secret>
+
+Authentication → Providers → Kakao:
+  Client ID: <Kakao REST API key>
+  Client Secret: <Kakao client secret>
+  Allow users without an email: enabled
+
+Google Cloud Console → Authorized redirect URIs:
+  https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback
+  http://127.0.0.1:54321/auth/v1/callback
+
+Kakao Developers → Redirect URI:
+  https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback
+  http://127.0.0.1:54321/auth/v1/callback
 ```
 
 ---

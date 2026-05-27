@@ -242,7 +242,7 @@ CREATE TABLE token_ledger (
   user_id       uuid NOT NULL REFERENCES public.users(user_id),
   delta         integer NOT NULL,       -- 양수: 충전, 음수: 사용
   reason        text NOT NULL,          -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
-  reference_id  text,                   -- payment_id 또는 hapcard_id
+  reference_id  text,                   -- payment_id, hapcard_id, daily_login:<YYYY-MM-DD>, signup:<user_id>, share:<share_id>
   balance_after integer NOT NULL,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -250,6 +250,8 @@ CREATE TABLE token_ledger (
 -- 결제 확정은 confirm_token_purchase RPC로만 처리한다.
 -- 중복 success redirect는 toss_order_id/status 기준으로 멱등 처리한다.
 ```
+
+무료 부적 보상은 결제 상품이 아니며 모두 `reason='bonus'`로 기록한다. `award_free_talisman_session_rewards`는 KST 일일 첫 인증 앱 진입 `+1`, 정책 기준일 이후 신규 온보딩 완료 사용자 가입 `+5`를 멱등 지급한다. 공유 보상은 Kakao webhook으로 서버 검증된 공유만 `award_hapcard_share_reward`가 `delta=+1`로 기록하며 제한은 사용자+hapcard당 1회, KST 기준 하루 최대 5회다.
 
 ---
 
@@ -269,8 +271,8 @@ CREATE TABLE token_ledger (
 
 ```bash
 # .env.local sandbox 설정
-TOSS_PAYMENTS_CLIENT_KEY=test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq
-TOSS_PAYMENTS_SECRET_KEY=test_sk_D5GePWvyJnrK0W0k6q8gLzN97Eoq
+TOSS_PAYMENTS_CLIENT_KEY=test_ck_...
+TOSS_PAYMENTS_SECRET_KEY=test_sk_...
 ```
 
 ### Webhook 로컬 테스트
@@ -291,7 +293,7 @@ npx ngrok http 3000
 - [ ] `test_sk_*` → `live_sk_*` 키 교체 (Vercel Production 환경변수)
 - [ ] 환불·취소 자동화 활성화 시 Toss 대시보드 → webhook URL 프로덕션 URL로 변경
 - [ ] Toss 대시보드 → 사업자 정보 등록 완료
-- [ ] 환불 정책 약관 페이지 등록 (`/terms/refund`)
+- [x] 환불 정책 약관 페이지 등록 (`/legal/refund`, `/terms/refund` alias)
 - [ ] 결제 금액 × 수량 조합 서버 검증 로직 확인 (클라이언트 조작 방지)
 - [ ] payments 테이블 RLS 정책 확인 (user_id 기준)
 - [ ] `/cso` 스킬 보안 감사 통과

@@ -154,7 +154,7 @@ t('token_balance', { count: 30 });
 ### next-intl 라우팅 설정 (Phase 1)
 
 ```typescript
-// middleware.ts
+// future proxy/middleware routing entry
 import createMiddleware from 'next-intl/middleware';
 
 export default createMiddleware({

@@ -15,6 +15,7 @@
 | `INSUFFICIENT_TOKENS` | 402 | 결제 시트 자동 열기 (Payment Widget) | 없음 | no |
 | `INVALID_CHART` | 400 | 입력 폼으로 복귀 + 오류 필드 하이라이트 | 없음 | yes |
 | `RLS_DENIED` | 403 | "접근 권한 없음" 토스트 | 없음 | yes |
+| `LEGAL_CONSENT_REQUIRED` | 403 | 회원가입/로그인 동의 단계로 복귀 | 없음 | no |
 | `RATE_LIMITED` | 429 | "잠시 후 다시 해주세요" + 카운트다운 | 지수 백오프 | yes |
 | `INTERNAL` | 500 | "오류가 발생했어요" + 피드백 버튼 | 없음 | critical |
 
@@ -33,6 +34,7 @@ export const ErrorCodeSchema = z.enum([
   'INSUFFICIENT_TOKENS',
   'INVALID_CHART',
   'RLS_DENIED',
+  'LEGAL_CONSENT_REQUIRED',
   'RATE_LIMITED',
   'INTERNAL',
 ]);
@@ -74,6 +76,7 @@ const ERROR_STATUS_MAP: Record<ErrorCode, number> = {
   INSUFFICIENT_TOKENS: 402,
   INVALID_CHART: 400,
   RLS_DENIED: 403,
+  LEGAL_CONSENT_REQUIRED: 403,
   RATE_LIMITED: 429,
   INTERNAL: 500,
 };
@@ -86,6 +89,7 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   INSUFFICIENT_TOKENS: '포인트가 부족해요. 충전 후 이용해주세요.',
   INVALID_CHART: '입력한 정보를 다시 확인해주세요.',
   RLS_DENIED: '접근 권한이 없어요.',
+  LEGAL_CONSENT_REQUIRED: '이용약관과 개인정보처리방침 동의가 필요해요.',
   RATE_LIMITED: '잠시 후 다시 해주세요.',
   INTERNAL: '오류가 발생했어요. 계속되면 피드백을 남겨주세요.',
 };

@@ -1,6 +1,6 @@
 # 로컬 E2E Manual Smoke 가이드
 
-합플(Hap-Plae) 프로젝트의 8개 핵심 사용자 flow를 브라우저에서 직접 점검하는 절차서다.
+오늘사이 프로젝트의 핵심 사용자 flow를 브라우저에서 직접 점검하는 절차서다.
 
 ---
 
@@ -87,7 +87,32 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 1. F1 — 회원가입 → 로그인
+## 1. F0 — 게스트 선체험 → 가입 유도
+
+**URL**: `/start` → `/guest/start` → `/onboarding` → `/today/me` → `/signup?intent=guest`  
+**LLM**: 있음 (`/api/guest/today`, GPT-5 mini)  
+**사전 조건**: 로그아웃 상태
+
+### Steps
+
+1. `http://localhost:3000/` 접속
+2. `/start`로 이동하고 `처음이세요?`, `우리 만난 적 있죠?` 버튼 표시 확인
+3. `처음이세요?` 클릭
+4. 이용약관, 개인정보처리방침, 만 14세 이상 동의 체크 후 `동의하고 시작하기`
+5. 자기 사주 온보딩 입력 후 review에서 `시작하기`
+6. `/today/me`에서 **오늘 나의 흐름** 결과 확인
+7. `친구와의 오늘 우리는 보기` 클릭
+8. `/signup?intent=guest`에서 이메일 또는 Google/Kakao 가입 진행
+9. 가입 완료 후 `/guest/complete`를 거쳐 `/relations/new` 이동 확인
+
+### Expected
+
+- 가입 전 게스트 입력값은 같은 탭 `sessionStorage`에만 남는다.
+- `POST /api/guest/today`는 200을 반환하고 `users`, `user_charts`, `daily_haps`에 insert하지 않는다.
+- 가입 전환 후 `/api/onboarding`이 201 또는 기존 온보딩 409를 반환하고 게스트 sessionStorage가 정리된다.
+- 세션이 유지된 기존 유저가 `/start`에 접근하면 `/` 홈으로 이동한다.
+
+## 2. F1 — 회원가입 → 로그인
 
 **URL**: `/signup` → `/login`  
 **LLM**: 없음  
@@ -106,6 +131,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 - 가입 성공 시: `/onboarding` 리다이렉트
 - 로그인 성공 시: `/` (오늘 홈) 리다이렉트, TabBar(홈·피드·내사주) 노출
+- 인증 앱 첫 진입 시 `POST /api/rewards/session`이 호출된다. KST 기준 당일 첫 진입이면 `bonus +1`, 신규 계정이 온보딩을 완료한 뒤 첫 앱 화면에 들어오면 가입 보상 `bonus +5`도 함께 기록된다.
 
 ### Failure check
 
@@ -119,7 +145,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 2. F2 — 자기 사주 온보딩
+## 3. F2 — 자기 사주 온보딩
 
 **URL**: `/onboarding`  
 **LLM**: 없음  
@@ -154,7 +180,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 3. F3 — 인연 등록
+## 4. F3 — 인연 등록
 
 **URL**: `/relations/new`  
 **LLM**: 없음  
@@ -188,7 +214,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 4. F4 — 합피드 정렬 + 변화 배지
+## 5. F4 — 합피드 정렬 + 변화 배지
 
 **URL**: `/feed`  
 **LLM**: 없음  
@@ -215,7 +241,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 5. F5 — 합카드 9섹션 생성
+## 6. F5 — 합카드 9섹션 생성
 
 **URL**: `/hapcard/[id]` (`id` = 인연의 `hapcard_id`)  
 **LLM**: 있음 (~$0.05, GPT-5o). DB 캐시 hit 시 무료.  
@@ -258,7 +284,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 6. F6 — 오늘 홈 (Today)
+## 7. F6 — 오늘 홈 (Today)
 
 **URL**: `/`  
 **LLM**: 있음 (~$0.05, GPT-5 mini). 당일 DB 캐시 hit 시 무료.  
@@ -288,7 +314,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 7. F7 — /me 본명식 5섹션
+## 8. F7 — /me 본명식 5섹션
 
 **URL**: `/me`  
 **LLM**: 없음  
@@ -318,7 +344,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 8. F8 — 만약합 6모드
+## 9. F8 — 만약합 6모드
 
 **URL**: `/` 에서 WhatifSheet 진입 (또는 직접 `/whatif/[type]`)  
 **LLM**: 있음 (~$0.05/모드, GPT-5o). 당일 same 모드 캐시 hit 시 무료.  
@@ -365,9 +391,9 @@ Expected: 새 LLM 결과로 합카드 갱신.
 
 ### F10 — 공유 시트 (Share)
 
-합카드 `공유하기` 버튼 → ShareSheet 드로어. 범위 선택(별명만/오행포함/성별포함) → `공유하기`.  
-Expected: 모바일 Web Share API 활성화 또는 클립보드 복사 완료 토스트.  
-(PC 브라우저에서는 클립보드 복사 경로 동작)
+합카드 `공유하기` 버튼 → ShareSheet 드로어. 범위 선택(별명만/오행포함/성별포함) → `카카오톡` / `인스타그램/카드` / `링크 복사`.
+Expected: `/h/<token>` 공개 링크가 생성되고 OG 카드가 표시된다. Kakao callback으로 서버가 성공을 검증한 경우에만 `bonus +1`이 1회 지급된다. 같은 오늘 우리는 카드는 1회만 보상되며 KST 기준 하루 최대 5회다.
+(PC 브라우저에서는 카드 이미지 다운로드 또는 링크 복사 경로 동작. 복사/다운로드만으로는 보상 지급 없음)
 
 ### F11 — Glossary 툴팁·바텀시트
 
@@ -435,6 +461,8 @@ pnpm seed:prompts
 | Flow | 감시할 엔드포인트 |
 |---|---|
 | F1 로그인 | Supabase Auth `/token` |
+| F0 게스트 선체험 | `/api/legal/consent`, `/api/guest/today` |
+| F1/F2 무료 부적 | `/api/rewards/session`, `/api/me/wallet` |
 | F2 온보딩 | `/api/onboarding` |
 | F3 인연 등록 | `/api/relations` |
 | F5 합카드 | `/api/hapcards` (POST, 최초 생성) |
@@ -482,7 +510,7 @@ pnpm dev
 
 | 항목 | 상태 |
 |---|---|
-| Google OAuth | Supabase Dashboard 수동 활성화 필요 — 현재 미확인. Email/Password만 신뢰 |
+| Google OAuth | `docs/runbooks/google_oauth.md` 기준 Dashboard Client ID/Secret 설정 후 smoke 필요. Email/Password는 계속 신뢰 |
 | 토큰 충전 페이지 | `/payments/charge` 미구현 (D1 예정). 토큰 부족 시 CTA 비활성 |
 | Playwright 자동화 | 미구성 (`@playwright/test` 패키지만 존재). Manual 가이드 이후 별도 PR 예정 |
 | KASI_API_KEY vs KASI_SERVICE_KEY | `.env.example` 오기 — 실제 코드는 `KASI_SERVICE_KEY` 사용 |

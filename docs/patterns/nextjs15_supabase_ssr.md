@@ -1,4 +1,4 @@
-# nextjs15_supabase_ssr.md — Next.js 15 + Supabase SSR 패턴
+# nextjs15_supabase_ssr.md — Next.js 15/16 + Supabase SSR 패턴
 
 > **패키지**: `@supabase/ssr` v0.5+, `@supabase/supabase-js` v2.45+
 
@@ -10,7 +10,7 @@
 src/lib/supabase/
 ├─ server.ts          # RSC · Server Action · Route Handler용
 ├─ client.ts          # Client Component용 (브라우저)
-├─ middleware.ts       # middleware.ts에서 호출 (cookie refresh)
+├─ middleware.ts       # route/proxy guard helper (cookie refresh optional)
 └─ service-role.ts    # Edge Function 내부 · admin 전용
 ```
 
@@ -41,7 +41,7 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             });
           } catch {
-            // Server Component에서는 쿠키 쓰기 불가 (middleware가 처리)
+            // Server Component에서는 쿠키 쓰기 불가 (route/proxy guard가 처리)
           }
         },
       },
@@ -69,14 +69,14 @@ export function createClient() {
 
 ---
 
-## 4. middleware.ts (쿠키 갱신)
+## 4. Route/Proxy Guard (쿠키 갱신)
 
 ```typescript
-// middleware.ts (프로젝트 루트)
+// Next.js 16 proxy 사용 시 src/proxy.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -112,7 +112,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/', '/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 ```
 
@@ -144,6 +144,6 @@ export default async function HapcardsPage() {
 
 ## 6. 주의사항
 
-- Server Component에서는 `cookies()`가 read-only → 세션 갱신은 반드시 middleware에서
+- Server Component에서는 `cookies()`가 read-only → 세션 갱신은 route/proxy guard에서
 - Client Component에서 `createBrowserClient` 재사용 시 싱글톤 패턴 권장 (컴포넌트 외부에 인스턴스 선언)
 - `service-role.ts`는 `SUPABASE_SERVICE_ROLE_KEY` 사용 — 클라이언트 번들에 절대 포함 금지

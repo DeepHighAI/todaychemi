@@ -1,4 +1,4 @@
-# db_schema.md — Saju Lens Postgres DDL + RLS
+# db_schema.md — TWODAY Postgres DDL + RLS
 
 > **모델 버전**: CRM 모델 v1.0 (2026-05-03)
 > **권위 ADR**: ADR-011 (별명만, 실명 수집 금지), ADR-018 (모트 = 명리 정확성 자산)
@@ -94,6 +94,7 @@ create table public.users (
   -- 개인정보 동의
   consented_at     timestamptz not null default now(),
   consented_tos_version text   not null,
+  consented_privacy_version text not null,
   age_confirmed    boolean     not null default false,
   -- 온보딩
   first_result_viewed_at timestamptz,
@@ -319,17 +320,32 @@ create table public.token_ledger (
   user_id      uuid    not null references public.users(user_id) on delete cascade,
   delta        int     not null,            -- 양수=충전, 음수=차감
   reason       text    not null,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
-  reference_id text,                        -- payment_id 또는 hapcard_id
+  reference_id text,                        -- payment_id, hapcard_id 또는 share:<share_id>
   balance_after int    not null,
   created_at   timestamptz not null default now()
 );
 
 create index on public.token_ledger (user_id, created_at desc);
+create index if not exists token_ledger_user_reason_reference_idx
+  on public.token_ledger (user_id, reason, reference_id);
 
 alter table public.token_ledger enable row level security;
 create policy "ledger_own_read" on public.token_ledger for select using (auth.uid() = user_id);
 -- insert는 service_role 전용
 ```
+
+무료 부적 지급도 `reason='bonus'`를 사용한다. 세부 출처는 `reference_id` prefix로 구분한다: `daily_login:<YYYY-MM-DD>`, `signup:<user_id>`, `share:<share_id>`.
+
+```sql
+create or replace function public.award_free_talisman_session_rewards(
+  uid uuid,
+  p_auth_created_at timestamptz default null,
+  p_policy_effective_at timestamptz default '2026-05-25T00:00:00+09:00'::timestamptz
+)
+returns jsonb;
+```
+
+정책: `public.users` 프로필이 있는 사용자에게만 지급한다. KST 기준 매일 첫 인증 앱 진입은 `+1`, 정책 기준일 이후 생성된 신규 사용자는 온보딩 완료 후 `+5`를 추가 지급한다. 기존 가입자는 가입 보상을 소급 지급하지 않으며, 가입 당일 일일 보상은 별도로 받을 수 있다.
 
 ---
 
@@ -642,6 +658,71 @@ alter table public.whatif_results enable row level security;
 create policy "whatif_results_own" on public.whatif_results for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 ```
+
+---
+
+### 20. hapcard_shares / hapcard_share_rewards
+
+공개 공유 링크와 공유 성공 보상 멱등성. 원문 공개 토큰은 저장하지 않고 `token_hash`만 저장한다.
+
+```sql
+-- supabase/migrations/20260524090000_hapcard_shares.sql
+create table public.hapcard_shares (
+  share_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(user_id) on delete cascade,
+  hapcard_id uuid not null references public.hapcards(hapcard_id) on delete cascade,
+  relation_id uuid not null references public.relations(relation_id) on delete cascade,
+  token_hash text not null unique,
+  range text not null check (range in ('nickname-only', 'nickname-ohaeng', 'nickname-gender')),
+  channel text not null check (channel in ('kakao', 'web_share', 'instagram', 'copy_link')),
+  title text not null,
+  message_text text not null,
+  expires_at timestamptz not null default (now() + interval '30 days')
+);
+
+create table public.hapcard_share_rewards (
+  reward_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(user_id) on delete cascade,
+  hapcard_id uuid not null references public.hapcards(hapcard_id) on delete cascade,
+  share_id uuid not null references public.hapcard_shares(share_id) on delete cascade,
+  channel text not null check (channel in ('kakao')),
+  ledger_id uuid references public.token_ledger(ledger_id) on delete set null,
+  reward_date_kst date not null,
+  webhook_resource_id text,
+  unique (user_id, hapcard_id),
+  unique (share_id)
+);
+
+create or replace function public.award_hapcard_share_reward(...)
+returns jsonb;
+```
+
+보상 정책: Kakao webhook으로 검증된 공유 완료 시에만 `token_ledger.reason='bonus'`, `delta=+1`, `reference_id='share:<share_id>'`를 기록한다. 같은 사용자+hapcard는 1회만 지급하고 KST 기준 하루 최대 5회까지만 지급한다. Instagram/Web Share/copy/download는 공유 기능만 제공하고 보상 지급 근거로 쓰지 않는다.
+
+---
+
+### 21. legal_consents
+
+회원가입/OAuth 시작 전 필수 약관 동의를 서버 소유 레코드로 저장한다. 원문 nonce token은 HttpOnly cookie로만 내려가며 DB에는 `token_hash`만 저장한다.
+
+```sql
+-- supabase/migrations/20260525110000_legal_consents.sql
+create table public.legal_consents (
+  consent_id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid references auth.users(id) on delete cascade,
+  token_hash text not null unique,
+  flow text not null check (flow in ('email', 'oauth', 'guest')),
+  provider text check (provider in ('google', 'kakao')),
+  terms_version text not null,
+  privacy_version text not null,
+  age_confirmed boolean not null default false,
+  consented_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  claimed_at timestamptz
+);
+```
+
+`provider`는 `oauth` flow에서만 필수이며 `email`/`guest` flow에서는 `null`이어야 한다. `/api/legal/consent`가 레코드를 만들고 `osa_legal_consent` HttpOnly SameSite=Lax cookie를 발급한다. Email/OAuth TTL은 30분, guest TTL은 24시간이다. `/auth/callback`과 `/api/onboarding`은 이 nonce를 claim하거나 최신 서버 레코드를 읽어 `public.users`의 동의 컬럼을 채운다. 게스트 선체험은 `auth_user_id=null` 상태로 `/api/guest/today`에서만 사용하고, 가입 전환 후 `/guest/complete`의 인증 온보딩 과정에서 사용자에게 연결된다.
 
 ---
 

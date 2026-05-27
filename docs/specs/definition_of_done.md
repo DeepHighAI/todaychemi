@@ -116,7 +116,7 @@ Next.js 스캐폴드 생성 직후 PR-0 머지 전 충족 조건:
 - [ ] Sentry Production 에러 알림 설정 완료
 - [ ] Discord 알림 채널 연결 완료 (`docs/specs/monitoring.md` §4)
 - [ ] `/canary` 배포 후 5분 모니터링 PASS
-- [ ] Google Analytics 4 + PostHog 이벤트 수집 확인
+- [ ] 제품 분석 도구 도입 시 개인정보처리방침·위탁처리자 목록 동시 갱신
 
 ---
 

@@ -1,4 +1,4 @@
-# docs/ — Saju Lens 보조 스펙 인덱스
+# docs/ — TWODAY 보조 스펙 인덱스
 
 > 루트 7개 MD(권위 문서)는 변경하지 않는다. 본 디렉토리는 (a) 권위 문서가 약속만 하고 미생성한 보조 스펙, (b) 폐기된 fortune_architecture.md(v3.3)의 유효 추출분, (c) PR-0~G0 게이트 차단 spec을 담는다.
 
@@ -10,6 +10,7 @@
 | `runbooks/` | 장애 대응·정기 작업·카나리 절차 | fluttering §11에서 약속됐던 6+종 |
 | `legal/` | 개인정보·약관·Data Safety·PII 5필드 단일 정의 | CLAUDE.md §5 단일 truth source |
 | `patterns/` | Next.js 15 + Supabase + TWA 등 구현 패턴 레퍼런스 | 코드 작성 시 참조용 |
+| `qa/` | 수동 검수·브라우저 smoke·출시 전 점검 자료 | 자동 테스트가 대체할 수 없는 검수 기록 |
 
 ## 인덱스
 
@@ -42,9 +43,14 @@
 - [api_key_rotation.md](runbooks/api_key_rotation.md)
 - [prompt_rollback.md](runbooks/prompt_rollback.md)
 - [incident_template.md](runbooks/incident_template.md)
+- [google_oauth.md](runbooks/google_oauth.md) — 오늘사이 Google OAuth 원격 설정
+- [kakao_oauth_share.md](runbooks/kakao_oauth_share.md) — Kakao OAuth + KakaoTalk Share callback 설정
 
 ### legal/
 - [privacy_runbook.md](legal/privacy_runbook.md) — PIPA Art 35-37
+- [terms_of_service.md](legal/terms_of_service.md) — 오늘사이 이용약관 원문
+- [privacy_policy.md](legal/privacy_policy.md) — 오늘사이 개인정보 처리방침 원문
+- [refund_policy.md](legal/refund_policy.md) — 유료 부적 환불 정책
 - [data_safety_form.md](legal/data_safety_form.md) — Google Play
 - [pii_minimization.md](legal/pii_minimization.md) — 5필드 + gender 단일 정의
 
@@ -55,3 +61,6 @@
 - [twa_bubblewrap.md](patterns/twa_bubblewrap.md)
 - [tsconfig_strict.md](patterns/tsconfig_strict.md)
 - [supabase_callback.md](patterns/supabase_callback.md)
+
+### qa/
+- [rag_classics_review_packet.md](qa/rag_classics_review_packet.md) — 오늘 우리는/그럴리 없어! 다시 고전 20건 명리 검수팩

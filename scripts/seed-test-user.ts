@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 import { computeChart } from '@/lib/chart/compute';
+import { LEGAL_PRIVACY_VERSION, LEGAL_TERMS_VERSION } from '@/lib/legal/consent';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 
 const TEST_EMAIL = process.env.TEST_EMAIL ?? 'Test1@test.com';
@@ -87,7 +88,10 @@ async function main() {
       birth_time_knowledge: 'exact',
       birth_time: '12:00',
       gender: 'M',
-      consented_tos_version: 'v1',
+      consented_at: new Date().toISOString(),
+      consented_tos_version: LEGAL_TERMS_VERSION,
+      consented_privacy_version: LEGAL_PRIVACY_VERSION,
+      age_confirmed: true,
     });
     if (userError) throw new Error(`users INSERT 실패: ${userError.message}`);
     console.log(`✅ public.users: user_id=${userId} INSERT 완료`);

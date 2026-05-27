@@ -2,7 +2,7 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
-> 본 문서는 합플(Hap-Plae) / Saju Lens 프로젝트 전용 규칙이다. 보편 규칙은 `C:\DEV\AGENTS.md`(상위 디렉토리)를 참조하며 중복 작성하지 않는다.
+> 본 문서는 오늘사이(TWODAY) 프로젝트 전용 규칙이다. 보편 규칙은 `C:\DEV\AGENTS.md`(상위 디렉토리)를 참조하며 중복 작성하지 않는다.
 
 ---
 

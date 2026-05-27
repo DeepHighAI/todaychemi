@@ -12,16 +12,18 @@
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL | Low (public) | Supabase Dashboard → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 클라이언트 anon key | Low (public) | Supabase Dashboard → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서버 서비스 role key (RLS 우회) | **Critical** | Supabase Dashboard → Project Settings → API |
+| `SUPABASE_AUTH_EXTERNAL_KAKAO_CLIENT_ID` | Supabase local Kakao OAuth REST API key | High | Kakao Developers → App keys |
+| `SUPABASE_AUTH_EXTERNAL_KAKAO_SECRET` | Supabase local Kakao OAuth client secret | **Critical** | Kakao Developers → Kakao Login → Security |
+| `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` | KakaoTalk Share JavaScript key | Low (public) | Kakao Developers → App keys |
+| `KAKAO_ADMIN_KEY` | KakaoTalk Share callback Authorization key | **Critical** | Kakao Developers → App keys |
 | `OPENAI_API_KEY` | OpenAI API 인증 (GPT-5o/GPT-5/GPT-5 mini) | **Critical** | platform.openai.com → API Keys |
 | `OPENAI_PROJECT_ID` | OpenAI 프로젝트 ID (ZDR 적용 프로젝트) | High | platform.openai.com → Settings → Projects |
 | `ANTHROPIC_API_KEY` | Anthropic Claude fallback 인증 | **Critical** | console.anthropic.com → API Keys |
 | `KASI_API_KEY` | 한국천문연구원 API (만세력 기준) | High | astro.kasi.re.kr → API 신청 |
 | `TOSS_PAYMENTS_CLIENT_KEY` | 토스페이먼츠 클라이언트 키 | Medium (public) | 토스페이먼츠 대시보드 → 개발자 도구 |
 | `TOSS_PAYMENTS_SECRET_KEY` | 토스페이먼츠 시크릿 키 (서버 전용) | **Critical** | 토스페이먼츠 대시보드 → 개발자 도구 |
-| `TOSS_WEBHOOK_SECRET` | 토스페이먼츠 webhook 서명 검증 시크릿 | **Critical** | 토스페이먼츠 대시보드 → webhook 설정 |
 | `SENTRY_DSN` | Sentry 에러 수집 DSN | Medium | sentry.io → Project → Settings → DSN |
-| `NEXT_PUBLIC_GA_ID` | Google Analytics 4 Measurement ID | Low (public) | analytics.google.com → Admin → Data Streams |
-| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog 이벤트 수집 API key | Low (public) | app.posthog.com → Project Settings → API Keys |
+| `NEXT_PUBLIC_SENTRY_DSN` | 브라우저 Sentry 에러 수집 DSN | Low (public) | sentry.io → Project → Settings → DSN |
 | `LLM_DAILY_BUDGET_USD` | LLM 일일 예산 상한 (초과 시 fallback 차단) | Low | 직접 설정 (예: `20`) |
 | `BUBBLEWRAP_KEYSTORE_PATH` | TWA APK 서명용 keystore 파일 경로 | **Critical** | `keytool -genkey` 로 생성 (Phase 0 G5+) |
 | `BUBBLEWRAP_KEYSTORE_PASSWORD` | Bubblewrap keystore 패스워드 | **Critical** | keystore 생성 시 설정 |
@@ -35,7 +37,7 @@
 | **Critical** | 유출 시 즉각적 금전 피해 또는 데이터 침해 | API keys, secret keys, keystore |
 | **High** | 유출 시 서비스 운영 중단 또는 간접 피해 | Project ID, KASI key |
 | **Medium** | 유출 시 이상 사용 가능성, 모니터링 필요 | TOSS_CLIENT_KEY, SENTRY_DSN |
-| **Low (public)** | `NEXT_PUBLIC_*` — 브라우저에 노출되는 값 | GA ID, PostHog key, Supabase URL |
+| **Low (public)** | `NEXT_PUBLIC_*` — 브라우저에 노출되는 값 | Sentry browser DSN, Supabase URL |
 
 > `NEXT_PUBLIC_*` 변수는 번들에 포함되어 클라이언트에 노출됨. 절대 비밀값 사용 금지.
 
@@ -91,10 +93,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 KASI_API_KEY=...
 TOSS_PAYMENTS_CLIENT_KEY=test_ck_...     # 개발: test_ 접두사
 TOSS_PAYMENTS_SECRET_KEY=test_sk_...     # 개발: test_ 접두사
-TOSS_WEBHOOK_SECRET=...
 SENTRY_DSN=https://...@sentry.io/...
-NEXT_PUBLIC_GA_ID=G-...
-NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
 ```
 
@@ -128,10 +128,11 @@ LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
 | 키 | 주기 |
 |---|---|
 | `SUPABASE_SERVICE_ROLE_KEY` | 90일 |
+| `SUPABASE_AUTH_EXTERNAL_KAKAO_SECRET` | 180일 |
+| `KAKAO_ADMIN_KEY` | 180일 |
 | `OPENAI_API_KEY` | 90일 |
 | `ANTHROPIC_API_KEY` | 90일 |
 | `TOSS_PAYMENTS_SECRET_KEY` | 출시 전 1회 + 180일 |
-| `TOSS_WEBHOOK_SECRET` | 출시 전 1회 |
 | `BUBBLEWRAP_KEYSTORE_PASSWORD` | Play 스토어 업로드 key 분리 후 검토 |
 
 ---
@@ -139,6 +140,8 @@ LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
 ## 6. 보안 주의사항
 
 - `SUPABASE_SERVICE_ROLE_KEY`: RLS를 우회하므로 서버 컴포넌트 / Route Handler 외부 노출 절대 금지
+- `KAKAO_ADMIN_KEY`: `/api/share/kakao/callback` Authorization 검증 전용. `NEXT_PUBLIC_` prefix 금지
+- `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY`: 브라우저 노출 전제의 public key이며 secret/admin key와 혼동 금지
 - `OPENAI_API_KEY`: ZDR(Zero Data Retention) 적용 프로젝트(`OPENAI_PROJECT_ID`) 연결 필수 (CLAUDE.md §5)
 - `BUBBLEWRAP_KEYSTORE_*`: Google Play 서명 키는 분실 시 앱 업데이트 불가. 암호화된 오프라인 백업 필수
-- `TOSS_WEBHOOK_SECRET`: webhook 서명 검증 로직 생략 시 위조 결제 승인 가능 — `docs/specs/payments.md` §3 참조
+- Toss 일반 결제 webhook은 최신 TossPayments V2 기준으로 HMAC secret 검증 대상이 아니다. 환불·취소 자동화 활성화 시 webhook payload의 `paymentKey`로 Toss 결제 조회 API를 다시 호출해 상태를 검증한다.

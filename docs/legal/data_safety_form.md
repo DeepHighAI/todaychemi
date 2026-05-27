@@ -20,7 +20,7 @@ Google Play Console > App content > Data safety 섹션 제출 필수. 아래 항
 | Date of birth | Yes | **No** (chart_core 가공 후 전달, 원본 미전달) | — | In transit + at rest | Yes | 사주 계산 |
 | Gender | Yes | **No** (chart_core 가공 후 전달) | — | In transit + at rest | Yes | 사주 계산 |
 | Approximate location (시·도 행정구역) | Yes | No | — | In transit + at rest | No (Expert Mode 선택) | 경도 보정 |
-| App interactions | Yes | Yes | PostHog | In transit | No | 서비스 개선 |
+| App interactions | Yes | No | — | In transit + at rest | No | 서비스 개선 |
 | Diagnostics (crash) | Yes | Yes | Sentry | In transit | No | 버그 수정 |
 | Device IDs | No | — | — | — | — | 미수집 |
 
@@ -55,7 +55,6 @@ Google Play Console > App content > Data safety 섹션 제출 필수. 아래 항
 | Anthropic PBC | LLM (fallback, chart_core만 전달) | 미국 |
 | Vercel Inc. | 웹 호스팅 | 미국 |
 | Functional Software (Sentry) | 에러 모니터링 | 미국 |
-| PostHog Inc. | 제품 분석 | 미국 |
 
 ---
 

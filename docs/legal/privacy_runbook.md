@@ -49,7 +49,6 @@
 - Anthropic PBC (LLM — fallback)
 - Vercel Inc. (웹 호스팅)
 - Functional Software, Inc. dba Sentry (에러 모니터링)
-- PostHog Inc. (제품 분석)
 
 ---
 
@@ -65,8 +64,8 @@
 
 | 권리 | 조항 | 제공 방식 |
 |---|---|---|
-| 열람권 | Art. 35 | 더보기 > "내 데이터 보기" (JSON 다운로드) |
-| 정정·삭제권 | Art. 36 | 프로필 편집 + "계정 삭제" 버튼 |
+| 열람권 | Art. 35 | 내 사주맵 > "내 데이터 내려받기" (JSON 다운로드) |
+| 정정·삭제권 | Art. 36 | 프로필 편집 + "계정 삭제 요청" 버튼 |
 | 처리정지권 | Art. 37 | "일시 비활성화" 옵션 |
 | 이동권 | (준용) | JSON 다운로드로 대체 |
 
@@ -93,16 +92,16 @@
 
 ## 7. G5 체크리스트
 
-- [ ] `/legal/privacy` 페이지 작성·배포
-- [ ] `/legal/terms` 페이지 작성·배포
-- [ ] 결과 페이지 면책 고지 컴포넌트 (상시 노출)
-- [ ] 가입 시 만 14세 이상 체크박스
-- [ ] 인연 등록 시 동의 체크박스 ("인연의 동의를 얻었습니다")
-- [ ] 데이터 열람 API (Edge Function, JSON export)
-- [ ] 계정 삭제 UI + `deletion_requested_at` 설정
-- [ ] 30일 grace period 삭제 스케줄러 (pg_cron)
+- [x] `/legal/privacy` 페이지 작성·배포
+- [x] `/legal/terms` 페이지 작성·배포
+- [x] 결과 페이지 면책 고지 컴포넌트 (상시 노출)
+- [x] 가입 시 만 14세 이상 체크박스
+- [x] 인연 등록 시 동의 체크박스 ("인연의 동의를 얻었습니다")
+- [x] 데이터 열람 API (JSON export: `GET /api/me/export`)
+- [x] 계정 삭제 UI + `deletion_requested_at` 설정 (`POST /api/me/delete-request`)
+- [x] 30일 grace period 삭제 스케줄러 (pg_cron: `purge-deleted-users`)
 - [ ] 익명화 스크립트 (salted hash 치환)
-- [ ] LLM 위탁 처리자 Privacy Policy 등재 (OpenAI ZDR 의무 포함)
+- [x] LLM 위탁 처리자 Privacy Policy 등재 (OpenAI ZDR 의무 포함)
 - [ ] Data Safety Form 완료 (`docs/legal/data_safety_form.md`)
 - [ ] PII 최소화 구현 검증 (`docs/legal/pii_minimization.md`)
 
