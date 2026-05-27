@@ -82,7 +82,7 @@ export async function GET() {
     },
   };
   const db = supabase as unknown as SupabaseClient;
-  const fromTable = db.from as unknown as (table: string) => ExportQuery;
+  const fromTable = db.from.bind(db) as unknown as (table: string) => ExportQuery;
 
   for (const config of EXPORT_TABLES) {
     const query = fromTable(config.table).select(config.select).eq('user_id', user.id);

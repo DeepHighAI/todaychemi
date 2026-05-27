@@ -104,6 +104,36 @@ describe('GET /api/me/export', () => {
     expect(body.payments).toEqual([{ payment_id: 'pay-1', amount_krw: 4900 }]);
   });
 
+  it('from 메서드를 this 바인딩 없이 추출해도 정상 동작한다', async () => {
+    // 실제 Supabase client의 from()은 내부에서 this를 참조한다.
+    // db.from을 바인딩 없이 추출하면 TypeError가 발생하는 회귀를 방지한다.
+    class FakeClientWithThis {
+      private _ready = true;
+      from(table: string) {
+        if (!this._ready) throw new TypeError('this is unbound');
+        const result = table === 'users' ? { data: PROFILE, error: null } : { data: [], error: null };
+        const order = vi.fn().mockResolvedValue(result);
+        const maybeSingle = vi.fn().mockResolvedValue(result);
+        const eq = vi.fn().mockReturnValue({ order, maybeSingle });
+        const select = vi.fn().mockReturnValue({ eq });
+        return { select };
+      }
+      auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'u1', email: 'bound@test.com' } },
+          error: null,
+        }),
+      };
+    }
+    vi.mocked(createServerClient).mockResolvedValue(new FakeClientWithThis() as never);
+
+    const res = await GET();
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.profile.nickname).toBe('하늘달');
+  });
+
   it('조회 중 DB 오류가 있으면 500을 반환한다', async () => {
     vi.mocked(createServerClient).mockResolvedValue(
       makeClient({
