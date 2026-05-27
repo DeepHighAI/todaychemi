@@ -2,7 +2,7 @@
 
 > **게이트**: Phase 0 G2 (배포 전 필수), 이후 주간 자동 실행
 > **ADR 참조**: ADR-002 (자유채팅 미제공), ADR-035 (점수 결정형)
-> **모델 매핑**: OpenAI 4-tier (gpt-5o / gpt-5 / gpt-5-mini), Claude fallback 전용
+> **모델 매핑**: OpenAI 4-tier (gpt-5 / gpt-5-mini), Claude fallback 전용
 
 ---
 
@@ -231,7 +231,7 @@ UPDATE public.prompt_versions
 
 | 용도 | 모델 | 이유 |
 |---|---|---|
-| 핵심 합카드 해석 (관계 해석 8p) | `gpt-5o` | 가장 높은 품질, 정확한 명리 반영 |
+| 핵심 합카드 해석 (관계 해석 8p) | `gpt-5` | 가장 높은 품질, 정확한 명리 반영 |
 | 딥합 (깊이 리포트) | `gpt-5` | 장문 심층 분석 |
 | 오늘합 (Daily Card) | `gpt-5-mini` | 짧고 반복적 출력, 비용 최소화 |
 | LLM-as-Judge (CI) | `gpt-5-mini` | 심사 비용 최소화 |

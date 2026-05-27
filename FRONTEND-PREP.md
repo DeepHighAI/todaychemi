@@ -38,7 +38,7 @@ locked in `tech_stack.md` (ADR-037), `PRD.md`, or the ADRs cited inline.
 | Server state | TanStack Query v5 | Supabase reads + invalidation |
 | i18n | next-intl | KO primary; EN/VI/TH/MS/ID via locale segments |
 | DB / Auth | Supabase (Postgres + RLS + Auth + Storage) | Free tier Phase 1-2 |
-| LLM | OpenAI GPT-5o (핵심), GPT-5 (딥합), GPT-5 mini (오늘합) | Fallback: Claude Sonnet 4.6 / Haiku 4.5 |
+| LLM | OpenAI GPT-5 (핵심), GPT-5 (딥합), GPT-5 mini (오늘합) | Fallback: Claude Sonnet 4.6 / Haiku 4.5 |
 | Hosting | Vercel Hobby | Phase 3 SEA: re-evaluate Cloudflare |
 | Charts | Recharts | Secondary; custom SVG preferred for `Ohaeng`, `Radar` |
 | PWA | next-pwa or custom Service Worker | TWA via Bubblewrap (ADR-031) |
@@ -315,7 +315,7 @@ S-99 → S-96 → S-08.
 | 5 | S-04 | 인연 그리드 (합피드) | `ScreenFeed` (`screens-feed.jsx`) | `/(app)/feed` | `relations` table | 1 |
 | 6 | S-05 | 인연 등록 / 편집 | `IRelName`, `IRelDob`, `IRelMode` | `/(app)/relation/new` steps 2-4 | `relations` table, fortune-core | 1 |
 | 7 | S-06 | 합플레이 진입 + 6모드 | `IRelMode` | `/(app)/relation/new/mode` | — | 1 |
-| 8 | **S-07** | **합보기 합카드** ⭐ | `IHapcard`, `IHapcardExpand` (sheet) | `/(app)/feed/[relationId]/result` | fortune-core compat + GPT-5o stream | 1 |
+| 8 | **S-07** | **합보기 합카드** ⭐ | `IHapcard`, `IHapcardExpand` (sheet) | `/(app)/feed/[relationId]/result` | fortune-core compat + GPT-5 stream | 1 |
 | 9 | S-08 | 이런건어때 시트 | Drawer overlay | Sheet on `/(app)/today` or `/(app)/feed` | — | 1 |
 | 10 | S-08-T | 명리 용어 툴팁 시스템 | — (not in prototype) | Global component | — | 1 |
 | 11 | S-96 | 공유합카드 (1-2종 MVP) | `ScreenShareCard` (`screens-result.jsx`) | `next/og` API route | hapcard data | 1 |
@@ -667,7 +667,7 @@ export async function POST(req: Request) {
   // { chart_core, question_slot, theory_profile.profile_version }
   // Never send birth_date / name / email / birth_place
   const stream = await openai.chat.completions.create({
-    model: 'gpt-5o',
+    model: 'gpt-5',
     stream: true,
     messages: buildPrompt(body),
   });
@@ -734,7 +734,7 @@ Page load for /feed/[relationId]/result
   → TanStack Query: check ['hapcard', relationId, mode]
   → Cache miss → POST /api/hapcard
   → Server: fortune-core compatScore(userChart, relationChart)
-  → Server: OpenAI GPT-5o stream (PII-safe payload only)
+  → Server: OpenAI GPT-5 stream (PII-safe payload only)
   → Stream text to client HapcardBody
   → Supabase INSERT hapcard_results { relation_id, score, mode, created_at }
   → Cache result 30 days (tech_stack §7.2)

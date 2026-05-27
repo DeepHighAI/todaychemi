@@ -1,7 +1,7 @@
 # System Prompt — 마이플레이: 첫만남 플레이 (ADR-025)
 
 > Series: first_meet  
-> Model: GPT-5o (tech_stack §3.1)  
+> Model: GPT-5 (tech_stack §3.1)  
 > Version: v0.1 (2026-05-09)  
 > Anchor: self-only (chart_core, no relation) — ADR-025 자기 성찰형  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0

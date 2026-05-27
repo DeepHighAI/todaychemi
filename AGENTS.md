@@ -181,7 +181,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **i18n**: next-intl (KO 1차, EN/VI/TH/MS/ID Phase별)
 - **만세력**: ssaju (年/月/時柱 절기·입춘 기준 source + day_pillar cross-validator) + KASI (day_pillar 진본) + manseryeok-js (보조 cross-validator) — 2026-05-03 §1.1: ssaju 역할 年/月/時柱 프로덕션 source로 확대. 야자시 = 조자시 통합 학파 (ADR-037)
 - **사주 엔진**: 자체 TypeScript `fortune-core` (monorepo 패키지) — 결정형
-- **LLM**: OpenAI 4단 (GPT-5o 핵심 / GPT-5 딥합 / GPT-5 mini 오늘합 / Anthropic Codex fallback)
+- **LLM**: OpenAI 4단 (GPT-5 핵심 / GPT-5 딥합 / GPT-5 mini 오늘합 / Anthropic Codex fallback)
 - **결제**: 토스페이먼츠 (KR Phase 1) / Stripe (Phase 3 SEA)
 - **Hosting**: Vercel Hobby (Phase 3 진입 전 Cloudflare 전환 재검토)
 - **Tests**: Vitest + Playwright + Zod

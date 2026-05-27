@@ -16,7 +16,7 @@
 | `SUPABASE_AUTH_EXTERNAL_KAKAO_SECRET` | Supabase local Kakao OAuth client secret | **Critical** | Kakao Developers → Kakao Login → Security |
 | `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` | KakaoTalk Share JavaScript key | Low (public) | Kakao Developers → App keys |
 | `KAKAO_ADMIN_KEY` | KakaoTalk Share callback Authorization key | **Critical** | Kakao Developers → App keys |
-| `OPENAI_API_KEY` | OpenAI API 인증 (GPT-5o/GPT-5/GPT-5 mini) | **Critical** | platform.openai.com → API Keys |
+| `OPENAI_API_KEY` | OpenAI API 인증 (GPT-5/GPT-5 mini) | **Critical** | platform.openai.com → API Keys |
 | `OPENAI_PROJECT_ID` | OpenAI 프로젝트 ID (ZDR 적용 프로젝트) | High | platform.openai.com → Settings → Projects |
 | `ANTHROPIC_API_KEY` | Anthropic Claude fallback 인증 | **Critical** | console.anthropic.com → API Keys |
 | `KASI_API_KEY` | 한국천문연구원 API (만세력 기준) | High | astro.kasi.re.kr → API 신청 |

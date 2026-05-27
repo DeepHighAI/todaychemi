@@ -1,7 +1,7 @@
 # System Prompt — 친구합 (우정·정서 궁합)
 
 > Mode: 친구합  
-> Model: GPT-5o (tech_stack §3.1)  
+> Model: GPT-5 (tech_stack §3.1)  
 > Version: v0.13 (일일 합사주 target_date 흐름 반영, 2026-05-21)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 

@@ -756,4 +756,4 @@ select cron.schedule(
 - `gender`, `birth_date` 컬럼은 DB에 저장되지만 LLM 페이로드에 절대 포함하지 않는다. 구체적 규칙은 `docs/legal/pii_minimization.md` 참조.
 - `relations.nickname`은 인연의 유일한 식별자다. `name`, `displayName` 컬럼 추가 금지 (ADR-011).
 - `hapcards.compat_score`는 `compatibility_scoring_spec.md` 결정형 알고리즘으로 산출한다. LLM은 점수 산출에 개입 금지 (ADR-035).
-- 모든 LLM 호출 모델은 OpenAI 4-tier (gpt-5o / gpt-5 / gpt-5-mini) 우선, 장애 시 Anthropic Claude fallback.
+- 모든 LLM 호출 모델은 OpenAI 4-tier (gpt-5 / gpt-5-mini) 우선, 장애 시 Anthropic Claude fallback.

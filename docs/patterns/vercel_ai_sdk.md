@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     .single();
 
   const result = streamText({
-    model: openai('gpt-5o'),  // OpenAI 4-tier: 핵심 해석은 gpt-5o
+    model: openai('gpt-5'),  // OpenAI 4-tier: 핵심 해석은 gpt-5
     system: promptVersion?.content ?? '',
     messages: [
       {
@@ -113,7 +113,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 
 // OpenAI 4-tier
 const MODELS = {
-  hapcard: openai('gpt-5o'),         // 핵심 관계 해석
+  hapcard: openai('gpt-5'),         // 핵심 관계 해석
   deep_hap: openai('gpt-5'),         // 딥합 (장문 심층)
   daily_hap: openai('gpt-5-mini'),   // 오늘합 (짧고 반복적)
   judge: openai('gpt-5-mini'),       // LLM-as-judge (CI)

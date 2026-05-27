@@ -18,7 +18,7 @@
 
 ## 2. 모델 선택 근거
 
-**GPT-5 mini (`gpt-5-mini`)**: Daily Card는 짧고 반복성 높은 출력(300 out tokens). gpt-5o는 과잉. 비용 최소화 우선.
+**GPT-5 mini (`gpt-5-mini`)**: Daily Card는 짧고 반복성 높은 출력(300 out tokens). gpt-5는 과잉. 비용 최소화 우선.
 
 | 항목 | 값 |
 |---|---|

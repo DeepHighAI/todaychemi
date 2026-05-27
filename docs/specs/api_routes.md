@@ -214,7 +214,7 @@ data: {"code":"LLM_TIMEOUT","message":"잠시 후 다시"}
 ### LLM 폭포식 fallback
 
 ```
-GPT-5o (primary)
+GPT-5 (primary)
   └─ timeout 20s → GPT-5 (secondary)
        └─ timeout 20s → Claude Sonnet 4.6 (fallback)
             └─ timeout 20s → 503 LLM_ALL_PROVIDERS_DOWN

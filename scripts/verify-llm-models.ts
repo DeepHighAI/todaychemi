@@ -33,7 +33,7 @@ if (!apiKey) {
 
 const openai = new OpenAI({ apiKey, project });
 
-const TARGET_MODELS = ['gpt-5o', 'gpt-5', 'gpt-5-mini'] as const;
+const TARGET_MODELS = ['gpt-5', 'gpt-5-mini'] as const;
 type TargetModel = (typeof TARGET_MODELS)[number];
 
 async function main() {
@@ -54,7 +54,6 @@ async function main() {
   // step 2 — 타겟 모델별 retrieve
   console.log('\n=== Step 2: models.retrieve() ===');
   const retrieveResults: Record<TargetModel, 'ok' | 'not_found' | 'error'> = {
-    'gpt-5o': 'error',
     'gpt-5': 'error',
     'gpt-5-mini': 'error',
   };
@@ -74,29 +73,6 @@ async function main() {
         retrieveResults[id] = 'error';
       }
     }
-  }
-
-  // step 3 — gpt-5o ping (retrieve OK일 때만, ZDR: store=false)
-  console.log('\n=== Step 3: gpt-5o ping completion ===');
-  if (retrieveResults['gpt-5o'] === 'ok') {
-    try {
-      const resp = await openai.chat.completions.create({
-        model: 'gpt-5o',
-        messages: [{ role: 'user', content: 'Reply with valid JSON: {"ok":true}' }],
-        max_tokens: 10,
-        response_format: { type: 'json_object' },
-        store: false,
-      });
-      const usage = resp.usage;
-      console.log(`  ✅ ping 성공`);
-      console.log(`     token_in=${usage?.prompt_tokens ?? '?'}  token_out=${usage?.completion_tokens ?? '?'}`);
-      console.log(`     finish_reason=${resp.choices[0]?.finish_reason}`);
-      console.log(`     response=${resp.choices[0]?.message?.content ?? '(empty)'}`);
-    } catch (err) {
-      console.log(`  ❌ ping 실패: ${(err as Error).message}`);
-    }
-  } else {
-    console.log('  (skip — gpt-5o retrieve 결과가 ok 아님)');
   }
 
   // 요약

@@ -109,7 +109,7 @@
 - 한자 Option C(경고+통과) 정책 + UI `convertHanja()` 최종 후처리.
 
 ### 4.2 **❗ 즉시 조치 필요 - 4단 모델 매핑 명세-구현 갭**
-- **명세**: GPT-5o(핵심 hapcard) / GPT-5(딥합) / GPT-5 mini(오늘합) / Claude(fallback) 4단 라우팅 (`tech_stack.md`).
+- **명세**: GPT-5(핵심 hapcard) / GPT-5(딥합) / GPT-5 mini(오늘합) / Claude(fallback) 4단 라우팅 (`tech_stack.md`).
 - **실제**: `openai.ts:79` `DEFAULT_LLM_MODEL = 'gpt-5-mini'` 단일 운영. mode → model 라우팅 로직 미존재.
 - **영향**: hapcard 9~13섹션이 mini로 생성되어 품질·길이 부족 가능. 딥합 미출시지만 출시 시 결정 필요.
 

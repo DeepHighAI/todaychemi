@@ -82,7 +82,7 @@
   - 첫합 = "한 번 더 만나도 될까?"
   - 썸합 = "이 설렘, 이어질까?"
   - 오래합 = "오래 함께해도 괜찮을까?"
-- **LLM**: GPT-5o, in 3,500 + out 800 (§7.1 + tech_stack.md §3.1과 일관)
+- **LLM**: GPT-5, in 3,500 + out 800 (§7.1 + tech_stack.md §3.1과 일관)
 - **PII**: chart_core + question_slot만 LLM 송신, 별명·birth_date 원본 절대 미전달
 
 > "모르는사람(일회성 인연)" 모드는 신뢰성 한계로 제거하고, *새 인연을 대하는 본인 자기 성찰 카드*로 §3.4 진단 시리즈로 이동(ADR-025). "연애" 단일 모드는 *썸*과 *오래합*로 분리하여 초기 설렘/장기 합보기 포인트 차이를 명확히 함.
@@ -363,14 +363,14 @@ trigger_threshold = abs(change_score) >= 10  // 그리드 자동 정렬·푸시 
 
 | 콘텐츠 | 모델 | 호출 빈도 | 토큰 | 위계 |
 |---|---|---|---|---|
-| 합보기 | **GPT-5o** | 1회/요청 | in 3,500 + out 800 | **핵심** |
+| 합보기 | **GPT-5** | 1회/요청 | in 3,500 + out 800 | **핵심** |
 | 오늘합 | **GPT-5 mini** | 1인/1일 (Lazy) | in 1,500 + out 300 | 보조 |
-| 마이플레이 | **GPT-5o** | 1회/시리즈 | in 2,500 + out 600 | 보조 |
+| 마이플레이 | **GPT-5** | 1회/시리즈 | in 2,500 + out 600 | 보조 |
 | 딥합 | **GPT-5** | 1회/리포트 | in 4,000 + out 1,500 | 보조 |
-| 친구합 (Pair Quiz) | **GPT-5o** | 1회/Pair | in 4,000 + out 1,000 | 보조 |
+| 친구합 (Pair Quiz) | **GPT-5** | 1회/Pair | in 4,000 + out 1,000 | 보조 |
 | **Fallback (장애 시)** | Claude Sonnet 4.6 / Haiku 4.5 | 5xx > 20%/5min | 동일 | — |
 
-> ADR-037에 따라 OpenAI 단일 공급사 4단 운영 (GPT-5 / GPT-5o / GPT-5 mini / Claude fallback). 상세 매핑·비용 추산은 `tech_stack.md` §3 참조.
+> ADR-037에 따라 OpenAI 단일 공급사 4단 운영 (GPT-5 / GPT-5 mini / Claude fallback). 상세 매핑·비용 추산은 `tech_stack.md` §3 참조.
 
 ### 7.2 비용 통제
 
@@ -843,7 +843,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 - **ADR-034 (수정, 채택)**: 합카드 [4] 본문 영역별 카피 — *첫 viewport 요약*과 *자세히 보기*를 분리: ① **첫 화면 요약 150자 이내** (결론 1줄 + 강점 1줄 + 주의점 1줄 + 일단이거해봐 3개) ② **자세히 보기 펼침 400-600자** (각 섹션 상세화 + 모드별 본문 변형) ③ **다시합 변화 설명 150-250자**. 첫 화면은 짧고 행동 위주, 자세히 보기는 유료 결과의 납득감 확보. ChatGPT 풀이 깊이 경쟁 회피 + 유료 가치 동시. 보조 진단 시리즈(350-450자)·딥합(1,500-2,000자)는 별도 상한 유지
 - **ADR-035 (신규, 채택)**: 호환성 점수 계산 스펙 별도 문서 분리 — `compatibility_scoring_spec.md`로 ① 천간합·지지합·삼합·반합·형·충·파·해 점수표 ② 합/충 동시 발생 우선순위·중첩 처리 ③ 오행 보완·과다 중첩 계산식 ④ 시간 미상 시나리오 ± 신뢰 구간 산정 ⑤ 6모드별 ±10p 가중치 재분배 매핑 ⑥ 점수 클램프(0-100) ⑦ 결정성 보장 검증을 명세화. Phase 0 G1에서 명리 specialist 검수. **`scoring_version` 필드**로 prompt_version과 별개 관리(카나리·롤백 가능)
 - **ADR-036 (신규, 채택)**: 다시합 변화 점수 결정성 — `change_score = current - previous_snapshot_score`, `change_reason = top 1-3 changed_factors`, `trigger_threshold = abs(change_score) >= 10`. 결정성 보장: ① 동일 (chart_hash, scoring_version, prompt_version, 일진 date) → 캐시 히트 100% 결정적 ② previous_snapshot은 *같은 scoring_version + prompt_version 페어* 기준 ③ 버전 변경 시 변화 그래프 점선 + 수직 마커 + 안내 카피 의무 ④ 메모 수정은 점수 영향 0(타임라인 텍스트만). 변화 폭 임계값 ±10p는 [TBD-6]로 Phase 1.5 출시 후 8주 실측 후 재조정
-- **ADR-037 (신규, 채택)**: 기술 스택 잠금 — Frontend = Next.js App Router + TypeScript / UI = Tailwind + shadcn/ui + Radix UI / 상태 = TanStack Query + Zustand / 차트 = Recharts / API = Next.js Route Handlers / DB·Auth·Storage = Supabase Free / Hosting = Vercel Hobby / 만세력 = ssaju + manseryeok-js + KASI precompute (**ssaju 역할 확대 2026-05-03 §1.1**: cross-validator → 年/月/時柱 절기·입춘 기준 프로덕션 source + day_pillar cross-validator. KASI = day_pillar 진본. 야자시 처리 = 조자시 통합 학파 채택(ssaju 동일 기준). 근거: KASI 절기 시각 API 부재, normalize.ts lunSecha·lunWolgeon 기준 불일치 §1.1 결정) / 사주 엔진 = TypeScript fortune-core (ADR-035) / **LLM = OpenAI 단일 공급사 4단 (GPT-5 / GPT-5o / GPT-5 mini) + Anthropic Claude fallback** / 결제 = 토스페이먼츠 V2 `@tosspayments/tosspayments-sdk`·Stripe / 분석 = GA4 + Sentry + PostHog / 테스트 = Vitest + Playwright + Zod / 패키징 = PWA + Bubblewrap. 상세 매핑·비용·무료 한도·재검토 정책은 `tech_stack.md` 참조. Phase 3 SEA 진입 전 호스팅(Vercel→Cloudflare/Edge) 재검토 의무
+- **ADR-037 (신규, 채택)**: 기술 스택 잠금 — Frontend = Next.js App Router + TypeScript / UI = Tailwind + shadcn/ui + Radix UI / 상태 = TanStack Query + Zustand / 차트 = Recharts / API = Next.js Route Handlers / DB·Auth·Storage = Supabase Free / Hosting = Vercel Hobby / 만세력 = ssaju + manseryeok-js + KASI precompute (**ssaju 역할 확대 2026-05-03 §1.1**: cross-validator → 年/月/時柱 절기·입춘 기준 프로덕션 source + day_pillar cross-validator. KASI = day_pillar 진본. 야자시 처리 = 조자시 통합 학파 채택(ssaju 동일 기준). 근거: KASI 절기 시각 API 부재, normalize.ts lunSecha·lunWolgeon 기준 불일치 §1.1 결정) / 사주 엔진 = TypeScript fortune-core (ADR-035) / **LLM = OpenAI 단일 공급사 4단 (GPT-5 / GPT-5 mini) + Anthropic Claude fallback** / 결제 = 토스페이먼츠 V2 `@tosspayments/tosspayments-sdk`·Stripe / 분석 = GA4 + Sentry + PostHog / 테스트 = Vitest + Playwright + Zod / 패키징 = PWA + Bubblewrap. 상세 매핑·비용·무료 한도·재검토 정책은 `tech_stack.md` 참조. Phase 3 SEA 진입 전 호스팅(Vercel→Cloudflare/Edge) 재검토 의무
 - **ADR-038 (신규, 채택)**: Hanja Display Policy — UI layer Korean conversion; RAG verbatim preserved — LLM 출력 필드(`main_text`, `cause_factors`, `why_cards`, `actions`)의 漢字를 UI 표시 시 한글로 변환. `convertHanja()` safety-net을 4개 컴포넌트(body·conclusion·highlights-2up·actions)에 적용. RAG/DB 원문(`rag_content/classics/*.yaml`)은 그대로 보존 — ADR-018 verbatim 규칙은 저장 레이어에만 적용(UI 레이어 변환 허용). 구현: `hanja-readings.ts` + `post-process.ts` + `banned-phrases.containsClassicalHanja()` + builder UI 매핑 + 6모드 prompts v0.8. 상세: `docs/adr/ADR-038-hanja-display-policy.md`
 
 ---
