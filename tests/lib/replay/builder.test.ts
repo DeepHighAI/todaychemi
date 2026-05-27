@@ -255,7 +255,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
         ohaeng_interpretation: MOCK_OHAENG_INTERPRETATION,
       },
       usage: { token_in: 100, token_out: 200, total_usd: 0 },
-      model: 'gpt-5o',
+      model: 'gpt-5',
     });
 
     const { userClient, serviceClient, insert } = makeMockClients();
@@ -268,7 +268,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     const insertCall = insert.mock.calls[0][0];
     const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const citations = insertCall.content.classic_citation as Array<{ source: string; original: string; modern: string }>;
-    expect(callArgs.model).toBe('gpt-5o');
+    expect(callArgs.model).toBe('gpt-5');
     expect(citations).toHaveLength(1);
     // source_title '적천수(滴天髓)' → '적천수', source_chapter '通神頌' → '통신송'
     expect(citations[0].source).toBe('적천수 통신송');
@@ -285,7 +285,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
       output: { main_text: '갑목일간', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
       usage: { token_in: 10, token_out: 20, total_usd: 0 },
-      model: 'gpt-5o',
+      model: 'gpt-5',
     });
 
     const { userClient, serviceClient } = makeMockClients();
@@ -308,7 +308,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
         why_cards: [],
       },
       usage: { token_in: 50, token_out: 100, total_usd: 0 },
-      model: 'gpt-5o',
+      model: 'gpt-5',
     });
 
     const { userClient, serviceClient, insert } = makeMockClients();

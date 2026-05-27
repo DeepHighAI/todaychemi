@@ -4,12 +4,12 @@ import { selectLlmModel } from '@/lib/llm/model-router';
 import type { LlmModel } from '@/types/hapcard';
 
 describe('selectLlmModel', () => {
-  it('오늘 우리는은 gpt-5o를 사용한다', () => {
-    expect(selectLlmModel('hapcard')).toBe('gpt-5o');
+  it('합카드는 gpt-5를 사용한다', () => {
+    expect(selectLlmModel('hapcard')).toBe('gpt-5');
   });
 
-  it('그럴리 없어! 다시는 gpt-5o를 사용한다', () => {
-    expect(selectLlmModel('replay')).toBe('gpt-5o');
+  it('다시합(replay)은 gpt-5를 사용한다', () => {
+    expect(selectLlmModel('replay')).toBe('gpt-5');
   });
 
   it('홈의 오늘의 사이는 gpt-5-mini를 사용한다', () => {
@@ -22,6 +22,6 @@ describe('selectLlmModel', () => {
 
   it('반환값은 DB llm_model 허용 타입과 일치한다', () => {
     const model: LlmModel = selectLlmModel('hapcard');
-    expect(model).toBe('gpt-5o');
+    expect(model).toBe('gpt-5');
   });
 });
