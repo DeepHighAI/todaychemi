@@ -79,7 +79,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('next', pathname + request.nextUrl.search); // 목적지 보존
+    return NextResponse.redirect(loginUrl);
   }
 
   return supabaseResponse;
