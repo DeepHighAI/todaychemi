@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
 
+import { getAppOrigin } from '@/lib/app-url';
 import { buildOgPayload, type OgPayload } from '@/lib/og/render-payload';
 import { buildPublicShareUrls } from '@/lib/share/build-share-payload';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -31,7 +32,7 @@ export interface PublicShare {
 export async function getPublicShareByToken(
   token: string,
   serviceClient: ServiceClient = createServiceRoleClient(),
-  origin = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hap.plae',
+  origin = getAppOrigin(),
 ): Promise<PublicShare | null> {
   const tokenHash = hashShareToken(token);
   const now = new Date().toISOString();

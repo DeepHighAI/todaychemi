@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+
+import { getAppOrigin } from '@/lib/app-url';
+
 import HapcardView from './HapcardView';
 
 interface Props {
@@ -10,7 +13,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { id } = await params;
   const sp = await searchParams;
   const range = sp.range ?? 'nickname-only';
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hap.plae';
+  const baseUrl = getAppOrigin();
   return {
     openGraph: {
       images: [{ url: `${baseUrl}/api/og/hapcard/${id}?range=${range}`, width: 1200, height: 630 }],
