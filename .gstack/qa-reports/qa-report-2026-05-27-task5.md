@@ -132,3 +132,21 @@
 
 - 결제 해피패스: 실제 Toss 결제 필요 → 로컬 불가, 에러 카드 경로만 검증.
 - F-002 OG 이미지: Vercel 배포 환경에서 재검증 필요.
+
+---
+
+## Decisions & Disposition (2026-05-27)
+
+§1.1 절차로 F-001~F-005 전원 처리 완료.
+
+| Finding | Disposition | 커밋 |
+|---------|-------------|------|
+| F-001 — `NEXT_PUBLIC_APP_URL` fallback 깨짐 | 해결 — `getAppOrigin()` 헬퍼 신규 (`src/lib/app-url.ts`) + `VERCEL_PROJECT_PRODUCTION_URL` Vercel fallback + 호출부 2곳 교체 + `.env.example` 문서화 | `1e40cac` |
+| F-002 — OG 이미지 빈 응답 | 무코드 — `runtime='nodejs'` 유지. Vercel 배포 후 수동 재검증(dev-only Turbopack 추정). 실패 시 `runtime='edge'` 전환(별도 PR). | N/A |
+| F-003 — `Test1@test.com` `deletion_requested_at` 기록 | 무조치 — 삭제 유예 흐름 검증용 데이터 보존. 복구 안 함. | N/A |
+| F-004 — 로그인 리다이렉트 `?next=` 미보존 | 해결 — `src/lib/supabase/middleware.ts` 미들웨어 수정 + `tests/lib/middleware-next-redirect.test.ts` TDD 3건 RED→GREEN | `38829f7` |
+| F-005 — `gpt-5o` 문서·스크립트 식별자 stale | 해결 — docs/scripts/prompts 전반 `gpt-5o`→`gpt-5` (Bucket B, 27 파일). DB CHECK legacy enum(`gpt-5o`) 보존(Bucket A). 1608 PASS · 0 typecheck · 0 lint. | `4223e83` |
+
+**§1.3 관찰 (범위 외, 별도 PR 대상)**:
+- `docs/specs/contracts.md:225` `PromptVersion.model_name` union 이 실코드 `src/types/prompt.ts` 와 구조 불일치(aspirational doc drift).
+- Vercel 배포 후 F-002 재검증 결과에 따라 `runtime='edge'` 전환 여부 결정.
