@@ -32,7 +32,7 @@ export function MemoList({ items, onEdit, onDelete }: MemoListProps) {
                   type="button"
                   aria-label={t('edit')}
                   onClick={() => onEdit(memo)}
-                  className="p-1 text-muted-foreground hover:text-foreground"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   <Pencil size={14} />
                 </button>
@@ -40,7 +40,7 @@ export function MemoList({ items, onEdit, onDelete }: MemoListProps) {
                   type="button"
                   aria-label={t('delete')}
                   onClick={() => onDelete(memo.memo_id)}
-                  className="p-1 text-muted-foreground hover:text-[var(--warn)]"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-[var(--warn)]"
                 >
                   <Trash2 size={14} />
                 </button>

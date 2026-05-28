@@ -136,7 +136,7 @@ export default function RelationDetailPage() {
     <main className="bg-background min-h-screen pb-32">
       {/* AppBar */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md flex items-center gap-3 px-4 py-3 border-b border-[var(--surface-2)]">
-        <button type="button" onClick={() => router.back()} className="p-1 -ml-1 text-foreground" aria-label="뒤로">
+        <button type="button" onClick={() => router.back()} className="-ml-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-foreground" aria-label="뒤로">
           ←
         </button>
         <h1 className="font-h3 text-foreground truncate flex-1">{relation.nickname}</h1>
@@ -184,8 +184,7 @@ export default function RelationDetailPage() {
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="w-full"
+            className="w-full h-11"
             onClick={openCreateSheet}
           >
             {t('memos.add')}
