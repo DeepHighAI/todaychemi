@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Drawer,
@@ -24,12 +24,8 @@ interface MemoSheetProps {
 
 export function MemoSheet({ open, onOpenChange, mode, initialBody = '', onSubmit, submitting = false }: MemoSheetProps) {
   const t = useTranslations('relations.detail.memos');
+  // key 로 remount 시 initialBody 로 초기화 (react-hooks/set-state-in-effect 회피)
   const [body, setBody] = useState(initialBody);
-
-  // edit 모드 재진입 시 initialBody 동기화
-  useEffect(() => {
-    if (open) setBody(initialBody);
-  }, [open, initialBody]);
 
   const count = [...body].length;
   const isEmpty = body.trim().length === 0;

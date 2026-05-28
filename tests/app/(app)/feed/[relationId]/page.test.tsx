@@ -86,3 +86,109 @@ describe('RelationDetailPage', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/relations/rel-001');
   });
 });
+
+// ─── Cycle 14: 메모 목록 로드 ──────────────────────────────────────────────
+
+const MEMOS_OK = {
+  items: [
+    { memo_id: 'memo-1', relation_id: 'rel-001', body: '첫 메모', created_at: '2026-05-28T09:00:00Z', updated_at: '2026-05-28T09:00:00Z' },
+  ],
+};
+
+function mockFetchBranched(detailRes = DETAIL_OK, memosRes = MEMOS_OK) {
+  mockFetch.mockImplementation((url: string) => {
+    if (url.includes('/memos')) {
+      return Promise.resolve({ ok: true, json: async () => memosRes });
+    }
+    return Promise.resolve({ ok: true, json: async () => detailRes });
+  });
+}
+
+describe('RelationDetailPage — 메모 목록', () => {
+  it('GET /api/relations/rel-001/memos 호출', async () => {
+    mockFetchBranched();
+    await renderDetailPage();
+    await screen.findAllByText('봄달');
+    expect(mockFetch).toHaveBeenCalledWith('/api/relations/rel-001/memos');
+  });
+
+  it('메모 body 텍스트 렌더', async () => {
+    mockFetchBranched();
+    await renderDetailPage();
+    expect(await screen.findByText('첫 메모')).toBeInTheDocument();
+  });
+
+  it('memo-list testid 렌더', async () => {
+    mockFetchBranched();
+    await renderDetailPage();
+    await screen.findAllByText('봄달');
+    expect(await screen.findByTestId('memo-list')).toBeInTheDocument();
+  });
+});
+
+// ─── Cycle 15: 메모 CRUD 뮤테이션 + LOCKED 규칙 검증 ──────────────────────
+
+describe('RelationDetailPage — 메모 추가', () => {
+  it('"메모 추가" 버튼이 렌더됨', async () => {
+    mockFetchBranched();
+    await renderDetailPage();
+    expect(await screen.findByRole('button', { name: '메모 추가' })).toBeInTheDocument();
+  });
+
+  it('메모 추가 submit → POST /api/relations/rel-001/memos 호출', async () => {
+    const user = userEvent.setup();
+    mockFetchBranched();
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url.includes('/memos') && opts?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, memo: MEMOS_OK.items[0] }) });
+      }
+      if (url.includes('/memos')) return Promise.resolve({ ok: true, json: async () => MEMOS_OK });
+      return Promise.resolve({ ok: true, json: async () => DETAIL_OK });
+    });
+
+    await renderDetailPage();
+    const addBtn = await screen.findByRole('button', { name: '메모 추가' });
+    await user.click(addBtn);
+
+    const input = await screen.findByTestId('memo-sheet-input');
+    await user.type(input, '새 메모');
+    await user.click(screen.getByTestId('memo-sheet-submit'));
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/relations/rel-001/memos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('LOCKED: 메모 추가 후 relation-detail 쿼리 미무효화', async () => {
+    // 메모 mutation은 ['relation-detail'] 키를 invalidate 하면 안 됨 (island.md:183)
+    // fetch 횟수를 세어 /api/relations/rel-001 (memos 아닌) 재호출 없음을 확인
+    const user = userEvent.setup();
+    mockFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url.includes('/memos') && opts?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ ok: true, memo: MEMOS_OK.items[0] }) });
+      }
+      if (url.includes('/memos')) return Promise.resolve({ ok: true, json: async () => MEMOS_OK });
+      return Promise.resolve({ ok: true, json: async () => DETAIL_OK });
+    });
+
+    await renderDetailPage();
+    await screen.findAllByText('봄달');
+
+    const detailCallsBefore = (mockFetch as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c: string[]) => c[0] === '/api/relations/rel-001').length;
+
+    const addBtn = await screen.findByRole('button', { name: '메모 추가' });
+    await user.click(addBtn);
+    const input = await screen.findByTestId('memo-sheet-input');
+    await user.type(input, '새 메모');
+    await user.click(screen.getByTestId('memo-sheet-submit'));
+
+    // 짧은 대기 후 relation-detail 재호출 횟수 변화 없음 확인
+    await new Promise((r) => setTimeout(r, 50));
+    const detailCallsAfter = (mockFetch as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c: string[]) => c[0] === '/api/relations/rel-001').length;
+
+    expect(detailCallsAfter).toBe(detailCallsBefore);
+  });
+});
