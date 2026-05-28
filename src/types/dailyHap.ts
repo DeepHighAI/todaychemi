@@ -14,6 +14,11 @@ export interface DailyHapCard {
   favorable_action: string;
   favorable_action_reason: string;
   reused_from_yesterday: boolean;
+  // G2 (Phase 3) — 오늘카드 인연 종합. 인연 0건 사용자는 모두 undefined/null.
+  relation_id?: string | null;
+  relation_nickname?: string | null;
+  today_compat_score?: number | null;
+  // legacy (Phase 3 이전, 미사용 가능). 후속 PR에서 제거 검토.
   compat_score?: number | null;
   headline_strength?: number | null;
   delta_vs_yesterday?: number | null;
