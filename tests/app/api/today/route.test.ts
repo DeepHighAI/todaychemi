@@ -3,15 +3,16 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/today/builder');
 vi.mock('@/lib/today/relation-picker');
+vi.mock('@/lib/today/lazy-relation-chart');
 vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/chart/queries');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { buildDailyHap } from '@/lib/today/builder';
 import { pickTodayRelation } from '@/lib/today/relation-picker';
+import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
 import {
   fetchLatestUserChartForVersion,
-  fetchLatestRelationChartForVersion,
 } from '@/lib/chart/queries';
 import { GET } from '@/app/api/today/route';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -85,10 +86,8 @@ beforeEach(() => {
     data: { chart_core: SELF_CHART, chart_hash: 'h1' },
     error: null,
   } as never);
-  vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValue({
-    data: { chart_core: REL_CHART, chart_hash: 'rh1' },
-    error: null,
-  } as never);
+  // F3.2: ensureRelationChart 가 lazy compute 까지 포함한 단일 진입점
+  vi.mocked(ensureRelationChart).mockResolvedValue(REL_CHART);
 });
 
 describe('GET /api/today (기본 회귀)', () => {
@@ -182,10 +181,7 @@ describe('GET /api/today (G2 인연 종합)', () => {
       nickname: '지수',
       mode: '친구합',
     });
-    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValue({
-      data: null,
-      error: null,
-    } as never);
+    vi.mocked(ensureRelationChart).mockResolvedValue(null);
     const res = await GET(makeRequest());
     const body = await res.json();
     expect(body.card.relation_id).toBe('rel-no-chart');

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-import {
-  fetchLatestUserChartForVersion,
-  fetchLatestRelationChartForVersion,
-} from '@/lib/chart/queries';
+import { fetchLatestUserChartForVersion } from '@/lib/chart/queries';
 
 import { createClient } from '@/lib/supabase/server';
 import { selectLlmModel } from '@/lib/llm/model-router';
@@ -11,6 +8,7 @@ import { createOpenAiClient } from '@/lib/llm/clients';
 import { buildDailyHap, type TodayRelationMeta } from '@/lib/today/builder';
 import { callDailyHapLlm } from '@/lib/today/openai';
 import { pickTodayRelation } from '@/lib/today/relation-picker';
+import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
 import { computeTodayCompatScore } from '@/lib/scoring/today';
 import { todayKST, yesterdayKST } from '@/lib/today/kst-date';
 import { buildSourcePacketHash } from '@/lib/today/cache-key';
@@ -149,14 +147,16 @@ export async function GET(request: Request) {
 
       // G2 / Phase 3 C7: relation-picker 결과 그대로 전달.
       fetchRelation: async () => relation,
+      // F3.2: chart 미존재 시 lazy KASI compute 통합 (graceful null on failure).
       fetchRelationChart: async (relationId) => {
-        const { data } = await fetchLatestRelationChartForVersion(
+        const chart = await ensureRelationChart(
           supabase,
           relationId,
-          DEFAULT_THEORY_PROFILE_VERSION,
+          user.id,
+          process.env.KASI_SERVICE_KEY ?? '',
         );
-        cachedRelationChart = data ? (data.chart_core as unknown as ChartCore) : null;
-        return cachedRelationChart;
+        cachedRelationChart = chart;
+        return chart;
       },
 
       callLlm: (input) => callDailyHapLlm(input, openai),
@@ -213,12 +213,13 @@ export async function GET(request: Request) {
       cachedSelfChart = data ? (data.chart_core as unknown as ChartCore) : null;
     }
     if (relation && cachedSelfChart && !cachedRelationChart) {
-      const { data } = await fetchLatestRelationChartForVersion(
+      // F3.2: post-process 경로도 lazy compute 적용 — cache hit 시에도 chart 자동 생성.
+      cachedRelationChart = await ensureRelationChart(
         supabase,
         relation.id,
-        DEFAULT_THEORY_PROFILE_VERSION,
+        user.id,
+        process.env.KASI_SERVICE_KEY ?? '',
       );
-      cachedRelationChart = data ? (data.chart_core as unknown as ChartCore) : null;
     }
 
     const finalCard = applyRelationMetaToResponse(
