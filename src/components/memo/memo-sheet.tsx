@@ -66,14 +66,14 @@ export function MemoSheet({ open, onOpenChange, mode, initialBody = '', onSubmit
         <DrawerFooter>
           <Button
             data-testid="memo-sheet-submit"
-            className="w-full"
+            className="w-full h-11"
             disabled={isEmpty || submitting}
             onClick={handleSubmit}
           >
             {submitting ? t('sheet.submitting') : t('sheet.submit')}
           </Button>
           <DrawerClose asChild>
-            <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" className="w-full h-11" onClick={() => onOpenChange(false)}>
               {t('sheet.cancel')}
             </Button>
           </DrawerClose>
