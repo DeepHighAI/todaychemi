@@ -17,11 +17,21 @@ vi.mock('@/components/rewards/free-talisman-reward-gate', () => ({
   FreeTalismanRewardGate: () => null,
 }));
 
+vi.mock('@/components/welcome/welcome-popup', () => ({
+  WelcomePopup: () => null,
+}));
+
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {
       'nav.tab': { home: '홈', feed: '너랑나랑', me: '내 사주맵' },
       home: { greeting: '오늘의 사이', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
+      'welcome.popup': {
+        title: '오늘사이',
+        body: '오늘사이는\n오늘 만나는 누군가와의 관계에 도움을 주기 위한 서비스입니다.',
+        cta: '누군가와의 오늘을 미리 보세요',
+        button: '시작하기',
+      },
     };
     return map[ns]?.[key] ?? key;
   },

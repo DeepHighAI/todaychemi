@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { LegalConsentBlock } from '@/components/legal/legal-consent-block';
 import { Button } from '@/components/ui/button';
+import { WelcomePopup } from '@/components/welcome/welcome-popup';
 import {
   EMPTY_LEGAL_CONSENT,
   isLegalConsentComplete,
@@ -35,6 +36,7 @@ export default function GuestStartPage() {
 
   return (
     <main className="min-h-screen bg-background px-5 py-8">
+      <WelcomePopup />
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center gap-6">
         <div className="space-y-3">
           <p className="font-eyebrow text-primary">처음이세요?</p>

@@ -13,6 +13,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+vi.mock('@/components/welcome/welcome-popup', () => ({
+  WelcomePopup: () => null,
+}));
+
 import { recordLegalConsent } from '@/lib/legal/client-consent';
 
 const mockPush = vi.fn();
