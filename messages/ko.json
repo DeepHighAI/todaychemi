@@ -464,7 +464,11 @@
     "with_relation": {
       "chip_prefix": "오늘",
       "chip_suffix": "과의 사이",
-      "compat_label": "오늘 합온도"
+      "compat_label": "오늘 합온도",
+      "menu_title": "다른 인연으로 보기",
+      "view_all": "전체 인연 보기",
+      "current_label": "지금 보고 있는 인연",
+      "close_label": "닫기"
     },
     "empty_relation": {
       "cta": "인연 등록하고 오늘 사이 보기"
