@@ -144,7 +144,24 @@
       "flowEmpty": "아직 합흐름 데이터가 없어요",
       "todayTemp": "오늘 온도",
       "chart": "본명식",
-      "cta": "합카드 보기"
+      "cta": "합카드 보기",
+      "memos": {
+        "title": "메모",
+        "empty": "아직 메모가 없어요",
+        "add": "메모 추가",
+        "edit": "수정",
+        "delete": "삭제",
+        "counter": "{count}/80",
+        "sheet": {
+          "createTitle": "메모 추가",
+          "editTitle": "메모 수정",
+          "description": "이 인연에 대한 메모를 입력하세요 (80자 이내)",
+          "placeholder": "이 인연에 대한 메모 (80자 이내)",
+          "submit": "저장",
+          "cancel": "취소",
+          "submitting": "저장 중..."
+        }
+      }
     },
     "new": {
       "eyebrow": "인연 사주맵",
