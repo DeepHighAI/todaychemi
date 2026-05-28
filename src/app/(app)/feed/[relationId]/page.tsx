@@ -11,6 +11,7 @@ import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { RelationFlowChart } from '@/components/relation/relation-flow-chart';
 import { MemoList } from '@/components/memo/memo-list';
 import { MemoSheet } from '@/components/memo/memo-sheet';
+import { convertHanja } from '@/lib/glossary/post-process';
 import { computeChangeScore } from '@/lib/scoring/changeScore';
 import { formatTodayTemperature, formatTemperatureDelta } from '@/lib/scoring/temperature';
 import type { RelationDetailResponse } from '@/types/relation';
@@ -169,7 +170,7 @@ export default function RelationDetailPage() {
         {chart && (
           <div data-testid="relation-chart-section" className="rounded-2xl bg-card p-4">
             <p className="font-eyebrow text-muted-foreground mb-2">{t('chart')}</p>
-            <p className="font-body text-foreground">{chart.day_pillar}</p>
+            <p className="font-body text-foreground">{convertHanja(chart.day_pillar)}</p>
           </div>
         )}
 
