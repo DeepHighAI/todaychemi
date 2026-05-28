@@ -224,6 +224,45 @@ describe('GET /api/today (feature flag rollback)', () => {
   });
 });
 
+// G2 / Phase 3 F1.3 — rowToCard 신규 3 필드 매핑
+describe('rowToCard (F1.3)', () => {
+  // dynamic import 로 mock 통과
+  it('primary_relation_id → relation_id 매핑, 나머지 2 필드 그대로', async () => {
+    const { rowToCard } = await import('@/app/api/today/route');
+    const card = rowToCard({
+      headline: 'h',
+      headline_reason: 'hr',
+      avoid_phrase: 'a',
+      avoid_phrase_reason: 'ar',
+      favorable_action: 'f',
+      favorable_action_reason: 'fr',
+      reused_from_yesterday: false,
+      primary_relation_id: 'rel-x',
+      relation_nickname: '민지',
+      today_compat_score: 75,
+    });
+    expect(card.relation_id).toBe('rel-x');
+    expect(card.relation_nickname).toBe('민지');
+    expect(card.today_compat_score).toBe(75);
+  });
+
+  it('legacy row(신규 컬럼 undefined) → relation 필드 모두 null', async () => {
+    const { rowToCard } = await import('@/app/api/today/route');
+    const card = rowToCard({
+      headline: 'h',
+      headline_reason: 'hr',
+      avoid_phrase: 'a',
+      avoid_phrase_reason: 'ar',
+      favorable_action: 'f',
+      favorable_action_reason: 'fr',
+      reused_from_yesterday: false,
+    });
+    expect(card.relation_id).toBeNull();
+    expect(card.relation_nickname).toBeNull();
+    expect(card.today_compat_score).toBeNull();
+  });
+});
+
 // G2 / Phase 3 F1.2 — saveCard 신규 컬럼 영속화
 describe('GET /api/today (F1.2 saveCard 신규 컬럼 영속화)', () => {
   it('relation 존재 시 → upsert payload에 primary_relation_id, relation_nickname, today_compat_score 포함', async () => {

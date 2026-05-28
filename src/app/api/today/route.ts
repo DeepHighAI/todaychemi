@@ -17,8 +17,10 @@ import { buildSourcePacketHash } from '@/lib/today/cache-key';
 import type { DailyHapCard } from '@/types/dailyHap';
 import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 
-// 영속화는 base 6 필드만 (DB migration 회피). relation 필드는 in-memory 응답에서만.
-interface DailyHapRow {
+// F1.3: 영속화 시 신규 3컬럼(primary_relation_id, relation_nickname, today_compat_score)
+// 모두 포함. 캐시 hit 이 신규 컬럼을 직접 반환하므로 applyRelationMetaToResponse 의
+// 재계산은 cache-miss + legacy row(null 신규 컬럼) 폴백 전용.
+export interface DailyHapRow {
   headline: string;
   headline_reason: string;
   avoid_phrase: string;
@@ -26,9 +28,12 @@ interface DailyHapRow {
   favorable_action: string;
   favorable_action_reason: string;
   reused_from_yesterday: boolean;
+  primary_relation_id?: string | null;
+  relation_nickname?: string | null;
+  today_compat_score?: number | null;
 }
 
-function rowToCard(row: DailyHapRow): DailyHapCard {
+export function rowToCard(row: DailyHapRow): DailyHapCard {
   return {
     headline: row.headline,
     headline_reason: row.headline_reason,
@@ -37,6 +42,9 @@ function rowToCard(row: DailyHapRow): DailyHapCard {
     favorable_action: row.favorable_action,
     favorable_action_reason: row.favorable_action_reason,
     reused_from_yesterday: row.reused_from_yesterday,
+    relation_id: row.primary_relation_id ?? null,
+    relation_nickname: row.relation_nickname ?? null,
+    today_compat_score: row.today_compat_score ?? null,
   };
 }
 
@@ -97,21 +105,32 @@ export async function GET(request: Request) {
     let cachedSelfChart: ChartCore | null = null;
     let cachedRelationChart: ChartCore | null = null;
 
+    // F1.3: 캐시 select 컬럼셋에 신규 3컬럼 포함. 동일 target_date 에 다른 인연으로
+    // 생성된 row 가 있을 때 cache miss → 새 LLM 호출 보장 위해 primary_relation_id 일치 필터.
+    // (UNIQUE (user_id, target_date) 제약 — 인연 교체 시 row 1개가 overwrite 됨)
+    const cacheColumns = 'headline,headline_reason,avoid_phrase,avoid_phrase_reason,favorable_action,favorable_action_reason,reused_from_yesterday,primary_relation_id,relation_nickname,today_compat_score';
+    const currentRelationId = relation?.id ?? null;
+
     const card = await buildDailyHap({
       fetchTodayCache: async () => {
         const { data } = await supabase
           .from('daily_haps')
-          .select('headline,headline_reason,avoid_phrase,avoid_phrase_reason,favorable_action,favorable_action_reason,reused_from_yesterday')
+          .select(cacheColumns)
           .eq('user_id', user.id)
           .eq('target_date', target)
           .maybeSingle();
-        return data ? rowToCard(data as DailyHapRow) : null;
+        if (!data) return null;
+        // 인연 일치 필터 — null↔null OR id↔id 매칭일 때만 cache hit 인정.
+        const row = data as DailyHapRow;
+        const rowRelationId = row.primary_relation_id ?? null;
+        if (rowRelationId !== currentRelationId) return null;
+        return rowToCard(row);
       },
 
       fetchYesterdayCache: async () => {
         const { data } = await supabase
           .from('daily_haps')
-          .select('headline,headline_reason,avoid_phrase,avoid_phrase_reason,favorable_action,favorable_action_reason,reused_from_yesterday')
+          .select(cacheColumns)
           .eq('user_id', user.id)
           .eq('target_date', prev)
           .maybeSingle();
