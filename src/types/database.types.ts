@@ -149,9 +149,11 @@ export type Database = {
           headline_reason: string
           llm_model: string
           primary_relation_id: string | null
+          relation_nickname: string | null
           reused_from_yesterday: boolean
           source_packet_hash: string
           target_date: string
+          today_compat_score: number | null
           user_id: string
         }
         Insert: {
@@ -165,9 +167,11 @@ export type Database = {
           headline_reason: string
           llm_model?: string
           primary_relation_id?: string | null
+          relation_nickname?: string | null
           reused_from_yesterday?: boolean
           source_packet_hash: string
           target_date: string
+          today_compat_score?: number | null
           user_id: string
         }
         Update: {
@@ -181,9 +185,11 @@ export type Database = {
           headline_reason?: string
           llm_model?: string
           primary_relation_id?: string | null
+          relation_nickname?: string | null
           reused_from_yesterday?: boolean
           source_packet_hash?: string
           target_date?: string
+          today_compat_score?: number | null
           user_id?: string
         }
         Relationships: [
