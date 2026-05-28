@@ -71,7 +71,9 @@ export async function callDailyHapLlm(
         response_format: { type: 'json_object' },
         store: false,
         reasoning_effort: 'low',
-        max_completion_tokens: 800,
+        // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 → LLM_PARSE_FAIL.
+        // 2000 으로 상향하여 'Unexpected end of JSON input' 회귀 차단. 비용 +10-20% 예상.
+        max_completion_tokens: 2000,
       },
       { timeout: TODAY_LLM_TIMEOUT_MS },
     );
