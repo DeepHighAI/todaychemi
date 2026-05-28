@@ -82,10 +82,16 @@ export async function GET() {
 
       saveCard: async (c) => {
         // fetchUserChart 결과를 외부 스코프에서 캡처 — 중복 DB 쿼리 제거
-        const hash = buildSourcePacketHash(
-          cachedChart ?? ({} as ChartCore),
-          target,
-        );
+        // G2 / Phase 3 C3: 캐시 키 차원 확장 (relation_chart/prompt_version/model_id 추가).
+        // 현 단계는 사용자 단독 today 만 — relation_chart=null, prompt_version/model_id 고정.
+        // C7 에서 3축 분기 + 동적 값 주입 예정.
+        const hash = buildSourcePacketHash({
+          self_chart: cachedChart ?? ({} as ChartCore),
+          relation_chart: null,
+          target_date: target,
+          prompt_version: 'v0.3',
+          model_id: 'gpt-5-mini',
+        });
         await supabase.from('daily_haps').upsert(
           {
             user_id: user.id,
