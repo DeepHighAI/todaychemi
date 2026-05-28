@@ -409,13 +409,14 @@ sha256(chart_hash + question_slot + prompt_version + theory_profile.profile_vers
 
 ### 7.6 프롬프트 카나리
 
-- `prompt_versions` 테이블 (active/canary/archived + canary_ratio)
+- `prompt_versions` 테이블 (active/canary/rolled_back + canary_ratio)
 - 신버전: 5% 카나리 → 72시간 모니터링 → 승격 또는 즉시 롤백
 - 즉시 롤백 트리거:
   - `banned_phrases` 감지율 > 3% (5분 기준)
   - LLM-as-judge 평균 < 3.0
   - 유저 👎 비율 > 20%
 - 롤백: `UPDATE prompt_versions SET status='active' WHERE version='vX'` (SQL 1줄)
+- **구현 상태 (2026-05-28)**: `loadPromptForUser(client, promptName, userId)` 가 deterministic SHA-256 sampling 으로 active/canary 분기. 6모드 + today_with_relation + daily_hap 모두 DB-backed. seed-prompts.ts 의 `> CanaryVersion:` `> CanaryRatio:` frontmatter 로 동시 시드.
 
 ### 7.7 모니터링
 
