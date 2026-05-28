@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ModeSchema, type Mode } from './mode';
+import type { ChartCore } from './chart';
 
 // 출생시간 인지도 (db_schema.md §3 relations.birth_time_knowledge)
 export const BirthTimeKnowledgeSchema = z.enum(['exact', 'approximate', 'unknown']);
@@ -48,10 +49,24 @@ export interface FeedItem {
   created_at: string;
 }
 
+// 합점수 흐름 — hapcard_score_snapshots 에서 날짜별 dedup 후 asc 정렬
+export interface FlowPoint {
+  date: string;   // YYYY-MM-DD
+  score: number;
+}
+
+// GET /api/relations/[id] 응답
+export interface RelationDetailResponse {
+  relation: Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'>;
+  chart: ChartCore | null;
+  flow: FlowPoint[];
+}
+
 export const RELATION_ERROR_CODES = [
   'INVALID_BODY',
   'UNAUTHORIZED',
   'INTERNAL_ERROR',
+  'RELATION_NOT_FOUND',
 ] as const;
 export type RelationErrorCode = (typeof RELATION_ERROR_CODES)[number];
 

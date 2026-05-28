@@ -18,8 +18,8 @@ describe('RELATION_ERROR_CODES', () => {
     expect(RELATION_ERROR_CODES).toContain('INTERNAL_ERROR');
   });
 
-  it('has exactly 3 codes', () => {
-    expect(RELATION_ERROR_CODES).toHaveLength(3);
+  it('has exactly 4 codes', () => {
+    expect(RELATION_ERROR_CODES).toHaveLength(4);
   });
 });
 
