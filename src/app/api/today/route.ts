@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-import { fetchLatestUserChart } from '@/lib/chart/queries';
+import {
+  fetchLatestUserChartForVersion,
+  fetchLatestRelationChartForVersion,
+} from '@/lib/chart/queries';
 
 import { createClient } from '@/lib/supabase/server';
+import { selectLlmModel } from '@/lib/llm/model-router';
 import { createOpenAiClient } from '@/lib/llm/clients';
-import { buildDailyHap } from '@/lib/today/builder';
+import { buildDailyHap, type TodayRelationMeta } from '@/lib/today/builder';
 import { callDailyHapLlm } from '@/lib/today/openai';
+import { pickTodayRelation } from '@/lib/today/relation-picker';
+import { computeTodayCompatScore } from '@/lib/scoring/today';
 import { todayKST, yesterdayKST } from '@/lib/today/kst-date';
 import { buildSourcePacketHash } from '@/lib/today/cache-key';
 import type { DailyHapCard } from '@/types/dailyHap';
-import type { ChartCore } from '@/types/chart';
+import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 
+// 영속화는 base 6 필드만 (DB migration 회피). relation 필드는 in-memory 응답에서만.
 interface DailyHapRow {
   headline: string;
   headline_reason: string;
@@ -33,7 +40,37 @@ function rowToCard(row: DailyHapRow): DailyHapCard {
   };
 }
 
-export async function GET() {
+// G2 / Phase 3 C7 — 프롬프트 버전 식별자 (캐시 키 차원).
+const PROMPT_VERSION_SINGLE = 'daily_hap:v0.3';
+const PROMPT_VERSION_RELATION = 'today_with_relation:v0.1';
+
+// G2 / Phase 3 C9 — feature flag (false 시 기존 단독축 today 유지).
+function todayWithRelationEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_TODAY_WITH_RELATION !== 'false';
+}
+
+// 캐시 hit / miss 양쪽에서 동일하게 relation 메타 재계산 후 카드에 주입.
+// (DB 에 영속화하지 않으므로 응답마다 현재 인연 기준 최신 값으로 갱신됨)
+function applyRelationMetaToResponse(
+  card: DailyHapCard,
+  relation: TodayRelationMeta | null,
+  selfChart: ChartCore | null,
+  relationChart: ChartCore | null,
+  todayDate: string,
+): DailyHapCard {
+  if (!relation || !selfChart) return card;
+  const todayCompatScore = relationChart
+    ? computeTodayCompatScore(selfChart, relationChart, todayDate)
+    : null;
+  return {
+    ...card,
+    relation_id: relation.id,
+    relation_nickname: relation.nickname,
+    today_compat_score: todayCompatScore,
+  };
+}
+
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -47,9 +84,18 @@ export async function GET() {
     const target = todayKST();
     const prev = yesterdayKST();
     const openai = createOpenAiClient();
+    const url = new URL(request.url);
+    const preferredRelationId = url.searchParams.get('relation_id') ?? undefined;
+    const featureEnabled = todayWithRelationEnabled();
 
-    // saveCard 클로저가 재사용할 수 있도록 fetchUserChart 결과를 외부 스코프에 캡처
-    let cachedChart: ChartCore | null = null;
+    // 인연 자동 선택 (preferred → 최근 등록 → null). feature flag off 시 강제 null.
+    const relation: TodayRelationMeta | null = featureEnabled
+      ? await pickTodayRelation(supabase, user.id, preferredRelationId)
+      : null;
+
+    // saveCard / cache-key 가 재사용할 수 있도록 chart 결과를 외부 스코프에 캡처
+    let cachedSelfChart: ChartCore | null = null;
+    let cachedRelationChart: ChartCore | null = null;
 
     const card = await buildDailyHap({
       fetchTodayCache: async () => {
@@ -73,30 +119,43 @@ export async function GET() {
       },
 
       fetchUserChart: async () => {
-        const { data } = await fetchLatestUserChart(supabase, user.id);
-        cachedChart = data ? (data.chart_core as unknown as ChartCore) : null;
-        return cachedChart;
+        const { data } = await fetchLatestUserChartForVersion(
+          supabase,
+          user.id,
+          DEFAULT_THEORY_PROFILE_VERSION,
+        );
+        cachedSelfChart = data ? (data.chart_core as unknown as ChartCore) : null;
+        return cachedSelfChart;
       },
 
-      // G2 / Phase 3 C4: 단계적 도입 — C7 에서 relation-picker + lazy chart gen 으로 완성.
-      // 현 단계는 인연 미주입 (relation=null) 유지하여 기존 단독 today 그대로 동작.
-      fetchRelation: async () => null,
-      fetchRelationChart: async () => null,
+      // G2 / Phase 3 C7: relation-picker 결과 그대로 전달.
+      fetchRelation: async () => relation,
+      fetchRelationChart: async (relationId) => {
+        const { data } = await fetchLatestRelationChartForVersion(
+          supabase,
+          relationId,
+          DEFAULT_THEORY_PROFILE_VERSION,
+        );
+        cachedRelationChart = data ? (data.chart_core as unknown as ChartCore) : null;
+        return cachedRelationChart;
+      },
 
       callLlm: (input) => callDailyHapLlm(input, openai),
 
       saveCard: async (c) => {
-        // fetchUserChart 결과를 외부 스코프에서 캡처 — 중복 DB 쿼리 제거
-        // G2 / Phase 3 C3: 캐시 키 차원 확장 (relation_chart/prompt_version/model_id 추가).
-        // 현 단계는 사용자 단독 today 만 — relation_chart=null, prompt_version/model_id 고정.
-        // C7 에서 3축 분기 + 동적 값 주입 예정.
+        // C3 캐시 키 차원: relation_chart + prompt_version + model_id 동적 주입.
+        const relationPresent = cachedRelationChart !== null;
+        const promptVersion = relationPresent ? PROMPT_VERSION_RELATION : PROMPT_VERSION_SINGLE;
+        const modelId = selectLlmModel('today');
+
         const hash = buildSourcePacketHash({
-          self_chart: cachedChart ?? ({} as ChartCore),
-          relation_chart: null,
+          self_chart: cachedSelfChart ?? ({} as ChartCore),
+          relation_chart: cachedRelationChart,
           target_date: target,
-          prompt_version: 'v0.3',
-          model_id: 'gpt-5-mini',
+          prompt_version: promptVersion,
+          model_id: modelId,
         });
+
         await supabase.from('daily_haps').upsert(
           {
             user_id: user.id,
@@ -117,7 +176,35 @@ export async function GET() {
       today_date: target,
     });
 
-    return NextResponse.json({ ok: true, card });
+    // C7: 캐시 hit/miss 양쪽 모두 응답 직전에 현재 인연 메타 재주입.
+    // 캐시 행에는 relation 필드가 없지만 응답에는 항상 최신 relation 기준값 표시.
+    // cache hit 시 cachedSelfChart/cachedRelationChart 가 비어 있을 수 있어 한 번 더 fetch.
+    if (relation && !cachedSelfChart) {
+      const { data } = await fetchLatestUserChartForVersion(
+        supabase,
+        user.id,
+        DEFAULT_THEORY_PROFILE_VERSION,
+      );
+      cachedSelfChart = data ? (data.chart_core as unknown as ChartCore) : null;
+    }
+    if (relation && cachedSelfChart && !cachedRelationChart) {
+      const { data } = await fetchLatestRelationChartForVersion(
+        supabase,
+        relation.id,
+        DEFAULT_THEORY_PROFILE_VERSION,
+      );
+      cachedRelationChart = data ? (data.chart_core as unknown as ChartCore) : null;
+    }
+
+    const finalCard = applyRelationMetaToResponse(
+      card ?? ({} as DailyHapCard),
+      relation,
+      cachedSelfChart,
+      cachedRelationChart,
+      target,
+    );
+
+    return NextResponse.json({ ok: true, card: finalCard });
   } catch (err) {
     console.error('[/api/today]', err);
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
