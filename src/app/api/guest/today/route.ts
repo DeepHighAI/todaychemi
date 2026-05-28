@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       fetchUserChart: async () => computeResult.chart_core,
       fetchRelation: async () => null,
       fetchRelationChart: async () => null,
-      callLlm: (input) => callDailyHapLlm(input.self_chart, openai),
+      callLlm: (input) => callDailyHapLlm(input, openai),
       saveCard: async () => undefined,
       today_date: computeResult.chart_core.yunse.iliun.today_date,
     });

@@ -83,7 +83,7 @@ export async function GET() {
       fetchRelation: async () => null,
       fetchRelationChart: async () => null,
 
-      callLlm: (input) => callDailyHapLlm(input.self_chart, openai),
+      callLlm: (input) => callDailyHapLlm(input, openai),
 
       saveCard: async (c) => {
         // fetchUserChart 결과를 외부 스코프에서 캡처 — 중복 DB 쿼리 제거

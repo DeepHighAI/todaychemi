@@ -96,7 +96,15 @@ describe('POST /api/guest/today', () => {
       }),
       expect.any(String),
     );
-    expect(callDailyHapLlm).toHaveBeenCalledWith(CHART, expect.anything());
+    // C5: callDailyHapLlm 시그니처 = (TodayLlmInput, OpenAI). guest 는 relation_chart 항상 null.
+    expect(callDailyHapLlm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        self_chart: CHART,
+        relation_chart: null,
+        today_date: expect.any(String),
+      }),
+      expect.anything(),
+    );
   });
 
   it('403 when guest legal consent cookie is missing or expired', async () => {

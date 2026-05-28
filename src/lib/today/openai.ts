@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type OpenAI from 'openai';
 import type { DailyHapCard } from '@/types/dailyHap';
-import type { ChartCore } from '@/types/chart';
+import type { TodayLlmInput } from '@/lib/today/builder';
 import { selectLlmModel } from '@/lib/llm/model-router';
 
-function loadSystemPrompt(): string {
-  const promptPath = join(process.cwd(), 'prompts', 'system', 'daily_hap.md');
+function loadSystemPrompt(relationPresent: boolean): string {
+  const filename = relationPresent ? 'today_with_relation.md' : 'daily_hap.md';
+  const promptPath = join(process.cwd(), 'prompts', 'system', filename);
   return readFileSync(promptPath, 'utf-8');
 }
 
@@ -23,14 +24,34 @@ function textOrFallback(value: string | undefined, fallback: string): string {
   return value?.trim() || fallback;
 }
 
-export async function callDailyHapLlm(chart: ChartCore, openai: OpenAI): Promise<DailyHapCard> {
-  const systemPrompt = loadSystemPrompt();
+// G2 / Phase 3 C5 — 3축 (self + relation + today_date) 인터페이스 + GPT-5 격상.
+// relation_chart 가 null 이면 기존 daily_hap.md 프롬프트 + 단일축 페이로드 (인연 미등록 사용자).
+// relation_chart 존재 시 today_with_relation.md 프롬프트 + relation_chart_core 포함 페이로드.
+// PII 0건 — relation 의 nickname/relation_id/email/birth_date 절대 포함 금지.
+export async function callDailyHapLlm(
+  input: TodayLlmInput,
+  openai: OpenAI,
+): Promise<DailyHapCard> {
+  const relationPresent = input.relation_chart !== null;
+  const systemPrompt = loadSystemPrompt(relationPresent);
+
+  // PII 0건 페이로드 (chart_core 만 + today_date)
+  const userPayload = relationPresent
+    ? {
+        chart_core: input.self_chart,
+        relation_chart_core: input.relation_chart,
+        today_date: input.today_date,
+      }
+    : {
+        chart_core: input.self_chart,
+        today_date: input.today_date,
+      };
 
   const response = await openai.chat.completions.create({
     model: selectLlmModel('today'),
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: JSON.stringify({ chart_core: chart }) },
+      { role: 'user', content: JSON.stringify(userPayload) },
     ],
     response_format: { type: 'json_object' },
     store: false,

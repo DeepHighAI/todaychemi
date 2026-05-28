@@ -12,8 +12,8 @@ describe('selectLlmModel', () => {
     expect(selectLlmModel('replay')).toBe('gpt-5');
   });
 
-  it('홈의 오늘의 사이는 gpt-5-mini를 사용한다', () => {
-    expect(selectLlmModel('today')).toBe('gpt-5-mini');
+  it('홈의 오늘의 사이는 gpt-5를 사용한다 (G2 / Phase 3 C5: gpt-5-mini → gpt-5 격상)', () => {
+    expect(selectLlmModel('today')).toBe('gpt-5');
   });
 
   it('딥 리포트 예약값은 gpt-5이다', () => {
