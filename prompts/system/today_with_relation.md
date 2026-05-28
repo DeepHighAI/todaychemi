@@ -89,7 +89,9 @@ LLM 페이로드에는 chart_core 만 포함됩니다 — PII 5필드(birth_date
 }
 ```
 
-## Example
+## Examples
+
+### Example 1 — 보완 흐름 (오행 보완 + 일진이 두 일간 모두 살림)
 
 **Input**
 ```json
@@ -117,5 +119,71 @@ LLM 페이로드에는 chart_core 만 포함됩니다 — PII 5필드(birth_date
   "avoid_phrase_reason": "금-화 사이 미묘한 긴장에서 결단은 다음으로 미뤄도 좋아요.",
   "favorable_action": "함께 가벼운 점심",
   "favorable_action_reason": "오늘 일진이 두 사주 흐름을 부드럽게 잇는 시간이에요."
+}
+```
+
+---
+
+### Example 2 — 균형·조율 흐름 (오행 분포 비슷·일진 중립)
+
+**Input**
+```json
+{
+  "chart_core": {
+    "year_pillar": "戊午", "month_pillar": "己未", "day_pillar": "庚申", "hour_pillar": "甲申",
+    "day_master_element": "금", "five_elements_counts": { "목": 1, "화": 1, "토": 2, "금": 3, "수": 1 },
+    "gender_normalized": "F"
+  },
+  "relation_chart_core": {
+    "year_pillar": "庚午", "month_pillar": "辛未", "day_pillar": "壬戌", "hour_pillar": null,
+    "day_master_element": "수", "five_elements_counts": { "목": 0, "화": 1, "토": 2, "금": 2, "수": 1 },
+    "gender_normalized": "M"
+  },
+  "today_date": "2026-06-04"
+}
+```
+
+**Output**
+```json
+{
+  "headline": "오늘은 조율하는 흐름이에요.",
+  "headline_reason": "두 사주 모두 토·금 기운이 비슷해 오늘 일진이 조용히 잇는 날.",
+  "avoid_phrase": "갑작스러운 계획 변경",
+  "avoid_phrase_reason": "안정된 흐름이라 흔들기보다 결을 따라가는 게 좋아요.",
+  "favorable_action": "다음 일정 함께 정리",
+  "favorable_action_reason": "오늘 일진이 정돈된 토 기운을 더해주는 시간이에요."
+}
+```
+
+---
+
+### Example 3 — 긴장·거리감 흐름 (일진이 한 쪽 일간과 충 발생)
+
+**Input**
+```json
+{
+  "chart_core": {
+    "year_pillar": "壬辰", "month_pillar": "癸巳", "day_pillar": "丙午", "hour_pillar": null,
+    "day_master_element": "화", "five_elements_counts": { "목": 0, "화": 3, "토": 1, "금": 0, "수": 2 },
+    "gender_normalized": "M"
+  },
+  "relation_chart_core": {
+    "year_pillar": "庚申", "month_pillar": "辛酉", "day_pillar": "壬子", "hour_pillar": null,
+    "day_master_element": "수", "five_elements_counts": { "목": 0, "화": 0, "토": 0, "금": 3, "수": 3 },
+    "gender_normalized": "F"
+  },
+  "today_date": "2026-06-10"
+}
+```
+
+**Output**
+```json
+{
+  "headline": "오늘은 한 박자 늦추는 흐름이에요.",
+  "headline_reason": "오늘 일진과 화 일간 사이에 자오 부딪힘이 생기는 날.",
+  "avoid_phrase": "감정 섞인 즉답",
+  "avoid_phrase_reason": "수와 화의 거리감이 도드라져 즉답은 부담이 될 수 있어요.",
+  "favorable_action": "짧은 안부 인사",
+  "favorable_action_reason": "오늘 일진을 거스르지 않고 천천히 이어가는 게 무리 없어요."
 }
 ```
