@@ -39,9 +39,9 @@ export default function GuestStartPage() {
         <div className="space-y-3">
           <p className="font-eyebrow text-primary">처음이세요?</p>
           <h1 className="text-3xl font-black leading-tight text-foreground">
-            내 오늘 흐름을 보려면
+            누군가와의 오늘을
             <br />
-            먼저 동의가 필요해요.
+            미리 보려면 동의가 필요해요.
           </h1>
           <p className="font-sub text-muted-foreground">
             생년월일과 출생시간은 사주 계산에만 사용하고, 가입 전 입력값은 현재 탭에만 저장합니다.
