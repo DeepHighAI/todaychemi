@@ -15,6 +15,19 @@ export interface TodayLlmInput {
   today_date: string;
 }
 
+// Task 1 (Phase 3 후속) — 단계별 latency + 실패 phase 캡처용 trace.
+// route.ts 가 recordTrace 콜백으로 error_events 적재 / 메트릭 로깅에 사용.
+export interface TodayTracePhase {
+  name: string;
+  durationMs: number;
+}
+export interface TodayTrace {
+  phases: TodayTracePhase[];
+  totalMs: number;
+  failedPhase?: string;
+  errorMessage?: string;
+}
+
 export interface BuildDailyHapDeps {
   fetchTodayCache: () => Promise<DailyHapCard | null>;
   fetchYesterdayCache: () => Promise<DailyHapCard | null>;
@@ -25,6 +38,9 @@ export interface BuildDailyHapDeps {
   fetchRelationChart: (relationId: string) => Promise<ChartCore | null>;
   callLlm: (input: TodayLlmInput) => Promise<DailyHapCard>;
   saveCard: (card: DailyHapCard) => Promise<void>;
+  // Task 1: 옵셔널 instrumentation 콜백. 성공·실패 양쪽에서 정확히 1회 호출됨.
+  // 비동기 INSERT (error_events 적재 등) 가 응답 직전에 완료되도록 builder 가 await 한다.
+  recordTrace?: (trace: TodayTrace) => void | Promise<void>;
   today_date: string;
 }
 
@@ -61,27 +77,84 @@ function applyRelationMeta(
 }
 
 export async function buildDailyHap(deps: BuildDailyHapDeps): Promise<DailyHapResult> {
-  const cached = await deps.fetchTodayCache();
-  if (cached) return cached;
+  const t0 = performance.now();
+  const phases: TodayTracePhase[] = [];
+  let failedPhase: string | undefined;
+  let errorMessage: string | undefined;
 
-  const selfChart = await deps.fetchUserChart();
-  if (!selfChart) return TEMPLATE;
+  // 단계별 latency 측정. throw 시 failedPhase·errorMessage 캡처 후 재-throw.
+  // yesterdayCache 같은 fallback 단계가 이 함수를 거치면 failedPhase 가 덮어쓰일 수 있으므로
+  // 회복 경로에서는 measure() 대신 measurePhaseOnly() 를 사용한다.
+  async function measure<T>(name: string, fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    try {
+      return await fn();
+    } catch (err) {
+      failedPhase = name;
+      errorMessage = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      phases.push({ name, durationMs: performance.now() - start });
+    }
+  }
+
+  // failedPhase 를 덮어쓰지 않고 phase 시간만 기록 (회복 단계용).
+  async function measurePhaseOnly<T>(name: string, fn: () => Promise<T>): Promise<T | null> {
+    const start = performance.now();
+    try {
+      return await fn();
+    } catch {
+      return null;
+    } finally {
+      phases.push({ name, durationMs: performance.now() - start });
+    }
+  }
+
+  async function flushTrace(extra?: { failedPhase?: string; errorMessage?: string }) {
+    // recordTrace 가 async 면 await — 실패 트레이스의 error_events INSERT 가 응답 직전에 완료되게.
+    // sync 반환이면 즉시 resolve, 무비용.
+    await deps.recordTrace?.({
+      phases: [...phases],
+      totalMs: performance.now() - t0,
+      failedPhase: extra?.failedPhase ?? failedPhase,
+      errorMessage: extra?.errorMessage ?? errorMessage,
+    });
+  }
+
+  const cached = await measure('todayCache', deps.fetchTodayCache);
+  if (cached) {
+    await flushTrace();
+    return cached;
+  }
+
+  const selfChart = await measure('userChart', deps.fetchUserChart);
+  if (!selfChart) {
+    await flushTrace({ failedPhase: 'userChart', errorMessage: 'chart_null' });
+    return TEMPLATE;
+  }
 
   // 인연 메타 + 인연 chart fetch (인연 0건 사용자면 모두 null)
-  const relation = await deps.fetchRelation();
-  const relationChart = relation ? await deps.fetchRelationChart(relation.id) : null;
+  const relation = await measure('relation', deps.fetchRelation);
+  const relationChart = relation
+    ? await measure('relationChart', () => deps.fetchRelationChart(relation.id))
+    : null;
 
   try {
-    const baseCard = await deps.callLlm({
-      self_chart: selfChart,
-      relation_chart: relationChart,
-      today_date: deps.today_date,
-    });
+    const baseCard = await measure('llm', () =>
+      deps.callLlm({
+        self_chart: selfChart,
+        relation_chart: relationChart,
+        today_date: deps.today_date,
+      }),
+    );
     const card = applyRelationMeta(baseCard, relation, relationChart, selfChart, deps.today_date);
-    await deps.saveCard(card);
+    await measure('save', () => deps.saveCard(card));
+    await flushTrace();
     return card;
   } catch {
-    const yesterday = await deps.fetchYesterdayCache();
+    // measure 가 이미 failedPhase + errorMessage 캡처. yesterdayCache 회복 단계는 라벨 보존.
+    const yesterday = await measurePhaseOnly('yesterdayCache', deps.fetchYesterdayCache);
+    await flushTrace();
     if (yesterday) return { ...yesterday, reused_from_yesterday: true };
     return TEMPLATE;
   }

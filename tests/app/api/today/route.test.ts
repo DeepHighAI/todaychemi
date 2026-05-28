@@ -338,3 +338,143 @@ describe('GET /api/today (F1.2 saveCard 신규 컬럼 영속화)', () => {
     expect(payload.today_compat_score).toBeNull();
   });
 });
+
+// Task 1 (Phase 3 후속) — instrumentation trace → error_events 적재
+describe('GET /api/today (Task 1 instrumentation trace)', () => {
+  const errorEventsInsert = vi.fn();
+
+  function makeTracingClient(userId = 'user-001') {
+    return {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: userId } },
+          error: null,
+        }),
+      },
+      from: vi.fn((table: string) => {
+        if (table === 'error_events') {
+          return {
+            insert: errorEventsInsert.mockResolvedValue({ data: null, error: null }),
+          };
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          upsert: upsertMock,
+        };
+      }),
+    };
+  }
+
+  beforeEach(() => {
+    errorEventsInsert.mockReset();
+  });
+
+  it('buildDailyHap deps 에 recordTrace 콜백 주입', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    await GET(makeRequest());
+    const depsArg = vi.mocked(buildDailyHap).mock.calls[0][0];
+    expect(typeof depsArg.recordTrace).toBe('function');
+  });
+
+  it('failedPhase=llm + LLM_TIMEOUT: prefix → error_events.error_code=LLM_TIMEOUT', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [
+          { name: 'todayCache', durationMs: 50 },
+          { name: 'userChart', durationMs: 100 },
+          { name: 'relation', durationMs: 30 },
+          { name: 'relationChart', durationMs: 14000 },
+          { name: 'llm', durationMs: 200 },
+        ],
+        totalMs: 14400,
+        failedPhase: 'llm',
+        errorMessage: 'LLM_TIMEOUT: Request was aborted',
+      });
+      return CARD;
+    });
+
+    await GET(makeRequest());
+
+    expect(errorEventsInsert).toHaveBeenCalledTimes(1);
+    const insertArg = errorEventsInsert.mock.calls[0][0];
+    expect(insertArg.error_code).toBe('LLM_TIMEOUT');
+    expect(insertArg.user_id).toBe('user-001');
+    expect(insertArg.context.phase).toBe('llm');
+    expect(insertArg.context.total_ms).toBe(14400);
+    expect(insertArg.context.source).toBe('today.recordTrace');
+    expect(insertArg.stack).toContain('LLM_TIMEOUT');
+  });
+
+  it('LLM_PARSE_FAIL: prefix → error_code=LLM_PARSE_FAIL', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [{ name: 'llm', durationMs: 8000 }],
+        totalMs: 8500,
+        failedPhase: 'llm',
+        errorMessage: 'LLM_PARSE_FAIL: Unexpected token in JSON',
+      });
+      return CARD;
+    });
+    await GET(makeRequest());
+    expect(errorEventsInsert).toHaveBeenCalledTimes(1);
+    expect(errorEventsInsert.mock.calls[0][0].error_code).toBe('LLM_PARSE_FAIL');
+  });
+
+  it('failedPhase=userChart + chart_null → error_code=USER_CHART_NOT_FOUND', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [
+          { name: 'todayCache', durationMs: 50 },
+          { name: 'userChart', durationMs: 80 },
+        ],
+        totalMs: 130,
+        failedPhase: 'userChart',
+        errorMessage: 'chart_null',
+      });
+      return CARD;
+    });
+    await GET(makeRequest());
+    expect(errorEventsInsert).toHaveBeenCalledTimes(1);
+    expect(errorEventsInsert.mock.calls[0][0].error_code).toBe('USER_CHART_NOT_FOUND');
+  });
+
+  it('성공 trace (failedPhase undefined) → error_events INSERT 미호출', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [
+          { name: 'todayCache', durationMs: 50 },
+          { name: 'userChart', durationMs: 100 },
+          { name: 'relation', durationMs: 30 },
+          { name: 'llm', durationMs: 3000 },
+          { name: 'save', durationMs: 80 },
+        ],
+        totalMs: 3260,
+      });
+      return CARD;
+    });
+    await GET(makeRequest());
+    expect(errorEventsInsert).not.toHaveBeenCalled();
+  });
+
+  it('failedPhase=relationChart + 메시지 패턴 미스 → error_code=TODAY_BUILD_FAIL (기본값)', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [{ name: 'relationChart', durationMs: 15000 }],
+        totalMs: 15100,
+        failedPhase: 'relationChart',
+        errorMessage: 'Some opaque infra error',
+      });
+      return CARD;
+    });
+    await GET(makeRequest());
+    expect(errorEventsInsert).toHaveBeenCalledTimes(1);
+    expect(errorEventsInsert.mock.calls[0][0].error_code).toBe('TODAY_BUILD_FAIL');
+  });
+});

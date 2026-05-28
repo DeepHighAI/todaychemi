@@ -176,3 +176,87 @@ describe('buildDailyHap — 인연 종합 (G2)', () => {
     expect(r1?.today_compat_score).toBe(r2?.today_compat_score);
   });
 });
+
+// Task 1 (Phase 3 후속) — 단계별 latency instrumentation + 실패 phase 캡처.
+// route.ts 가 recordTrace 콜백을 받아 error_events 적재 / 메트릭 로깅에 사용.
+describe('buildDailyHap — instrumentation trace (Task 1)', () => {
+  it('성공 경로 — phases 에 todayCache/userChart/relation/llm/save 모두 기록 + failedPhase undefined', async () => {
+    const recordTrace = vi.fn();
+    const deps = makeDeps({ recordTrace });
+    await buildDailyHap(deps);
+    expect(recordTrace).toHaveBeenCalledOnce();
+    const trace = recordTrace.mock.calls[0][0] as {
+      phases: { name: string; durationMs: number }[];
+      totalMs: number;
+      failedPhase?: string;
+      errorMessage?: string;
+    };
+    expect(trace.phases.map((p) => p.name)).toEqual([
+      'todayCache',
+      'userChart',
+      'relation',
+      'llm',
+      'save',
+    ]);
+    expect(trace.failedPhase).toBeUndefined();
+    expect(trace.totalMs).toBeGreaterThanOrEqual(0);
+    trace.phases.forEach((p) => expect(p.durationMs).toBeGreaterThanOrEqual(0));
+  });
+
+  it('chart null → failedPhase=userChart + errorMessage=chart_null', async () => {
+    const recordTrace = vi.fn();
+    const deps = makeDeps({
+      fetchUserChart: vi.fn().mockResolvedValue(null),
+      recordTrace,
+    });
+    await buildDailyHap(deps);
+    const trace = recordTrace.mock.calls[0][0] as {
+      failedPhase?: string;
+      errorMessage?: string;
+    };
+    expect(trace.failedPhase).toBe('userChart');
+    expect(trace.errorMessage).toBe('chart_null');
+  });
+
+  it('LLM throw → failedPhase=llm + errorMessage 캡처 + yesterdayCache phase 추가', async () => {
+    const recordTrace = vi.fn();
+    const deps = makeDeps({
+      callLlm: vi.fn().mockRejectedValue(new Error('OpenAI timeout')),
+      recordTrace,
+    });
+    await buildDailyHap(deps);
+    const trace = recordTrace.mock.calls[0][0] as {
+      phases: { name: string }[];
+      failedPhase?: string;
+      errorMessage?: string;
+    };
+    expect(trace.failedPhase).toBe('llm');
+    expect(trace.errorMessage).toContain('OpenAI timeout');
+    expect(trace.phases.map((p) => p.name)).toContain('yesterdayCache');
+    // failedPhase 는 LLM 시점 캡처 후 yesterdayCache 단계가 덮어쓰지 않아야 함.
+    expect(trace.failedPhase).not.toBe('yesterdayCache');
+  });
+
+  it('cache hit → phases 에 todayCache 만 + failedPhase undefined', async () => {
+    const recordTrace = vi.fn();
+    const cached = { ...CARD, headline: '캐시' };
+    const deps = makeDeps({
+      fetchTodayCache: vi.fn().mockResolvedValue(cached),
+      recordTrace,
+    });
+    await buildDailyHap(deps);
+    const trace = recordTrace.mock.calls[0][0] as {
+      phases: { name: string }[];
+      failedPhase?: string;
+    };
+    expect(trace.phases.map((p) => p.name)).toEqual(['todayCache']);
+    expect(trace.failedPhase).toBeUndefined();
+  });
+
+  it('recordTrace 미주입 시 정상 동작 (옵셔널 콜백)', async () => {
+    const deps = makeDeps();
+    // recordTrace 미주입 — TypeScript 옵셔널 필드.
+    const result = await buildDailyHap(deps);
+    expect(result?.headline).toBe(CARD.headline);
+  });
+});

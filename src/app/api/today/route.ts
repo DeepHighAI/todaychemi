@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { fetchLatestUserChartForVersion } from '@/lib/chart/queries';
 
 import { createClient } from '@/lib/supabase/server';
 import { selectLlmModel } from '@/lib/llm/model-router';
 import { createOpenAiClient } from '@/lib/llm/clients';
-import { buildDailyHap, type TodayRelationMeta } from '@/lib/today/builder';
+import {
+  buildDailyHap,
+  type TodayRelationMeta,
+  type TodayTrace,
+} from '@/lib/today/builder';
 import { callDailyHapLlm } from '@/lib/today/openai';
 import { pickTodayRelation } from '@/lib/today/relation-picker';
 import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
@@ -14,6 +19,25 @@ import { todayKST, yesterdayKST } from '@/lib/today/kst-date';
 import { buildSourcePacketHash } from '@/lib/today/cache-key';
 import type { DailyHapCard } from '@/types/dailyHap';
 import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
+
+// Task 1: builder trace 의 failedPhase + errorMessage 에서 error_events.error_code 추출.
+// openai.ts 가 LLM_TIMEOUT: / LLM_PARSE_FAIL: prefix 로 throw 하므로 그 패턴을 1순위로 매칭.
+function classifyTraceFailure(
+  failedPhase: string,
+  errorMessage: string | undefined,
+): string {
+  const msg = errorMessage ?? '';
+  if (msg.startsWith('LLM_TIMEOUT:') || /timeout|aborted|timed out/i.test(msg)) {
+    return 'LLM_TIMEOUT';
+  }
+  if (msg.startsWith('LLM_PARSE_FAIL:') || /Unexpected token|JSON/i.test(msg)) {
+    return 'LLM_PARSE_FAIL';
+  }
+  if (failedPhase === 'userChart' && msg === 'chart_null') {
+    return 'USER_CHART_NOT_FOUND';
+  }
+  return 'TODAY_BUILD_FAIL';
+}
 
 // F1.3: 영속화 시 신규 3컬럼(primary_relation_id, relation_nickname, today_compat_score)
 // 모두 포함. 캐시 hit 이 신규 컬럼을 직접 반환하므로 applyRelationMetaToResponse 의
@@ -160,6 +184,28 @@ export async function GET(request: Request) {
       },
 
       callLlm: (input) => callDailyHapLlm(input, openai),
+
+      // Task 1: 단계별 latency + 실패 phase 캡처. 실패 시 error_events 적재 (best-effort).
+      recordTrace: async (trace: TodayTrace) => {
+        if (!trace.failedPhase) return;
+        const code = classifyTraceFailure(trace.failedPhase, trace.errorMessage);
+        try {
+          const untypedDb = supabase as unknown as SupabaseClient;
+          await untypedDb.from('error_events').insert({
+            error_code: code,
+            user_id: user.id,
+            context: {
+              phase: trace.failedPhase,
+              total_ms: Math.round(trace.totalMs),
+              phases: trace.phases.map((p) => ({ name: p.name, ms: Math.round(p.durationMs) })),
+              source: 'today.recordTrace',
+            },
+            stack: trace.errorMessage ?? null,
+          });
+        } catch (loggingErr) {
+          console.error('[/api/today] error_events insert failed', loggingErr);
+        }
+      },
 
       saveCard: async (c) => {
         // C3 캐시 키 차원: relation_chart + prompt_version + model_id 동적 주입.

@@ -4,6 +4,7 @@ export const ERROR_CODES = [
   'LLM_TIMEOUT',
   'LLM_RATE_LIMIT',
   'LLM_BANNED_OUTPUT',
+  'LLM_PARSE_FAIL',
   'USER_QUOTA_EXCEEDED',
   'IP_RATE_LIMIT',
   'NETWORK_OFFLINE',
@@ -13,6 +14,7 @@ export const ERROR_CODES = [
   'HAPCARD_NOT_FOUND',
   'USER_CHART_NOT_FOUND',
   'REPLAY_DURING_OUTAGE',
+  'TODAY_BUILD_FAIL',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -28,6 +30,7 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   LLM_TIMEOUT: 'AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.',
   LLM_RATE_LIMIT: '지금 이용자가 많아요. 1~2분 뒤 다시 시도해주세요.',
   LLM_BANNED_OUTPUT: '답변 품질이 기준을 못 채웠어요. 다시 시도할게요.',
+  LLM_PARSE_FAIL: 'AI 응답 형식이 잘못됐어요. 잠시 후 다시 시도해주세요.',
   USER_QUOTA_EXCEEDED: '오늘의 질문 한도를 다 쓰셨어요. 내일 자정에 초기화됩니다.',
   IP_RATE_LIMIT: '너무 자주 시도하고 있어요. 1분 후 다시 해주세요.',
   NETWORK_OFFLINE: '인터넷 연결이 끊어졌어요. 마지막 결과는 확인할 수 있어요.',
@@ -37,6 +40,7 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   HAPCARD_NOT_FOUND: '오늘 우리는을 찾을 수 없어요.',
   USER_CHART_NOT_FOUND: '내 사주맵이 없어요. 먼저 내 사주맵을 등록해주세요.',
   REPLAY_DURING_OUTAGE: 'AI 서비스 점검 중이에요. 잠시 후 다시 시도해주세요.',
+  TODAY_BUILD_FAIL: '오늘카드를 만들지 못했어요. 잠시 후 다시 시도해주세요.',
 };
 
 // 특정 에러 코드에 대한 CTA 링크 정의 (현재: INSUFFICIENT_TOKENS → 충전 페이지)

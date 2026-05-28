@@ -309,8 +309,35 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 | 증상 | 확인 |
 |---|---|
-| TodayHero 로딩 장시간 | `GET /api/today` 응답 시간 확인 (LLM 첫 호출 시 최대 15초) |
+| TodayHero 로딩 장시간 | `GET /api/today` 응답 시간 확인. LLM-only timeout 25s (`TODAY_LLM_TIMEOUT_MS`) — 그 이상 걸리면 KASI compute 또는 cache lookup 문제 |
+| body 가 "오늘 메시지를 준비하지 못했어요" (TEMPLATE) | `error_events` 테이블 확인 — `error_code` IN ('LLM_TIMEOUT','LLM_PARSE_FAIL','USER_CHART_NOT_FOUND','TODAY_BUILD_FAIL') |
 | `TODAY_FETCH_FAILED` | OPENAI_API_KEY, 예산 한도, Supabase 연결 확인 |
+
+### Task 1 instrumentation 확인 절차 (Phase 3 후속)
+
+응답 시간 14s 이상이 보고된 경우 또는 TEMPLATE body 가 노출된 경우:
+
+```sql
+SELECT
+  error_code,
+  context->>'phase' AS failed_phase,
+  (context->>'total_ms')::int AS total_ms,
+  context->'phases' AS phases,
+  stack,
+  created_at
+FROM error_events
+WHERE context->>'source' = 'today.recordTrace'
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+해석:
+- `failed_phase='llm'` + `error_code='LLM_TIMEOUT'` → 25s 안에 GPT-5 응답 미도착 (예산/quota/모델 latency 점검)
+- `failed_phase='llm'` + `error_code='LLM_PARSE_FAIL'` → JSON 응답 형식 깨짐 (prompt 본문 검수)
+- `failed_phase='relationChart'` + total_ms > 10000 → KASI compute 첫 호출 지연 (관련 인연 chart 사전 생성 검토)
+- `failed_phase='userChart'` + `error_code='USER_CHART_NOT_FOUND'` → onboarding chart compute 실패 (relations/route 의 eager compute 점검)
+
+phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 ---
 

@@ -5,6 +5,10 @@ import type { DailyHapCard } from '@/types/dailyHap';
 import type { TodayLlmInput } from '@/lib/today/builder';
 import { selectLlmModel } from '@/lib/llm/model-router';
 
+// Task 1: 오늘카드 LLM-only timeout. 60s SDK 기본 → 25s 로 단축.
+// (전체 today 응답 시간 ≤ 30s 목표. KASI compute + DB save 가 약 5s 여유.)
+export const TODAY_LLM_TIMEOUT_MS = 25_000;
+
 function loadSystemPrompt(relationPresent: boolean): string {
   const filename = relationPresent ? 'today_with_relation.md' : 'daily_hap.md';
   const promptPath = join(process.cwd(), 'prompts', 'system', filename);
@@ -28,6 +32,11 @@ function textOrFallback(value: string | undefined, fallback: string): string {
 // relation_chart 가 null 이면 기존 daily_hap.md 프롬프트 + 단일축 페이로드 (인연 미등록 사용자).
 // relation_chart 존재 시 today_with_relation.md 프롬프트 + relation_chart_core 포함 페이로드.
 // PII 0건 — relation 의 nickname/relation_id/email/birth_date 절대 포함 금지.
+//
+// Task 1 (Phase 3 후속):
+//   - LLM-only 25s timeout 명시 (SDK 기본 60s 단축)
+//   - timeout / parse 에러를 LLM_TIMEOUT / LLM_PARSE_FAIL prefix 로 wrap 하여
+//     builder.ts measure catch 와 route.ts classify 가 분류할 수 있게 한다.
 export async function callDailyHapLlm(
   input: TodayLlmInput,
   openai: OpenAI,
@@ -47,20 +56,38 @@ export async function callDailyHapLlm(
         today_date: input.today_date,
       };
 
-  const response = await openai.chat.completions.create({
-    model: selectLlmModel('today'),
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: JSON.stringify(userPayload) },
-    ],
-    response_format: { type: 'json_object' },
-    store: false,
-    reasoning_effort: 'low',
-    max_completion_tokens: 800,
-  });
+  let response;
+  try {
+    response = await openai.chat.completions.create(
+      {
+        model: selectLlmModel('today'),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: JSON.stringify(userPayload) },
+        ],
+        response_format: { type: 'json_object' },
+        store: false,
+        reasoning_effort: 'low',
+        max_completion_tokens: 800,
+      },
+      { timeout: TODAY_LLM_TIMEOUT_MS },
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/timeout|aborted|timed out/i.test(msg)) {
+      throw new Error(`LLM_TIMEOUT: ${msg}`);
+    }
+    throw err;
+  }
 
   const text = response.choices[0].message.content ?? '{}';
-  const raw = JSON.parse(text) as Partial<DailyHapCard>;
+  let raw: Partial<DailyHapCard>;
+  try {
+    raw = JSON.parse(text) as Partial<DailyHapCard>;
+  } catch (parseErr) {
+    const msg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+    throw new Error(`LLM_PARSE_FAIL: ${msg}`);
+  }
 
   return {
     headline: textOrFallback(raw.headline, FALLBACK_FIELDS.headline),
