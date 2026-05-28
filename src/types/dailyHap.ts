@@ -18,10 +18,6 @@ export interface DailyHapCard {
   relation_id?: string | null;
   relation_nickname?: string | null;
   today_compat_score?: number | null;
-  // legacy (Phase 3 이전, 미사용 가능). 후속 PR에서 제거 검토.
-  compat_score?: number | null;
-  headline_strength?: number | null;
-  delta_vs_yesterday?: number | null;
 }
 
 export type DailyHapResult = DailyHapCard | null;

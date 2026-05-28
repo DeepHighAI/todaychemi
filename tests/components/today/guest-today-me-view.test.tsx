@@ -25,8 +25,6 @@ const SNAPSHOT: GuestTodaySnapshot = {
     favorable_action: '작게 정리하기',
     favorable_action_reason: '작은 정리가 다음 선택을 가볍게 해요.',
     reused_from_yesterday: false,
-    compat_score: null,
-    headline_strength: null,
   },
   chart: {
     year_pillar: '갑자',

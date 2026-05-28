@@ -17,7 +17,7 @@ function formatKstDate(iso: string): string {
 }
 
 export function GuestTodayMeView({ snapshot }: { snapshot: GuestTodaySnapshot }) {
-  const score = snapshot.card.compat_score ?? snapshot.card.headline_strength ?? null;
+  const score = snapshot.card.today_compat_score ?? null;
   const temperature = typeof score === 'number' ? scoreToTemperature(score).toFixed(1) : null;
 
   return (

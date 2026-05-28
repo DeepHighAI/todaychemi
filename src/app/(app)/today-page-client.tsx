@@ -4,7 +4,7 @@
  * Canvas reference: type-d/screens-interactive.jsx::IHome
  *
  * Improvements:
- *  - TodayHero에 compat_score 전달 → 56px 오늘온도 + delta pill
+ *  - TodayHero에 today_compat_score 전달 → 56px 오늘온도
  *  - 인연 row를 SwipeRow로 — 좌측 스와이프 시 삭제
  *  - 빠른 인연 등록 카드 prominent하게
  */
@@ -125,8 +125,8 @@ export default function TodayPageClient() {
               F2.3: card.relation_id 있으면 RelationChip 주입 → chip 탭으로 인연 전환 가능 */}
           <TodayHero
             card={card}
-            score={card.compat_score ?? card.headline_strength ?? null}
-            deltaVsYesterday={card.delta_vs_yesterday ?? null}
+            score={null}
+            deltaVsYesterday={null}
             chipNode={
               card.relation_id && card.relation_nickname ? (
                 <RelationChip
