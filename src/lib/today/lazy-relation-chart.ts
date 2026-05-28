@@ -65,7 +65,9 @@ export async function ensureRelationChart(
       kasiServiceKey,
     );
 
-    await supabase.from('relation_charts').upsert(
+    // ChartCore → Json 캐스트 (relations/route.ts:81 동일 패턴)
+    const untypedDb = supabase as unknown as SupabaseClient;
+    await untypedDb.from('relation_charts').upsert(
       {
         relation_id: relationId,
         user_id: userId,
