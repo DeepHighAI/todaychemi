@@ -43,12 +43,16 @@ export async function POST(request: Request) {
 
   try {
     const openai = createOpenAiClient();
+    // 게스트는 인연 등록 자체가 불가 → relation 경로 미사용 (relation=null 고정).
     const card = await buildDailyHap({
       fetchTodayCache: async () => null,
       fetchYesterdayCache: async () => null,
       fetchUserChart: async () => computeResult.chart_core,
-      callLlm: (chart) => callDailyHapLlm(chart, openai),
+      fetchRelation: async () => null,
+      fetchRelationChart: async () => null,
+      callLlm: (input) => callDailyHapLlm(input.self_chart, openai),
       saveCard: async () => undefined,
+      today_date: computeResult.chart_core.yunse.iliun.today_date,
     });
 
     return NextResponse.json({

@@ -78,7 +78,12 @@ export async function GET() {
         return cachedChart;
       },
 
-      callLlm: (chart) => callDailyHapLlm(chart, openai),
+      // G2 / Phase 3 C4: 단계적 도입 — C7 에서 relation-picker + lazy chart gen 으로 완성.
+      // 현 단계는 인연 미주입 (relation=null) 유지하여 기존 단독 today 그대로 동작.
+      fetchRelation: async () => null,
+      fetchRelationChart: async () => null,
+
+      callLlm: (input) => callDailyHapLlm(input.self_chart, openai),
 
       saveCard: async (c) => {
         // fetchUserChart 결과를 외부 스코프에서 캡처 — 중복 DB 쿼리 제거
@@ -108,6 +113,8 @@ export async function GET() {
           { onConflict: 'user_id,target_date' },
         );
       },
+
+      today_date: target,
     });
 
     return NextResponse.json({ ok: true, card });
