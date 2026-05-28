@@ -152,4 +152,51 @@ describe('ensureRelationChart', () => {
     const result = await ensureRelationChart(sb as never, 'rel-x', 'user-1', 'kasi-key');
     expect(result).toBeNull();
   });
+
+  // F3.3: KASI 실패 시 error_events 테이블에 기록
+  it('F3.3: KASI 실패 → error_events INSERT (error_code=KASI_COMPUTE_FAIL, context에 relationId)', async () => {
+    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
+      data: null,
+      error: null,
+    } as never);
+    vi.mocked(computeChart).mockRejectedValueOnce(new Error('KASI 503'));
+
+    // error_events 테이블 INSERT 캡처를 위한 mock 확장
+    const errorInsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const sb = {
+      from: vi.fn((table: string) => {
+        if (table === 'relations') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                birth_date: '1995-06-15',
+                birth_date_calendar: 'solar',
+                is_lunar_leap: false,
+                birth_time_knowledge: 'exact',
+                birth_time: '10:30:00',
+                gender: 'F',
+              },
+              error: null,
+            }),
+          };
+        }
+        if (table === 'error_events') {
+          return { insert: errorInsertMock };
+        }
+        return { upsert: vi.fn().mockResolvedValue({ data: null, error: null }) };
+      }),
+    };
+
+    await ensureRelationChart(sb as never, 'rel-err', 'user-1', 'kasi-key');
+
+    expect(errorInsertMock).toHaveBeenCalledOnce();
+    const payload = errorInsertMock.mock.calls[0][0];
+    expect(payload.error_code).toBe('KASI_COMPUTE_FAIL');
+    expect(payload.user_id).toBe('user-1');
+    // context.relation_id 에 식별자 포함
+    const context = typeof payload.context === 'string' ? JSON.parse(payload.context) : payload.context;
+    expect(context.relation_id).toBe('rel-err');
+  });
 });

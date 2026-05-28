@@ -81,6 +81,18 @@ export async function ensureRelationChart(
     return computeResult.chart_core;
   } catch (err) {
     console.error('[ensureRelationChart] computeChart failed', { relationId, err });
+    // F3.3: error_events 테이블에 영구 기록 (운영 디버깅용)
+    try {
+      const untypedDb = supabase as unknown as SupabaseClient;
+      await untypedDb.from('error_events').insert({
+        error_code: 'KASI_COMPUTE_FAIL',
+        user_id: userId,
+        context: { relation_id: relationId, source: 'ensureRelationChart' },
+        stack: err instanceof Error ? err.stack ?? err.message : String(err),
+      });
+    } catch (loggingErr) {
+      console.error('[ensureRelationChart] error_events insert failed', loggingErr);
+    }
     return null;
   }
 }
