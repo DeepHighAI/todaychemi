@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/today/builder');
@@ -186,6 +186,36 @@ describe('GET /api/today (G2 인연 종합)', () => {
     const body = await res.json();
     expect(body.card.relation_id).toBe('rel-no-chart');
     expect(body.card.relation_nickname).toBe('지수');
+    expect(body.card.today_compat_score ?? null).toBeNull();
+  });
+});
+
+// G2 / Phase 3 C9 — feature flag rollback (NEXT_PUBLIC_TODAY_WITH_RELATION=false)
+describe('GET /api/today (feature flag rollback)', () => {
+  const originalFlag = process.env.NEXT_PUBLIC_TODAY_WITH_RELATION;
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_TODAY_WITH_RELATION = 'false';
+  });
+  afterAll(() => {
+    if (originalFlag === undefined) delete process.env.NEXT_PUBLIC_TODAY_WITH_RELATION;
+    else process.env.NEXT_PUBLIC_TODAY_WITH_RELATION = originalFlag;
+  });
+
+  it('flag=false → pickTodayRelation 미호출 + relation 필드 없음 (기존 단독축 today 그대로)', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    // pickTodayRelation 이 호출되면 안 됨 (flag off)
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-should-not-appear',
+      nickname: '안나옴',
+      mode: '일합',
+    });
+
+    const res = await GET(makeRequest());
+    expect(pickTodayRelation).not.toHaveBeenCalled();
+
+    const body = await res.json();
+    expect(body.card.relation_id ?? null).toBeNull();
+    expect(body.card.relation_nickname ?? null).toBeNull();
     expect(body.card.today_compat_score ?? null).toBeNull();
   });
 });
