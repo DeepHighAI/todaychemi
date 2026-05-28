@@ -1,19 +1,17 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type OpenAI from 'openai';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { TodayLlmInput } from '@/lib/today/builder';
 import { selectLlmModel } from '@/lib/llm/model-router';
+import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 
 // Task 1: 오늘카드 LLM-only timeout. 60s SDK 기본 → 25s 로 단축.
 // (전체 today 응답 시간 ≤ 30s 목표. KASI compute + DB save 가 약 5s 여유.)
 export const TODAY_LLM_TIMEOUT_MS = 25_000;
 
-function loadSystemPrompt(relationPresent: boolean): string {
-  const filename = relationPresent ? 'today_with_relation.md' : 'daily_hap.md';
-  const promptPath = join(process.cwd(), 'prompts', 'system', filename);
-  return readFileSync(promptPath, 'utf-8');
-}
+// Task 2 / ADR-008: 인연 유무로 prompt_name 분기. canary 5% 라우팅은 loadPromptForUser 가 담당.
+const PROMPT_NAME_RELATION = 'today_with_relation';
+const PROMPT_NAME_SINGLE = 'daily_hap';
 
 const FALLBACK_FIELDS = {
   headline: '오늘 메시지를 준비하지 못했어요. 내일 다시 찾아주세요.',
@@ -29,20 +27,25 @@ function textOrFallback(value: string | undefined, fallback: string): string {
 }
 
 // G2 / Phase 3 C5 — 3축 (self + relation + today_date) 인터페이스 + GPT-5 격상.
-// relation_chart 가 null 이면 기존 daily_hap.md 프롬프트 + 단일축 페이로드 (인연 미등록 사용자).
-// relation_chart 존재 시 today_with_relation.md 프롬프트 + relation_chart_core 포함 페이로드.
+// relation_chart 가 null 이면 daily_hap 프롬프트 + 단일축 페이로드 (인연 미등록 사용자).
+// relation_chart 존재 시 today_with_relation 프롬프트 + relation_chart_core 포함 페이로드.
 // PII 0건 — relation 의 nickname/relation_id/email/birth_date 절대 포함 금지.
 //
-// Task 1 (Phase 3 후속):
-//   - LLM-only 25s timeout 명시 (SDK 기본 60s 단축)
-//   - timeout / parse 에러를 LLM_TIMEOUT / LLM_PARSE_FAIL prefix 로 wrap 하여
-//     builder.ts measure catch 와 route.ts classify 가 분류할 수 있게 한다.
+// Task 1 (Phase 3 후속): LLM-only 25s timeout + LLM_TIMEOUT/LLM_PARSE_FAIL prefix wrap.
+// Task 2 (ADR-008): prompt 본문을 DB(prompt_versions)에서 fetch — canary 5% routing 가능.
+//   기존 fs.readFileSync 경로 제거. supabase + userId 인자 추가.
 export async function callDailyHapLlm(
   input: TodayLlmInput,
   openai: OpenAI,
+  supabase: SupabaseClient,
+  userId: string,
 ): Promise<DailyHapCard> {
   const relationPresent = input.relation_chart !== null;
-  const systemPrompt = loadSystemPrompt(relationPresent);
+  const promptName = relationPresent ? PROMPT_NAME_RELATION : PROMPT_NAME_SINGLE;
+
+  // ADR-008 canary 분기 (active 또는 canary). 콘텐츠는 prompt_versions.content 그대로.
+  const promptRow = await loadPromptForUser(supabase, promptName, userId);
+  const systemPrompt = promptRow.content;
 
   // PII 0건 페이로드 (chart_core 만 + today_date)
   const userPayload = relationPresent

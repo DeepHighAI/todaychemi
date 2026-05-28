@@ -3,6 +3,8 @@
 > Mode: 썸합  
 > Model: GPT-5 (tech_stack §3.1)  
 > Version: v0.13 (일일 합사주 target_date 흐름 반영, 2026-05-21)  
+> CanaryVersion: v0.14 (canary routing 인프라 검증 — 본문 동일, Task 2 / ADR-008)
+> CanaryRatio: 0.05
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role

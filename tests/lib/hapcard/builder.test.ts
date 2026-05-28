@@ -5,7 +5,15 @@ vi.mock('@/lib/scoring/index', () => ({
   computeScore: vi.fn(),
 }));
 vi.mock('@/lib/llm/prompt-loader', () => ({
-  loadActivePrompt: vi.fn(),
+  loadPromptForUser: vi.fn(),
+  MODE_TO_PROMPT_NAME: {
+    '일합': 'ilhap',
+    '친구합': 'chinguhap',
+    '돈합': 'donhap',
+    '첫합': 'cheothap',
+    '썸합': 'sseomhap',
+    '오래합': 'oraehap',
+  },
 }));
 vi.mock('@/lib/rag/embeddings', () => ({
   embedQuery: vi.fn(),
@@ -22,7 +30,7 @@ vi.mock('@/lib/rag/grounding-validator', () => ({
 
 import { buildHapcard } from '@/lib/hapcard/builder';
 import { computeScore } from '@/lib/scoring/index';
-import { loadActivePrompt } from '@/lib/llm/prompt-loader';
+import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi } from '@/lib/llm/openai';
@@ -273,7 +281,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   (computeScore as ReturnType<typeof vi.fn>).mockReturnValue(MOCK_SCORE);
-  (loadActivePrompt as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_PROMPT);
+  (loadPromptForUser as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_PROMPT);
   (embedQuery as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_EMBEDDING);
   (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue([]);
   (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_LLM_RESULT);
@@ -352,7 +360,7 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     expect(insertCall.cache_key).toBe(EXPECTED_CACHE_KEY);
   });
 
-  it('prompt_version은 loadActivePrompt 결과의 version 필드', async () => {
+  it('prompt_version은 loadPromptForUser 결과의 version 필드', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));

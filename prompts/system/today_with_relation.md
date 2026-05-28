@@ -3,6 +3,8 @@
 > Mode: 오늘합 (today_with_relation)
 > Model: GPT-5 (G2 / Phase 3 C5 — 인연 종합 해석 깊이 ↑)
 > Version: v0.1 (G2 신규, 2026-05-28)
+> CanaryVersion: v0.2 (canary routing 인프라 검증 — 본문 동일, Task 2 / ADR-008)
+> CanaryRatio: 0.05
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 > 참고: 단일축(인연 미포함) 오늘합은 prompts/system/daily_hap.md 사용.
 

@@ -2,7 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // vi.mock는 최상단에 호이스팅됨 — buildReplay 오케스트레이터 테스트용
 vi.mock('@/lib/llm/prompt-loader', () => ({
-  loadActivePrompt: vi.fn(),
+  loadPromptForUser: vi.fn(),
+  MODE_TO_PROMPT_NAME: {
+    '일합': 'ilhap',
+    '친구합': 'chinguhap',
+    '돈합': 'donhap',
+    '첫합': 'cheothap',
+    '썸합': 'sseomhap',
+    '오래합': 'oraehap',
+  },
 }));
 vi.mock('@/lib/llm/openai', () => ({
   callOpenAi: vi.fn(),
@@ -15,7 +23,7 @@ import {
   buildReplay,
 } from '@/lib/replay/builder';
 import type { LlmPayload } from '@/lib/llm/payload';
-import { loadActivePrompt } from '@/lib/llm/prompt-loader';
+import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { callOpenAi } from '@/lib/llm/openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HapcardResult } from '@/types/hapcard';
@@ -229,7 +237,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (loadActivePrompt as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_PROMPT);
+    (loadPromptForUser as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_PROMPT);
   });
 
   it('classic_citation source_title/chapter → Korean 변환, original → convertHanja 적용', async () => {

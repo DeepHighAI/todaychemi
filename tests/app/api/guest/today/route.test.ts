@@ -96,7 +96,8 @@ describe('POST /api/guest/today', () => {
       }),
       expect.any(String),
     );
-    // C5: callDailyHapLlm 시그니처 = (TodayLlmInput, OpenAI). guest 는 relation_chart 항상 null.
+    // C5: callDailyHapLlm(input, openai, supabase, userId). guest 는 relation_chart=null +
+    // fixed sentinel userId='__guest__' + service-role client (Task 2 / ADR-008).
     expect(callDailyHapLlm).toHaveBeenCalledWith(
       expect.objectContaining({
         self_chart: CHART,
@@ -104,6 +105,8 @@ describe('POST /api/guest/today', () => {
         today_date: expect.any(String),
       }),
       expect.anything(),
+      expect.anything(),
+      '__guest__',
     );
   });
 

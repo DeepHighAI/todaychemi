@@ -11,9 +11,11 @@ const HAPCARD_MODE_NAMES = new Set([
   'ilhap', 'chinguhap', 'donhap', 'cheothap', 'sseomhap', 'oraehap',
 ]);
 
-// 합카드 외 프롬프트 (G2 F4: today_with_relation 등) — content schema 가 다르므로 strict 체크 면제.
+// 합카드 외 프롬프트 (G2 F4: today_with_relation, daily_hap) — content schema 가 다르므로 strict 체크 면제.
+// Task 2 (ADR-008): daily_hap 도 DB 시드 — today/openai.ts 가 DB-backed 로 전환되어 canary 라우팅 가능.
 const OTHER_VALID_NAMES = new Set([
   'today_with_relation',
+  'daily_hap',
 ]);
 
 const VALID_NAMES = new Set([...HAPCARD_MODE_NAMES, ...OTHER_VALID_NAMES]);
@@ -21,6 +23,10 @@ const VALID_NAMES = new Set([...HAPCARD_MODE_NAMES, ...OTHER_VALID_NAMES]);
 export { HAPCARD_MODE_NAMES, OTHER_VALID_NAMES };
 
 const VERSION_RE = /^>\s*Version:\s*(v\d+\.\d+)/m;
+// Task 2 (ADR-008): canary frontmatter — 같은 본문으로 active + canary row 동시 시드.
+//   `> CanaryVersion: v0.14` `> CanaryRatio: 0.05`
+const CANARY_VERSION_RE = /^>\s*CanaryVersion:\s*(v\d+\.\d+)/m;
+const CANARY_RATIO_RE = /^>\s*CanaryRatio:\s*([\d.]+)/m;
 
 export type PromptRow = Database['public']['Tables']['prompt_versions']['Insert'];
 
@@ -59,7 +65,22 @@ export function loadPromptFiles(dir: string): PromptRow[] {
       version: match[1],
       content,
       status: 'active',
+      canary_ratio: 0,
     });
+    // Task 2 (ADR-008): CanaryVersion 헤더가 있으면 같은 본문으로 canary row 추가 시드.
+    // 본문 변경 없는 routing 인프라 검증 모드 — 향후 본문 micro-tweak 시 분리.
+    const canaryVersionMatch = content.match(CANARY_VERSION_RE);
+    if (canaryVersionMatch) {
+      const ratioMatch = content.match(CANARY_RATIO_RE);
+      const canaryRatio = ratioMatch ? Number(ratioMatch[1]) : 0.05;
+      rows.push({
+        prompt_name: name,
+        version: canaryVersionMatch[1],
+        content,
+        status: 'canary',
+        canary_ratio: canaryRatio,
+      });
+    }
   }
   return rows;
 }
@@ -67,13 +88,14 @@ export function loadPromptFiles(dir: string): PromptRow[] {
 // SupabaseClient without Database generic — avoids conditional type inference issue with typed schema.
 export async function runSeed(client: SupabaseClient, rows: PromptRow[]) {
   const names = rows.map((r) => r.prompt_name);
-  // Archive existing active versions before inserting new ones
+  // Archive existing active + canary versions before inserting new ones.
   // (prompt_versions_one_active partial unique index: only 1 active per prompt_name)
+  // Task 2 (ADR-008): canary 도 함께 archive — 새 canary 시드 시 이전 canary 잔존 방지.
   const { error: archiveError } = await client
     .from('prompt_versions')
     .update({ status: 'rolled_back' })
     .in('prompt_name', names)
-    .eq('status', 'active');
+    .in('status', ['active', 'canary']);
   if (archiveError) throw archiveError;
   const { error } = await client
     .from('prompt_versions')

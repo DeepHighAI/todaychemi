@@ -183,7 +183,7 @@ export async function GET(request: Request) {
         return chart;
       },
 
-      callLlm: (input) => callDailyHapLlm(input, openai),
+      callLlm: (input) => callDailyHapLlm(input, openai, supabase, user.id),
 
       // Task 1: 단계별 latency + 실패 phase 캡처. 실패 시 error_events 적재 (best-effort).
       recordTrace: async (trace: TodayTrace) => {

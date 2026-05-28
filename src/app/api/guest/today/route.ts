@@ -44,13 +44,17 @@ export async function POST(request: Request) {
   try {
     const openai = createOpenAiClient();
     // 게스트는 인연 등록 자체가 불가 → relation 경로 미사용 (relation=null 고정).
+    // Task 2 / ADR-008: prompt fetch 용 service-role client + 고정 sentinel userId.
+    // (게스트 세션은 익명이라 deterministic sampling 대상 외 — fixed seed 로 일관 노출.)
+    const promptClient = createServiceRoleClient();
+    const guestUserId = '__guest__';
     const card = await buildDailyHap({
       fetchTodayCache: async () => null,
       fetchYesterdayCache: async () => null,
       fetchUserChart: async () => computeResult.chart_core,
       fetchRelation: async () => null,
       fetchRelationChart: async () => null,
-      callLlm: (input) => callDailyHapLlm(input, openai),
+      callLlm: (input) => callDailyHapLlm(input, openai, promptClient, guestUserId),
       saveCard: async () => undefined,
       today_date: computeResult.chart_core.yunse.iliun.today_date,
     });

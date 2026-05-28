@@ -4,7 +4,7 @@ import type { Mode } from '@/types/mode';
 import type { HapcardResult } from '@/types/hapcard';
 import { withYunseAtDate, type ChartBirthForYunse } from '@/lib/chart/yunse-at-date';
 import { computeScore } from '@/lib/scoring/index';
-import { loadActivePrompt } from '@/lib/llm/prompt-loader';
+import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { deriveCacheKey } from '@/lib/hapcard/cache-key';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import { embedQuery } from '@/lib/rag/embeddings';
@@ -121,8 +121,13 @@ export async function buildHapcard(
   input: BuildHapcardInput,
   deps: BuildHapcardDeps,
 ): Promise<HapcardResult> {
-  // 1. active prompt 로드 (supabaseUserClient — status='active' 단일 행)
-  const prompt = await loadActivePrompt(deps.supabaseUserClient, input.mode);
+  // 1. ADR-008 canary 5% 분산 라우팅 — userId deterministic sampling.
+  //    canary 부재 또는 ratio=0 시 active 로 안전하게 fallback.
+  const prompt = await loadPromptForUser(
+    deps.supabaseUserClient,
+    MODE_TO_PROMPT_NAME[input.mode],
+    input.user_id,
+  );
 
   // 2. cache key 파생 — target_date 포함: 같은 인연/모드도 KST 날짜별 별도 결과
   const cacheKey = deriveCacheKey({

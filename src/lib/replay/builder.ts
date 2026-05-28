@@ -9,7 +9,7 @@ import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import type { LlmPayload } from '@/lib/llm/payload';
 import { selectLlmModel } from '@/lib/llm/model-router';
-import { loadActivePrompt } from '@/lib/llm/prompt-loader';
+import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
 import {
@@ -76,7 +76,12 @@ export async function buildReplay(
 ): Promise<HapcardReplayResult> {
   const { hapcard } = input;
 
-  const prompt = await loadActivePrompt(deps.supabaseUserClient, hapcard.mode);
+  // ADR-008 canary 5% 분산 라우팅 — hapcard.user_id deterministic sampling.
+  const prompt = await loadPromptForUser(
+    deps.supabaseUserClient,
+    MODE_TO_PROMPT_NAME[hapcard.mode],
+    hapcard.user_id,
+  );
 
   const cacheKey = buildReplayCacheKey({
     user_chart_hash: hapcard.user_chart_hash,
