@@ -107,4 +107,70 @@ describe('RelationChip', () => {
     );
     // chip 자체가 미노출 또는 비활성 — 다음 테스트에서 결정
   });
+
+  // Task 3 (393px hero/chip QA) — 닉네임 길이 overflow 방지
+  describe('393px viewport — 닉네임 overflow 방지', () => {
+    it('chip 버튼에 max-w 적용 (긴 닉네임 hero 폭 초과 방지)', () => {
+      renderWithProviders(
+        <RelationChip
+          currentRelationId="rel-1"
+          currentNickname="알렉산드라테일러"
+          relations={relations}
+          onSelect={() => {}}
+        />,
+      );
+      const buttons = screen.getAllByRole('button');
+      const trigger = buttons.find((b) => b.textContent?.includes('알렉산드라테일러'));
+      expect(trigger).toBeDefined();
+      expect(trigger!.className).toMatch(/max-w-\[\d+px\]/);
+    });
+
+    it('chip 내부 텍스트 span 에 truncate + min-w-0 — 길면 줄임표', () => {
+      renderWithProviders(
+        <RelationChip
+          currentRelationId="rel-1"
+          currentNickname="알렉산드라테일러"
+          relations={relations}
+          onSelect={() => {}}
+        />,
+      );
+      const buttons = screen.getAllByRole('button');
+      const trigger = buttons.find((b) => b.textContent?.includes('알렉산드라테일러'));
+      const span = trigger!.querySelector('span');
+      expect(span).not.toBeNull();
+      expect(span!.className).toMatch(/truncate/);
+      expect(span!.className).toMatch(/min-w-0/);
+    });
+
+    it('ChevronDown 아이콘에 shrink-0 — chip 자리 부족 시 보호', () => {
+      renderWithProviders(
+        <RelationChip
+          currentRelationId="rel-1"
+          currentNickname="민지"
+          relations={relations}
+          onSelect={() => {}}
+        />,
+      );
+      const buttons = screen.getAllByRole('button');
+      const trigger = buttons.find((b) => b.textContent?.includes('민지'));
+      const svg = trigger!.querySelector('svg');
+      expect(svg).not.toBeNull();
+      expect(svg!.getAttribute('class') ?? '').toMatch(/shrink-0/);
+    });
+
+    it('whitespace-nowrap 제거 — truncate 가 한 줄 강제 + ellipsis 처리', () => {
+      renderWithProviders(
+        <RelationChip
+          currentRelationId="rel-1"
+          currentNickname="민지"
+          relations={relations}
+          onSelect={() => {}}
+        />,
+      );
+      const buttons = screen.getAllByRole('button');
+      const trigger = buttons.find((b) => b.textContent?.includes('민지'));
+      // whitespace-nowrap 은 chip 자체에 더 이상 적용되지 않음 (truncate 가 대체)
+      expect(trigger!.className).not.toMatch(/whitespace-nowrap/);
+    });
+  });
 });

@@ -70,13 +70,16 @@ export function RelationChip({
         <button
           type="button"
           aria-label={`${t('with_relation.chip_prefix')} ${currentNickname}${t('with_relation.chip_suffix')}`}
-          className="mt-1.5 inline-flex items-center gap-1 bg-white/20 text-white text-[12px] font-semibold rounded-full px-2.5 py-1 whitespace-nowrap active:scale-[0.97] transition-transform"
+          /* Task 3 (393px QA): max-w + truncate 로 긴 닉네임 overflow 방지.
+             393px hero 콘텐츠 폭 321px 안에서 좌측 column(min-w-0) + 우측 delta pill(shrink-0)
+             공유. chip 본인은 200px 까지 — 한국어 8~10자 또는 영문 14~16자 안전. */
+          className="mt-1.5 inline-flex items-center gap-1 max-w-[200px] bg-white/20 text-white text-[12px] font-semibold rounded-full px-2.5 py-1 active:scale-[0.97] transition-transform"
         >
-          <span>
+          <span className="truncate min-w-0">
             {t('with_relation.chip_prefix')} {currentNickname}
             {t('with_relation.chip_suffix')}
           </span>
-          <ChevronDown size={14} aria-hidden />
+          <ChevronDown size={14} aria-hidden className="shrink-0" />
         </button>
       </Drawer.Trigger>
 
