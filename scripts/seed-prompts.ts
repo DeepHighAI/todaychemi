@@ -6,9 +6,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
-const VALID_NAMES = new Set([
+// 6모드 합카드 프롬프트 (v0.13 schema — actions / ohaeng_interpretation / Plain-language 등 strict)
+const HAPCARD_MODE_NAMES = new Set([
   'ilhap', 'chinguhap', 'donhap', 'cheothap', 'sseomhap', 'oraehap',
 ]);
+
+// 합카드 외 프롬프트 (G2 F4: today_with_relation 등) — content schema 가 다르므로 strict 체크 면제.
+const OTHER_VALID_NAMES = new Set([
+  'today_with_relation',
+]);
+
+const VALID_NAMES = new Set([...HAPCARD_MODE_NAMES, ...OTHER_VALID_NAMES]);
+
+export { HAPCARD_MODE_NAMES, OTHER_VALID_NAMES };
 
 const VERSION_RE = /^>\s*Version:\s*(v\d+\.\d+)/m;
 

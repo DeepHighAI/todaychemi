@@ -1,18 +1,16 @@
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
-import { loadPromptFiles, runSeed, type PromptRow } from '../../scripts/seed-prompts';
+import { loadPromptFiles, runSeed, HAPCARD_MODE_NAMES, OTHER_VALID_NAMES, type PromptRow } from '../../scripts/seed-prompts';
 
-const EXPECTED_NAMES = new Set([
-  'ilhap', 'chinguhap', 'donhap', 'cheothap', 'sseomhap', 'oraehap',
-]);
+const EXPECTED_NAMES = new Set([...HAPCARD_MODE_NAMES, ...OTHER_VALID_NAMES]);
 
 describe('loadPromptFiles', () => {
   const dir = join(process.cwd(), 'prompts', 'system');
 
-  it('returns 6 rows from prompts/system', () => {
+  it('returns 7 rows from prompts/system (6 hapcard + 1 today_with_relation)', () => {
     const rows = loadPromptFiles(dir);
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(7);
   });
 
   it('each row has a valid prompt_name', () => {
@@ -22,15 +20,20 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('each row has version v0.13', () => {
+  it('6 hapcard modes have version v0.13; today_with_relation has v0.1', () => {
     const rows = loadPromptFiles(dir);
     for (const row of rows) {
-      expect(row.version, `${row.prompt_name} version`).toBe('v0.13');
+      if (HAPCARD_MODE_NAMES.has(row.prompt_name)) {
+        expect(row.version, `${row.prompt_name} version`).toBe('v0.13');
+      } else if (row.prompt_name === 'today_with_relation') {
+        expect(row.version, `${row.prompt_name} version`).toBe('v0.1');
+      }
     }
   });
 
-  it('each row requires newline-separated main_text and plain-language user-facing fields', () => {
-    const rows = loadPromptFiles(dir);
+  it('hapcard modes only: newline-separated main_text + plain-language fields', () => {
+    const rows = loadPromptFiles(dir).filter((r) => HAPCARD_MODE_NAMES.has(r.prompt_name));
+    expect(rows.length).toBe(6);
     for (const row of rows) {
       expect(row.content, `${row.prompt_name} main_text newline rule`).toContain('JSON 문자열 안에서 `\\n`으로 줄바꿈');
       expect(row.content, `${row.prompt_name} plain-language rule`).toContain('Plain-language v0.12');
