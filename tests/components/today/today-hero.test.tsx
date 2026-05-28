@@ -120,5 +120,23 @@ describe('TodayHero', () => {
       );
       expect(screen.queryByText(/인연 등록.*오늘 사이/)).toBeNull();
     });
+
+    // F2.2: Link 중첩 해제 — chip 자리는 인터랙티브 영역으로 분리되어야 함
+    it('F2.2: 별명 chip은 outer Link(<a>) 안에 중첩되지 않는다', () => {
+      renderWithProviders(
+        <TodayHero
+          card={{
+            ...card,
+            relation_id: 'rel-1',
+            relation_nickname: '민지',
+            today_compat_score: 78,
+          }}
+        />,
+      );
+      // 별명 텍스트가 <a> 자손이면 RelationChip 클릭이 navigate 로 흡수됨
+      const chipText = screen.getByText(/민지/);
+      const closestAnchor = chipText.closest('a');
+      expect(closestAnchor).toBeNull();
+    });
   });
 });

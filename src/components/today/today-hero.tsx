@@ -4,11 +4,14 @@
  * Canvas reference: type-d/screens-interactive.jsx::IHome (Liquid Glass hero section)
  *
  * G2 / Phase 3 C8: 인연 chip + 오늘 합온도 노출.
- *  - relation_nickname 있으면 hero 안에 별명 chip 렌더 (오늘 [민지] 과의 사이)
- *  - today_compat_score 있으면 compat_score 보다 우선 — 매일 변동하는 "오늘 합온도"
- *  - relation 없는 사용자에게는 "인연 등록하고 오늘 사이 보기" CTA 노출
+ * F2.2: outer Link 제거 — chip 위치는 인터랙티브 영역으로 분리.
+ *   - hero 자체는 div (탭 영역 ≠ 단일 navigate)
+ *   - body 텍스트 영역(temperature/headline_reason) 만 Link 로 /feed 이동
+ *   - chip 자리는 chipNode 슬롯 (F2.3 에서 RelationChip 주입)
+ *   - 인연 0건 CTA 는 자체 Link 로 /relations/new 이동
  */
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { convertHanja } from '@/lib/glossary/post-process';
@@ -19,9 +22,11 @@ interface TodayHeroProps {
   card: DailyHapCard;
   score?: number | null;
   deltaVsYesterday?: number | null;
+  /** F2.3 에서 RelationChip 주입 — 미주입 시 정적 텍스트 chip 폴백 */
+  chipNode?: ReactNode;
 }
 
-export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
+export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHeroProps) {
   const t = useTranslations('home');
 
   // G2: today_compat_score 가 합점수보다 우선 (매일 변동성이 본질)
@@ -31,9 +36,8 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
   const hasRelation = Boolean(card.relation_id && card.relation_nickname);
 
   return (
-    <Link
-      href="/feed"
-      className="bg-liquid-hero rounded-[var(--r-xl)] mx-4 p-5 space-y-3 block relative overflow-hidden active:scale-[0.99] transition-transform"
+    <div
+      className="bg-liquid-hero rounded-[var(--r-xl)] mx-4 p-5 space-y-3 relative overflow-hidden"
       aria-label={t('greeting')}
     >
       {/* gloss overlay (matches canvas .liquid::before) */}
@@ -49,31 +53,36 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
             {t('greeting')}
           </p>
 
-          {/* G2: 인연 chip — relation_nickname 있을 때만 */}
-          {hasRelation && (
+          {/* F2.2/F2.3: chipNode (RelationChip) 우선, 없으면 정적 chip 폴백.
+              chipNode 자체가 인터랙티브 button — Link 자손이 아니므로 chip 클릭은
+              navigate 가 아닌 dropdown 트리거가 됨. */}
+          {hasRelation && chipNode && <div className="relative z-[2]">{chipNode}</div>}
+          {hasRelation && !chipNode && (
             <p className="mt-1.5 inline-flex items-center bg-white/20 text-white text-[12px] font-semibold rounded-full px-2.5 py-1 whitespace-nowrap">
               {t('with_relation.chip_prefix')} {card.relation_nickname}
               {t('with_relation.chip_suffix')}
             </p>
           )}
 
-          {hasScore ? (
-            <p className="font-display font-black text-[56px] leading-none tracking-[-0.045em] text-white mt-1.5 tabular-nums">
-              {temperature?.toFixed(1)}
-              <span className="text-[18px] font-bold text-white/85 ml-1 tracking-normal align-baseline">°C</span>
-            </p>
-          ) : (
-            <p className="font-display font-extrabold text-[28px] leading-[1.18] tracking-[-0.025em] text-white mt-2 whitespace-pre-line">
-              {convertHanja(card.headline)}
-            </p>
-          )}
+          {/* score + headline_reason 영역만 /feed 로 이동 (선택적 navigate) */}
+          <Link href="/feed" className="block active:scale-[0.99] transition-transform">
+            {hasScore ? (
+              <p className="font-display font-black text-[56px] leading-none tracking-[-0.045em] text-white mt-1.5 tabular-nums">
+                {temperature?.toFixed(1)}
+                <span className="text-[18px] font-bold text-white/85 ml-1 tracking-normal align-baseline">°C</span>
+              </p>
+            ) : (
+              <p className="font-display font-extrabold text-[28px] leading-[1.18] tracking-[-0.025em] text-white mt-2 whitespace-pre-line">
+                {convertHanja(card.headline)}
+              </p>
+            )}
 
-          {/* G2: 오늘 합온도 라벨 (today_compat_score 있을 때만) */}
-          {typeof card.today_compat_score === 'number' && (
-            <p className="text-[11px] font-semibold text-white/75 mt-1">
-              {t('with_relation.compat_label')}
-            </p>
-          )}
+            {typeof card.today_compat_score === 'number' && (
+              <p className="text-[11px] font-semibold text-white/75 mt-1">
+                {t('with_relation.compat_label')}
+              </p>
+            )}
+          </Link>
         </div>
 
         {typeof deltaVsYesterday === 'number' && deltaVsYesterday !== 0 && (
@@ -83,9 +92,9 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
         )}
       </div>
 
-      <p className="relative z-[1] text-sm text-white/85 leading-[1.45]">
+      <Link href="/feed" className="relative z-[1] block text-sm text-white/85 leading-[1.45]">
         {convertHanja(card.headline_reason)}
-      </p>
+      </Link>
 
       {card.reused_from_yesterday && (
         <span className="relative z-[1] inline-block bg-white/20 text-white text-xs font-medium rounded-full px-3 py-1">
@@ -93,12 +102,15 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
         </span>
       )}
 
-      {/* G2: 인연 0건 사용자용 CTA */}
+      {/* G2: 인연 0건 사용자용 CTA — 자체 Link 로 /relations/new 이동 */}
       {!hasRelation && (
-        <p className="relative z-[1] text-[12px] font-bold text-white/95 underline underline-offset-2">
+        <Link
+          href="/relations/new"
+          className="relative z-[1] inline-block text-[12px] font-bold text-white/95 underline underline-offset-2"
+        >
           {t('empty_relation.cta')}
-        </p>
+        </Link>
       )}
-    </Link>
+    </div>
   );
 }
