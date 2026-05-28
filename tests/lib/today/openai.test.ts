@@ -119,6 +119,19 @@ describe('callDailyHapLlm — model + params (gpt-5)', () => {
     expect(payload).not.toHaveProperty('max_tokens');
   });
 
+  // Regression: ISSUE-001 — bump max_completion_tokens 800 → 2000
+  // Found by /qa on 2026-05-28
+  // Report: .gstack/qa-reports/qa-report-localhost-3000-2026-05-28.md
+  // GPT-5 reasoning + JSON output 합이 800 한도에서 잘림 → LLM_PARSE_FAIL → TEMPLATE fallback.
+  // 800 으로 회귀하면 위 시나리오 재발생.
+  it('max_completion_tokens >= 2000 (ISSUE-001 회귀 방지)', async () => {
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+    await callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID);
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.max_completion_tokens).toBeGreaterThanOrEqual(2000);
+  });
+
   it('temperature 파라미터 없음 (gpt-5 패밀리 미지원)', async () => {
     mockCreate.mockClear();
     const { callDailyHapLlm } = await import('@/lib/today/openai');
