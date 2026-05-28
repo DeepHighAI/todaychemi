@@ -12,13 +12,17 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 
 const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('fetch', mockFetch);
-  vi.mocked(useRouter).mockReturnValue({ push: mockPush } as unknown as ReturnType<typeof useRouter>);
+  vi.mocked(useRouter).mockReturnValue({
+    push: mockPush,
+    replace: mockReplace,
+  } as unknown as ReturnType<typeof useRouter>);
 });
 
 afterEach(() => {
@@ -197,5 +201,44 @@ describe('TodayPage (composition)', () => {
     });
     await renderTodayPage();
     expect(await screen.findByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+  });
+
+  // F2.3: 인연 chip 인터랙티브 와이어링
+  describe('F2.3: RelationChip wiring', () => {
+    const CARD_WITH_RELATION: DailyHapCard = {
+      ...CARD,
+      relation_id: 'rel-current',
+      relation_nickname: '민지',
+      today_compat_score: 75,
+    };
+
+    const RELATIONS = [
+      { relation_id: 'rel-current', nickname: '민지', mode: '일합', created_at: '2026-05-20' },
+      { relation_id: 'rel-other', nickname: '지수', mode: '친구합', created_at: '2026-05-15' },
+    ];
+
+    it('card 에 relation_id 있을 때 RelationChip 마운트 (chip 별명 + chevron 아이콘)', async () => {
+      setupRoutes({
+        today: { ok: true, body: { ok: true, card: CARD_WITH_RELATION } },
+        relations: { ok: true, body: { items: RELATIONS } },
+      });
+      await renderTodayPage();
+      // chip 의 aria-label 로 hero RelationChip 만 정확히 찾음 (recent feed 내 별명과 분리)
+      const chipButton = await screen.findByRole('button', {
+        name: /오늘 민지과의 사이/,
+      });
+      expect(chipButton).toBeInTheDocument();
+    });
+
+    it('card 에 relation_id 없을 때 RelationChip 미마운트', async () => {
+      setupRoutes({
+        today: { ok: true, body: { ok: true, card: CARD } },
+        relations: { ok: true, body: { items: [] } },
+      });
+      await renderTodayPage();
+      await screen.findByText('좋은 에너지가 흐르는 날');
+      // chip 텍스트는 hero 의 별명 chip 패턴(`오늘 ... 과의 사이`)
+      expect(screen.queryByText(/과의 사이/)).toBeNull();
+    });
   });
 });

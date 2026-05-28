@@ -19,6 +19,7 @@ import { Plus, ChevronRight, Lock } from 'lucide-react';
 import { TodayAppBar } from '@/components/today/today-app-bar';
 import { DateLine } from '@/components/today/date-line';
 import { TodayHero } from '@/components/today/today-hero';
+import { RelationChip } from '@/components/today/relation-chip';
 import { AvoidActionCards } from '@/components/today/avoid-action-cards';
 import { WhatifTrigger } from '@/components/today/whatif-trigger';
 import { LoadingState } from '@/components/feedback/LoadingState';
@@ -120,11 +121,26 @@ export default function TodayPageClient() {
         <>
           {chart && <DateLine date={formatKstDate(todayKST())} dayPillar={chart.day_pillar} />}
 
-          {/* canvas hero: 큰 오늘온도 + delta pill */}
+          {/* canvas hero: 큰 오늘온도 + delta pill
+              F2.3: card.relation_id 있으면 RelationChip 주입 → chip 탭으로 인연 전환 가능 */}
           <TodayHero
             card={card}
             score={card.compat_score ?? card.headline_strength ?? null}
             deltaVsYesterday={card.delta_vs_yesterday ?? null}
+            chipNode={
+              card.relation_id && card.relation_nickname ? (
+                <RelationChip
+                  currentRelationId={card.relation_id}
+                  currentNickname={card.relation_nickname}
+                  relations={relations}
+                  onSelect={(relationId) => {
+                    // URL 에 relation_id 쿼리 반영 → today refetch (cache key 차원 포함)
+                    router.replace(`/?relation_id=${encodeURIComponent(relationId)}`);
+                    qc.invalidateQueries({ queryKey: ['today'] });
+                  }}
+                />
+              ) : null
+            }
           />
 
           {/* 빠른 인연 등록 카드 (canvas IHome) */}
