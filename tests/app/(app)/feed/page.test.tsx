@@ -62,7 +62,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     const link = await screen.findByRole('link', { name: /봄달이/ });
-    expect(link).toHaveAttribute('href', `/hapcard/r1?mode=${encodeURIComponent('친구합')}`);
+    expect(link).toHaveAttribute('href', '/feed/r1');
   });
 
   it('renders mode badge label translated for each card', async () => {

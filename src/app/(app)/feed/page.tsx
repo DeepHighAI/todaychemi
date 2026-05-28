@@ -69,7 +69,7 @@ export default function FeedPage() {
   const rest = highlight ? filtered.filter(i => i.relation_id !== highlight.relation_id) : filtered;
 
   const handleRowClick = useCallback((item: FeedItem) => {
-    router.push(`/hapcard/${item.relation_id}?mode=${encodeURIComponent(item.mode)}`);
+    router.push(`/feed/${item.relation_id}`);
   }, [router]);
 
   return (
@@ -119,7 +119,7 @@ export default function FeedPage() {
       {/* 오늘 변화 큼 강조 카드 (mini Liquid Glass) */}
       {highlight && (activeFilter === 'all' || highlight.mode === activeFilter) && (
         <Link
-          href={`/hapcard/${highlight.relation_id}?mode=${encodeURIComponent(highlight.mode)}`}
+          href={`/feed/${highlight.relation_id}`}
           className="block rounded-[var(--r-xl)] p-4 mb-3 relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #0066FF 0%, #6541F2 50%, #9333EA 110%)' }}
         >
