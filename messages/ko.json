@@ -139,6 +139,13 @@
     "next": "다음"
   },
   "relations": {
+    "detail": {
+      "title": "인연 디테일",
+      "flowEmpty": "아직 합흐름 데이터가 없어요",
+      "todayTemp": "오늘 온도",
+      "chart": "본명식",
+      "cta": "합카드 보기"
+    },
     "new": {
       "eyebrow": "인연 사주맵",
       "headline": "인연의 사주를\n입력해주세요",
