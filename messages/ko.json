@@ -460,6 +460,14 @@
       "title": "아직 등록된 인연이 없어요.",
       "body": "동료·이성·가족을 등록하면 오늘의 사이를 볼 수 있어요.",
       "cta": "인연 등록하기"
+    },
+    "with_relation": {
+      "chip_prefix": "오늘",
+      "chip_suffix": "과의 사이",
+      "compat_label": "오늘 합온도"
+    },
+    "empty_relation": {
+      "cta": "인연 등록하고 오늘 사이 보기"
     }
   },
   "me": {

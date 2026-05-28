@@ -3,10 +3,10 @@
 /* TodayHero — Liquid Glass hero with score signature
  * Canvas reference: type-d/screens-interactive.jsx::IHome (Liquid Glass hero section)
  *
- * Improvements over original:
- *  - 56px score number (vs. text-only headline)
- *  - "+N vs 어제" delta pill
- *  - Tap → /hapcard or /feed
+ * G2 / Phase 3 C8: 인연 chip + 오늘 합온도 노출.
+ *  - relation_nickname 있으면 hero 안에 별명 chip 렌더 (오늘 [민지] 과의 사이)
+ *  - today_compat_score 있으면 compat_score 보다 우선 — 매일 변동하는 "오늘 합온도"
+ *  - relation 없는 사용자에게는 "인연 등록하고 오늘 사이 보기" CTA 노출
  */
 
 import Link from 'next/link';
@@ -23,8 +23,12 @@ interface TodayHeroProps {
 
 export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
   const t = useTranslations('home');
-  const hasScore = typeof score === 'number';
-  const temperature = hasScore ? scoreToTemperature(score) : null;
+
+  // G2: today_compat_score 가 합점수보다 우선 (매일 변동성이 본질)
+  const effectiveScore = card.today_compat_score ?? score ?? null;
+  const hasScore = typeof effectiveScore === 'number';
+  const temperature = hasScore ? scoreToTemperature(effectiveScore) : null;
+  const hasRelation = Boolean(card.relation_id && card.relation_nickname);
 
   return (
     <Link
@@ -44,6 +48,15 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
           <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
             {t('greeting')}
           </p>
+
+          {/* G2: 인연 chip — relation_nickname 있을 때만 */}
+          {hasRelation && (
+            <p className="mt-1.5 inline-flex items-center bg-white/20 text-white text-[12px] font-semibold rounded-full px-2.5 py-1 whitespace-nowrap">
+              {t('with_relation.chip_prefix')} {card.relation_nickname}
+              {t('with_relation.chip_suffix')}
+            </p>
+          )}
+
           {hasScore ? (
             <p className="font-display font-black text-[56px] leading-none tracking-[-0.045em] text-white mt-1.5 tabular-nums">
               {temperature?.toFixed(1)}
@@ -52,6 +65,13 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
           ) : (
             <p className="font-display font-extrabold text-[28px] leading-[1.18] tracking-[-0.025em] text-white mt-2 whitespace-pre-line">
               {convertHanja(card.headline)}
+            </p>
+          )}
+
+          {/* G2: 오늘 합온도 라벨 (today_compat_score 있을 때만) */}
+          {typeof card.today_compat_score === 'number' && (
+            <p className="text-[11px] font-semibold text-white/75 mt-1">
+              {t('with_relation.compat_label')}
             </p>
           )}
         </div>
@@ -71,6 +91,13 @@ export function TodayHero({ card, score, deltaVsYesterday }: TodayHeroProps) {
         <span className="relative z-[1] inline-block bg-white/20 text-white text-xs font-medium rounded-full px-3 py-1">
           {t('reused_label')}
         </span>
+      )}
+
+      {/* G2: 인연 0건 사용자용 CTA */}
+      {!hasRelation && (
+        <p className="relative z-[1] text-[12px] font-bold text-white/95 underline underline-offset-2">
+          {t('empty_relation.cta')}
+        </p>
       )}
     </Link>
   );

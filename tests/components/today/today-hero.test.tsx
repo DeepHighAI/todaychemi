@@ -59,4 +59,66 @@ describe('TodayHero', () => {
     expect(screen.getByText(/▲ \+0\.8°C vs 어제/)).toBeInTheDocument();
     expect(screen.queryByText('/100')).toBeNull();
   });
+
+  // G2 / Phase 3 C8 — 인연 chip + 오늘 합온도 노출
+  describe('G2 — 인연 종합 (relation_id + relation_nickname + today_compat_score)', () => {
+    it('relation_nickname 있으면 hero 안에 별명 chip 렌더', () => {
+      renderWithProviders(
+        <TodayHero
+          card={{
+            ...card,
+            relation_id: 'rel-1',
+            relation_nickname: '민지',
+            today_compat_score: 78,
+          }}
+        />,
+      );
+      // chip 안에 별명 노출
+      expect(screen.getByText(/민지/)).toBeInTheDocument();
+    });
+
+    it('today_compat_score 있으면 그 점수를 오늘온도로 사용 (compat_score보다 우선)', () => {
+      renderWithProviders(
+        <TodayHero
+          card={{
+            ...card,
+            relation_id: 'rel-1',
+            relation_nickname: '민지',
+            today_compat_score: 78,
+          }}
+          score={20}
+        />,
+      );
+      // today_compat_score=78 → 37.0 + (78-50)/20 = 38.4°C
+      expect(screen.getByText('38.4')).toBeInTheDocument();
+      // score=20 → 37.0 + (20-50)/20 = 35.5°C (clamp min). 미사용 확인.
+      expect(screen.queryByText('35.5')).toBeNull();
+    });
+
+    it('relation_id 없으면 chip 미렌더', () => {
+      renderWithProviders(<TodayHero card={card} />);
+      // 일반 hero — 별명 자리에 별명 없음
+      expect(screen.queryByText('민지')).toBeNull();
+    });
+
+    it('relation_id 없을 때 "인연 등록하고 오늘 사이 보기" CTA 노출 (인연 0건 사용자 유도)', () => {
+      renderWithProviders(<TodayHero card={card} />);
+      // i18n key home.empty_relation.cta 노출
+      expect(screen.getByText(/인연 등록.*오늘 사이/)).toBeInTheDocument();
+    });
+
+    it('relation_id 있을 때 "인연 등록하고 오늘 사이 보기" CTA 미노출', () => {
+      renderWithProviders(
+        <TodayHero
+          card={{
+            ...card,
+            relation_id: 'rel-1',
+            relation_nickname: '민지',
+            today_compat_score: 78,
+          }}
+        />,
+      );
+      expect(screen.queryByText(/인연 등록.*오늘 사이/)).toBeNull();
+    });
+  });
 });
