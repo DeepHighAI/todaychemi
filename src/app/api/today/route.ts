@@ -156,6 +156,8 @@ export async function GET(request: Request) {
           model_id: modelId,
         });
 
+        // F1.2: 신규 3컬럼(primary_relation_id, relation_nickname, today_compat_score)
+        // 영속화. card 의 applyRelationMeta 적용 후 값 사용.
         await supabase.from('daily_haps').upsert(
           {
             user_id: user.id,
@@ -168,6 +170,10 @@ export async function GET(request: Request) {
             favorable_action_reason: c.favorable_action_reason,
             source_packet_hash: hash,
             reused_from_yesterday: c.reused_from_yesterday,
+            primary_relation_id: c.relation_id ?? null,
+            relation_nickname: c.relation_nickname ?? null,
+            today_compat_score: c.today_compat_score ?? null,
+            llm_model: modelId,
           },
           { onConflict: 'user_id,target_date' },
         );

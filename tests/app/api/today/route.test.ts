@@ -51,6 +51,9 @@ const REL_CHART: ChartCore = {
   day_master_element: '금',
 };
 
+// F1.2: 캡처 가능한 단일 upsert mock — 여러 from() 호출에서도 동일 인스턴스
+const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
 function makeClient(userId: string | null = 'user-001') {
   return {
     auth: {
@@ -64,7 +67,7 @@ function makeClient(userId: string | null = 'user-001') {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-      upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
+      upsert: upsertMock,
     })),
   };
 }
@@ -75,6 +78,7 @@ function makeRequest(url = 'http://localhost/api/today'): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  upsertMock.mockClear();
   vi.mocked(buildDailyHap).mockResolvedValue(CARD);
   vi.mocked(pickTodayRelation).mockResolvedValue(null);
   vi.mocked(fetchLatestUserChartForVersion).mockResolvedValue({
@@ -217,5 +221,85 @@ describe('GET /api/today (feature flag rollback)', () => {
     expect(body.card.relation_id ?? null).toBeNull();
     expect(body.card.relation_nickname ?? null).toBeNull();
     expect(body.card.today_compat_score ?? null).toBeNull();
+  });
+});
+
+// G2 / Phase 3 F1.2 — saveCard 신규 컬럼 영속화
+describe('GET /api/today (F1.2 saveCard 신규 컬럼 영속화)', () => {
+  it('relation 존재 시 → upsert payload에 primary_relation_id, relation_nickname, today_compat_score 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-abc',
+      nickname: '민지',
+      mode: '일합',
+    });
+
+    // builder 가 실제로 saveCard 를 호출하도록 mockImplementation 으로 차단해제
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      // saveCard 가 받는 card 는 applyRelationMeta 결과 — 3 신규 필드 포함
+      const finalCard = {
+        ...CARD,
+        relation_id: 'rel-abc',
+        relation_nickname: '민지',
+        today_compat_score: 75,
+      };
+      await deps.saveCard(finalCard);
+      return finalCard;
+    });
+
+    await GET(makeRequest());
+
+    // upsert 호출 args 검증 — daily_haps.upsert 단일 호출 기대
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const payload = upsertMock.mock.calls[0][0];
+    expect(payload.primary_relation_id).toBe('rel-abc');
+    expect(payload.relation_nickname).toBe('민지');
+    expect(payload.today_compat_score).toBe(75);
+  });
+
+  it('relation 미존재(인연 0건) → upsert payload의 신규 3컬럼 모두 null', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue(null);
+
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      // 인연 미존재 시 applyRelationMeta 가 신규 필드 미주입 (undefined)
+      await deps.saveCard({ ...CARD });
+      return CARD;
+    });
+
+    await GET(makeRequest());
+
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const payload = upsertMock.mock.calls[0][0];
+    expect(payload.primary_relation_id ?? null).toBeNull();
+    expect(payload.relation_nickname ?? null).toBeNull();
+    expect(payload.today_compat_score ?? null).toBeNull();
+  });
+
+  it('relation 존재 + today_compat_score=null (chart 미존재) → score만 null, id/nickname은 채워짐', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-no-chart',
+      nickname: '지수',
+      mode: '친구합',
+    });
+
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      const finalCard = {
+        ...CARD,
+        relation_id: 'rel-no-chart',
+        relation_nickname: '지수',
+        today_compat_score: null,
+      };
+      await deps.saveCard(finalCard);
+      return finalCard;
+    });
+
+    await GET(makeRequest());
+
+    const payload = upsertMock.mock.calls[0][0];
+    expect(payload.primary_relation_id).toBe('rel-no-chart');
+    expect(payload.relation_nickname).toBe('지수');
+    expect(payload.today_compat_score).toBeNull();
   });
 });
