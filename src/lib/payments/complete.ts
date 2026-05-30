@@ -25,6 +25,11 @@ export interface PaymentConfirmResult {
   payment: PaymentRow;
 }
 
+type PaymentProblemStatus = 'failed' | 'tampered' | 'invalid';
+
+const FAILURE_CODE_MAX_LENGTH = 120;
+const FAILURE_MESSAGE_MAX_LENGTH = 500;
+
 function assertPendingOrder(payment: PaymentRow | null): asserts payment is PaymentRow {
   if (!payment) {
     throw new PaymentFlowError('PAYMENT_NOT_FOUND', '결제 주문을 찾을 수 없습니다.', 404);
@@ -62,14 +67,39 @@ export async function confirmPaymentForUser(input: {
     return { status: 'already_confirmed', balance_after: null, payment };
   }
 
+  if (!['pending', 'failed'].includes(payment.status)) {
+    throw new PaymentFlowError('PAYMENT_NOT_CONFIRMABLE', '확정할 수 없는 결제 상태입니다.', 409);
+  }
+
   const product = payment.product_id ? getTossProduct(payment.product_id) : null;
   if (!product) {
+    await markPaymentInvalidForUser({
+      userId: input.userId,
+      orderId: input.orderId,
+      code: 'PRODUCT_NOT_FOUND',
+      message: '상품 정보를 찾을 수 없습니다.',
+      serviceClient: service,
+    });
     throw new PaymentFlowError('PRODUCT_NOT_FOUND', '상품 정보를 찾을 수 없습니다.', 400);
   }
   if (payment.amount_krw !== product.amount_krw || payment.token_amount !== product.tokens) {
+    await markPaymentInvalidForUser({
+      userId: input.userId,
+      orderId: input.orderId,
+      code: 'PAYMENT_PRODUCT_MISMATCH',
+      message: '주문 금액이 상품 정보와 다릅니다.',
+      serviceClient: service,
+    });
     throw new PaymentFlowError('PAYMENT_PRODUCT_MISMATCH', '주문 금액이 상품 정보와 다릅니다.', 400);
   }
   if (input.amount !== payment.amount_krw) {
+    await markPaymentTamperedForUser({
+      userId: input.userId,
+      orderId: input.orderId,
+      code: 'PAYMENT_AMOUNT_MISMATCH',
+      message: '결제 금액이 주문과 다릅니다.',
+      serviceClient: service,
+    });
     throw new PaymentFlowError('PAYMENT_AMOUNT_MISMATCH', '결제 금액이 주문과 다릅니다.', 400);
   }
 
@@ -85,6 +115,13 @@ export async function confirmPaymentForUser(input: {
     toss.paymentKey !== input.paymentKey ||
     toss.totalAmount !== payment.amount_krw
   ) {
+    await markPaymentInvalidForUser({
+      userId: input.userId,
+      orderId: input.orderId,
+      code: 'TOSS_CONFIRM_MISMATCH',
+      message: '토스 승인 결과가 주문과 다릅니다.',
+      serviceClient: service,
+    });
     throw new PaymentFlowError('TOSS_CONFIRM_MISMATCH', '토스 승인 결과가 주문과 다릅니다.', 400);
   }
 
@@ -138,23 +175,56 @@ export async function markPaymentFailedForUser(input: {
   message: string;
   serviceClient?: SupabaseClient<Database>;
 }): Promise<void> {
+  return markPaymentProblemForUser({ ...input, status: 'failed', fromStatuses: ['pending'] });
+}
+
+export async function markPaymentTamperedForUser(input: {
+  userId: string;
+  orderId: string;
+  code: string;
+  message: string;
+  serviceClient?: SupabaseClient<Database>;
+}): Promise<void> {
+  return markPaymentProblemForUser({ ...input, status: 'tampered', fromStatuses: ['pending', 'failed'] });
+}
+
+export async function markPaymentInvalidForUser(input: {
+  userId: string;
+  orderId: string;
+  code: string;
+  message: string;
+  serviceClient?: SupabaseClient<Database>;
+}): Promise<void> {
+  return markPaymentProblemForUser({ ...input, status: 'invalid', fromStatuses: ['pending', 'failed'] });
+}
+
+async function markPaymentProblemForUser(input: {
+  userId: string;
+  orderId: string;
+  code: string;
+  message: string;
+  status: PaymentProblemStatus;
+  fromStatuses: string[];
+  serviceClient?: SupabaseClient<Database>;
+}): Promise<void> {
   const service = input.serviceClient ?? createServiceRoleClient();
   const { error } = await service
     .from('payments')
     .update({
-      status: 'failed',
-      failure_code: input.code.slice(0, 120),
-      failure_message: input.message.slice(0, 500),
+      status: input.status,
+      failure_code: input.code.slice(0, FAILURE_CODE_MAX_LENGTH),
+      failure_message: input.message.slice(0, FAILURE_MESSAGE_MAX_LENGTH),
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', input.userId)
     .eq('toss_order_id', input.orderId)
-    .eq('status', 'pending');
+    .in('status', input.fromStatuses);
 
   if (error) {
-    console.error('payment_fail_mark_failed', {
+    console.error('payment_mark_problem_failed', {
       user_id: input.userId,
       order_id: input.orderId,
+      status: input.status,
       error: error.message,
     });
   }

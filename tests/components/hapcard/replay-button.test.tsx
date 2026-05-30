@@ -79,7 +79,7 @@ describe('HapcardReplayButton — mutation success', () => {
 });
 
 describe('HapcardReplayButton — error paths', () => {
-  it('INSUFFICIENT_TOKENS(402) → 안내 메시지 + /me 링크, dialog 유지', async () => {
+  it('INSUFFICIENT_TOKENS(402) → 안내 메시지 + /payments/charge 링크, dialog 유지', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
       status: 402,
@@ -94,7 +94,7 @@ describe('HapcardReplayButton — error paths', () => {
     expect(
       await screen.findByText('토큰이 부족합니다. 충전 후 다시 시도해 주세요.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '충전하러 가기' })).toHaveAttribute('href', '/me');
+    expect(screen.getByRole('link', { name: '충전하러 가기' })).toHaveAttribute('href', '/payments/charge');
     expect(screen.getByText('그럴리 없어! 다시 볼까요?')).toBeInTheDocument();
   });
 

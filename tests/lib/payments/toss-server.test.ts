@@ -12,7 +12,7 @@ const TOSS_PAYMENT = {
 };
 
 beforeEach(() => {
-  vi.stubEnv('TOSS_PAYMENTS_SECRET_KEY', 'test_sk_secret');
+  vi.stubEnv('TOSS_SECRET_KEY', 'test_sk_secret');
 });
 
 afterEach(() => {

@@ -31,8 +31,8 @@
 | `NEXT_PUBLIC_SUPABASE_URL` | server+client | Supabase 프로젝트 URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | server+client | Supabase anon key (RLS 적용) |
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | RLS 우회, `createServiceClient` 전용 |
-| `TOSS_PAYMENTS_CLIENT_KEY` | server+client 전달 | TossPayments 위젯 클라이언트 키. 서버 API 응답으로만 클라이언트에 전달 |
-| `TOSS_PAYMENTS_SECRET_KEY` | server only | TossPayments confirm/조회 API |
+| `TOSS_CLIENT_KEY` | server+client 전달 | TossPayments 위젯 클라이언트 키. 서버 API 응답으로만 클라이언트에 전달 |
+| `TOSS_SECRET_KEY` | server only | TossPayments confirm/조회 API |
 | `CSRF_SECRET` | server only | HMAC 서명 키 (32자 이상 랜덤) |
 | `ADMIN_SECRET_KEY` | server | 관리자 수동 토큰 지급 |
 
@@ -526,10 +526,10 @@ export const TOSS_PRODUCTS: Record<string, TossProduct> = {
 
 ```
 [클라이언트]
-purchase-sheet → router.push(`/${locale}/payment/checkout?productId=${productId}`)
+purchase CTA → router.push(`/payments/charge`)
 
-checkout/page.tsx:
-  orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+payments/charge:
+  POST /api/payments/init 로 서버가 orderId/customerKey/amount/token_amount 저장
   widgets.setAmount({ currency: 'KRW', value: product.amount })
   widgets.requestPayment({ orderId, orderName, successUrl, failUrl })
     └─ Toss 인증 완료 → redirect to complete?paymentKey=...&orderId=...
@@ -606,7 +606,7 @@ await supabase.from('payment_events').insert({
 **원본**: `src/lib/payments/toss-server.ts`
 
 ```typescript
-// Auth 헤더: Basic base64("${TOSS_PAYMENTS_SECRET_KEY}:")
+// Auth 헤더: Basic base64("${TOSS_SECRET_KEY}:")
 export async function confirmPayment(
   paymentKey: string, orderId: string, amount: number
 ): Promise<{ success: true; data: TossPaymentConfirmResponse } | { success: false; error: TossPaymentError }> {
@@ -1093,8 +1093,8 @@ trackEvent('amulet_modal_close');
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | ✅ |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` | ✅ |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | ✅ |
-| `TOSS_PAYMENTS_CLIENT_KEY` | `test_ck_...` | ✅ (웹 결제) |
-| `TOSS_PAYMENTS_SECRET_KEY` | `test_sk_...` | ✅ (웹 결제) |
+| `TOSS_CLIENT_KEY` | `test_ck_...` | ✅ (웹 결제) |
+| `TOSS_SECRET_KEY` | `test_sk_...` | ✅ (웹 결제) |
 | `CSRF_SECRET` | `<32자 이상 랜덤>` | ✅ |
 | `ADMIN_SECRET_KEY` | `<랜덤>` | 선택 (관리자 API) |
 

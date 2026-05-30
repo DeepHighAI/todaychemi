@@ -53,6 +53,7 @@ export interface PaymentInitResponse {
     token_amount: number;
     order_name: string;
     status: string;
+    customer_key: string;
   };
 }
 

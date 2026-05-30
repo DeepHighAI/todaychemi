@@ -18,8 +18,9 @@ pnpm add @tosspayments/tosspayments-sdk
 환경변수:
 
 ```bash
-TOSS_PAYMENTS_CLIENT_KEY=test_ck_...    # 클라이언트 (NEXT_PUBLIC 아님 — 서버에서 widget 초기화)
-TOSS_PAYMENTS_SECRET_KEY=test_sk_...    # 서버 전용 (결제 승인/취소)
+TOSS_CLIENT_KEY=test_ck_...             # 클라이언트 key (서버 API가 checkout payload로 전달)
+TOSS_SECRET_KEY=test_sk_...             # 서버 전용 (결제 승인/취소)
+# 임시 호환 alias: TOSS_PAYMENTS_CLIENT_KEY / TOSS_PAYMENTS_SECRET_KEY
 ```
 
 참조 기준: TossPayments V2 [LLMs Guide](https://docs.tosspayments.com/guides/v2/get-started/llms-guide), [LLM Quick Reference](https://docs.tosspayments.com/guides/v2/get-started/llms-quick-reference), [llms.txt](https://docs.tosspayments.com/llms.txt).
@@ -40,8 +41,8 @@ interface PaymentWidgetProps {
   orderId: string;
   orderName: string;        // 예: "부적 55개"
   amount: number;           // 원 단위 (KRW)
-  customerKey: string;      // user_id (익명화된 식별자)
-  clientKey: string;        // TOSS_PAYMENTS_CLIENT_KEY를 서버 API로 전달
+  customerKey: string;      // 서버가 생성·저장한 UUID 기반 Toss customerKey
+  clientKey: string;        // TOSS_CLIENT_KEY를 서버 API로 전달
 }
 
 export function PaymentWidget({ orderId, orderName, amount, customerKey, clientKey }: PaymentWidgetProps) {
@@ -68,8 +69,8 @@ export function PaymentWidget({ orderId, orderName, amount, customerKey, clientK
       await widgetRef.current.requestPayment({
         orderId,
         orderName,
-        successUrl: `${window.location.origin}/payment/success`,
-        failUrl: `${window.location.origin}/payment/fail`,
+        successUrl: `${window.location.origin}/api/payments/confirm`,
+        failUrl: `${window.location.origin}/payments/fail`,
       });
     } catch {
       // UI에서 재시도 안내
@@ -86,28 +87,21 @@ export function PaymentWidget({ orderId, orderName, amount, customerKey, clientK
 }
 ```
 
-### 2.2 결제 성공 페이지 (app/payment/success/page.tsx)
+### 2.2 결제 승인 Route Handler (app/api/payments/confirm/route.ts)
 
 ```typescript
-import { redirect } from 'next/navigation';
 import { confirmPaymentForUser } from '@/lib/payments/complete';
 
-interface SuccessPageProps {
-  searchParams: {
-    paymentKey: string;
-    orderId: string;
-    amount: string;
-  };
-}
-
-export default async function PaymentSuccessPage({ searchParams }: SuccessPageProps) {
-  const { paymentKey, orderId, amount } = searchParams;
+export async function GET(request: NextRequest) {
+  const paymentKey = request.nextUrl.searchParams.get('paymentKey');
+  const orderId = request.nextUrl.searchParams.get('orderId');
+  const amount = Number(request.nextUrl.searchParams.get('amount'));
 
   // amount는 successUrl 값 그대로 신뢰하지 않는다.
   // confirmPaymentForUser가 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm을 호출한다.
   await confirmPaymentForUser({ userId, paymentKey, orderId, amount: Number(amount) });
 
-  redirect('/me?payment=success');
+  return NextResponse.redirect(new URL('/payments/success', request.url));
 }
 ```
 
@@ -116,11 +110,13 @@ export default async function PaymentSuccessPage({ searchParams }: SuccessPagePr
 | 라우트 | 역할 |
 |---|---|
 | `GET /api/me/wallet` | 보유 부적, 최근 원장, 최근 사용량 조회 |
-| `POST /api/payments/init` | 서버 상품 카탈로그 기준 pending 주문 생성 |
-| `GET /api/payments/order?orderId=` | checkout 페이지가 본인 주문 + Toss client key 조회 |
-| `/payment/checkout` | V2 widget 렌더링 및 `requestPayment` |
-| `/payment/success` | Toss confirm API 호출 후 `confirm_token_purchase` RPC 실행 |
-| `/payment/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
+| `POST /api/payments/init` | 서버 상품 카탈로그 기준 `orderId`, `customerKey`, 금액, 상품, 지급 부적 수를 저장 |
+| `GET /api/payments/order?orderId=` | 본인 주문 + Toss client key + 저장된 customerKey 조회 |
+| `GET /payments/charge` | V2 Payment Widget 렌더링 및 `requestPayment` |
+| `GET /api/payments/confirm?paymentKey=&orderId=&amount=` | 서버 저장 금액 검증 후 Toss confirm + `confirm_token_purchase` RPC 실행 |
+| `GET /payments/success` | 사용자 성공 화면 |
+| `GET /payments/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
+| `/payment/*` | legacy compat redirect |
 
 상품 카탈로그: `tokens_10` 10부적/1,000원, `tokens_50` 55부적/4,500원, `tokens_100` 120부적/8,000원.
 
@@ -128,7 +124,7 @@ export default async function PaymentSuccessPage({ searchParams }: SuccessPagePr
 
 ## 3. Webhook Handler
 
-이번 v1 지갑 구현의 1차 진실 경로는 `/payment/success` redirect confirm이다. `POST /api/payments/webhook`은 환불·취소 자동화 단계에서 활성화한다.
+이번 MVP 지갑 구현의 1차 진실 경로는 `/api/payments/confirm` redirect confirm이다. `POST /api/payments/webhook`은 가상계좌·환불·취소 자동화 단계에서 활성화한다.
 
 `POST /api/payments/webhook`
 
@@ -177,7 +173,7 @@ async function handlePaymentWebhook(data: {
 
 ---
 
-## 4. 환불 API
+## 4. 환불 API (MVP 제외, 후속)
 
 ```typescript
 // lib/toss/refund.ts
@@ -188,7 +184,7 @@ interface RefundParams {
 }
 
 async function refundPayment({ paymentKey, cancelReason, cancelAmount }: RefundParams) {
-  const credentials = Buffer.from(`${process.env.TOSS_PAYMENTS_SECRET_KEY}:`).toString('base64');
+  const credentials = Buffer.from(`${process.env.TOSS_SECRET_KEY}:`).toString('base64');
 
   const res = await fetch(`https://api.tosspayments.com/v1/payments/${paymentKey}/cancel`, {
     method: 'POST',
@@ -223,11 +219,12 @@ CREATE TABLE payments (
   payment_id       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          uuid NOT NULL REFERENCES public.users(user_id),
   toss_order_id    text UNIQUE NOT NULL,     -- Toss orderId (멱등성 키)
+  toss_customer_key text,                     -- 서버가 생성·저장한 Toss customerKey
   toss_payment_key text UNIQUE,              -- 승인 전 NULL 가능
   product_id       text,
   amount_krw       integer NOT NULL,         -- KRW 단위
   token_amount     integer NOT NULL,         -- 충전 부적 수
-  status           text NOT NULL,            -- 'pending' | 'confirmed' | 'failed' | 'refunded'
+  status           text NOT NULL,            -- 'pending' | 'confirmed' | 'failed' | 'refunded' | 'tampered' | 'invalid'
   failure_code     text,
   failure_message  text,
   receipt_url      text,
@@ -249,6 +246,7 @@ CREATE TABLE token_ledger (
 
 -- 결제 확정은 confirm_token_purchase RPC로만 처리한다.
 -- 중복 success redirect는 toss_order_id/status 기준으로 멱등 처리한다.
+-- token_ledger reason='purchase' + reference_id=payment_id는 partial unique index로 중복 지급을 방어한다.
 ```
 
 무료 부적 보상은 결제 상품이 아니며 모두 `reason='bonus'`로 기록한다. `award_free_talisman_session_rewards`는 KST 일일 첫 인증 앱 진입 `+1`, 정책 기준일 이후 신규 온보딩 완료 사용자 가입 `+5`를 멱등 지급한다. 공유 보상은 Kakao webhook으로 서버 검증된 공유만 `award_hapcard_share_reward`가 `delta=+1`로 기록하며 제한은 사용자+hapcard당 1회, KST 기준 하루 최대 5회다.
@@ -271,8 +269,8 @@ CREATE TABLE token_ledger (
 
 ```bash
 # .env.local sandbox 설정
-TOSS_PAYMENTS_CLIENT_KEY=test_ck_...
-TOSS_PAYMENTS_SECRET_KEY=test_sk_...
+TOSS_CLIENT_KEY=test_ck_...
+TOSS_SECRET_KEY=test_sk_...
 ```
 
 ### Webhook 로컬 테스트
@@ -294,7 +292,7 @@ npx ngrok http 3000
 - [ ] 환불·취소 자동화 활성화 시 Toss 대시보드 → webhook URL 프로덕션 URL로 변경
 - [ ] Toss 대시보드 → 사업자 정보 등록 완료
 - [x] 환불 정책 약관 페이지 등록 (`/legal/refund`, `/terms/refund` alias)
-- [ ] 결제 금액 × 수량 조합 서버 검증 로직 확인 (클라이언트 조작 방지)
+- [ ] `/api/payments/confirm` 서버 저장 금액 검증 확인 (클라이언트 조작 방지)
 - [ ] payments 테이블 RLS 정책 확인 (user_id 기준)
 - [ ] `/cso` 스킬 보안 감사 통과
 - [ ] `/qa` 스킬 결제 플로우 E2E 통과

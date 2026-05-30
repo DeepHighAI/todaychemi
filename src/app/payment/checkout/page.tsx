@@ -1,19 +1,16 @@
-import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 
-import { LoadingState } from '@/components/feedback/LoadingState';
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-import CheckoutClient from './checkout-client';
+export default async function PaymentCheckoutPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const orderId = readParam(params.orderId);
+  redirect(orderId ? `/payments/charge?orderId=${encodeURIComponent(orderId)}` : '/payments/charge');
+}
 
-export default function PaymentCheckoutPage() {
-  return (
-    <Suspense
-      fallback={(
-        <main className="min-h-screen bg-background px-4 py-6">
-          <LoadingState />
-        </main>
-      )}
-    >
-      <CheckoutClient />
-    </Suspense>
-  );
+function readParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
 }

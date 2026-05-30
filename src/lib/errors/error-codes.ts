@@ -45,5 +45,5 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
 
 // 특정 에러 코드에 대한 CTA 링크 정의 (현재: INSUFFICIENT_TOKENS → 충전 페이지)
 export const ERROR_CTA: Partial<Record<ErrorCode, { label: string; href: string }>> = {
-  INSUFFICIENT_TOKENS: { label: '충전하러 가기', href: '/me' },
+  INSUFFICIENT_TOKENS: { label: '충전하러 가기', href: '/payments/charge' },
 };

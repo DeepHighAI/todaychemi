@@ -10,7 +10,6 @@ import { MeEditRow } from '@/components/me/me-edit-row';
 import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { TalismanCard } from '@/components/me/talisman-card';
 import { InfoCard } from '@/components/me/info-card';
-import { ChargeSheet } from '@/components/dialogs/charge-sheet';
 import { AboutDialog } from '@/components/dialogs/about-dialog';
 import { LangSheet } from '@/components/dialogs/lang-sheet';
 import {
@@ -29,9 +28,8 @@ import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { EmptyState } from '@/components/feedback/EmptyState';
-import { listTossProducts } from '@/lib/payments/products';
 import type { ChartCore } from '@/types/chart';
-import type { PaymentInitResponse, WalletProduct, WalletResponse } from '@/types/wallet';
+import type { WalletResponse } from '@/types/wallet';
 
 async function fetchMyChart(): Promise<ChartCore | null> {
   const res = await fetch('/api/me/chart');
@@ -46,23 +44,11 @@ async function fetchWallet(): Promise<WalletResponse> {
   return (await res.json()) as WalletResponse;
 }
 
-async function initPayment(productId: WalletProduct['product_id']): Promise<PaymentInitResponse> {
-  const res = await fetch('/api/payments/init', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ product_id: productId }),
-  });
-  if (!res.ok) throw new Error('PAYMENT_INIT_FAILED');
-  return (await res.json()) as PaymentInitResponse;
-}
-
 async function requestAccountDeletion(): Promise<{ deletion_requested_at: string }> {
   const res = await fetch('/api/me/delete-request', { method: 'POST' });
   if (!res.ok) throw new Error('ACCOUNT_DELETE_REQUEST_FAILED');
   return (await res.json()) as { deletion_requested_at: string };
 }
-
-const PRODUCTS: WalletProduct[] = listTossProducts();
 
 export default function MePage() {
   const t = useTranslations('me');
@@ -78,29 +64,12 @@ export default function MePage() {
     refetchOnMount: 'always',
   });
   const [editOpen, setEditOpen] = useState(false);
-  const [chargeOpen, setChargeOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
-
-  async function handleConfirmPay(productId: WalletProduct['product_id']) {
-    setPaying(true);
-    setPaymentError(null);
-    try {
-      const result = await initPayment(productId);
-      setChargeOpen(false);
-      router.push(`/payment/checkout?orderId=${encodeURIComponent(result.payment.toss_order_id)}`);
-    } catch {
-      setPaymentError(t('wallet.error'));
-    } finally {
-      setPaying(false);
-    }
-  }
 
   async function handleDeleteAccount() {
     setDeleteLoading(true);
@@ -151,7 +120,7 @@ export default function MePage() {
         <TalismanCard
           balance={wallet.balance}
           ledger={wallet.ledger}
-          onCharge={() => setChargeOpen(true)}
+          onCharge={() => router.push('/payments/charge')}
         />
       )}
       <PillarGrid chart={chart} />
@@ -168,15 +137,6 @@ export default function MePage() {
         onAbout={() => setAboutOpen(true)}
         onLang={() => setLangOpen(true)}
         onDeleteAccount={() => setDeleteOpen(true)}
-      />
-      <ChargeSheet
-        open={chargeOpen}
-        onOpenChange={setChargeOpen}
-        currentBalance={wallet?.balance.balance ?? 0}
-        products={PRODUCTS}
-        error={paymentError}
-        loading={paying}
-        onConfirmPay={handleConfirmPay}
       />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
       <LangSheet open={langOpen} onOpenChange={setLangOpen} />

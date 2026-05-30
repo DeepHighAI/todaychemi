@@ -75,10 +75,10 @@ describe('ErrorCard', () => {
     expect(screen.getByRole('button', { name: '제보' })).toBeInTheDocument();
   });
 
-  it('INSUFFICIENT_TOKENS → [충전하러 가기] 링크 표시 (href=/me)', () => {
+  it('INSUFFICIENT_TOKENS → [충전하러 가기] 링크 표시 (href=/payments/charge)', () => {
     renderWithProviders(<ErrorCard code="INSUFFICIENT_TOKENS" />);
     const link = screen.getByRole('link', { name: '충전하러 가기' });
-    expect(link).toHaveAttribute('href', '/me');
+    expect(link).toHaveAttribute('href', '/payments/charge');
   });
 
   it('CTA 미정의 코드(CALC_FAIL) → 링크 미표시', () => {

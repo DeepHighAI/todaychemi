@@ -5,8 +5,12 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../../../utils/render-with-providers';
 import type { ChartCore } from '@/types/chart';
 
+const routerMocks = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: routerMocks.push }),
   usePathname: () => '/me',
 }));
 
@@ -14,6 +18,7 @@ const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  routerMocks.push.mockClear();
   vi.stubGlobal('fetch', mockFetch);
 });
 
@@ -126,6 +131,16 @@ describe('MePage (내 사주맵 화면)', () => {
     await waitFor(() => expect(screen.getByTestId('talisman-card')).toBeInTheDocument());
     expect(screen.getByText('55')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /충전/ })).toBeInTheDocument();
+  });
+
+  it('부적 충전 CTA는 결제 페이지로 이동한다', async () => {
+    mockChartAndWallet();
+    await renderMePage();
+    await waitFor(() => expect(screen.getByTestId('talisman-card')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /충전/ }));
+
+    expect(routerMocks.push).toHaveBeenCalledWith('/payments/charge');
   });
 
   it('chart 있을 때 개인정보 권리 행사 링크와 계정 삭제 요청을 제공한다', async () => {

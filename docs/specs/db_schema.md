@@ -359,11 +359,12 @@ create table public.payments (
   payment_id       uuid    primary key default gen_random_uuid(),
   user_id          uuid    not null references public.users(user_id) on delete cascade,
   toss_payment_key text    unique,          -- 결제 승인 전 NULL 가능
+  toss_customer_key text,                   -- 서버 생성 UUID 기반 Toss customerKey
   toss_order_id    text    not null unique,
   product_id       text,
   amount_krw       int     not null,
   token_amount     int     not null,
-  status           text    not null check (status in ('pending', 'confirmed', 'failed', 'refunded')),
+  status           text    not null check (status in ('pending', 'confirmed', 'failed', 'refunded', 'tampered', 'invalid')),
   failure_code     text,
   failure_message  text,
   receipt_url      text,
@@ -375,10 +376,13 @@ create table public.payments (
 create index on public.payments (user_id, created_at desc);
 create index on public.payments (toss_order_id);
 create index on public.payments (user_id, status, created_at desc);
+create unique index token_ledger_purchase_reference_unique_idx
+  on public.token_ledger (user_id, reason, reference_id)
+  where reason = 'purchase' and reference_id is not null;
 
 alter table public.payments enable row level security;
 create policy "payments_own_read" on public.payments for select using (auth.uid() = user_id);
--- insert/update는 service_role 전용 (/api/payments/init, /payment/success confirm)
+-- insert/update는 service_role 전용 (/api/payments/init, /api/payments/confirm)
 
 -- supabase/migrations/20260521060000_wallet_payments.sql
 create or replace function public.confirm_token_purchase(...)

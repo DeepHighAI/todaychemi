@@ -22,11 +22,12 @@ function makeServerClient(userId: string | null = USER_ID) {
 
 function makeServiceClient() {
   const single = vi.fn().mockResolvedValue({
-    data: {
-      payment_id: 'payment-001',
-      toss_order_id: 'osa_1_abcdef',
-      product_id: 'tokens_50',
-      amount_krw: 4500,
+      data: {
+        payment_id: 'payment-001',
+        toss_order_id: 'osa_1_abcdef',
+        toss_customer_key: 'customer_00000000-0000-4000-8000-000000000001',
+        product_id: 'tokens_50',
+        amount_krw: 4500,
       token_amount: 55,
       status: 'pending',
     },
@@ -68,9 +69,12 @@ describe('POST /api/payments/init', () => {
         token_amount: 55,
         status: 'pending',
         toss_payment_key: null,
+        toss_customer_key: expect.stringMatching(/^[A-Za-z0-9_=.@-]{2,300}$/),
+        toss_order_id: expect.stringMatching(/^[A-Za-z0-9_-]{6,64}$/),
       }),
     );
     expect(body.payment.order_name).toBe('부적 55개');
+    expect(body.payment.customer_key).toBe('customer_00000000-0000-4000-8000-000000000001');
   });
 
   it('클라이언트가 보낸 임의 가격 필드는 무시한다', async () => {

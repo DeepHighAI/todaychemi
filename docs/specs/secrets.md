@@ -20,8 +20,10 @@
 | `OPENAI_PROJECT_ID` | OpenAI 프로젝트 ID (ZDR 적용 프로젝트) | High | platform.openai.com → Settings → Projects |
 | `ANTHROPIC_API_KEY` | Anthropic Claude fallback 인증 | **Critical** | console.anthropic.com → API Keys |
 | `KASI_API_KEY` | 한국천문연구원 API (만세력 기준) | High | astro.kasi.re.kr → API 신청 |
-| `TOSS_PAYMENTS_CLIENT_KEY` | 토스페이먼츠 클라이언트 키 | Medium (public) | 토스페이먼츠 대시보드 → 개발자 도구 |
-| `TOSS_PAYMENTS_SECRET_KEY` | 토스페이먼츠 시크릿 키 (서버 전용) | **Critical** | 토스페이먼츠 대시보드 → 개발자 도구 |
+| `TOSS_CLIENT_KEY` | 토스페이먼츠 클라이언트 키 | Medium (public) | 토스페이먼츠 대시보드 → 개발자 도구 |
+| `TOSS_SECRET_KEY` | 토스페이먼츠 시크릿 키 (서버 전용) | **Critical** | 토스페이먼츠 대시보드 → 개발자 도구 |
+| `TOSS_PAYMENTS_CLIENT_KEY` | 임시 legacy alias | Medium (public) | 기존 환경 호환용 |
+| `TOSS_PAYMENTS_SECRET_KEY` | 임시 legacy alias | **Critical** | 기존 환경 호환용 |
 | `SENTRY_DSN` | Sentry 에러 수집 DSN | Medium | sentry.io → Project → Settings → DSN |
 | `NEXT_PUBLIC_SENTRY_DSN` | 브라우저 Sentry 에러 수집 DSN | Low (public) | sentry.io → Project → Settings → DSN |
 | `LLM_DAILY_BUDGET_USD` | LLM 일일 예산 상한 (초과 시 fallback 차단) | Low | 직접 설정 (예: `20`) |
@@ -91,8 +93,8 @@ OPENAI_API_KEY=sk-proj-...
 OPENAI_PROJECT_ID=proj_...
 ANTHROPIC_API_KEY=sk-ant-...
 KASI_API_KEY=...
-TOSS_PAYMENTS_CLIENT_KEY=test_ck_...     # 개발: test_ 접두사
-TOSS_PAYMENTS_SECRET_KEY=test_sk_...     # 개발: test_ 접두사
+TOSS_CLIENT_KEY=test_ck_...              # 개발: test_ 접두사
+TOSS_SECRET_KEY=test_sk_...              # 개발: test_ 접두사
 SENTRY_DSN=https://...@sentry.io/...
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
@@ -132,7 +134,7 @@ LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
 | `KAKAO_ADMIN_KEY` | 180일 |
 | `OPENAI_API_KEY` | 90일 |
 | `ANTHROPIC_API_KEY` | 90일 |
-| `TOSS_PAYMENTS_SECRET_KEY` | 출시 전 1회 + 180일 |
+| `TOSS_SECRET_KEY` | 출시 전 1회 + 180일 |
 | `BUBBLEWRAP_KEYSTORE_PASSWORD` | Play 스토어 업로드 key 분리 후 검토 |
 
 ---

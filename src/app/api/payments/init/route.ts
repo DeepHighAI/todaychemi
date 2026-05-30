@@ -1,11 +1,10 @@
-import { randomUUID } from 'crypto';
-
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { createTossCustomerKey, createTossOrderId } from '@/lib/payments/ids';
 import { getTossProduct, TossProductIdSchema } from '@/lib/payments/products';
 import type { PaymentInitResponse } from '@/types/wallet';
 
@@ -33,13 +32,15 @@ export async function POST(request: Request) {
     return apiErrorResponse('UNAUTHORIZED', '', 401);
   }
 
-  const orderId = createOrderId();
+  const orderId = createTossOrderId();
+  const customerKey = createTossCustomerKey();
   const service = createServiceRoleClient();
   const { data, error } = await service
     .from('payments')
     .insert({
       user_id: user.id,
       toss_order_id: orderId,
+      toss_customer_key: customerKey,
       toss_payment_key: null,
       product_id: product.product_id,
       amount_krw: product.amount_krw,
@@ -47,11 +48,11 @@ export async function POST(request: Request) {
       status: 'pending',
       confirmed_at: null,
     })
-    .select('payment_id,toss_order_id,product_id,amount_krw,token_amount,status')
+    .select('payment_id,toss_order_id,toss_customer_key,product_id,amount_krw,token_amount,status')
     .single();
 
   if (error || !data) {
-    return apiErrorResponse('INTERNAL_ERROR', error?.message ?? '', 500);
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
   const body: PaymentInitResponse = {
@@ -64,12 +65,9 @@ export async function POST(request: Request) {
       token_amount: product.tokens,
       order_name: product.order_name,
       status: data.status,
+      customer_key: data.toss_customer_key ?? customerKey,
     },
   };
 
   return NextResponse.json(body, { status: 201 });
-}
-
-function createOrderId(): string {
-  return `osa_${Date.now()}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
 }

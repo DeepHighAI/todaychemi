@@ -229,10 +229,11 @@ PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 
 
 ### v1 지갑/충전 라우트
 
-1. `POST /api/payments/init`: `product_id`만 받고 서버의 상품 카탈로그에서 금액·부적 수를 결정한다.
-2. `/payment/checkout`: TossPayments V2 `loadTossPayments → widgets({ customerKey }) → setAmount → renderPaymentMethods/renderAgreement → requestPayment`.
-3. `/payment/success`: successUrl의 `amount`를 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm API를 호출하고 `confirm_token_purchase` RPC로 `payments.status='confirmed'`와 `token_ledger.reason='purchase'` 충전을 한 트랜잭션으로 처리한다.
+1. `POST /api/payments/init`: `product_id`만 받고 서버의 상품 카탈로그에서 금액·부적 수·`orderId`·UUID 기반 `customerKey`를 결정해 저장한다.
+2. `/payments/charge`: TossPayments V2 `loadTossPayments → widgets({ customerKey }) → setAmount → renderPaymentMethods/renderAgreement → requestPayment`.
+3. `/api/payments/confirm`: successUrl의 `amount`를 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm API를 호출하고 `confirm_token_purchase` RPC로 `payments.status='confirmed'`와 `token_ledger.reason='purchase'` 충전을 한 트랜잭션으로 처리한다.
 4. 중복 success redirect는 `toss_order_id`/confirmed 상태 기준으로 부적 중복 지급 없이 멱등 처리한다.
+5. `/payment/*` legacy 경로는 `/payments/*` 또는 `/api/payments/confirm`으로 redirect한다.
 
 ### 무료 부적 보상 라우트
 

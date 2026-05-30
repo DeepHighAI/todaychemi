@@ -26,7 +26,7 @@ async function main() {
   const c = createServiceRoleClient();
   const { data, error } = await c
     .from('daily_haps')
-    .select('user_id, target_date, headline, headline_reason, primary_relation_id, relation_nickname, today_compat_score, llm_model')
+    .select('user_id, target_date, headline, headline_reason, primary_relation_id, relation_nickname, today_compat_score, llm_model, generated_at')
     .order('target_date', { ascending: false })
     .limit(5);
   if (error) {
@@ -44,7 +44,7 @@ async function main() {
     console.log('relation_id :', r.primary_relation_id);
     console.log('nickname    :', r.relation_nickname);
     console.log('compat      :', r.today_compat_score);
-    console.log('created     :', r.created_at);
+    console.log('generated   :', r.generated_at);
   }
 }
 main();

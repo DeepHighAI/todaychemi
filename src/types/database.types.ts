@@ -713,6 +713,7 @@ export type Database = {
           receipt_url: string | null
           status: string
           token_amount: number
+          toss_customer_key: string | null
           toss_order_id: string
           toss_payment_key: string | null
           updated_at: string
@@ -729,6 +730,7 @@ export type Database = {
           receipt_url?: string | null
           status: string
           token_amount: number
+          toss_customer_key?: string | null
           toss_order_id: string
           toss_payment_key?: string | null
           updated_at?: string
@@ -745,6 +747,7 @@ export type Database = {
           receipt_url?: string | null
           status?: string
           token_amount?: number
+          toss_customer_key?: string | null
           toss_order_id?: string
           toss_payment_key?: string | null
           updated_at?: string
