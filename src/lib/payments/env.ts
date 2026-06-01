@@ -1,4 +1,4 @@
-import { ConfigError } from '@/lib/supabase/env';
+import { ConfigError } from '@/lib/config-error';
 
 const CLIENT_KEY_ENV = 'TOSS_CLIENT_KEY';
 const CLIENT_KEY_LEGACY_ENV = 'TOSS_PAYMENTS_CLIENT_KEY';

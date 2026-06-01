@@ -8,8 +8,8 @@
 |---|---|---|
 | `specs/` | 데이터 모델·API·결제·검증·i18n·DoD spec | 권위 문서가 cross-ref로 참조 |
 | `runbooks/` | 장애 대응·정기 작업·카나리 절차 | fluttering §11에서 약속됐던 6+종 |
-| `legal/` | 개인정보·약관·Data Safety·PII 5필드 단일 정의 | CLAUDE.md §5 단일 truth source |
-| `patterns/` | Next.js 15 + Supabase + TWA 등 구현 패턴 레퍼런스 | 코드 작성 시 참조용 |
+| `legal/` | 개인정보·약관·Data Safety·PII 5필드 단일 정의 | `AGENTS.md` §5 단일 truth source |
+| `patterns/` | Next.js App Router + Supabase + TWA 등 구현 패턴 레퍼런스 | 코드 작성 시 참조용 |
 | `qa/` | 수동 검수·브라우저 smoke·출시 전 점검 자료 | 자동 테스트가 대체할 수 없는 검수 기록 |
 
 ## 인덱스
@@ -34,6 +34,8 @@
 - [concept_dictionary.md](specs/concept_dictionary.md) — 학습 콘텐츠 (Phase 1.5+)
 
 ### runbooks/
+- [launch_opening.md](runbooks/launch_opening.md) — 서비스 오픈 당일 Vercel/Supabase/Toss/OpenAI/Sentry 게이트와 롤백 절차
+- [external_launch_settings.md](runbooks/external_launch_settings.md) — Vercel/Supabase/OpenAI/Toss/Sentry 외부 설정값 가이드
 - [release_canary.md](runbooks/release_canary.md)
 - [sre_routine.md](runbooks/sre_routine.md)
 - [openai_outage.md](runbooks/openai_outage.md)
@@ -64,3 +66,7 @@
 
 ### qa/
 - [rag_classics_review_packet.md](qa/rag_classics_review_packet.md) — 오늘 우리는/그럴리 없어! 다시 고전 20건 명리 검수팩
+- [launch_readiness_2026-05-30.md](qa/launch_readiness_2026-05-30.md) — Vercel/Supabase/Auth/OpenAI/Toss 유료화 런칭 감사와 P0/P1/P2 백로그
+- [launch_p0_approval_packet.md](qa/launch_p0_approval_packet.md) — 런칭 P0 승인 의사결정 패킷과 승인 후 검증 순서
+- [launch_evidence_template.md](qa/launch_evidence_template.md) — Preview/Production smoke와 Go/No-Go 증거 기록 템플릿
+- [external_settings_checklist.md](qa/external_settings_checklist.md) — Vercel/Supabase/OpenAI/Toss/Sentry 외부 설정 secret-free 수동 체크리스트

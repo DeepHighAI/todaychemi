@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 
 import { z } from 'zod';
 
@@ -63,12 +63,24 @@ export async function confirmTossPayment(input: {
     headers: {
       Authorization: tossAuthorizationHeader(),
       'Content-Type': 'application/json',
-      'Idempotency-Key': randomUUID(),
+      'Idempotency-Key': buildConfirmIdempotencyKey(input),
     },
     body: JSON.stringify(input),
   });
 
   return parseTossResponse(response);
+}
+
+function buildConfirmIdempotencyKey(input: {
+  paymentKey: string;
+  orderId: string;
+}): string {
+  const paymentKeyHash = createHash('sha256')
+    .update(input.paymentKey, 'utf8')
+    .digest('hex')
+    .slice(0, 24);
+
+  return `twoday_confirm_${input.orderId}_${paymentKeyHash}`;
 }
 
 export async function getTossPayment(paymentKey: string): Promise<TossConfirmResponse | null> {

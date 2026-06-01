@@ -1,14 +1,22 @@
 # Kakao OAuth + KakaoTalk Share Runbook
 
-## Local / Supabase Auth
+## Production / Supabase Auth
+
+MVP launch without a custom domain uses the fixed Vercel Production `*.vercel.app`
+origin selected as `NEXT_PUBLIC_APP_URL`. Use that origin for Kakao Web platform
+settings and app callback URLs.
 
 1. Kakao Developers에서 앱을 만들고 Kakao Login을 활성화한다.
 2. Redirect URI에 Supabase callback URL을 등록한다.
-   - Local: `http://127.0.0.1:54321/auth/v1/callback`
-   - Remote: `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback`
-3. Supabase Auth → Providers → Kakao를 활성화한다.
-4. Kakao REST API key를 Supabase Kakao client id로, client secret을 secret으로 설정한다.
-5. Kakao email은 필수 수집하지 않는다. Supabase provider의 email optional 설정을 켠다.
+   - Production: `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback`
+   - Local: `http://127.0.0.1:54321/auth/v1/callback` only for local Supabase smoke
+3. Web platform site domain에 Vercel Production origin을 등록한다.
+   - Production: `https://<vercel-production-url>`
+   - Preview: `https://<vercel-preview-origin>` only if preview OAuth smoke is required
+   - Local: `http://localhost:3000`
+4. Supabase Auth → Providers → Kakao를 활성화한다.
+5. Kakao REST API key를 Supabase Kakao client id로, client secret을 secret으로 설정한다.
+6. Kakao email은 필수 수집하지 않는다. Supabase provider의 email optional 설정을 켠다.
 
 ## KakaoTalk Share
 
@@ -16,9 +24,15 @@
 2. Kakao admin key를 서버 전용 `KAKAO_ADMIN_KEY`에 설정한다.
 3. KakaoTalk Share callback URL을 설정한다.
    - Local tunnel: `https://<ngrok>/api/share/kakao/callback`
-   - Production: `https://<app-domain>/api/share/kakao/callback`
+   - Production: `https://<vercel-production-url>/api/share/kakao/callback`
 4. Callback Authorization은 `KakaoAK <KAKAO_ADMIN_KEY>` 형식이어야 한다.
 5. Client share call은 `serverCallbackArgs.share_id`를 전달한다. 서버는 이 `share_id`로 `award_hapcard_share_reward` RPC를 호출한다.
+
+Record only secret-free evidence in `docs/qa/external_settings_checklist.md`, for example:
+
+```text
+kakao_origin=production origin, callback=supabase auth callback, share_callback=/api/share/kakao/callback
+```
 
 ## Privacy Checks
 

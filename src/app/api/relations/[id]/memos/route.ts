@@ -10,7 +10,7 @@ import type { MemoItem, MemoListResponse, MemoCreateResponse } from '@/types/mem
 const MEMO_SELECT = 'memo_id, relation_id, body, created_at, updated_at';
 
 // GET /api/relations/[id]/memos — 인연의 메모 목록 (created_at asc, 시간순)
-// island.md:183: 메모는 점수에 0 영향. LLM 페이로드에 절대 포함 금지 (CLAUDE.md §5).
+// island.md:183: 메모는 점수에 0 영향. LLM 페이로드에 절대 포함 금지 (AGENTS.md §5).
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

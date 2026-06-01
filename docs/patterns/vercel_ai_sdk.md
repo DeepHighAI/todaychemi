@@ -117,7 +117,7 @@ const MODELS = {
   deep_hap: openai('gpt-5'),         // 딥합 (장문 심층)
   daily_hap: openai('gpt-5-mini'),   // 오늘합 (짧고 반복적)
   judge: openai('gpt-5-mini'),       // LLM-as-judge (CI)
-  fallback: anthropic('claude-sonnet-4-6'),  // 장애 시에만
+  fallback: anthropic(process.env.ANTHROPIC_FALLBACK_MODEL ?? 'claude-sonnet-4-5'),  // 장애 시에만
 } as const;
 ```
 

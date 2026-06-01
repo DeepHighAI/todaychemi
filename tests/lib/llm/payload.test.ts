@@ -72,7 +72,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
     });
   });
 
-  describe('PII 부재 (CLAUDE.md §5)', () => {
+  describe('PII 부재 (AGENTS.md §5)', () => {
     const payload = buildLlmPayload({
       self: SELF_CHART,
       relation: RELATION_CHART,

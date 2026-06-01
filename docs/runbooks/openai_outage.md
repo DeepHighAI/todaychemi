@@ -4,7 +4,7 @@
 
 ## 1. 트리거 조건
 
-- OpenAI API 5xx 응답률 > 20% / 5분
+- OpenAI retryable failure가 circuit threshold 도달 (3회 / 5분)
 - LLM_TIMEOUT (응답 > 20초) 비율 > 10%
 - Sentry 알람: `error_code: LLM_TIMEOUT` 또는 `LLM_RATE_LIMIT` 급증
 
@@ -14,7 +14,7 @@
 
 1. `/admin/sre` 대시보드 접속 → LLM 상태 패널 확인
 2. https://status.openai.com 상태 확인
-3. **자동 fallback 확인**: Circuit breaker가 Claude Sonnet 4.6 fallback을 활성화했는지 확인
+3. **자동 fallback 확인**: Circuit breaker가 Claude fallback을 활성화했는지 확인
    ```sql
    -- 최근 5분 error_events 확인
    SELECT error_code, count(*) FROM public.error_events
@@ -32,11 +32,11 @@
 
 ```typescript
 // Edge Function 내 circuit breaker 상태
-// 5분 동안 5xx > 20% → OpenAI 30분간 skip → Claude fallback 자동 전환
+// 5분 동안 retryable failure 3회 → OpenAI 30분간 skip → Claude fallback 자동 전환
 // 30분 후 canary 5% → 정상 시 복원
 ```
 
-fallback 모델: `claude-sonnet-4-6` (Anthropic)
+fallback 모델: `ANTHROPIC_FALLBACK_MODEL` 값. 미설정 시 `claude-sonnet-4-5` (Anthropic)
 
 ---
 

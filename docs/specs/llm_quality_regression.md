@@ -235,7 +235,7 @@ UPDATE public.prompt_versions
 | 딥합 (깊이 리포트) | `gpt-5` | 장문 심층 분석 |
 | 오늘합 (Daily Card) | `gpt-5-mini` | 짧고 반복적 출력, 비용 최소화 |
 | LLM-as-Judge (CI) | `gpt-5-mini` | 심사 비용 최소화 |
-| 장애 fallback | `claude-sonnet-4-6` | OpenAI 전체 장애 시에만 |
+| 장애 fallback | `ANTHROPIC_FALLBACK_MODEL` (기본 `claude-sonnet-4-5`) | OpenAI 전체 장애 시에만 |
 
 > Anthropic Claude를 1차 모델로 쓰는 전략은 채택하지 않는다. Claude는 fallback 전용.
 

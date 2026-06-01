@@ -91,7 +91,7 @@
 Rate Limit (선택) → CSRF 검증 → Auth 검증 → Body Parse/Validate → Business Logic → Response
 ```
 
-> ⚠️ 주의: CLAUDE.md에 "Auth→CSRF" 순서로 기재되어 있으나 **실제 소스 코드는 CSRF가 먼저**다. 새 프로젝트 작성 시 순서 통일 권장.
+> 주의: 기존 에이전트 지침에 "Auth→CSRF" 순서로 기재되어 있으나 **실제 소스 코드는 CSRF가 먼저**다. 새 프로젝트 작성 시 순서 통일 권장.
 
 ---
 

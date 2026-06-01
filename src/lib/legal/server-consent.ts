@@ -9,7 +9,7 @@ import {
   type LegalConsentProvider,
   type LegalConsentSnapshot,
 } from '@/lib/legal/consent';
-import { getSupabaseServiceRoleKey } from '@/lib/supabase/env';
+import { getSupabaseServiceRoleKey } from '@/lib/supabase/service-role-env';
 import type { Database } from '@/types/database.types';
 
 export const LEGAL_CONSENT_COOKIE = 'osa_legal_consent';

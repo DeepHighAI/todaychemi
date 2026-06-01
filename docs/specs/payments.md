@@ -1,6 +1,6 @@
 # Toss Payments Integration Spec
 
-> Phase 1 KR 결제 전용. Phase 3 SEA 확장 시 Stripe 추가 (CLAUDE.md §4).
+> Phase 1 KR 결제 전용. Phase 3 SEA 확장 시 Stripe 추가 (AGENTS.md §4).
 > ADR-037 스택 잠금: TossPayments V2 `@tosspayments/tosspayments-sdk` 사용.
 
 ---
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
 | 라우트 | 역할 |
 |---|---|
-| `GET /api/me/wallet` | 보유 부적, 최근 원장, 최근 사용량 조회 |
+| `GET /api/me/wallet` | 보유 부적, 최근 원장, 이번 달 사용량 + 최근 14일 사용량 조회 |
 | `POST /api/payments/init` | 서버 상품 카탈로그 기준 `orderId`, `customerKey`, 금액, 상품, 지급 부적 수를 저장 |
 | `GET /api/payments/order?orderId=` | 본인 주문 + Toss client key + 저장된 customerKey 조회 |
 | `GET /payments/charge` | V2 Payment Widget 렌더링 및 `requestPayment` |
@@ -119,6 +119,8 @@ export async function GET(request: NextRequest) {
 | `/payment/*` | legacy compat redirect |
 
 상품 카탈로그: `tokens_10` 10부적/1,000원, `tokens_50` 55부적/4,500원, `tokens_100` 120부적/8,000원.
+
+기능 차감: 합보기 생성 `8p`, 다시합 `4p`, 만약합 `5p`. 세 기능은 서버에서 `token_ledger` 차감/환불/idempotency를 처리하며 캐시 적중은 신규 차감하지 않는다.
 
 ---
 
@@ -238,7 +240,7 @@ CREATE TABLE token_ledger (
   ledger_id     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       uuid NOT NULL REFERENCES public.users(user_id),
   delta         integer NOT NULL,       -- 양수: 충전, 음수: 사용
-  reason        text NOT NULL,          -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
+  reason        text NOT NULL,          -- 'purchase' | 'hapcard_use' | 'hapcard_refund' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
   reference_id  text,                   -- payment_id, hapcard_id, daily_login:<YYYY-MM-DD>, signup:<user_id>, share:<share_id>
   balance_after integer NOT NULL,
   created_at    timestamptz NOT NULL DEFAULT now()

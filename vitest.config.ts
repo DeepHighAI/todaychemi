@@ -34,11 +34,17 @@ export default defineConfig({
     setupFiles: ['./tests/setup/dom.ts'],
     testTimeout: 30000,
     hookTimeout: 30000,
+    // The full launch suite mixes many jsdom files with route/unit tests. On
+    // Windows, the default worker count can over-spawn during cold starts and
+    // fail before assertions run, so keep enough parallelism without saturating
+    // child-process startup.
+    maxWorkers: 4,
     // Claude agent worktrees 는 자체 테스트 파일을 포함하므로 메인 repo
     // vitest 발견에서 제외. configDefaults.exclude 보존 의무.
     exclude: [
       ...configDefaults.exclude,
       '.claude/worktrees/**',
+      'tests/e2e/**',
       ...(includeIntegrationTests ? [] : ['**/*.integration.test.ts']),
     ],
   },

@@ -14,14 +14,19 @@
 
 Project ref: `jamhkucluhiibqpjsiov`.
 
+For MVP launch without a custom domain, use the fixed Vercel Production `*.vercel.app`
+origin selected as `NEXT_PUBLIC_APP_URL`. Do not use a Vercel Preview URL, deployment
+hash URL, localhost URL, or a URL with `/auth/callback` appended as the Site URL.
+
 Set these in Supabase Dashboard:
 
 | Area | Value |
 |---|---|
-| Authentication > URL Configuration > Site URL | Production 오늘사이 URL |
-| Authentication > URL Configuration > Redirect URLs | `https://<production-domain>/auth/callback` |
-| Authentication > URL Configuration > Redirect URLs | `https://<staging-domain>/auth/callback` if staging exists |
+| Authentication > URL Configuration > Site URL | `https://<vercel-production-url>` |
+| Authentication > URL Configuration > Redirect URLs | `https://<vercel-production-url>/auth/callback` |
+| Authentication > URL Configuration > Redirect URLs | `https://<vercel-preview-origin>/auth/callback` only if preview OAuth smoke is required |
 | Authentication > URL Configuration > Redirect URLs | `http://localhost:3000/auth/callback` |
+| Authentication > URL Configuration > Redirect URLs | `http://localhost:3100/auth/callback` |
 | Authentication > Providers > Google | Enabled |
 | Authentication > Providers > Google > Client ID | Google Cloud OAuth Web Client ID |
 | Authentication > Providers > Google > Client Secret | Google Cloud OAuth Web Client Secret |
@@ -34,10 +39,17 @@ Create or update a Web OAuth client:
 
 | Area | Value |
 |---|---|
-| Authorized JavaScript origins | Production 오늘사이 origin |
+| Authorized JavaScript origins | `https://<vercel-production-url>` |
+| Authorized JavaScript origins | `https://<vercel-preview-origin>` only if preview OAuth smoke is required |
 | Authorized JavaScript origins | `http://localhost:3000` |
 | Authorized redirect URIs | `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback` |
 | Authorized redirect URIs | `http://127.0.0.1:54321/auth/v1/callback` for local Supabase |
+
+Record only secret-free evidence in `docs/qa/external_settings_checklist.md`, for example:
+
+```text
+google_origin=production origin, callback=supabase auth callback
+```
 
 ## Local Config
 

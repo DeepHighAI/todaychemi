@@ -3,6 +3,7 @@ import type { TossProductId } from '@/lib/payments/products';
 export type LedgerReason =
   | 'purchase'
   | 'hapcard_use'
+  | 'hapcard_refund'
   | 'replay_use'
   | 'replay_refund'
   | 'whatif_use'

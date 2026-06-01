@@ -111,4 +111,4 @@ export interface ConceptAsset {
 - [ ] 개념 상세 페이지 (더보기 탭 내 링크)
 - [ ] Phase 3 배우기 탭 플래그 (feature flag로 관리)
 
-**ADR-028 제약**: 학습 카드 시리즈 정식 노출은 Phase 2 승인 후. 사용자 승인(CLAUDE.md §1.1) 없이 MVP 범위 확장 금지.
+**ADR-028 제약**: 학습 카드 시리즈 정식 노출은 Phase 2 승인 후. 사용자 승인(AGENTS.md §1.1) 없이 MVP 범위 확장 금지.

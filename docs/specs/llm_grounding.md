@@ -198,7 +198,7 @@ export function validateClassicCitation(
 ### 7.1 게이트 1 — AI 2중 교차 검증 (Phase 0, 모든 자산)
 
 - GPT-5로 1차 검증: "이 번역이 원문 의미를 왜곡하지 않는가"
-- Claude Sonnet 4.6으로 2차 독립 검증 (프롬프트 영어로 변경)
+- Claude fallback 모델로 2차 독립 검증 (프롬프트 영어로 변경)
 - 두 AI 결과 비교 → 이견 항목만 수동 재검토
 - 통과 시 `review_status: "approved_ai_pending_human"`
 
@@ -240,7 +240,7 @@ export function validateClassicCitation(
 - [ ] `KnowledgeCitation.display` 필드 + `ClassicExcerptDisplay` 타입 정의
 - [ ] 한국고전종합DB에서 원문 20건 수집
 - [ ] 자체 번역 작성 (각 40~80자)
-- [ ] **게이트 1** AI 교차 검증 (GPT-5 + Claude Sonnet 4.6)
+- [ ] **게이트 1** AI 교차 검증 (GPT-5 + Claude fallback 모델)
 - [ ] **게이트 2** 명리 커뮤니티 섭외 (최소 1명) + Google Form 배포
 - [ ] 크라우드 평점 집계 → 재작성 필요 항목 반영
 - [ ] `review_status: "approved_ai_and_crowd"` 부여

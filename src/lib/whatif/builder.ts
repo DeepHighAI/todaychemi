@@ -13,6 +13,7 @@ import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 export interface BuildWhatifResult {
   result: WhatifResult;
   fromCache: boolean;
+  cacheKey: string;
 }
 
 export interface BuildWhatifInput {
@@ -59,6 +60,15 @@ function mapDbRow(data: unknown): WhatifResult {
   };
 }
 
+export function getWhatifCacheKey(input: BuildWhatifInput): string {
+  const prompt = loadWhatifPrompt(input.type);
+  return deriveCacheKey({
+    chart_hash: input.chart_hash,
+    type: input.type,
+    prompt_version: prompt.version,
+  });
+}
+
 export async function buildWhatif(
   input: BuildWhatifInput,
   deps: BuildWhatifDeps,
@@ -80,7 +90,7 @@ export async function buildWhatif(
     .eq('cache_key', cacheKey)
     .maybeSingle();
   if (cacheRes.data) {
-    return { result: mapDbRow(cacheRes.data), fromCache: true };
+    return { result: mapDbRow(cacheRes.data), fromCache: true, cacheKey };
   }
 
   // 4. RAG retrieval
@@ -91,7 +101,7 @@ export async function buildWhatif(
   // 5. system prompt 조합
   const systemPrompt = `${prompt.content}\n\n${JSON.stringify(ragHits, null, 2)}`;
 
-  // 6. PII payload (CLAUDE.md §5 — self_chart_core + type만 허용)
+  // 6. PII payload (AGENTS.md §5 — self_chart_core + type만 허용)
   const userPayload = { self_chart_core: input.chart, type: input.type };
   const payloadWhitelist = new Set(['self_chart_core', 'type']);
 
@@ -156,11 +166,11 @@ export async function buildWhatif(
         .select('*')
         .eq('cache_key', cacheKey)
         .maybeSingle();
-      if (retry.data) return { result: mapDbRow(retry.data), fromCache: false };
+      if (retry.data) return { result: mapDbRow(retry.data), fromCache: true, cacheKey };
       throw new Error('WHATIF_INSERT_FAILED: race recovery missed');
     }
     throw new Error(`WHATIF_INSERT_FAILED: ${insertRes.error.message}`);
   }
 
-  return { result: mapDbRow(insertRes.data), fromCache: false };
+  return { result: mapDbRow(insertRes.data), fromCache: false, cacheKey };
 }

@@ -10,6 +10,7 @@ vi.mock('@/lib/llm/prompt-loader', () => ({
   loadPromptForUser: vi.fn(),
 }));
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
+import { resetLlmCircuitBreakersForTest } from '@/lib/llm/circuit-breaker';
 
 const TODAY_WITH_RELATION_PROMPT = `# System Prompt — 오늘합 + 인연 종합 (today_with_relation)
 > Mode: 오늘합 (today_with_relation)
@@ -22,10 +23,49 @@ const DAILY_HAP_PROMPT = `# System Prompt — 오늘합 (daily_hap)
 본문 placeholder.`;
 
 const mockCreate = vi.fn();
-const mockSupabase = {} as unknown as SupabaseClient;
+const costUpsertMock = vi.fn();
+const costMaybeSingleMock = vi.fn();
+const budgetEqMock = vi.fn();
+const mockSupabase = makeMockServiceClient();
 const TEST_USER_ID = 'test-user-001';
 
+function makeOpenAiResponse(content: string, tokenIn = 100, tokenOut = 200) {
+  return {
+    choices: [{ message: { content } }],
+    usage: {
+      prompt_tokens: tokenIn,
+      completion_tokens: tokenOut,
+      total_tokens: tokenIn + tokenOut,
+    },
+  };
+}
+
+function makeMockServiceClient(): SupabaseClient {
+  const eqLevel3 = { maybeSingle: costMaybeSingleMock };
+  const eqLevel2 = { eq: vi.fn().mockReturnValue(eqLevel3) };
+  const eqLevel1 = { eq: vi.fn().mockReturnValue(eqLevel2) };
+  const selectResult = { eq: vi.fn().mockReturnValue(eqLevel1) };
+  const select = vi.fn((columns: string) => {
+    if (columns === 'total_usd') return { eq: budgetEqMock };
+    return selectResult;
+  });
+
+  return {
+    from: vi.fn().mockReturnValue({
+      select,
+      upsert: costUpsertMock,
+    }),
+  } as unknown as SupabaseClient;
+}
+
 beforeEach(() => {
+  vi.clearAllMocks();
+  beforeEachReset();
+  delete process.env.LLM_DAILY_BUDGET_USD;
+  resetLlmCircuitBreakersForTest();
+  costUpsertMock.mockReset().mockResolvedValue({ data: null, error: null });
+  costMaybeSingleMock.mockReset().mockResolvedValue({ data: null, error: null });
+  budgetEqMock.mockReset().mockResolvedValue({ data: [], error: null });
   (loadPromptForUser as ReturnType<typeof vi.fn>).mockImplementation(
     async (_client: SupabaseClient, promptName: string, _userId: string) => ({
       prompt_name: promptName,
@@ -42,26 +82,17 @@ beforeEach(() => {
   );
 });
 
-beforeEachReset();
-
 function beforeEachReset() {
+  mockCreate.mockReset();
   // 기본 응답: 정상 JSON 카드
-  mockCreate.mockResolvedValue({
-    choices: [
-      {
-        message: {
-          content: JSON.stringify({
-            headline: '오늘의 사이',
-            headline_reason: '이유',
-            avoid_phrase: '비난',
-            avoid_phrase_reason: '갈등',
-            favorable_action: '먼저 인사',
-            favorable_action_reason: '관계',
-          }),
-        },
-      },
-    ],
-  });
+  mockCreate.mockResolvedValue(makeOpenAiResponse(JSON.stringify({
+    headline: '오늘의 사이',
+    headline_reason: '이유',
+    avoid_phrase: '비난',
+    avoid_phrase_reason: '갈등',
+    favorable_action: '먼저 인사',
+    favorable_action_reason: '관계',
+  })));
 }
 
 const mockOpenai = {
@@ -147,27 +178,101 @@ describe('callDailyHapLlm — model + params (gpt-5)', () => {
   });
 
   it('LLM 응답 빈 필드 → 기본 fallback 채움', async () => {
-    mockCreate.mockResolvedValueOnce({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
-              headline: ' ',
-              headline_reason: '',
-              avoid_phrase: '',
-              avoid_phrase_reason: '   ',
-              favorable_action: '',
-              favorable_action_reason: '',
-            }),
-          },
-        },
-      ],
-    });
+    mockCreate.mockResolvedValueOnce(makeOpenAiResponse(JSON.stringify({
+      headline: ' ',
+      headline_reason: '',
+      avoid_phrase: '',
+      avoid_phrase_reason: '   ',
+      favorable_action: '',
+      favorable_action_reason: '',
+    })));
     const { callDailyHapLlm } = await import('@/lib/today/openai');
     const result = await callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID);
     expect(result.headline).toBeTruthy();
     expect(result.avoid_phrase).toBe('급하게 단정하는 말');
     expect(result.favorable_action).toBe('가벼운 정리부터 하기');
+  });
+
+  it('성공 응답 → llm_cost_tracking 에 today 모델 비용을 기록', async () => {
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+    await callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID, {
+      bannedPhraseCatalog: [],
+    });
+
+    expect(costUpsertMock).toHaveBeenCalledTimes(1);
+    expect(costUpsertMock.mock.calls[0][0]).toMatchObject({
+      provider: 'openai',
+      model: 'gpt-5',
+      total_usd: 0.002125,
+      call_count: 1,
+      token_in: 100,
+      token_out: 200,
+    });
+  });
+
+  it('LLM_DAILY_BUDGET_USD 초과 → OpenAI 호출 전 USER_QUOTA_EXCEEDED', async () => {
+    process.env.LLM_DAILY_BUDGET_USD = '1';
+    budgetEqMock.mockResolvedValueOnce({ data: [{ total_usd: 1.2 }], error: null });
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+
+    await expect(
+      callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID, {
+        bannedPhraseCatalog: [],
+        now: () => new Date('2026-05-31T00:00:00Z'),
+      }),
+    ).rejects.toThrow('USER_QUOTA_EXCEEDED');
+
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(costUpsertMock).not.toHaveBeenCalled();
+  });
+
+  it('OpenAI 5xx 2회 실패 → Claude fallback 으로 today 카드 생성', async () => {
+    const anthropicCreate = vi.fn().mockResolvedValue({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            headline: 'fallback headline',
+            headline_reason: 'fallback reason',
+            avoid_phrase: 'fallback avoid',
+            avoid_phrase_reason: 'fallback avoid reason',
+            favorable_action: 'fallback action',
+            favorable_action_reason: 'fallback action reason',
+          }),
+        },
+      ],
+      usage: { input_tokens: 90, output_tokens: 140 },
+    });
+    mockCreate.mockRejectedValue(new Error('500 Internal Server Error'));
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+
+    const result = await callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID, {
+      anthropicClient: { messages: { create: anthropicCreate } },
+      bannedPhraseCatalog: [],
+    });
+
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(anthropicCreate).toHaveBeenCalledTimes(1);
+    expect(result.headline).toBe('fallback headline');
+    expect(costUpsertMock.mock.calls[0][0]).toMatchObject({
+      provider: 'anthropic',
+      model: 'claude-fallback',
+    });
+  });
+
+  it('timeout 계열 provider 오류는 LLM_TIMEOUT 으로 분류 유지', async () => {
+    mockCreate.mockRejectedValue(new Error('Request timed out'));
+    const anthropicCreate = vi.fn().mockRejectedValue(new Error('fallback unavailable'));
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+
+    await expect(
+      callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID, {
+        anthropicClient: { messages: { create: anthropicCreate } },
+        bannedPhraseCatalog: [],
+      }),
+    ).rejects.toThrow('LLM_TIMEOUT');
   });
 });
 

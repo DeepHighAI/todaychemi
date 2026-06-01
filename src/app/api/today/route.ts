@@ -4,6 +4,7 @@ import { apiErrorResponse } from '@/lib/errors/route-response';
 import { fetchLatestUserChartForVersion } from '@/lib/chart/queries';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { selectLlmModel } from '@/lib/llm/model-router';
 import { createOpenAiClient } from '@/lib/llm/clients';
 import {
@@ -114,6 +115,7 @@ export async function GET(request: Request) {
     const target = todayKST();
     const prev = yesterdayKST();
     const openai = createOpenAiClient();
+    const llmCostClient = createServiceRoleClient();
     const url = new URL(request.url);
     const preferredRelationId = url.searchParams.get('relation_id') ?? undefined;
     const featureEnabled = todayWithRelationEnabled();
@@ -183,7 +185,9 @@ export async function GET(request: Request) {
         return chart;
       },
 
-      callLlm: (input) => callDailyHapLlm(input, openai, supabase, user.id),
+      callLlm: (input) => callDailyHapLlm(input, openai, supabase, user.id, {
+        costClient: llmCostClient,
+      }),
 
       // Task 1: 단계별 latency + 실패 phase 캡처. 실패 시 error_events 적재 (best-effort).
       recordTrace: async (trace: TodayTrace) => {

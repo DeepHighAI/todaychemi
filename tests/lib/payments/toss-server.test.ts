@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 describe('Toss server API utilities', () => {
-  it('confirm API는 SECRET_KEY: trailing colon으로 Basic Auth를 만들고 Idempotency-Key를 보낸다', async () => {
+  it('confirm API는 SECRET_KEY: trailing colon으로 Basic Auth를 만들고 안정적인 Idempotency-Key를 보낸다', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(TOSS_PAYMENT), { status: 200 }),
     );
@@ -39,14 +39,34 @@ describe('Toss server API utilities', () => {
     expect(init.method).toBe('POST');
     expect(headers.Authorization).toBe(`Basic ${Buffer.from('test_sk_secret:', 'utf8').toString('base64')}`);
     expect(headers['Content-Type']).toBe('application/json');
-    expect(headers['Idempotency-Key']).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+    expect(headers['Idempotency-Key']).toBe('twoday_confirm_osa_1_abcdef_1bd12a3c982415c1b176ff6b');
     expect(JSON.parse(init.body as string)).toEqual({
       paymentKey: 'pay-key',
       orderId: 'osa_1_abcdef',
       amount: 1000,
     });
+  });
+
+  it('같은 orderId/paymentKey confirm 재시도는 같은 Idempotency-Key를 사용한다', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
+      new Response(JSON.stringify(TOSS_PAYMENT), { status: 200 }),
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await confirmTossPayment({
+      paymentKey: 'pay-key',
+      orderId: 'osa_1_abcdef',
+      amount: 1000,
+    });
+    await confirmTossPayment({
+      paymentKey: 'pay-key',
+      orderId: 'osa_1_abcdef',
+      amount: 1000,
+    });
+
+    const firstHeaders = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    const secondHeaders = fetchMock.mock.calls[1][1].headers as Record<string, string>;
+    expect(secondHeaders['Idempotency-Key']).toBe(firstHeaders['Idempotency-Key']);
   });
 
   it('query API는 paymentKey로 결제 상태를 조회한다', async () => {

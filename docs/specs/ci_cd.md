@@ -33,7 +33,7 @@ typecheck:
     - run: pnpm tsc --noEmit
 ```
 
-> Contracts-first rule (CLAUDE.md §Contracts-first): typecheck가 모든 job의 사전 조건.
+> Contracts-first rule (AGENTS.md): typecheck가 모든 job의 사전 조건.
 
 ### Job 2: lint
 
@@ -118,7 +118,7 @@ playwright:
 | Allow force pushes | OFF |
 | Allow deletions | OFF |
 
-### 브랜치 네이밍 규칙 (CLAUDE.md §Git Conventions)
+### 브랜치 네이밍 규칙 (AGENTS.md §Git Conventions)
 
 ```
 feature/<짧은-설명>   예: feature/add-hapcard-streaming
@@ -154,7 +154,7 @@ chore/<설명>          예: chore/upgrade-nextjs-15-3
 
 - PR마다 `https://<project>-<hash>.vercel.app` 형태 고유 URL 생성
 - QA 스킬(`/qa`, `/browse`) 실행 시 이 URL 사용
-- CLAUDE.md §10 검증 스킬 매핑 참조
+- AGENTS.md §10 검증 스킬 매핑 참조
 
 ---
 
@@ -224,4 +224,4 @@ twa-build:
 2. `/canary` 스킬 실행 — 에러율, 응답시간 5분 모니터링
 3. `/benchmark` 스킬 실행 — Lighthouse 회귀 확인
 4. 이상 감지 시 Vercel → "Rollback to previous deployment"
-5. CLAUDE.md §10 검증 스킬 매핑 참조
+5. AGENTS.md §10 검증 스킬 매핑 참조

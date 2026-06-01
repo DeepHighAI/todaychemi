@@ -1112,10 +1112,18 @@ export type Database = {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: number
       }
+      deduct_tokens_once: {
+        Args: { delta: number; reason: string; ref?: string; uid: string }
+        Returns: Json
+      }
       purge_deleted_users: { Args: never; Returns: undefined }
       refund_tokens: {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: number
+      }
+      refund_tokens_once: {
+        Args: { delta: number; reason: string; ref?: string; uid: string }
+        Returns: Json
       }
     }
     Enums: {

@@ -4,7 +4,7 @@
 
 ## 1. 트리거 조건
 
-- OpenAI 장애 + Anthropic Claude fallback도 5xx > 20% / 5분
+- OpenAI 장애 + Anthropic Claude fallback도 retryable failure threshold 도달 (3회 / 5분)
 - 즉, **두 LLM 공급사가 동시 장애** 상황
 
 ---

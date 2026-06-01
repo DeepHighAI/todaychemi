@@ -1,7 +1,7 @@
 # Authentication Policy Spec
 
 > This document is the single source of truth (SSOT) for authentication policies in the TWODAY project.
-> Changes require §1.1 user approval per CLAUDE.md.
+> Changes require §1.1 user approval per AGENTS.md.
 
 ## Providers
 

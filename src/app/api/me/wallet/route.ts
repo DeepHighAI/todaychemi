@@ -7,6 +7,8 @@ import type { LedgerEntry, WalletResponse } from '@/types/wallet';
 const LEDGER_LIMIT = 20;
 const MONTHLY_BUCKETS = 14;
 
+type UsageLedgerEntry = Pick<LedgerEntry, 'delta' | 'created_at'>;
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -29,11 +31,23 @@ export async function GET() {
       return apiErrorResponse('INTERNAL_ERROR', ledgerError.message, 500);
     }
 
+    const monthStart = getMonthStart();
+    const { data: monthlyRows, error: monthlyError } = await supabase
+      .from('token_ledger')
+      .select('delta,created_at')
+      .eq('user_id', user.id)
+      .lt('delta', 0)
+      .gte('created_at', monthStart.toISOString());
+
+    if (monthlyError) {
+      return apiErrorResponse('INTERNAL_ERROR', monthlyError.message, 500);
+    }
+
     const ledger = (ledgerRows ?? []).slice(0, LEDGER_LIMIT) as LedgerEntry[];
+    const monthlyUsageLedger = (monthlyRows ?? []) as UsageLedgerEntry[];
     const latest = ledger[0];
-    const monthlyBuckets = buildMonthlyBuckets(ledger);
-    const monthlyUsed = ledger
-      .filter((row) => row.delta < 0)
+    const monthlyBuckets = buildMonthlyBuckets(monthlyUsageLedger);
+    const monthlyUsed = monthlyUsageLedger
       .reduce((sum, row) => sum + Math.abs(row.delta), 0);
 
     const body: WalletResponse = {
@@ -56,7 +70,12 @@ export async function GET() {
   }
 }
 
-function buildMonthlyBuckets(ledger: LedgerEntry[]): number[] {
+function getMonthStart(): Date {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+function buildMonthlyBuckets(ledger: UsageLedgerEntry[]): number[] {
   const today = new Date();
   const buckets = Array.from({ length: MONTHLY_BUCKETS }, () => 0);
   const start = new Date(today);

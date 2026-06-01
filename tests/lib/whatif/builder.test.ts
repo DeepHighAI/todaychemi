@@ -258,7 +258,7 @@ describe('buildWhatif', () => {
   });
 });
 
-describe('buildWhatif — PII 가드 (CLAUDE.md §5)', () => {
+describe('buildWhatif — PII 가드 (AGENTS.md §5)', () => {
   it('callOpenAi userPayload JSON에 birth_date 없음', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));

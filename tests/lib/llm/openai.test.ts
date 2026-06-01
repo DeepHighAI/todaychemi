@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { callOpenAi } from '@/lib/llm/openai';
+import { resetLlmCircuitBreakersForTest } from '@/lib/llm/circuit-breaker';
 import type { LlmPayload } from '@/lib/llm/payload';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -73,18 +74,23 @@ function makeValidPayload(): LlmPayload {
 
 // 빈 banned-phrase 카탈로그 (테스트 중 파일 읽기 방지)
 const EMPTY_CATALOG: BannedPhraseCategory[] = [];
+const ORIGINAL_ENV = { ...process.env };
 
 // Supabase service-role mock (llm_cost_tracking 추적용)
 // chain: .from(...) .select(...) .eq(...) .eq(...) .eq(...) .maybySingle()
-function makeMockServiceClient() {
-  const upsert = vi.fn().mockResolvedValue({ error: null });
+function makeMockServiceClient(opts?: { budgetRows?: Array<{ total_usd: number }>; upsertError?: Error }) {
+  const upsert = vi.fn().mockResolvedValue({ error: opts?.upsertError ?? null });
   const maybySingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  const budgetEq = vi.fn().mockResolvedValue({ data: opts?.budgetRows ?? [], error: null });
 
   const eqLevel3 = { maybeSingle: maybySingle };
   const eqLevel2 = { eq: vi.fn().mockReturnValue(eqLevel3) };
   const eqLevel1 = { eq: vi.fn().mockReturnValue(eqLevel2) };
   const selectResult = { eq: vi.fn().mockReturnValue(eqLevel1) };
-  const select = vi.fn().mockReturnValue(selectResult);
+  const select = vi.fn((columns: string) => {
+    if (columns === 'total_usd') return { eq: budgetEq };
+    return selectResult;
+  });
   const fromReturn = { select, upsert };
   const from = vi.fn().mockReturnValue(fromReturn);
 
@@ -92,10 +98,17 @@ function makeMockServiceClient() {
     client: { from } as unknown as SupabaseClient,
     upsert,
     maybySingle,
+    budgetEq,
   };
 }
 
 describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.LLM_DAILY_BUDGET_USD;
+    resetLlmCircuitBreakersForTest();
+  });
+
   it('PII 가드 — userPayload에 허용 외 키(birth_date) 포함 → PII_GUARD_VIOLATION throw, OpenAI 호출 0회', async () => {
     const createMock = vi.fn();
     const { client: supabase } = makeMockServiceClient();
@@ -135,7 +148,7 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     expect(result.model).toBe('gpt-5-mini');
     expect(result.usage.token_in).toBe(120);
     expect(result.usage.token_out).toBe(250);
-    expect(result.usage.total_usd).toBe(0); // D2
+    expect(result.usage.total_usd).toBe(0.00053);
     expect(result.output.main_text).toHaveLength(160);
     expect(result.output.cause_factors).toHaveLength(3);
   });
@@ -288,7 +301,7 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     ).rejects.toThrow('BANNED_PHRASE_DETECTED');
   });
 
-  it('usage — token_in/token_out 그대로 전달, total_usd=0 (D2)', async () => {
+  it('usage — token_in/token_out 그대로 전달, total_usd 추정값 반환', async () => {
     const validJson = makeValidOutputJson();
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validJson, 500, 800));
     const { client: supabase } = makeMockServiceClient();
@@ -304,10 +317,10 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
 
     expect(result.usage.token_in).toBe(500);
     expect(result.usage.token_out).toBe(800);
-    expect(result.usage.total_usd).toBe(0);
+    expect(result.usage.total_usd).toBe(0.001725);
   });
 
-  it('llm_cost_tracking UPSERT 1회 호출, total_usd=0 (D2)', async () => {
+  it('llm_cost_tracking UPSERT 1회 호출, total_usd 추정값 누적', async () => {
     const validJson = makeValidOutputJson();
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validJson, 100, 200));
     const { client: supabase, upsert } = makeMockServiceClient();
@@ -325,7 +338,29 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     const call = upsert.mock.calls[0][0];
     expect(call.provider).toBe('openai');
     expect(call.model).toBe('gpt-5-mini');
-    expect(call.total_usd).toBe(0);
+    expect(call.total_usd).toBe(0.000425);
+  });
+
+  it('llm_cost_tracking UPSERT 실패 → budget 증적 누락 방지를 위해 throw', async () => {
+    const validJson = makeValidOutputJson();
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validJson, 100, 200));
+    const { client: supabase, upsert } = makeMockServiceClient({
+      upsertError: new Error('write failed'),
+    });
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: makeValidPayload() },
+        {
+          openaiClient: { chat: { completions: { create } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+        },
+      ),
+    ).rejects.toThrow('LLM_COST_TRACKING_FAILED: write failed');
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledTimes(1);
   });
 
   it('response_format json_object + store:false 옵션 전달 검증', async () => {
@@ -384,6 +419,56 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
 
     expect(create).toHaveBeenCalledTimes(2);
     expect(result.output).toBeDefined();
+  });
+
+  it('OpenAI 5xx 2회 실패 → Claude fallback 성공, anthropic 비용 추적', async () => {
+    const validJson = makeValidOutputJson();
+    const create = vi.fn().mockRejectedValue(new Error('500 Internal Server Error'));
+    const anthropicCreate = vi.fn().mockResolvedValue({
+      content: [{ type: 'text', text: validJson }],
+      usage: { input_tokens: 90, output_tokens: 140 },
+    });
+    const { client: supabase, upsert } = makeMockServiceClient();
+
+    const result = await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload() },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        anthropicClient: { messages: { create: anthropicCreate } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(anthropicCreate).toHaveBeenCalledTimes(1);
+    expect(result.model).toBe('claude-fallback');
+    expect(result.usage.token_in).toBe(90);
+    expect(result.usage.token_out).toBe(140);
+    expect(upsert.mock.calls[0][0]).toMatchObject({
+      provider: 'anthropic',
+      model: 'claude-fallback',
+    });
+  });
+
+  it('LLM_DAILY_BUDGET_USD 초과 → OpenAI 호출 전 USER_QUOTA_EXCEEDED', async () => {
+    process.env.LLM_DAILY_BUDGET_USD = '1';
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient({ budgetRows: [{ total_usd: 1.2 }] });
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: makeValidPayload() },
+        {
+          openaiClient: { chat: { completions: { create } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+          now: () => new Date('2026-05-31T00:00:00Z'),
+        },
+      ),
+    ).rejects.toThrow('USER_QUOTA_EXCEEDED');
+
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('401 auth 에러 → 즉시 throw, 재시도 없음', async () => {

@@ -1,6 +1,6 @@
 # Contracts (types/) — 단일 truth source
 
-> 본 문서는 `src/types/*.ts`의 코드 블록 truth source. 코드 변경 시 본 문서도 동시 갱신 (CLAUDE.md §12 변경 매트릭스).
+> 본 문서는 `src/types/*.ts`의 코드 블록 truth source. 코드 변경 시 본 문서도 동시 갱신 (AGENTS.md §12 변경 매트릭스).
 > Contracts-first rule: 인터페이스를 먼저 정의하고 구현. 본 문서가 게이트.
 
 ---
@@ -16,7 +16,7 @@
 | `scoring.ts` | `ScoringInput`, `ScoringOutput`, `ScoringComponents` | `mode.ts`, `chart.ts` |
 | `prompt.ts` | `PromptVersion`, `BannedPhraseHit`, `PromptStatus` | `mode.ts` |
 
-> Import order rule (CLAUDE.md §Code Style): external packages → `@/types/*` → relative. Never circular.
+> Import order rule (AGENTS.md style rules): external packages → `@/types/*` → relative. Never circular.
 
 ---
 
@@ -83,7 +83,7 @@ export interface RelationRow {
 ```typescript
 import { z } from 'zod';
 
-// 생년월일 입력 — LLM 페이로드에 포함 금지 (CLAUDE.md §5 PII)
+// 생년월일 입력 — LLM 페이로드에 포함 금지 (AGENTS.md §5 PII)
 export const BirthDataSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   hour: z.number().int().min(0).max(23).nullable(),
@@ -93,7 +93,7 @@ export const BirthDataSchema = z.object({
 });
 export type BirthData = z.infer<typeof BirthDataSchema>;
 
-// 사주 핵심 — LLM에 보내도 되는 유일한 사주 데이터 (CLAUDE.md §5)
+// 사주 핵심 — LLM에 보내도 되는 유일한 사주 데이터 (AGENTS.md §5)
 export interface ChartCore {
   year_pillar: string;           // 예: "甲子"
   month_pillar: string;          // 예: "乙丑"
@@ -107,7 +107,7 @@ export interface ChartCore {
 // SHA-256(BirthData 정규화 직렬화) — PII 없이 캐시 키로 사용
 export type ChartHash = string;
 
-// 만세력 이론 설정 — profile_version만 LLM 페이로드에 포함 (CLAUDE.md §5)
+// 만세력 이론 설정 — profile_version만 LLM 페이로드에 포함 (AGENTS.md §5)
 export interface TheoryProfile {
   profile_version: string;           // 예: "v2.1.0"
   ja_si_mode: 'late_zi' | 'early_zi'; // 자시 기준 (23:00 vs 00:00)
@@ -226,8 +226,7 @@ export interface PromptVersion {
     | 'gpt-5'
     | 'gpt-5o'
     | 'gpt-5-mini'
-    | 'claude-sonnet-4-6'
-    | 'claude-haiku-4-5-20251001';
+    | 'claude-fallback';
   version_label: string;             // 예: "hapcard-v2.1"
   prompt_text: string;
   banned_phrases_version: string;    // 금지 어구 코퍼스 버전
@@ -252,5 +251,5 @@ export interface BannedPhraseHit {
 
 1. 이 문서 수정 없이 `src/types/*.ts` 직접 수정 금지
 2. 수정 후 `pnpm tsc --noEmit` 통과 확인 (Contracts-first)
-3. DB 스키마 영향 있을 경우 `docs/specs/db_schema.md` 동시 갱신 (CLAUDE.md §12)
-4. PII 필드 추가 시 CLAUDE.md §5 검토 필수
+3. DB 스키마 영향 있을 경우 `docs/specs/db_schema.md` 동시 갱신 (AGENTS.md §12)
+4. PII 필드 추가 시 AGENTS.md §5 검토 필수

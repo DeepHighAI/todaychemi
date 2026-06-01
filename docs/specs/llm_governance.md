@@ -156,11 +156,11 @@ LLM 제공사 로그에 PII를 남기지 않기 위한 전략. 세부 규칙은 
 ## 6. Circuit Breaker (OpenAI → Claude Fallback)
 
 ```
-OpenAI 5xx > 20% / 5분
+OpenAI retryable failure 3회 / 5분
     ↓
 해당 공급사 30분간 skip
     ↓
-fallback: Claude Sonnet 4.6 로 전환
+fallback: Claude (`ANTHROPIC_FALLBACK_MODEL`, default `claude-sonnet-4-5`) 로 전환
     ↓ (Claude도 장애 시)
 캐시된 hapcards만 노출 + "일시 점검 중" 배너
     ↓ (신규 요청 시)

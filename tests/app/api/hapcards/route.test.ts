@@ -9,7 +9,7 @@ vi.mock('@/lib/rag/query-text');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
-import { buildHapcard } from '@/lib/hapcard/builder';
+import { buildHapcard, getHapcardCacheKey } from '@/lib/hapcard/builder';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { buildRagQueryText } from '@/lib/rag/query-text';
 import { POST } from '@/app/api/hapcards/route';
@@ -85,6 +85,8 @@ function makeAuthedSupabaseClient(opts: {
   relationChart?: { chart_core: ChartCore; chart_hash: string } | null;
   userChartError?: { message: string } | null;
   relationChartError?: { message: string } | null;
+  hapcardCache?: { hapcard_id: string } | null;
+  hapcardCacheError?: { message: string } | null;
 }) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
   const userChart = opts.userChart === undefined
@@ -108,6 +110,10 @@ function makeAuthedSupabaseClient(opts: {
     data: relationChart,
     error: opts.relationChartError ?? null,
   });
+  const hapcardCacheMaybeSingle = vi.fn().mockResolvedValue({
+    data: opts.hapcardCache ?? null,
+    error: opts.hapcardCacheError ?? null,
+  });
 
   // 두 query 모두 .eq().eq().order().limit().maybeSingle() chain (fetchLatest*ForVersion 헬퍼)
   const makeChain = (maybeSingle: ReturnType<typeof vi.fn>) => {
@@ -121,6 +127,13 @@ function makeAuthedSupabaseClient(opts: {
   const from = vi.fn((table: string) => {
     if (table === 'user_charts') return makeChain(userChartMaybeSingle);
     if (table === 'relation_charts') return makeChain(relationChartMaybeSingle);
+    if (table === 'hapcards') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({ maybeSingle: hapcardCacheMaybeSingle }),
+        }),
+      };
+    }
     return {
       select: vi.fn(),
       insert: vi.fn(),
@@ -141,17 +154,21 @@ function makeRequest(body: unknown) {
   }) as unknown as Parameters<typeof POST>[0];
 }
 
-const SERVICE_CLIENT = { from: vi.fn() };
+const rpcFn = vi.fn();
+const SERVICE_CLIENT = { from: vi.fn(), rpc: rpcFn };
 const OPENAI_CLIENT = { chat: { completions: { create: vi.fn() } } };
 const EMBEDDINGS_CLIENT = { create: vi.fn() };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  rpcFn.mockReset();
   vi.mocked(createServiceRoleClient).mockReturnValue(SERVICE_CLIENT as never);
   vi.mocked(createOpenAiClient).mockReturnValue(OPENAI_CLIENT as never);
   vi.mocked(createEmbeddingsClient).mockReturnValue(EMBEDDINGS_CLIENT as never);
   vi.mocked(buildRagQueryText).mockReturnValue('테스트 쿼리');
+  vi.mocked(getHapcardCacheKey).mockResolvedValue('cache-key-abc');
   vi.mocked(buildHapcard).mockResolvedValue(HAPCARD_RESULT);
+  rpcFn.mockResolvedValue({ data: { balance_after: 92, inserted: true }, error: null });
 });
 
 describe('POST /api/hapcards', () => {
@@ -165,6 +182,12 @@ describe('POST /api/hapcards', () => {
     const body = await res.json();
     expect(body.hapcard_id).toBe(HAPCARD_RESULT.hapcard_id);
     expect(body.compat_score).toBe(72);
+    expect(rpcFn).toHaveBeenCalledWith('deduct_tokens_once', {
+      uid: 'user-uuid-001',
+      delta: -8,
+      reason: 'hapcard_use',
+      ref: 'cache-key-abc',
+    });
   });
 
   it('401 → 미인증 (auth.getUser 가 null user 반환)', async () => {
@@ -264,6 +287,12 @@ describe('POST /api/hapcards', () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
+      uid: 'user-uuid-001',
+      delta: 8,
+      reason: 'hapcard_refund',
+      ref: 'cache-key-abc',
+    });
   });
 
   it('422 → buildHapcard 가 GROUNDING_FAILED throw', async () => {
@@ -276,6 +305,36 @@ describe('POST /api/hapcards', () => {
     expect(res.status).toBe(422);
     const body = await res.json();
     expect(body.error.code).toBe('GROUNDING_FAILED');
+    expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
+      uid: 'user-uuid-001',
+      delta: 8,
+      reason: 'hapcard_refund',
+      ref: 'cache-key-abc',
+    });
+  });
+
+  it('402 → hapcard_create 토큰 잔액 부족 시 buildHapcard 미호출', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    rpcFn.mockResolvedValueOnce({ data: null, error: { message: 'INSUFFICIENT_TOKENS' } });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error.code).toBe('INSUFFICIENT_TOKENS');
+    expect(buildHapcard).not.toHaveBeenCalled();
+  });
+
+  it('cache hit → 토큰 차감 없이 buildHapcard 반환', async () => {
+    const supabase = makeAuthedSupabaseClient({ hapcardCache: { hapcard_id: HAPCARD_RESULT.hapcard_id } });
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    expect(rpcFn).not.toHaveBeenCalled();
+    expect(buildHapcard).toHaveBeenCalledOnce();
   });
 
   it('buildHapcard 호출 시 user_id, relation_id, mode, charts, hashes 정확히 전달', async () => {

@@ -6,6 +6,7 @@ vi.mock('@/lib/today/relation-picker');
 vi.mock('@/lib/today/lazy-relation-chart');
 vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/chart/queries');
+vi.mock('@/lib/supabase/service-role');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { buildDailyHap } from '@/lib/today/builder';
@@ -14,6 +15,7 @@ import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
 import {
   fetchLatestUserChartForVersion,
 } from '@/lib/chart/queries';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { GET } from '@/app/api/today/route';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
@@ -80,6 +82,7 @@ function makeRequest(url = 'http://localhost/api/today'): Request {
 beforeEach(() => {
   vi.clearAllMocks();
   upsertMock.mockClear();
+  vi.mocked(createServiceRoleClient).mockReturnValue({ from: vi.fn() } as never);
   vi.mocked(buildDailyHap).mockResolvedValue(CARD);
   vi.mocked(pickTodayRelation).mockResolvedValue(null);
   vi.mocked(fetchLatestUserChartForVersion).mockResolvedValue({

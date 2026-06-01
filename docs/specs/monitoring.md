@@ -1,7 +1,7 @@
 # Monitoring Spec
 
 > 본 문서는 Free tier 알림 임계값, /admin/sre 대시보드, 카나리·벤치마크 SOP를 기술한다.
-> 배포 후 모니터링은 CLAUDE.md §10 검증 스킬 매핑의 `/canary`, `/benchmark` 참조.
+> 배포 후 모니터링은 AGENTS.md §10 검증 스킬 매핑의 `/canary`, `/benchmark` 참조.
 
 ---
 
@@ -69,7 +69,7 @@ async function checkDailyBudget(): Promise<void> {
 
 ## 2. /admin/sre 대시보드 — 4개 패널
 
-접근 제어: `app_metadata.role === 'admin'` (CLAUDE.md §api_routes.md §8)
+접근 제어: `app_metadata.role === 'admin'` (AGENTS.md §api_routes.md §8)
 
 ### 패널 1: LLM 비용 (Cost)
 
@@ -171,7 +171,7 @@ ORDER BY hit_count DESC;
    - LLM 응답 시간 p95 < 8초
 4. PASS → `canary_pct` 25 → 50 → 100 단계적 증가
 5. FAIL → `status = 'rolled_back'`, 이전 버전 `status = 'active'` 복원
-6. 결과를 CLAUDE.md §13 메모 위치에 기록
+6. 결과를 AGENTS.md §13 메모 위치에 기록
 
 ### /benchmark 스킬 SOP
 

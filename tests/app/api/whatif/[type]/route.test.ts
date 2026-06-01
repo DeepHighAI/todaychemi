@@ -8,7 +8,7 @@ vi.mock('@/lib/llm/clients');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
-import { buildWhatif } from '@/lib/whatif/builder';
+import { buildWhatif, getWhatifCacheKey } from '@/lib/whatif/builder';
 import { buildWhatifRagQueryText } from '@/lib/whatif/query-text';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { POST } from '@/app/api/whatif/[type]/route';
@@ -36,6 +36,8 @@ function makeAuthedClient(opts: {
   userId?: string | null;
   chartRow?: typeof CHART_ROW | null;
   chartError?: { message: string } | null;
+  whatifCache?: { whatif_id: string } | null;
+  whatifCacheError?: { message: string } | null;
 }) {
   const userId = opts.userId === undefined ? USER_ID : opts.userId;
   const maybeSingle = vi.fn().mockResolvedValue({
@@ -48,6 +50,17 @@ function makeAuthedClient(opts: {
   const selectChain = { eq: vi.fn().mockReturnValue(eqChain) };
   const from = vi.fn((table: string) => {
     if (table === 'user_charts') return { select: vi.fn().mockReturnValue(selectChain) };
+    if (table === 'whatif_results') {
+      const whatifMaybeSingle = vi.fn().mockResolvedValue({
+        data: opts.whatifCache ?? null,
+        error: opts.whatifCacheError ?? null,
+      });
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({ maybeSingle: whatifMaybeSingle }),
+        }),
+      };
+    }
     return {};
   });
 
@@ -80,12 +93,14 @@ const EMBEDDINGS_CLIENT = { create: vi.fn() };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  rpcFn.mockReset();
   vi.mocked(createServiceRoleClient).mockReturnValue(SERVICE_CLIENT as never);
   vi.mocked(createOpenAiClient).mockReturnValue(OPENAI_CLIENT as never);
   vi.mocked(createEmbeddingsClient).mockReturnValue(EMBEDDINGS_CLIENT as never);
   vi.mocked(buildWhatifRagQueryText).mockReturnValue('work 일주 병인 일간 화');
+  vi.mocked(getWhatifCacheKey).mockReturnValue(WHATIF_RESULT.cache_key);
   vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: false } as never);
-  rpcFn.mockResolvedValue({ error: null });
+  rpcFn.mockResolvedValue({ data: { balance_after: 70, inserted: true }, error: null });
 });
 
 afterEach(() => {
@@ -103,6 +118,12 @@ describe('POST /api/whatif/[type]', () => {
     const body = await res.json();
     expect(body.id).toBe(WHATIF_RESULT.id);
     expect(body.type).toBe('work');
+    expect(rpcFn).toHaveBeenCalledWith('deduct_tokens_once', {
+      uid: USER_ID,
+      delta: -5,
+      reason: 'whatif_use',
+      ref: WHATIF_RESULT.cache_key,
+    });
   });
 
   it('400 INVALID_TYPE → path param 이 enum 외 값', async () => {
@@ -224,55 +245,71 @@ describe('POST /api/whatif/[type]', () => {
   });
 });
 
-describe('포인트 무료 이용', () => {
-  function makeAuthedForFreeUse() {
+describe('만약합 유료 이용', () => {
+  function makeAuthedForPaidUse(opts?: Parameters<typeof makeAuthedClient>[0]) {
     const supabase = makeAuthedClient({});
-    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
-    return supabase;
+    const client = opts ? makeAuthedClient(opts) : supabase;
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    return client;
   }
 
-  it('포인트 RPC가 실패해도 buildWhatif를 호출하고 200을 반환한다', async () => {
+  it('deduct_tokens_once 실패 → 402 + buildWhatif 미호출', async () => {
     rpcFn.mockResolvedValueOnce({ error: { message: 'insufficient balance', code: 'P0001' } });
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse();
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(402);
+    expect(buildWhatif).not.toHaveBeenCalled();
+  });
+
+  it('정상 빌드(fromCache:false) → deduct_tokens_once 호출, 200', async () => {
+    makeAuthedForPaidUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(200);
-    expect(buildWhatif).toHaveBeenCalledOnce();
+    expect(rpcFn).toHaveBeenCalledWith('deduct_tokens_once', {
+      uid: USER_ID,
+      delta: -5,
+      reason: 'whatif_use',
+      ref: WHATIF_RESULT.cache_key,
+    });
   });
 
-  it('정상 빌드(fromCache:false) → deduct_tokens/refund_tokens 미호출, 200', async () => {
-    makeAuthedForFreeUse();
-
-    const res = await POST(makeRequest(), makeParams('work'));
-
-    expect(res.status).toBe(200);
-    expect(rpcFn).not.toHaveBeenCalled();
-  });
-
-  it('GROUNDING_FAILED throw → 422 + refund_tokens 미호출', async () => {
+  it('GROUNDING_FAILED throw → 422 + refund_tokens_once 호출', async () => {
     vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(422);
-    expect(rpcFn).not.toHaveBeenCalled();
+    expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
+      uid: USER_ID,
+      delta: 5,
+      reason: 'whatif_refund',
+      ref: WHATIF_RESULT.cache_key,
+    });
   });
 
-  it('generic throw → 500 + refund_tokens 미호출', async () => {
+  it('generic throw → 500 + refund_tokens_once 호출', async () => {
     vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse();
 
     const res = await POST(makeRequest(), makeParams('work'));
 
     expect(res.status).toBe(500);
-    expect(rpcFn).not.toHaveBeenCalled();
+    expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
+      uid: USER_ID,
+      delta: 5,
+      reason: 'whatif_refund',
+      ref: WHATIF_RESULT.cache_key,
+    });
   });
 
   it('캐시 적중(fromCache:true) → 포인트 RPC 없이 200 반환', async () => {
     vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse({ whatifCache: { whatif_id: WHATIF_RESULT.id } });
 
     const res = await POST(makeRequest(), makeParams('work'));
 
@@ -285,7 +322,7 @@ describe('포인트 무료 이용', () => {
 
     rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } });
     vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse({ whatifCache: { whatif_id: WHATIF_RESULT.id } });
 
     await POST(makeRequest(), makeParams('love'));
 
@@ -293,28 +330,32 @@ describe('포인트 무료 이용', () => {
     consoleSpy.mockRestore();
   });
 
-  it('빌드 실패여도 환불 실패 로그를 남기지 않는다', async () => {
+  it('빌드 실패 후 환불 실패 로그를 남긴다', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    rpcFn.mockResolvedValueOnce({ error: { message: 'refund failed' } });
+    rpcFn
+      .mockResolvedValueOnce({ data: { balance_after: 70, inserted: true }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: 'refund failed' } });
     vi.mocked(buildWhatif).mockRejectedValue(new Error('GROUNDING_FAILED: []'));
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse();
 
     await POST(makeRequest(), makeParams('work'));
 
-    expect(consoleSpy).not.toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
+    expect(consoleSpy).toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
     consoleSpy.mockRestore();
   });
 
-  it('포인트 무료 이용 경로에서는 console.error 미호출', async () => {
+  it('중복 차감 응답(inserted:false)에서 빌드 실패 시 환불 RPC 미호출', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+    rpcFn.mockResolvedValueOnce({ data: { balance_after: 70, inserted: false }, error: null });
     vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
-    makeAuthedForFreeUse();
+    makeAuthedForPaidUse();
 
     await POST(makeRequest(), makeParams('work'));
 
     expect(consoleSpy).not.toHaveBeenCalledWith('whatif_refund_failed', expect.anything());
+    expect(rpcFn).toHaveBeenCalledTimes(1);
     consoleSpy.mockRestore();
   });
 });

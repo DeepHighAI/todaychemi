@@ -11,8 +11,18 @@ import {
 } from '@/lib/llm/banned-phrases';
 import { DEFAULT_LLM_MODEL } from '@/lib/llm/constants';
 import { retryOnce } from '@/lib/llm/retry';
+import { callClaudeFallback, type AnthropicMessagesClient } from '@/lib/llm/anthropic';
+import {
+  isProviderUnhealthy,
+  recordProviderFailure,
+  recordProviderSuccess,
+} from '@/lib/llm/circuit-breaker';
+import { enforceDailyLlmBudget } from '@/lib/llm/budget';
+import { toErrorMessage } from '@/lib/errors/to-message';
+import { estimateLlmCostUsd } from '@/lib/llm/cost';
+import type { LlmModel } from '@/types/hapcard';
 
-// CLAUDE.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
+// AGENTS.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
 // time_context: 오늘 우리는 target_date / replay 일진 날짜 (공개 정보, PII 아님)
 export const HAPCARD_PAYLOAD_WHITELIST = new Set([
   'self_chart_core',
@@ -32,12 +42,16 @@ export interface CallOpenAiDeps {
   openaiClient: {
     chat: {
       completions: {
-        create: (req: Record<string, unknown>) => Promise<OpenAiChatResponse>;
+        create: (
+          req: Record<string, unknown>,
+          options?: { timeout?: number },
+        ) => Promise<OpenAiChatResponse>;
       };
     };
   };
   supabaseServiceRole: SupabaseClient;
   now?: () => Date;
+  anthropicClient?: AnthropicMessagesClient;
   // 테스트 주입용 — 미제공 시 banned_phrases_catalog.yaml 에서 로드
   bannedPhraseCatalog?: BannedPhraseCategory[];
 }
@@ -49,6 +63,8 @@ export interface CallOpenAiInput<TOutput = HapcardLlmOutput> {
   schema?: ZodType<TOutput>;
   payloadWhitelist?: ReadonlySet<string>;
   model?: string;
+  maxCompletionTokens?: number;
+  timeoutMs?: number;
 }
 
 export interface CallOpenAiResult<TOutput = HapcardLlmOutput> {
@@ -70,15 +86,39 @@ function isRetryableError(err: unknown): boolean {
   return true;
 }
 
+function validateLlmText<TOutput>(
+  text: string,
+  schema: ZodType<TOutput>,
+  catalog: BannedPhraseCategory[],
+): TOutput {
+  // JSON parse 실패 → 재시도 가능
+  const raw = JSON.parse(text);
+  // Zod strict 위반 → ZodError → 재시도 불가
+  const validated = schema.parse(raw) as TOutput;
+
+  // banned-phrase + 점수 누설: raw text 검사 (schema 독립적)
+  const banned = findBannedPhrase(text, catalog);
+  if (banned.found) throw new Error(`BANNED_PHRASE: ${banned.phrase}`);
+
+  const scoreLeak = findScoreLeak(text);
+  if (scoreLeak.found) throw new Error(`BANNED_PHRASE: score_leak: ${scoreLeak.phrase}`);
+
+  // ADR-038 Option C: 한자 누수 감지 시 warn-and-pass (UI safety-net이 최종 방어)
+  const hanjaHit = containsClassicalHanja(text);
+  if (hanjaHit.found) console.warn('[CLASSICAL_HANJA]', { phrase: hanjaHit.phrase });
+
+  return validated;
+}
+
 export async function callOpenAi<TOutput = HapcardLlmOutput>(
   input: CallOpenAiInput<TOutput>,
   deps: CallOpenAiDeps,
 ): Promise<CallOpenAiResult<TOutput>> {
   const schema = (input.schema ?? HapcardLlmOutputSchema) as ZodType<TOutput>;
   const whitelist = input.payloadWhitelist ?? HAPCARD_PAYLOAD_WHITELIST;
-  const model = input.model ?? DEFAULT_LLM_MODEL;
+  const model = (input.model ?? DEFAULT_LLM_MODEL) as LlmModel;
 
-  // PII 가드 (CLAUDE.md §5)
+  // PII 가드 (AGENTS.md §5)
   for (const key of Object.keys(input.userPayload as Record<string, unknown>)) {
     if (!whitelist.has(key)) {
       throw new Error(`PII_GUARD_VIOLATION: ${key}`);
@@ -86,12 +126,15 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
   }
 
   const catalog = deps.bannedPhraseCatalog ?? loadBannedPhrases();
+  const now = deps.now?.() ?? new Date();
+
+  await enforceDailyLlmBudget(deps.supabaseServiceRole, now);
 
   let tokenIn = 0;
   let tokenOut = 0;
 
   const parseAndValidate = async (): Promise<TOutput> => {
-    const response = await deps.openaiClient.chat.completions.create({
+    const request = {
       model,
       messages: [
         { role: 'system', content: input.systemPrompt },
@@ -100,47 +143,57 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
       response_format: { type: 'json_object' },
       store: false,
       reasoning_effort: 'low',
-      max_completion_tokens: 4000,
-    });
+      max_completion_tokens: input.maxCompletionTokens ?? 4000,
+    };
+    const options = input.timeoutMs === undefined ? undefined : { timeout: input.timeoutMs };
+    const response = await deps.openaiClient.chat.completions.create(request, options);
 
     tokenIn = response.usage.prompt_tokens;
     tokenOut = response.usage.completion_tokens;
 
     const text = response.choices[0].message.content ?? '';
-    // JSON parse 실패 → 재시도 가능
-    const raw = JSON.parse(text);
-    // Zod strict 위반 → ZodError → 재시도 불가
-    const validated = schema.parse(raw) as TOutput;
-
-    // banned-phrase + 점수 누설: raw text 검사 (schema 독립적)
-    const banned = findBannedPhrase(text, catalog);
-    if (banned.found) throw new Error(`BANNED_PHRASE: ${banned.phrase}`);
-
-    const scoreLeak = findScoreLeak(text);
-    if (scoreLeak.found) throw new Error(`BANNED_PHRASE: score_leak: ${scoreLeak.phrase}`);
-
-    // ADR-038 Option C: 한자 누수 감지 시 warn-and-pass (UI safety-net이 최종 방어)
-    const hanjaHit = containsClassicalHanja(text);
-    if (hanjaHit.found) console.warn('[CLASSICAL_HANJA]', { phrase: hanjaHit.phrase });
-
-    return validated;
+    return validateLlmText(text, schema, catalog);
   };
 
   let output: TOutput;
+  let provider: 'openai' | 'anthropic' = 'openai';
+  let trackedModel: LlmModel = model;
   try {
+    if (isProviderUnhealthy('openai', now)) {
+      throw new Error('OPENAI_PROVIDER_UNHEALTHY: fallback_to_claude');
+    }
     output = await retryOnce(parseAndValidate, { isRetryable: isRetryableError });
+    recordProviderSuccess('openai');
   } catch (err) {
     // banned-phrase 위반이 재시도 후에도 지속 → 표준 오류 코드로 변환
     if (err instanceof Error && err.message.startsWith('BANNED_PHRASE:')) {
       throw new Error(`BANNED_PHRASE_DETECTED: ${err.message.slice('BANNED_PHRASE:'.length).trim()}`);
     }
-    throw err;
+
+    if (!isRetryableError(err) && !(err instanceof Error && err.message.startsWith('OPENAI_PROVIDER_UNHEALTHY'))) {
+      throw err;
+    }
+
+    recordProviderFailure('openai', now);
+
+    try {
+      const fallback = await callClaudeFallback(
+        { systemPrompt: input.systemPrompt, userPayload: input.userPayload },
+        deps,
+      );
+      tokenIn = fallback.tokenIn;
+      tokenOut = fallback.tokenOut;
+      output = validateLlmText(fallback.text, schema, catalog);
+      provider = 'anthropic';
+      trackedModel = 'claude-fallback';
+    } catch (fallbackErr) {
+      throw new Error(`LLM_ALL_PROVIDERS_DOWN: ${toErrorMessage(err)} / ${toErrorMessage(fallbackErr)}`);
+    }
   }
 
-  // 비용 추적 UPSERT — D2: total_usd=0 (토큰 단가 미확정)
-  await trackCost(deps.supabaseServiceRole, deps.now?.() ?? new Date(), tokenIn, tokenOut, model);
+  const totalUsd = await trackCost(deps.supabaseServiceRole, now, tokenIn, tokenOut, trackedModel, provider);
 
-  return { output, usage: { token_in: tokenIn, token_out: tokenOut, total_usd: 0 }, model };
+  return { output, usage: { token_in: tokenIn, token_out: tokenOut, total_usd: totalUsd }, model: trackedModel };
 }
 
 async function trackCost(
@@ -148,34 +201,36 @@ async function trackCost(
   now: Date,
   tokenIn: number,
   tokenOut: number,
-  model: string,
-): Promise<void> {
+  model: LlmModel,
+  provider: 'openai' | 'anthropic' = 'openai',
+): Promise<number> {
   const date = now.toISOString().slice(0, 10);
+  const totalUsd = estimateLlmCostUsd(provider, model, tokenIn, tokenOut);
 
   const { data: existing } = await client
     .from('llm_cost_tracking')
-    .select('call_count, token_in, token_out')
+    .select('call_count, token_in, token_out, total_usd')
     .eq('date', date)
-    .eq('provider', 'openai')
+    .eq('provider', provider)
     .eq('model', model)
     .maybeSingle();
 
-  await client.from('llm_cost_tracking').upsert({
+  const { error } = await client.from('llm_cost_tracking').upsert({
     date,
-    provider: 'openai',
+    provider,
     model,
-    total_usd: 0,
+    total_usd: Number(((existing as { total_usd?: number | string } | null)?.total_usd ?? 0)) + totalUsd,
     call_count: ((existing as { call_count?: number } | null)?.call_count ?? 0) + 1,
     token_in: ((existing as { token_in?: number } | null)?.token_in ?? 0) + tokenIn,
     token_out: ((existing as { token_out?: number } | null)?.token_out ?? 0) + tokenOut,
   }, { onConflict: 'date,provider,model' });
+  if (error) {
+    throw new Error(`LLM_COST_TRACKING_FAILED: ${error.message}`);
+  }
+
+  return totalUsd;
 }
 
-// 실제 OpenAI SDK 인스턴스 팩토리 (의존성 없는 환경용)
-export function createOpenAiClient(): CallOpenAiDeps['openaiClient'] {
-  const { default: OpenAI } = require('openai') as { default: new (opts: Record<string, unknown>) => CallOpenAiDeps['openaiClient'] };
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    project: process.env.OPENAI_PROJECT_ID,
-  });
-}
+// Backward-compatible re-export. The canonical factory enforces production
+// OPENAI_PROJECT_ID routing and SDK timeout settings.
+export { createOpenAiClient } from '@/lib/llm/clients';

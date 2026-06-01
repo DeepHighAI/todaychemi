@@ -1,0 +1,266 @@
+{
+  "generatedAt": "2026-06-01T07:47:00.273Z",
+  "cwd": "C:\\DEV\\SAJU",
+  "verdict": "FAIL",
+  "requiredFailures": [
+    "launch env",
+    "External settings checklist readiness",
+    "Auth readiness",
+    "OpenAI/ZDR readiness",
+    "Toss live readiness",
+    "Vercel readiness",
+    "Operations/E2E readiness"
+  ],
+  "results": [
+    {
+      "name": "launch env",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 4716,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:launch-env"
+    },
+    {
+      "name": "Secret/public env boundary readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 2108,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:secret-boundary-readiness"
+    },
+    {
+      "name": "Launch audit artifact readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 2162,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:launch-audit-readiness"
+    },
+    {
+      "name": "External settings checklist readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 3843,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:external-settings-checklist"
+    },
+    {
+      "name": "TypeScript check",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 11931,
+      "timeoutMs": 180000,
+      "command": "pnpm.cmd tsc --noEmit"
+    },
+    {
+      "name": "Lint check",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 42565,
+      "timeoutMs": 180000,
+      "command": "pnpm.cmd lint"
+    },
+    {
+      "name": "Unit test suite",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 259578,
+      "timeoutMs": 420000,
+      "command": "pnpm.cmd vitest run"
+    },
+    {
+      "name": "Production build",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 67386,
+      "timeoutMs": 300000,
+      "command": "pnpm.cmd build"
+    },
+    {
+      "name": "Auth readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 9141,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:auth-readiness"
+    },
+    {
+      "name": "OpenAI/ZDR readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 2745,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:openai-readiness"
+    },
+    {
+      "name": "LLM/score boundary readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 6541,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:llm-boundary-readiness"
+    },
+    {
+      "name": "LLM resilience readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 17738,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:llm-resilience-readiness"
+    },
+    {
+      "name": "payment DB readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 3145,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:payment-readiness"
+    },
+    {
+      "name": "payment flow readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 27130,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:payment-flow-readiness"
+    },
+    {
+      "name": "Toss live readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 2801,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:toss-live-readiness"
+    },
+    {
+      "name": "billing policy readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1477,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:billing-policy-readiness"
+    },
+    {
+      "name": "DB/RLS readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 11885,
+      "timeoutMs": 180000,
+      "command": "pnpm.cmd verify:db-rls-readiness"
+    },
+    {
+      "name": "Supabase migration dry-run",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 7071,
+      "timeoutMs": 180000,
+      "command": "pnpm.cmd db:push:dry"
+    },
+    {
+      "name": "Supabase RPC security readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1771,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:supabase-security-readiness"
+    },
+    {
+      "name": "Vercel readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 2931,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:vercel-readiness"
+    },
+    {
+      "name": "Operations/E2E readiness",
+      "required": true,
+      "status": "fail",
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 2960,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:ops-readiness"
+    },
+    {
+      "name": "Supply-chain readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 3054,
+      "timeoutMs": 180000,
+      "command": "pnpm.cmd verify:supply-chain-readiness"
+    },
+    {
+      "name": "Public E2E readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 59629,
+      "timeoutMs": 300000,
+      "command": "pnpm.cmd e2e"
+    },
+    {
+      "name": "Auth E2E readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 66641,
+      "timeoutMs": 300000,
+      "command": "pnpm.cmd e2e:auth"
+    },
+    {
+      "name": "Core E2E coverage readiness",
+      "required": true,
+      "status": "pass",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 2068,
+      "timeoutMs": 120000,
+      "command": "pnpm.cmd verify:e2e-coverage-readiness"
+    }
+  ]
+}

@@ -42,6 +42,32 @@ export interface BuildHapcardDeps {
   ragQueryText: (input: BuildHapcardInput) => string;
 }
 
+export interface BuildHapcardResult {
+  result: HapcardResult;
+  fromCache: boolean;
+  cacheKey: string;
+}
+
+export async function getHapcardCacheKey(
+  input: BuildHapcardInput,
+  client: SupabaseClient,
+): Promise<string> {
+  const prompt = await loadPromptForUser(
+    client,
+    MODE_TO_PROMPT_NAME[input.mode],
+    input.user_id,
+  );
+
+  return deriveCacheKey({
+    user_chart_hash: input.self_chart_hash,
+    relation_chart_hash: input.relation_chart_hash,
+    mode: input.mode,
+    prompt_version: prompt.version,
+    theory_profile_version: input.theory_profile_version,
+    target_date: input.target_date,
+  });
+}
+
 // relations.nickname 조회 — 실패해도 throw 하지 않는다 (공유 UX 보조 데이터, 핵심 경로 차단 금지)
 async function fetchRelationNickname(
   client: SupabaseClient,
@@ -117,10 +143,10 @@ async function buildTargetDateCharts(
   };
 }
 
-export async function buildHapcard(
+export async function buildHapcardWithMeta(
   input: BuildHapcardInput,
   deps: BuildHapcardDeps,
-): Promise<HapcardResult> {
+): Promise<BuildHapcardResult> {
   // 1. ADR-008 canary 5% 분산 라우팅 — userId deterministic sampling.
   //    canary 부재 또는 ratio=0 시 active 로 안전하게 fallback.
   const prompt = await loadPromptForUser(
@@ -154,10 +180,14 @@ export async function buildHapcard(
       input.relation_id,
     );
     return {
+      result: {
       ...(cacheRes.data as HapcardResult),
       visuals: deriveVisuals(input.self, input.relation),
       relation_nickname,
       relation_gender_normalized: input.relation.gender_normalized,
+      },
+      fromCache: true,
+      cacheKey,
     };
   }
 
@@ -171,7 +201,7 @@ export async function buildHapcard(
     mode: input.mode,
   });
 
-  // 6. LLM payload 빌드 (PII 5필드 제외 — CLAUDE.md §5)
+  // 6. LLM payload 빌드 (PII 5필드 제외 — AGENTS.md §5)
   const payload = buildLlmPayload({
     self: datedCharts.self,
     relation: datedCharts.relation,
@@ -269,6 +299,27 @@ export async function buildHapcard(
     .single();
 
   if (insertRes.error) {
+    const retry = await deps.supabaseUserClient
+      .from('hapcards')
+      .select('*')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
+    if (retry.data) {
+      const relation_nickname = await fetchRelationNickname(
+        deps.supabaseUserClient,
+        input.relation_id,
+      );
+      return {
+        result: {
+          ...(retry.data as HapcardResult),
+          visuals: deriveVisuals(datedCharts.self, datedCharts.relation),
+          relation_nickname,
+          relation_gender_normalized: datedCharts.relation.gender_normalized,
+        },
+        fromCache: true,
+        cacheKey,
+      };
+    }
     throw new Error(`HAPCARD_INSERT_FAILED: ${insertRes.error.message}`);
   }
 
@@ -298,9 +349,21 @@ export async function buildHapcard(
     input.relation_id,
   );
   return {
+    result: {
     ...(insertRes.data as HapcardResult),
     visuals: deriveVisuals(datedCharts.self, datedCharts.relation),
     relation_nickname,
     relation_gender_normalized: datedCharts.relation.gender_normalized,
+    },
+    fromCache: false,
+    cacheKey,
   };
+}
+
+export async function buildHapcard(
+  input: BuildHapcardInput,
+  deps: BuildHapcardDeps,
+): Promise<HapcardResult> {
+  const { result } = await buildHapcardWithMeta(input, deps);
+  return result;
 }

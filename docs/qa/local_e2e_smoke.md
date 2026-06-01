@@ -23,7 +23,7 @@ pnpm install
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard → API → `anon` key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Dashboard → API → `service_role` key |
 | `OPENAI_API_KEY` | LLM flow(F5·F6·F8) 필수. LLM_DAILY_BUDGET_USD=20 기본 |
-| `KASI_SERVICE_KEY` | 시드·차트 계산용. ⚠ `.env.example` 표기(`KASI_API_KEY`)와 **다름** — 반드시 `KASI_SERVICE_KEY` 로 설정할 것 |
+| `KASI_SERVICE_KEY` | 시드·차트 계산용. `.env.example` 과 실제 코드 모두 이 이름을 사용한다. |
 
 > LLM 관련 키(`OPENAI_API_KEY`)가 없으면 F5·F6·F8 에서 LLM 호출이 실패한다. F1~F4·F7은 LLM 없이도 동작한다.
 
@@ -175,7 +175,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 | 증상 | 확인 |
 |---|---|
 | 폼 Submit 후 아무 반응 없음 | Console error, Network 탭 `/api/onboarding` 응답 확인 |
-| `KASI_SERVICE_KEY` 관련 에러 | `.env.local` 키 이름 확인 (`.env.example`의 `KASI_API_KEY` 와 다름) |
+| `KASI_SERVICE_KEY` 관련 에러 | `.env.local` 키 이름과 값 확인 |
 | 시간 미입력 시 에러 | "태어난 시간을 입력해주세요" 검증 메시지 확인 |
 
 ---
@@ -403,7 +403,7 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 | 증상 | 확인 |
 |---|---|
-| ErrorCard "토큰이 부족해요" | 사용자 토큰 잔액 부족. 토큰 충전 페이지(현재 미구현) 필요 |
+| ErrorCard "토큰이 부족해요" | 사용자 토큰 잔액 부족. `/payments/charge` 충전 flow와 token ledger 확인 필요 |
 | ErrorCard "처리 중 오류" | LLM 키·예산 확인 |
 | WhatifSheet 미열림 | Console error, `WhatifTrigger` → `WhatifSheet` import 확인 |
 
@@ -538,6 +538,6 @@ pnpm dev
 | 항목 | 상태 |
 |---|---|
 | Google OAuth | `docs/runbooks/google_oauth.md` 기준 Dashboard Client ID/Secret 설정 후 smoke 필요. Email/Password는 계속 신뢰 |
-| 토큰 충전 페이지 | `/payments/charge` 미구현 (D1 예정). 토큰 부족 시 CTA 비활성 |
-| Playwright 자동화 | 미구성 (`@playwright/test` 패키지만 존재). Manual 가이드 이후 별도 PR 예정 |
-| KASI_API_KEY vs KASI_SERVICE_KEY | `.env.example` 오기 — 실제 코드는 `KASI_SERVICE_KEY` 사용 |
+| 토큰 충전 페이지 | `/payments/charge` 구현됨. Live Toss/Supabase/Vercel env 설정 후 결제 smoke 필요 |
+| Playwright 자동화 | `pnpm e2e` 기본 public/protected shell smoke 구성됨. `pnpm e2e:auth`는 `pnpm seed:test-user` 후 seeded email login + authenticated API smoke를 opt-in 실행 |
+| KASI_SERVICE_KEY | `.env.example` 과 실제 코드 모두 `KASI_SERVICE_KEY` 사용 |

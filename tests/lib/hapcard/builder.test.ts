@@ -28,7 +28,7 @@ vi.mock('@/lib/rag/grounding-validator', () => ({
   validateClassicCitations: vi.fn(),
 }));
 
-import { buildHapcard } from '@/lib/hapcard/builder';
+import { buildHapcard, buildHapcardWithMeta } from '@/lib/hapcard/builder';
 import { computeScore } from '@/lib/scoring/index';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { embedQuery } from '@/lib/rag/embeddings';
@@ -312,6 +312,23 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     expect(callOpenAi).toHaveBeenCalledTimes(1);
     expect(insert).toHaveBeenCalledTimes(1);
     expect(result.hapcard_id).toBeDefined();
+  });
+
+  it('cache miss insert race → cache 재조회로 복구하고 fromCache 반환', async () => {
+    const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
+    const { client, maybeSingle, single } = makeMockUserClient({ cachedRow: null });
+    maybeSingle
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: existingRow, error: null });
+    single.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'duplicate key value violates unique constraint' },
+    });
+
+    const result = await buildHapcardWithMeta(BASE_INPUT, makeDeps(client));
+
+    expect(result.fromCache).toBe(true);
+    expect(result.result.hapcard_id).toBe(existingRow.hapcard_id);
   });
 
   it('compat_score는 항상 computeScore 결과 (LLM 응답에 score 없음)', async () => {

@@ -30,6 +30,14 @@ if (!apiKey) {
   console.error('Missing OPENAI_API_KEY in .env.local');
   process.exit(1);
 }
+if (!project) {
+  console.error('Missing OPENAI_PROJECT_ID in .env.local');
+  process.exit(1);
+}
+if (!/^proj_[A-Za-z0-9]+$/.test(project)) {
+  console.error('OPENAI_PROJECT_ID must use proj_* format');
+  process.exit(1);
+}
 
 const openai = new OpenAI({ apiKey, project });
 
@@ -94,8 +102,10 @@ async function main() {
     console.log('→ Step 1 출력에서 실제 gpt-5* ID를 확인 후 §1.1 결정 필요');
     console.log('  옵션 A: 코드 모델 ID를 실제 ID로 수정 + migration ALTER');
     console.log('  옵션 B: gpt-4o로 복구 + DB CHECK 제약 ALTER');
+    process.exit(1);
   } else {
     console.log('→ ERROR 발생 모델 있음 — API 키 권한 또는 네트워크 확인 필요');
+    process.exit(1);
   }
 }
 

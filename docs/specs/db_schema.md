@@ -319,7 +319,7 @@ create table public.token_ledger (
   ledger_id    uuid    primary key default gen_random_uuid(),
   user_id      uuid    not null references public.users(user_id) on delete cascade,
   delta        int     not null,            -- 양수=충전, 음수=차감
-  reason       text    not null,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
+  reason       text    not null,            -- 'purchase' | 'hapcard_use' | 'hapcard_refund' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
   reference_id text,                        -- payment_id, hapcard_id 또는 share:<share_id>
   balance_after int    not null,
   created_at   timestamptz not null default now()
@@ -562,7 +562,7 @@ LLM 비용 추적. 일별 공급사별 집계.
 create table public.llm_cost_tracking (
   date        date    not null,
   provider    text    not null check (provider in ('openai', 'anthropic')),
-  model       text    not null,   -- 'gpt-5o' | 'gpt-5' | 'gpt-5-mini' | 'claude-sonnet-4-6'
+  model       text    not null,   -- 'gpt-5o' | 'gpt-5' | 'gpt-5-mini' | 'claude-fallback'
   total_usd   numeric(10,4) not null default 0,
   call_count  int     not null default 0,
   token_in    bigint  not null default 0,

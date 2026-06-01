@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database.types';
 
-import { getSupabaseServiceRoleKey, getSupabaseUrl } from './env';
+import { getSupabaseUrl } from './env';
+import { getSupabaseServiceRoleKey } from './service-role-env';
 
 // Service-role Supabase client — admin / system-only.
 // PII: birth_date, nickname, email, gender, birth_place — LLM 페이로드 직렬화 금지

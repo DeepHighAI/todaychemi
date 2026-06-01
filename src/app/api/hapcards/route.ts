@@ -3,8 +3,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
-import { buildHapcard, type BuildHapcardInput, type BuildHapcardDeps } from '@/lib/hapcard/builder';
+import {
+  buildHapcard,
+  getHapcardCacheKey,
+  type BuildHapcardInput,
+  type BuildHapcardDeps,
+} from '@/lib/hapcard/builder';
 import { buildRagQueryText } from '@/lib/rag/query-text';
+import { FEATURE_TOKEN_COSTS } from '@/lib/payments/token-costs';
 import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
@@ -18,6 +24,11 @@ import { toErrorMessage } from '@/lib/errors/to-message';
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
+}
+
+function tokenRpcInserted(data: unknown): boolean {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  return (data as { inserted?: unknown }).inserted === true;
 }
 
 export async function POST(request: NextRequest) {
@@ -92,20 +103,64 @@ export async function POST(request: NextRequest) {
     question_slot: body.question_slot,
   };
 
+  const serviceClient = createServiceRoleClient();
   const deps: BuildHapcardDeps = {
     supabaseUserClient,
-    supabaseServiceClient: createServiceRoleClient(),
+    supabaseServiceClient: serviceClient,
     openaiClient: createOpenAiClient() as unknown as BuildHapcardDeps['openaiClient'],
     embeddingsClient: createEmbeddingsClient(),
     ragQueryText: buildRagQueryText,
   };
 
+  let charged = false;
+  let billingRef = '';
+
   try {
+    const cacheKey = await getHapcardCacheKey(input, supabaseUserClient);
+    billingRef = cacheKey;
+    const existingRes = await supabaseUserClient
+      .from('hapcards')
+      .select('hapcard_id')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
+    if (existingRes.error) {
+      return apiErrorResponse('INTERNAL_ERROR', existingRes.error.message, 500);
+    }
+
+    if (!existingRes.data) {
+      const { data: deductData, error: deductErr } = await serviceClient.rpc('deduct_tokens_once', {
+        uid: userId,
+        delta: -FEATURE_TOKEN_COSTS.hapcardCreate,
+        reason: 'hapcard_use',
+        ref: cacheKey,
+      });
+      if (deductErr) {
+        return apiErrorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
+      }
+      charged = tokenRpcInserted(deductData);
+    }
+
     const result = await buildHapcard(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     console.error('[POST /api/hapcards]', err);
     const message = toErrorMessage(err);
+    if (charged) {
+      const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
+        uid: userId,
+        delta: FEATURE_TOKEN_COSTS.hapcardCreate,
+        reason: 'hapcard_refund',
+        ref: billingRef,
+      });
+      if (refundErr) {
+        console.error('hapcard_refund_failed', {
+          user_id: userId,
+          relation_id: input.relation_id,
+          original_error: message,
+          refund_error: refundErr.message,
+        });
+      }
+    }
     if (message.startsWith('GROUNDING_FAILED')) {
       return apiErrorResponse('GROUNDING_FAILED', message, 422);
     }

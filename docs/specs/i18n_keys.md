@@ -2,7 +2,7 @@
 
 > 라이브러리: `next-intl`. 번역 파일 위치: `messages/<locale>.json`.
 > 1차 언어: KO (기준). 추가 언어: EN(Phase 1), VI/TH(Phase 3 SEA), MS/ID(Phase 4).
-> CLAUDE.md §4 tech stack 잠금.
+> AGENTS.md §4 tech stack 잠금.
 
 ---
 
@@ -36,7 +36,7 @@
 common.nicknameLabel     (camelCase 금지)
 rel-create-nickname      (하이픈 구분자 금지)
 button.create            (그룹 없는 최상위 공통 키 금지)
-common.settings          (CLAUDE.md §Terminology: 'config' 사용, 'settings' 금지)
+common.settings          (AGENTS.md terminology: 'config' 사용, 'settings' 금지)
 ```
 
 ### 예시

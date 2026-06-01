@@ -199,8 +199,8 @@ trigger_threshold = abs(change_score) >= 10  // 그리드 자동 정렬·푸시 
 
 ### 3.5 결제
 
-- **충전**: 100p ₩1,900 / 500p ₩7,900 / 1,000p ₩9,900
-- **콘텐츠 번들 구독**: ₩6,900/월 — 합보기·다시합 무제한 + 딥합 월 5건 + 광고 제거
+- **충전**: 10부적 ₩1,000 / 55부적 ₩4,500 / 120부적 ₩8,000
+- **콘텐츠 번들 구독**: 후속 결정 항목 — v1 launch 범위에서 제외
 - **PG**: 한국 토스페이먼츠 / 동남아 Stripe + VNPay·PromptPay (Phase 3)
 
 ### 3.6 의도적으로 제외
@@ -228,7 +228,7 @@ trigger_threshold = abs(change_score) >= 10  // 그리드 자동 정렬·푸시 
 |---|---|---|
 | 오늘 | 오늘합, 진행 중 진단, 최근 노트 | 오늘합(Lazy) |
 | 합피드 | 인연 그리드 (**Phase 1.5+ 흐름 변화 큰 인연 자동 상단 정렬, ADR-033**), 카드 탭 → 합보기 + 타임라인 | 합보기(요청 시) |
-| 내사주 | 본명식, 일주 해석, 오행 차트, 운세 흐름 | 캐시 우선, 미스 시 Sonnet |
+| 내사주 | 본명식, 일주 해석, 오행 차트, 운세 흐름 | 캐시 우선, 미스 시 GPT-5 |
 | 이런건어때 시트 | 진단 시리즈, 추천 리포트, 친구합 (Pair Quiz) | 진단·리포트(요청 시) |
 
 ### 4.2 핵심 사용자 흐름
@@ -251,7 +251,7 @@ trigger_threshold = abs(change_score) >= 10  // 그리드 자동 정렬·푸시 
 - Google OAuth는 1단계 *직전*에 1회 처리. 1회 무료 해석 + D+1 무료 다시합 진입 토큰 자동 지급
 - (Track A) 합카드 첫 화면 즉시 인지 → 스크롤 후 [6] 푸터에서 D+1 다시합 알림 예약 / 공유 / 메모 (2차 액션, ADR-026)
 - (Track B) 자기 성찰 카드 → 첫 만남 TIP 3 + 메모 → "인연을 알게 되면 정확 해석 받기" CTA로 Track A 유도
-- 두 번째 해석부터 8p 안내 / 충전 100p ₩1,900 / 구독 ₩6,900/월 CTA
+- 두 번째 해석부터 8p 안내 / 충전 10·55·120부적 CTA
 
 > **순서 정렬 의도 (ADR-032)**: 입구가 *본인 사주*가 아니라 *오늘 떠오르는 사람*이어야 "사주보다 사람 전면" 정체성이 첫 진입에서 즉시 인지된다. 단 **사용자가 본인 정보 입력 이유를 의심하지 않도록 입구 화면에 설명 카피 의무 노출** + 별명·상대 생일 입력 후 "생일 known/unknown" 분기로 사용자 부담 분산.
 
@@ -364,13 +364,13 @@ trigger_threshold = abs(change_score) >= 10  // 그리드 자동 정렬·푸시 
 | 콘텐츠 | 모델 | 호출 빈도 | 토큰 | 위계 |
 |---|---|---|---|---|
 | 합보기 | **GPT-5** | 1회/요청 | in 3,500 + out 800 | **핵심** |
-| 오늘합 | **GPT-5 mini** | 1인/1일 (Lazy) | in 1,500 + out 300 | 보조 |
+| 오늘합 | **GPT-5** | 1인/1일 (Lazy) | in 2,200 + out 350 | 보조 |
 | 마이플레이 | **GPT-5** | 1회/시리즈 | in 2,500 + out 600 | 보조 |
 | 딥합 | **GPT-5** | 1회/리포트 | in 4,000 + out 1,500 | 보조 |
 | 친구합 (Pair Quiz) | **GPT-5** | 1회/Pair | in 4,000 + out 1,000 | 보조 |
-| **Fallback (장애 시)** | Claude Sonnet 4.6 / Haiku 4.5 | 5xx > 20%/5min | 동일 | — |
+| **Fallback (장애 시)** | Claude fallback (`claude-sonnet-4-5` 기본) | OpenAI retryable failure 또는 circuit open | 동일 | — |
 
-> ADR-037에 따라 OpenAI 단일 공급사 4단 운영 (GPT-5 / GPT-5 mini / Claude fallback). 상세 매핑·비용 추산은 `tech_stack.md` §3 참조.
+> ADR-037에 따라 OpenAI primary(GPT-5 / GPT-5 mini 보조 여지) + Anthropic Claude fallback으로 운영한다. 상세 매핑·비용 추산은 `tech_stack.md` §3 참조.
 
 ### 7.2 비용 통제
 
@@ -403,9 +403,10 @@ sha256(chart_hash + question_slot + prompt_version + theory_profile.profile_vers
 
 ### 7.5 ZDR·로그
 
-- OpenAI(핵심)·Anthropic(fallback) 기본 30일 로그, 학습 미사용 (API 기준)
-- MVP: Tier 1로 시작 → ZDR 보류 (Phase 2 수익화 이후 OpenAI ZDR 신청 또는 Enterprise 계약 검토)
-- Privacy Policy 명시: "LLM 제공사(OpenAI 핵심·Anthropic fallback)는 sub-processor, 30일 로그 보관, 학습 미사용"
+- OpenAI production project는 ZDR(Zero Data Retention) 적용 확인이 필수이며 `OPENAI_PROJECT_ID`로 명시 routing한다.
+- OpenAI API key와 `OPENAI_PROJECT_ID`는 같은 organization/project 범위에서 발급·연결한다.
+- Anthropic fallback은 외부 LLM sub-processor로 취급한다. Production fallback key 설정 전 보관·학습 미사용·DPA/계약 상태를 확인하고, LLM payload는 PII 5필드 + gender 원본을 제외한 `chart_core + question_slot + theory_profile.profile_version` 범위로 제한한다.
+- Privacy Policy에는 OpenAI core와 Anthropic fallback을 LLM sub-processor로 명시하되, OpenAI는 ZDR 적용 project로 운영한다.
 
 ### 7.6 프롬프트 카나리
 
@@ -468,7 +469,7 @@ sha256(chart_hash + question_slot + prompt_version + theory_profile.profile_vers
 유저 첫 앱 오픈 시 캐시 미스 → 실시간 생성. DAU 1,000 / 재방문 40% 기준 일 400회 / 월 12,000회.
 
 ### 9.2 비용
-Claude Haiku 4.5, in 1,500 + out 300. 건당 ≈ $0.0035, **월 ≈ $42** (DAU 1,000).
+GPT-5, in 2,200 + out 350. DAU 1,000 / 재방문 40% 기준 월 ≈ $25-40 추산. 실제 production runtime은 `llm_cost_tracking.total_usd` 누적값과 `LLM_DAILY_BUDGET_USD`로 일일 상한을 강제한다.
 
 ### 9.3 타임존·만료
 - 카드 유효일 = 유저 현재 타임존 YYYY-MM-DD
@@ -555,13 +556,13 @@ Claude Haiku 4.5, in 1,500 + out 300. 건당 ≈ $0.0035, **월 ≈ $42** (DAU 1
 ### 11.4 LLM 다운그레이드
 
 ```
-OpenAI 5xx > 20% / 5min
-  → fallback: Anthropic Claude Sonnet 4.6 (또는 Haiku 4.5)
+OpenAI retryable failure 3회 / 5min 또는 circuit open
+  → fallback: Anthropic Claude (`ANTHROPIC_FALLBACK_MODEL`, 기본 claude-sonnet-4-5)
   → Anthropic도 장애 시: 캐시된 interpretations만 노출 + "일시 점검 중" 배너
   → 신규 요청 시 LLM_ALL_PROVIDERS_DOWN 응답
 ```
 
-Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 30분 skip.
+Runtime circuit breaker: 5분 동안 retryable failure 3회 이상 시 OpenAI 신규 요청을 30분 skip.
 
 > ADR-037에 따라 OpenAI 핵심 / Anthropic fallback. 방향이 v3.3(Anthropic→OpenAI)에서 역전됨. 인시던트 런북 `openai-outage.md` (1차) + `anthropic-outage.md` (fallback) 양쪽 작성.
 
@@ -709,7 +710,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 ### 13.4 Phase 2 — 수익화 (4-6주)
 
 - 딥합 6종
-- 콘텐츠 번들 구독 ₩6,900/월
+- 콘텐츠 번들 구독은 후속 결정 항목
 - 친구합 (Pair Quiz) (Pair Quiz) — 무료 + 8p 업셀
 - 친구 초대 리워드 (양쪽 50p)
 - Hybrid 오늘합 (prewarm + lazy)
@@ -765,7 +766,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 - 오늘합 조회율 (DAU 대비) > 40%
 - D7 retention ≥ 35%
 - 관계 진단 결과 카카오·인스타 공유율 > 5%
-- 무료→유료 전환율(충전 또는 구독) ≥ 8%
+- 무료→유료 전환율(충전) ≥ 8%
 - 고전 번역 👎 비율 < 10%
 
 ### 14.3 Phase 1.5 / Phase 2 핵심 지표
@@ -789,7 +790,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 | 리스크 | 영향 | 대응 |
 |---|---|---|
 | ssaju G0 실패 | Phase 0 지연 | Tier 분기로 manseryeok-js 등 fallback 전환 (§6.2) |
-| LLM 비용 폭증 | 운영비 손실 | 일 예산 자동 차단 + 캐시 + Haiku/Sonnet/Opus 분리 (§7.2) |
+| LLM 비용 폭증 | 운영비 손실 | 일 예산 자동 차단(`LLM_DAILY_BUDGET_USD`) + 캐시 + circuit breaker (§7.2) |
 | 프롬프트 회귀 | 품질 하락·이탈 | 카나리 5% + 즉시 롤백 SQL (§7.6) |
 | PII 유출 | 신뢰·법적 리스크 | LLM 페이로드 grep 테스트 강제 (§6.4) |
 | ChatGPT/Gemini 카테고리 혼동 | 차별화 실패 | 자유 채팅 영구 미제공 (§3.6, ADR-002) |
@@ -812,7 +813,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 - **ADR-002**: 자유 입력 AI 채팅 미제공. LLM은 구조화 진단·카드·리포트만
 - **ADR-003**: 만세력 = KASI + ssaju + manseryeok-js 다중 검증
 - **ADR-004**: PII 최소화 — birth data 원본 LLM 미전달
-- **ADR-005**: 토큰·구독 결합. 구독 ₩6,900/월(콘텐츠 번들). 가입 보너스 = 1회 무료 해석 + D+1 다시합 진입 토큰
+- **ADR-005**: 토큰 충전 우선. 구독형 콘텐츠 번들은 후속 결정 항목. 가입 보너스 = 1회 무료 해석 + D+1 다시합 진입 토큰
 - **ADR-006**: 한국 6-12개월 검증 → SEA Phase 3(베트남·태국) → Phase 4(싱가포르·말레이시아·인도네시아)
 - **ADR-007**: UI 무드 = Notion × Apple Notes
 - **ADR-008**: 프롬프트 카나리 5% + 즉시 롤백 SQL
@@ -824,7 +825,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 - **ADR-014 (ADR-025로 재정의)**: 6모드 (합플레이) = 일합 / 친구합 / 돈합 / 첫합 / **썸합** / **오래합**. 기본 가중(40/30/30) 위 ±10p 강조. 변경 시 카나리 + chart_hash 회귀
 - **ADR-015**: 다시합 명리 근거 = 본명식 불변 / 일진(D+1)·주운(D+7)·월운(D+30) 시간 변수. 합카드 "근거 보기"에 현재 일진/주운/월운과 양쪽 일주 영향 항상 표시
 - **ADR-016**: 합카드 1~6 컴포넌트 Phase 1 잠금. 합점수와 명리 근거는 결정형, 본문만 LLM
-- **ADR-017**: 가입 보너스 단순화 = 1회 무료 해석 + D+1 다시합 진입 토큰. 구독 = ₩6,900/월(콘텐츠 번들)
+- **ADR-017**: 가입 보너스 단순화 = 1회 무료 해석 + D+1 다시합 진입 토큰. 구독형 콘텐츠 번들은 후속 결정 항목
 - **ADR-018**: 모트 = 명리 정확성 자산 (KASI Agreement + ssaju + manseryeok-js + prompt_version + banned_phrases + 고전 RAG 크라우드 검수)
 - **ADR-019**: Phase 1 retention 측정 = GA4. PostHog는 Phase 1.5 이후 saju-specific 보조
 - **ADR-020 (거부)**: 전문가 실시간 상담·UGC 커뮤니티 Q&A 미도입. 카테고리 동질화 + 모더레이션·심의·법적 리스크
@@ -844,7 +845,7 @@ Edge Function circuit breaker: 5분 동안 5xx 20% 이상 시 해당 공급사 3
 - **ADR-034 (수정, 채택)**: 합카드 [4] 본문 영역별 카피 — *첫 viewport 요약*과 *자세히 보기*를 분리: ① **첫 화면 요약 150자 이내** (결론 1줄 + 강점 1줄 + 주의점 1줄 + 일단이거해봐 3개) ② **자세히 보기 펼침 400-600자** (각 섹션 상세화 + 모드별 본문 변형) ③ **다시합 변화 설명 150-250자**. 첫 화면은 짧고 행동 위주, 자세히 보기는 유료 결과의 납득감 확보. ChatGPT 풀이 깊이 경쟁 회피 + 유료 가치 동시. 보조 진단 시리즈(350-450자)·딥합(1,500-2,000자)는 별도 상한 유지
 - **ADR-035 (신규, 채택)**: 호환성 점수 계산 스펙 별도 문서 분리 — `compatibility_scoring_spec.md`로 ① 천간합·지지합·삼합·반합·형·충·파·해 점수표 ② 합/충 동시 발생 우선순위·중첩 처리 ③ 오행 보완·과다 중첩 계산식 ④ 시간 미상 시나리오 ± 신뢰 구간 산정 ⑤ 6모드별 ±10p 가중치 재분배 매핑 ⑥ 점수 클램프(0-100) ⑦ 결정성 보장 검증을 명세화. Phase 0 G1에서 명리 specialist 검수. **`scoring_version` 필드**로 prompt_version과 별개 관리(카나리·롤백 가능)
 - **ADR-036 (신규, 채택)**: 다시합 변화 점수 결정성 — `change_score = current - previous_snapshot_score`, `change_reason = top 1-3 changed_factors`, `trigger_threshold = abs(change_score) >= 10`. 결정성 보장: ① 동일 (chart_hash, scoring_version, prompt_version, 일진 date) → 캐시 히트 100% 결정적 ② previous_snapshot은 *같은 scoring_version + prompt_version 페어* 기준 ③ 버전 변경 시 변화 그래프 점선 + 수직 마커 + 안내 카피 의무 ④ 메모 수정은 점수 영향 0(타임라인 텍스트만). 변화 폭 임계값 ±10p는 [TBD-6]로 Phase 1.5 출시 후 8주 실측 후 재조정
-- **ADR-037 (신규, 채택)**: 기술 스택 잠금 — Frontend = Next.js App Router + TypeScript / UI = Tailwind + shadcn/ui + Radix UI / 상태 = TanStack Query + Zustand / 차트 = Recharts / API = Next.js Route Handlers / DB·Auth·Storage = Supabase Free / Hosting = Vercel Hobby / 만세력 = ssaju + manseryeok-js + KASI precompute (**ssaju 역할 확대 2026-05-03 §1.1**: cross-validator → 年/月/時柱 절기·입춘 기준 프로덕션 source + day_pillar cross-validator. KASI = day_pillar 진본. 야자시 처리 = 조자시 통합 학파 채택(ssaju 동일 기준). 근거: KASI 절기 시각 API 부재, normalize.ts lunSecha·lunWolgeon 기준 불일치 §1.1 결정) / 사주 엔진 = TypeScript fortune-core (ADR-035) / **LLM = OpenAI 단일 공급사 4단 (GPT-5 / GPT-5 mini) + Anthropic Claude fallback** / 결제 = 토스페이먼츠 V2 `@tosspayments/tosspayments-sdk`·Stripe / 분석 = GA4 + Sentry + PostHog / 테스트 = Vitest + Playwright + Zod / 패키징 = PWA + Bubblewrap. 상세 매핑·비용·무료 한도·재검토 정책은 `tech_stack.md` 참조. Phase 3 SEA 진입 전 호스팅(Vercel→Cloudflare/Edge) 재검토 의무
+- **ADR-037 (신규, 채택)**: 기술 스택 잠금 — Frontend = Next.js App Router + TypeScript / UI = Tailwind + shadcn/ui + Radix UI / 상태 = TanStack Query + Zustand / 차트 = Recharts / API = Next.js Route Handlers / DB·Auth·Storage = Supabase Free / Hosting = Vercel Hobby / 만세력 = ssaju + manseryeok-js + KASI precompute (**ssaju 역할 확대 2026-05-03 §1.1**: cross-validator → 年/月/時柱 절기·입춘 기준 프로덕션 source + day_pillar cross-validator. KASI = day_pillar 진본. 야자시 처리 = 조자시 통합 학파 채택(ssaju 동일 기준). 근거: KASI 절기 시각 API 부재, normalize.ts lunSecha·lunWolgeon 기준 불일치 §1.1 결정) / 사주 엔진 = TypeScript fortune-core (ADR-035) / **LLM = OpenAI primary(GPT-5 / GPT-5 mini 보조 여지) + Anthropic Claude fallback** / 결제 = 토스페이먼츠 V2 `@tosspayments/tosspayments-sdk`·Stripe / 분석 = GA4 + Sentry + PostHog / 테스트 = Vitest + Playwright + Zod / 패키징 = PWA + Bubblewrap. 상세 매핑·비용·무료 한도·재검토 정책은 `tech_stack.md` 참조. Phase 3 SEA 진입 전 호스팅(Vercel→Cloudflare/Edge) 재검토 의무
 - **ADR-038 (신규, 채택)**: Hanja Display Policy — UI layer Korean conversion; RAG verbatim preserved — LLM 출력 필드(`main_text`, `cause_factors`, `why_cards`, `actions`)의 漢字를 UI 표시 시 한글로 변환. `convertHanja()` safety-net을 4개 컴포넌트(body·conclusion·highlights-2up·actions)에 적용. RAG/DB 원문(`rag_content/classics/*.yaml`)은 그대로 보존 — ADR-018 verbatim 규칙은 저장 레이어에만 적용(UI 레이어 변환 허용). 구현: `hanja-readings.ts` + `post-process.ts` + `banned-phrases.containsClassicalHanja()` + builder UI 매핑 + 6모드 prompts v0.8. 상세: `docs/adr/ADR-038-hanja-display-policy.md`
 
 ---

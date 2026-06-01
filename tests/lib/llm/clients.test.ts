@@ -18,9 +18,11 @@ describe('createOpenAiClient', () => {
       this.embeddings = { create: vi.fn() };
     });
     process.env.OPENAI_API_KEY = 'sk-test-key';
+    process.env.OPENAI_PROJECT_ID = 'proj_test';
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.env = { ...ORIGINAL_ENV };
   });
 
@@ -28,7 +30,11 @@ describe('createOpenAiClient', () => {
     const { createOpenAiClient } = await import('@/lib/llm/clients');
     createOpenAiClient();
     expect(OpenAiCtor).toHaveBeenCalledTimes(1);
-    expect(OpenAiCtor.mock.calls[0][0]).toEqual({ apiKey: 'sk-test-key', timeout: 60_000 });
+    expect(OpenAiCtor.mock.calls[0][0]).toEqual({
+      apiKey: 'sk-test-key',
+      project: 'proj_test',
+      timeout: 60_000,
+    });
   });
 
   it('OPENAI_API_KEY 누락 시 ConfigError throw', async () => {
@@ -37,11 +43,25 @@ describe('createOpenAiClient', () => {
     expect(() => createOpenAiClient()).toThrow(/OPENAI_API_KEY/);
   });
 
+  it('production에서 OPENAI_PROJECT_ID 누락 시 ConfigError throw', async () => {
+    delete process.env.OPENAI_PROJECT_ID;
+    vi.stubEnv('NODE_ENV', 'production');
+    const { createOpenAiClient } = await import('@/lib/llm/clients');
+    expect(() => createOpenAiClient()).toThrow(/OPENAI_PROJECT_ID/);
+  });
+
   it('반환 객체는 chat.completions.create 와 embeddings.create 노출', async () => {
     const { createOpenAiClient } = await import('@/lib/llm/clients');
     const client = createOpenAiClient();
     expect(typeof client.chat.completions.create).toBe('function');
     expect(typeof client.embeddings.create).toBe('function');
+  });
+
+  it('legacy llm/openai export도 canonical factory를 사용해 production project를 강제', async () => {
+    delete process.env.OPENAI_PROJECT_ID;
+    vi.stubEnv('NODE_ENV', 'production');
+    const { createOpenAiClient } = await import('@/lib/llm/openai');
+    expect(() => createOpenAiClient()).toThrow(/OPENAI_PROJECT_ID/);
   });
 });
 
@@ -54,9 +74,11 @@ describe('createEmbeddingsClient', () => {
       this.chat = { completions: { create: vi.fn() } };
     });
     process.env.OPENAI_API_KEY = 'sk-test-key';
+    process.env.OPENAI_PROJECT_ID = 'proj_test';
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     process.env = { ...ORIGINAL_ENV };
   });
 

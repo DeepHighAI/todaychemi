@@ -1,7 +1,7 @@
 import type { ChartCore, YunseCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
-// CLAUDE.md §5 — LLM 페이로드 화이트리스트:
+// AGENTS.md §5 — LLM 페이로드 화이트리스트:
 // chart_core(self) + chart_core(relation) + mode + question_slot? + theory_profile.profile_version
 // time_context: target_date / replay 일진 날짜 (PII 아님, 모든 사용자 공통 공개 정보)
 // 절대 포함 금지: birth_date, name, nickname, email, birth_place, raw gender,

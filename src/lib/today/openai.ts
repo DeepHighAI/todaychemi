@@ -1,9 +1,13 @@
 import type OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { TodayLlmInput } from '@/lib/today/builder';
 import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
+import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
+import type { AnthropicMessagesClient } from '@/lib/llm/anthropic';
+import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 
 // Task 1: 오늘카드 LLM-only timeout. 60s SDK 기본 → 25s 로 단축.
 // (전체 today 응답 시간 ≤ 30s 목표. KASI compute + DB save 가 약 5s 여유.)
@@ -22,6 +26,28 @@ const FALLBACK_FIELDS = {
   favorable_action_reason: '새로운 해석이 없을 때는 일정과 마음을 먼저 정돈하면 하루 흐름을 안정적으로 가져갈 수 있어요.',
 } satisfies Omit<DailyHapCard, 'reused_from_yesterday'>;
 
+const DAILY_HAP_LLM_OUTPUT_SCHEMA = z
+  .object({
+    headline: z.string().optional(),
+    headline_reason: z.string().optional(),
+    avoid_phrase: z.string().optional(),
+    avoid_phrase_reason: z.string().optional(),
+    favorable_action: z.string().optional(),
+    favorable_action_reason: z.string().optional(),
+  })
+  .passthrough();
+
+type DailyHapLlmOutput = z.infer<typeof DAILY_HAP_LLM_OUTPUT_SCHEMA>;
+
+const TODAY_PAYLOAD_WHITELIST = new Set(['chart_core', 'relation_chart_core', 'today_date']);
+
+export interface DailyHapLlmOptions {
+  costClient?: SupabaseClient;
+  now?: () => Date;
+  anthropicClient?: AnthropicMessagesClient;
+  bannedPhraseCatalog?: BannedPhraseCategory[];
+}
+
 function textOrFallback(value: string | undefined, fallback: string): string {
   return value?.trim() || fallback;
 }
@@ -39,6 +65,7 @@ export async function callDailyHapLlm(
   openai: OpenAI,
   supabase: SupabaseClient,
   userId: string,
+  options: DailyHapLlmOptions = {},
 ): Promise<DailyHapCard> {
   const relationPresent = input.relation_chart !== null;
   const promptName = relationPresent ? PROMPT_NAME_RELATION : PROMPT_NAME_SINGLE;
@@ -59,39 +86,38 @@ export async function callDailyHapLlm(
         today_date: input.today_date,
       };
 
-  let response;
+  let raw: DailyHapLlmOutput;
   try {
-    response = await openai.chat.completions.create(
+    const result = await callOpenAi<DailyHapLlmOutput>(
       {
+        systemPrompt,
+        userPayload,
+        schema: DAILY_HAP_LLM_OUTPUT_SCHEMA,
+        payloadWhitelist: TODAY_PAYLOAD_WHITELIST,
         model: selectLlmModel('today'),
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: JSON.stringify(userPayload) },
-        ],
-        response_format: { type: 'json_object' },
-        store: false,
-        reasoning_effort: 'low',
-        // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 → LLM_PARSE_FAIL.
+        // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 -> LLM_PARSE_FAIL.
         // 2000 으로 상향하여 'Unexpected end of JSON input' 회귀 차단. 비용 +10-20% 예상.
-        max_completion_tokens: 2000,
+        maxCompletionTokens: 2000,
+        timeoutMs: TODAY_LLM_TIMEOUT_MS,
       },
-      { timeout: TODAY_LLM_TIMEOUT_MS },
+      {
+        openaiClient: openai as unknown as CallOpenAiDeps['openaiClient'],
+        supabaseServiceRole: options.costClient ?? supabase,
+        now: options.now,
+        anthropicClient: options.anthropicClient,
+        bannedPhraseCatalog: options.bannedPhraseCatalog,
+      },
     );
+    raw = result.output;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (/timeout|aborted|timed out/i.test(msg)) {
       throw new Error(`LLM_TIMEOUT: ${msg}`);
     }
+    if (/Unexpected token|Unexpected end|JSON|parse/i.test(msg)) {
+      throw new Error(`LLM_PARSE_FAIL: ${msg}`);
+    }
     throw err;
-  }
-
-  const text = response.choices[0].message.content ?? '{}';
-  let raw: Partial<DailyHapCard>;
-  try {
-    raw = JSON.parse(text) as Partial<DailyHapCard>;
-  } catch (parseErr) {
-    const msg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-    throw new Error(`LLM_PARSE_FAIL: ${msg}`);
   }
 
   return {

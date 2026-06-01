@@ -1,6 +1,6 @@
 # API Routes Spec
 
-> 본 문서는 Next.js 15 App Router Route Handlers + Server Actions 전체 목록이다.
+> 본 문서는 Next.js App Router Route Handlers + Server Actions 전체 목록이다.
 > 에러 코드는 `docs/specs/errors.md` 참조. 타입은 `docs/specs/contracts.md` 참조.
 
 ---
@@ -9,10 +9,11 @@
 
 | Route | Type | Auth | Request | Response | Notes |
 |---|---|---|---|---|---|
-| `POST /api/hapcards` | Route Handler | required | `{relation_id, mode, theory_profile_version, question_slot?}` | `HapcardResult` JSON | KST `target_date` 서버 산출, 날짜별 캐시/재분석 |
+| `POST /api/hapcards` | Route Handler | required | `{relation_id, mode, theory_profile_version, question_slot?}` | `HapcardResult` JSON | 8p 차감, KST `target_date` 서버 산출, 날짜별 캐시/재분석. 캐시 hit는 신규 차감 없음 |
 | `GET /api/today` | Route Handler | required | — | `DailyHap` JSON | lazy-first 캐시 (자정 만료) |
 | `POST /actions/createRelation` | Server Action | required | `RelationCreate` | `RelationRow` | Zod validated, 닉네임만 저장 |
 | `POST /api/hapcards/[id]/replay` | Route Handler | required | `{replay_reason?}` | `HapcardReplayResult` | 4p 차감, idempotency(jinjin_date UNIQUE), 보상 트랜잭션 |
+| `POST /api/whatif/[type]` | Route Handler | required | path `type` | `WhatifResult` | 5p 차감, chart_hash+type+prompt cache hit는 신규 차감 없음 |
 | `POST /api/hapcards/[id]/share` | Route Handler | required | `{range, channel}` | `{share_id,url,og_image_url,title,text,expires_at}` | 30일 공개 토큰 생성, raw `hapcard_id` 미노출 |
 | `POST /api/share/complete` | Route Handler | required | `{share_id, channel}` | `{ok,reward}` | 클라이언트 공유 완료 기록용. 보상 지급 없음 |
 | `POST /api/share/kakao/callback` | Route Handler | Kakao admin key | `share_id` | `{ok,reward}` | KakaoTalk Share webhook, `X-Kakao-Resource-ID` 멱등 |
@@ -26,7 +27,7 @@
 | `PATCH /api/me` | Route Handler | required | `OnboardingRequest` | `{ok,chart_hash}` | 내 사주맵 수정. legal consent 필드는 변경하지 않음 |
 | `GET /api/me/export` | Route Handler | required | — | JSON attachment | 개인정보 열람·전송 요구용 JSON export |
 | `POST /api/me/delete-request` | Route Handler | required | — | `{ok,deletion_requested_at}` | 회원 탈퇴 요청. `users.deletion_requested_at` 기록, 30일 grace period |
-| `GET /api/me/wallet` | Route Handler | required | — | `WalletResponse` | 보유 부적, 최근 원장, 최근 사용량 |
+| `GET /api/me/wallet` | Route Handler | required | — | `WalletResponse` | 보유 부적, 최근 원장, 이번 달 사용량 + 최근 14일 사용량 |
 | `POST /api/payments/init` | Route Handler | required | `{product_id}` | `PaymentInitResponse` | 서버 상품 카탈로그로 pending 주문 생성 |
 | `GET /api/payments/order` | Route Handler | required | `?orderId=` | `PaymentOrderResponse` | checkout이 본인 주문 + Toss client key 조회 |
 | `POST /api/payments/webhook` | Route Handler | Toss 재조회 검증 | toss payload | `200 OK` | 후속 환불/취소 자동화 |
@@ -211,16 +212,18 @@ event: error
 data: {"code":"LLM_TIMEOUT","message":"잠시 후 다시"}
 ```
 
-### LLM 폭포식 fallback
+### LLM retry / fallback
 
 ```
 GPT-5 (primary)
-  └─ timeout 20s → GPT-5 (secondary)
-       └─ timeout 20s → Claude Sonnet 4.6 (fallback)
-            └─ timeout 20s → 503 LLM_ALL_PROVIDERS_DOWN
+  └─ retryable failure / timeout → retry once
+       └─ OpenAI circuit open (3 retryable failures / 5분) → Claude fallback
+            └─ fallback unavailable → 503 LLM_ALL_PROVIDERS_DOWN
 ```
 
-PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 (CLAUDE.md §5).
+Claude fallback 모델은 `ANTHROPIC_FALLBACK_MODEL`로 지정하며, 미설정 시 `claude-sonnet-4-5`를 사용한다.
+
+PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 (AGENTS.md §5).
 허용 필드: `chart_core` + `question_slot` + `theory_profile.profile_version`.
 
 ---
