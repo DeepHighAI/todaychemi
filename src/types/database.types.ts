@@ -704,10 +704,13 @@ export type Database = {
       payments: {
         Row: {
           amount_krw: number
+          charge_type: string
           confirmed_at: string | null
           created_at: string
           failure_code: string | null
           failure_message: string | null
+          feature_id: string | null
+          feature_ref: string | null
           payment_id: string
           product_id: string | null
           receipt_url: string | null
@@ -721,10 +724,13 @@ export type Database = {
         }
         Insert: {
           amount_krw: number
+          charge_type?: string
           confirmed_at?: string | null
           created_at?: string
           failure_code?: string | null
           failure_message?: string | null
+          feature_id?: string | null
+          feature_ref?: string | null
           payment_id?: string
           product_id?: string | null
           receipt_url?: string | null
@@ -738,10 +744,13 @@ export type Database = {
         }
         Update: {
           amount_krw?: number
+          charge_type?: string
           confirmed_at?: string | null
           created_at?: string
           failure_code?: string | null
           failure_message?: string | null
+          feature_id?: string | null
+          feature_ref?: string | null
           payment_id?: string
           product_id?: string | null
           receipt_url?: string | null
