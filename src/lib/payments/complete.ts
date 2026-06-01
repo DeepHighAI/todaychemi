@@ -143,7 +143,8 @@ export async function confirmPaymentForUser(input: {
   return { status: 'confirmed', balance_after: balanceAfter ?? null, payment };
 }
 
-async function confirmOrQueryTossPayment(input: {
+// 토스 승인(confirm) + 실패 시 조회(getTossPayment) 폴백. 토큰충전·피처결제 양쪽이 공유.
+export async function confirmOrQueryTossPayment(input: {
   paymentKey: string;
   orderId: string;
   amount: number;

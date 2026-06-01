@@ -715,7 +715,7 @@ export type Database = {
           product_id: string | null
           receipt_url: string | null
           status: string
-          token_amount: number
+          token_amount: number | null
           toss_customer_key: string | null
           toss_order_id: string
           toss_payment_key: string | null
@@ -735,7 +735,7 @@ export type Database = {
           product_id?: string | null
           receipt_url?: string | null
           status: string
-          token_amount: number
+          token_amount?: number | null
           toss_customer_key?: string | null
           toss_order_id: string
           toss_payment_key?: string | null
@@ -755,7 +755,7 @@ export type Database = {
           product_id?: string | null
           receipt_url?: string | null
           status?: string
-          token_amount?: number
+          token_amount?: number | null
           toss_customer_key?: string | null
           toss_order_id?: string
           toss_payment_key?: string | null
@@ -1100,6 +1100,19 @@ export type Database = {
           uid: string
         }
         Returns: number
+      }
+      confirm_feature_payment: {
+        Args: {
+          p_amount_krw: number
+          p_confirmed_at?: string | null
+          p_feature_id: string
+          p_feature_ref: string
+          p_receipt_url?: string | null
+          p_toss_order_id: string
+          p_toss_payment_key: string
+          uid: string
+        }
+        Returns: string
       }
       award_hapcard_share_reward: {
         Args: {
