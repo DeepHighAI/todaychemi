@@ -9,6 +9,8 @@ export const ERROR_CODES = [
   'IP_RATE_LIMIT',
   'NETWORK_OFFLINE',
   'INSUFFICIENT_TOKENS',
+  'PAYMENT_REQUIRED',
+  'RATE_LIMITED',
   'GROUNDING_FAILED',
   'INTERNAL_ERROR',
   'HAPCARD_NOT_FOUND',
@@ -35,6 +37,8 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   IP_RATE_LIMIT: '너무 자주 시도하고 있어요. 1분 후 다시 해주세요.',
   NETWORK_OFFLINE: '인터넷 연결이 끊어졌어요. 마지막 결과는 확인할 수 있어요.',
   INSUFFICIENT_TOKENS: '포인트가 부족해요. 충전 후 다시 시도해주세요.',
+  PAYMENT_REQUIRED: '이번 사용은 결제가 필요해요. 결제하고 결과를 확인해보세요.',
+  RATE_LIMITED: '오늘 미리보기 생성 한도에 도달했어요. 잠시 후 다시 시도해주세요.',
   GROUNDING_FAILED: '고전 문헌 검증에 실패했어요. 잠시 후 다시 시도해주세요.',
   INTERNAL_ERROR: '잠시 문제가 생겼어요. 다시 시도해주세요.',
   HAPCARD_NOT_FOUND: '오늘 우리는을 찾을 수 없어요.',
@@ -44,6 +48,7 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
 };
 
 // 특정 에러 코드에 대한 CTA 링크 정의 (현재: INSUFFICIENT_TOKENS → 충전 페이지)
+// pay-per-use 전환(ADR-039): 충전 페이지 제거 + 결제 시트 도입은 Phase 5/6 에서 함께 처리한다.
 export const ERROR_CTA: Partial<Record<ErrorCode, { label: string; href: string }>> = {
   INSUFFICIENT_TOKENS: { label: '충전하러 가기', href: '/payments/charge' },
 };
