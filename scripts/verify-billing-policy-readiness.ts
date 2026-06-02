@@ -7,6 +7,10 @@ interface CheckResult {
   detail: string;
 }
 
+function exists(file: string): boolean {
+  return existsSync(resolve(process.cwd(), file));
+}
+
 function readRequired(file: string): string {
   const absolutePath = resolve(process.cwd(), file);
   if (!existsSync(absolutePath)) {
@@ -27,154 +31,100 @@ function addResult(results: CheckResult[], label: string, ok: boolean, detail: s
   console.log(`[${ok ? 'OK' : 'FAIL'}] ${label} - ${detail}`);
 }
 
-function routeSpendsTokens(file: string, reason: string): boolean {
-  const source = readRequired(file);
-  return /rpc\('deduct_tokens(?:_once)?'/.test(source) && source.includes(reason);
-}
-
+// 유료 라우트가 무료 경로(부적 차감)에서 생성 실패 시 환불하는지 확인.
 function routeRefundsTokens(file: string, reason: string): boolean {
   const source = readRequired(file);
   return /rpc\('refund_tokens(?:_once)?'/.test(source) && source.includes(reason);
 }
 
 function main() {
-  console.log('Billing policy readiness check');
+  console.log('Billing policy readiness check (pay-per-use, ADR-039)');
   console.log('This command is read-only. It reports policy/code drift and does not decide pricing.');
   console.log('');
 
   const results: CheckResult[] = [];
-  const prd = readRequired('PRD.md');
-  const plan = readRequired('fluttering-gathering-island.md');
-  const paymentsSpec = readRequired('docs/specs/payments.md');
-  const dbSchemaSpec = readRequired('docs/specs/db_schema.md');
-  const tokenLedgerMigration = readRequired('supabase/migrations/0009_token_ledger.sql');
-  const tokenSpendMigration = readRequired('supabase/migrations/20260531031246_token_spend_idempotency.sql');
-  const products = readRequired('src/lib/payments/products.ts');
-  const whatifRouteTest = readRequired('tests/app/api/whatif/[type]/route.test.ts');
+  const featurePrices = readRequired('src/lib/payments/feature-prices.ts');
+  const featureMigration = 'supabase/migrations/20260601000000_feature_pay_per_use.sql';
 
   addResult(
     results,
-    'server product catalog matches PRD token packs',
-    hasAll(products, [
-      /tokens_10[\s\S]*tokens:\s*10[\s\S]*amount_krw:\s*1000/,
-      /tokens_50[\s\S]*tokens:\s*55[\s\S]*amount_krw:\s*4500/,
-      /tokens_100[\s\S]*tokens:\s*120[\s\S]*amount_krw:\s*8000/,
+    'feature price catalog matches pay-per-use prices',
+    hasAll(featurePrices, [
+      /hapcard:\s*\{[^}]*amount_krw:\s*800/,
+      /whatif:\s*\{[^}]*amount_krw:\s*500/,
+      /replay:\s*\{[^}]*amount_krw:\s*400/,
     ]),
-    'expected 10/55/120 token packs at 1000/4500/8000 KRW',
+    'feature-prices.ts: hapcard 800 / whatif 500 / replay 400 KRW',
   );
 
   addResult(
     results,
-    'payments spec documents the implemented Toss product ids',
-    hasAll(paymentsSpec, ['tokens_10', 'tokens_50', 'tokens_100', '10', '55', '120']),
-    'docs/specs/payments.md includes token product ids and quantities',
+    'legacy token-pack catalog removed',
+    !exists('src/lib/payments/products.ts') && !exists('src/lib/payments/token-costs.ts'),
+    'products.ts and token-costs.ts no longer exist',
   );
 
   addResult(
     results,
-    'PRD contains the same launch token pack quantities and prices',
-    hasAll(prd, ['10', '1,000', '55', '4,500', '120', '8,000']),
-    'PRD.md Section 13 should agree with the server catalog',
-  );
-
-  const oldPlanPricingStillPresent = hasAll(plan, ['100p', '1,900', '500p', '7,900', '1,000p', '9,900'])
-    || hasAll(plan, ['6,900', 'unlimited']);
-  addResult(
-    results,
-    'planning document has no older conflicting pricing/subscription policy',
-    !oldPlanPricingStillPresent,
-    oldPlanPricingStillPresent
-      ? 'fluttering-gathering-island.md still includes older 100p/500p/1000p or subscription pricing'
-      : 'no older pricing block detected',
-  );
-
-  const prdContainsNoNewGateLine = prd.includes('v1') && prd.includes('신규 차감 게이트');
-  const prdContainsPaidSpendLines = prd.includes('8p') && prd.includes('4p') && prd.includes('30p');
-  addResult(
-    results,
-    'PRD launch spend policy is internally unambiguous',
-    !(prdContainsNoNewGateLine && prdContainsPaidSpendLines),
-    prdContainsNoNewGateLine && prdContainsPaidSpendLines
-      ? 'PRD says no new v1 spend gate while also listing paid spend prices'
-      : 'no contradictory spend-gate phrasing detected',
+    'feature payment routes exist',
+    exists('src/app/api/payments/feature/init/route.ts')
+      && exists('src/app/api/payments/feature/confirm/route.ts'),
+    'api/payments/feature/{init,confirm} routes present',
   );
 
   addResult(
     results,
-    'token ledger accepts all launch billing reasons',
-    hasAll(dbSchemaSpec, ['hapcard_use', 'hapcard_refund', 'replay_use', 'replay_refund', 'whatif_use', 'whatif_refund'])
-      && hasAll(`${tokenLedgerMigration}\n${tokenSpendMigration}`, ['hapcard_use', 'hapcard_refund', 'replay_use', 'replay_refund', 'whatif_use', 'whatif_refund']),
-    'schema docs and migrations include hapcard/replay/whatif use and refund reasons',
+    'pay-per-use gates exist',
+    exists('src/lib/payments/feature-unlock.ts')
+      && exists('src/lib/payments/feature-gate.ts')
+      && exists('src/lib/payments/feature-ref-ownership.ts'),
+    'feature-unlock / feature-gate / feature-ref-ownership present',
   );
 
   addResult(
     results,
-    'replay route deducts and refunds launch tokens',
-    routeSpendsTokens('src/app/api/hapcards/[id]/replay/route.ts', 'replay_use')
+    'legacy token-charge routes removed',
+    !exists('src/app/api/payments/init/route.ts')
+      && !exists('src/app/api/payments/order/route.ts')
+      && !exists('src/app/api/payments/confirm/route.ts')
+      && !exists('src/app/payments/charge/page.tsx'),
+    'old /api/payments/{init,order,confirm} and /payments/charge removed',
+  );
+
+  addResult(
+    results,
+    'pay-per-use migration present',
+    exists(featureMigration)
+      && hasAll(readRequired(featureMigration), [
+        'confirm_feature_payment',
+        'drop function if exists public.confirm_token_purchase',
+      ]),
+    'migration adds confirm_feature_payment and drops confirm_token_purchase',
+  );
+
+  addResult(
+    results,
+    'paid routes refund free-token spend on build failure',
+    routeRefundsTokens('src/app/api/hapcards/route.ts', 'hapcard_refund')
+      && routeRefundsTokens('src/app/api/whatif/[type]/route.ts', 'whatif_refund')
       && routeRefundsTokens('src/app/api/hapcards/[id]/replay/route.ts', 'replay_refund'),
-    'replay currently spends 4 tokens and refunds on build failure',
-  );
-
-  const hapcardRouteIsPaid = routeSpendsTokens('src/app/api/hapcards/route.ts', 'hapcard_use');
-  addResult(
-    results,
-    'hapcard create route billing policy is resolved in code',
-    hapcardRouteIsPaid,
-    hapcardRouteIsPaid
-      ? 'hapcard create spends tokens'
-      : 'hapcard create does not spend tokens while PRD lists hapcard spend pricing',
-  );
-
-  addResult(
-    results,
-    'hapcard create refunds launch tokens on build failure',
-    routeRefundsTokens('src/app/api/hapcards/route.ts', 'hapcard_refund'),
-    'hapcard create should refund its 8-token spend when generation fails after charge',
-  );
-
-  const whatifRouteIsPaid = routeSpendsTokens('src/app/api/whatif/[type]/route.ts', 'whatif_use');
-  addResult(
-    results,
-    'whatif route billing policy is resolved in code',
-    whatifRouteIsPaid,
-    whatifRouteIsPaid
-      ? 'whatif spends tokens'
-      : 'whatif does not spend tokens while legal/payment docs treat whatif as paid content',
-  );
-
-  addResult(
-    results,
-    'whatif refunds launch tokens on build failure',
-    routeRefundsTokens('src/app/api/whatif/[type]/route.ts', 'whatif_refund'),
-    'whatif should refund its 5-token spend when generation fails after charge',
-  );
-
-  const whatifTestsLockFreeUse = whatifRouteTest.includes('deduct_tokens/refund_tokens')
-    && whatifRouteTest.includes('not.toHaveBeenCalled');
-  addResult(
-    results,
-    'whatif tests do not lock a launch-paid feature into free use',
-    !whatifTestsLockFreeUse,
-    whatifTestsLockFreeUse
-      ? 'whatif route tests explicitly expect no token RPC calls'
-      : 'whatif tests do not assert free token behavior',
+    'hapcard/whatif/replay refund their free-token spend when generation fails after charge',
   );
 
   addResult(
     results,
     'refund policy page exists for paid launch',
-    existsSync(resolve(process.cwd(), 'docs/legal/refund_policy.md'))
-      && existsSync(resolve(process.cwd(), 'src/app/legal/refund/page.tsx')),
+    exists('docs/legal/refund_policy.md') && exists('src/app/legal/refund/page.tsx'),
     'refund policy documentation and legal page are present',
   );
 
   const failed = results.filter((result) => !result.ok);
 
   console.log('');
-  console.log('Approved billing decisions applied:');
-  console.log('- Token packs are 10/55/120 for 1,000/4,500/8,000 KRW.');
-  console.log('- Hapcard create, replay, and whatif are paid with cache-hit no-charge behavior.');
-  console.log('- Server routes, tests, docs, and DB migration evidence are present.');
+  console.log('Pay-per-use billing policy (ADR-039):');
+  console.log('- Token-bundle purchase removed; paid features charge at point of use.');
+  console.log('- Prices: hapcard 800 / whatif 500 / replay 400 KRW (feature-prices.ts single source).');
+  console.log('- Free 부적 path refunds on build failure; cash path withholds body until paid.');
 
   if (failed.length > 0) {
     console.error('\nBilling policy readiness FAIL');

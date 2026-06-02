@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 describe('/payments/fail page', () => {
-  it('실패 정보를 표시하고 재시도 CTA를 충전 페이지로 연결한다', async () => {
+  it('실패 정보를 표시하고 재시도 CTA를 합피드로 연결한다', async () => {
     render(await PaymentsFailPage({
       searchParams: Promise.resolve({
         orderId: 'twoday_1_abcd12',
@@ -35,7 +35,7 @@ describe('/payments/fail page', () => {
     }));
 
     expect(screen.getByText('USER_CANCEL')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '다시 충전' })).toHaveAttribute('href', '/payments/charge');
+    expect(screen.getByRole('link', { name: '합피드로' })).toHaveAttribute('href', '/feed');
     expect(markPaymentFailedForUser).toHaveBeenCalledWith({
       userId: USER_ID,
       orderId: 'twoday_1_abcd12',

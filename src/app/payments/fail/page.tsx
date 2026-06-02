@@ -40,8 +40,8 @@ export default async function PaymentsFailPage({ searchParams }: Props) {
           <Link href="/me" className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
             내 사주맵
           </Link>
-          <Link href="/payments/charge" className={cn(buttonVariants(), 'flex-1')}>
-            다시 충전
+          <Link href="/feed" className={cn(buttonVariants(), 'flex-1')}>
+            합피드로
           </Link>
         </div>
       </section>
