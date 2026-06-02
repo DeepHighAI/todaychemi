@@ -4,12 +4,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../utils/render-with-providers';
+
+const nav = vi.hoisted(() => ({ replayParam: null as string | null }));
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(nav.replayParam ? { replay: nav.replayParam } : {}),
+}));
+
+vi.mock('@tosspayments/tosspayments-sdk', () => ({
+  loadTossPayments: vi.fn().mockResolvedValue({
+    widgets: () => ({
+      setAmount: vi.fn(),
+      renderPaymentMethods: vi.fn(),
+      renderAgreement: vi.fn(),
+      requestPayment: vi.fn(),
+    }),
+  }),
+}));
+
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 
 const DEFAULT_PROPS = { hapcardId: 'h1', mode: '친구합' };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  nav.replayParam = null;
 });
 
 afterEach(() => {
@@ -79,11 +98,16 @@ describe('HapcardReplayButton — mutation success', () => {
 });
 
 describe('HapcardReplayButton — error paths', () => {
-  it('INSUFFICIENT_TOKENS(402) → 안내 메시지 + /payments/charge 링크, dialog 유지', async () => {
+  it('PAYMENT_REQUIRED(402) → 결제 시트 오픈', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
       status: 402,
-      json: async () => ({ error: { code: 'INSUFFICIENT_TOKENS', message: 'no tokens' } }),
+      json: async () => ({
+        error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
+        feature: 'replay',
+        ref: 'replay:h1:2026-06-02',
+        amount_krw: 400,
+      }),
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
@@ -91,11 +115,7 @@ describe('HapcardReplayButton — error paths', () => {
     await screen.findByText('그럴리 없어! 다시 볼까요?');
     await userEvent.click(screen.getByRole('button', { name: '재해석 받기' }));
 
-    expect(
-      await screen.findByText('토큰이 부족합니다. 충전 후 다시 시도해 주세요.'),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '충전하러 가기' })).toHaveAttribute('href', '/payments/charge');
-    expect(screen.getByText('그럴리 없어! 다시 볼까요?')).toBeInTheDocument();
+    expect(await screen.findByTestId('feature-pay-sheet')).toBeInTheDocument();
   });
 
   it('INTERNAL_ERROR(500) → 에러 메시지 + 다시 시도 버튼으로 상태 reset', async () => {
@@ -115,5 +135,24 @@ describe('HapcardReplayButton — error paths', () => {
 
     await userEvent.click(retryBtn);
     expect(screen.getByRole('button', { name: '재해석 받기' })).not.toBeDisabled();
+  });
+});
+
+describe('HapcardReplayButton — ?replay=1 결제 후 복귀', () => {
+  it('replay=1 → 다이얼로그 자동 재오픈 + 재발화 1회 → 성공', async () => {
+    nav.replayParam = '1';
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ hapcard_id: 'h1' }),
+    } as Response);
+
+    renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
+
+    await waitFor(() =>
+      expect(screen.queryByText('재해석 완료. 흐름이 갱신되었어요.')).not.toBeNull(),
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith('/api/hapcards/h1/replay', { method: 'POST' });
   });
 });

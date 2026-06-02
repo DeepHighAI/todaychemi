@@ -333,7 +333,7 @@
       "confirmCta": "재해석 받기",
       "cancel": "취소",
       "successToast": "재해석 완료. 흐름이 갱신되었어요.",
-      "insufficientTokens": "토큰이 부족합니다. 충전 후 다시 시도해 주세요."
+      "afterPayLoading": "결제 완료. 결과를 불러오는 중…"
     },
     "appBar": { "title": "오늘 우리는", "back": "뒤로", "share": "공유" },
     "ohaeng": {

@@ -28,6 +28,7 @@ import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardTimeline } from '@/components/hapcard/timeline';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { HapcardShare } from '@/components/hapcard/share';
+import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { convertHanja } from '@/lib/glossary/post-process';
@@ -45,7 +46,13 @@ async function callHapcard(relationId: string, mode: string): Promise<HapcardRes
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const code: HapcardErrorCode = body?.error?.code ?? 'INTERNAL_ERROR';
-    throw Object.assign(new Error(code), { code });
+    // 402 PAYMENT_REQUIRED 는 결제 시트에 필요한 ref/amount 를 함께 실어 보낸다.
+    throw Object.assign(new Error(code), {
+      code,
+      feature: body?.feature,
+      ref: body?.ref,
+      amount_krw: body?.amount_krw,
+    });
   }
   return res.json() as Promise<HapcardResult>;
 }
@@ -71,7 +78,7 @@ export default function HapcardView() {
   const t = useTranslations('hapcard');
   const targetDate = todayKST();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['hapcard', id, mode, targetDate],
     queryFn: () => callHapcard(id, mode!),
     enabled: !!mode, retry: false,
@@ -83,6 +90,7 @@ export default function HapcardView() {
   const [expandOpen, setExpandOpen] = useState(false);
   const [expandTab, setExpandTab] = useState<ExpandTab>('summary');
   const [deleted, setDeleted] = useState(false);
+  const [payDismissed, setPayDismissed] = useState(false);
 
   const del = useMutation({
     mutationFn: deleteRelation,
@@ -100,6 +108,23 @@ export default function HapcardView() {
       return () => clearTimeout(t);
     }
   }, [deleted, router]);
+
+  // 402 PAYMENT_REQUIRED → 결제 시트 (generic 에러 분기보다 먼저 가로채기). 닫으면 generic fallback.
+  const payErr = error as { code?: string; ref?: string } | null;
+  if (isError && payErr?.code === 'PAYMENT_REQUIRED' && mode && !payDismissed) {
+    return (
+      <FeaturePaySheet
+        feature="hapcard"
+        featureRef={payErr.ref ?? ''}
+        next={`/hapcard/${id}?mode=${mode}`}
+        open
+        onOpenChange={(o) => {
+          if (!o) setPayDismissed(true);
+        }}
+        onPaid={() => refetch()}
+      />
+    );
+  }
 
   if (!mode || (isError && !isChartPendingError(error))) {
     return (

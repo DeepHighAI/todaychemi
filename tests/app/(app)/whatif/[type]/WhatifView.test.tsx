@@ -65,6 +65,22 @@ describe('WhatifView', () => {
     expect(screen.getByRole('link', { name: '충전하러 가기' })).toBeInTheDocument();
   });
 
+  it('PAYMENT_REQUIRED(402) → 결제 시트 렌더, ErrorCard 미노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({
+        error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
+        feature: 'whatif',
+        ref: 'cache-xyz',
+        amount_krw: 500,
+      }),
+    });
+    renderWithProviders(<WhatifView />);
+    expect(await screen.findByTestId('feature-pay-sheet')).toBeInTheDocument();
+    expect(screen.queryByTestId('error-card')).toBeNull();
+  });
+
   it('GROUNDING_FAILED → ErrorCard 노출', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
