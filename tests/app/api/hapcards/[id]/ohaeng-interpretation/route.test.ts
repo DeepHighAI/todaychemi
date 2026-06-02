@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/supabase/service-role');
+vi.mock('@/lib/payments/feature-unlock');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { isFeatureUnlocked } from '@/lib/payments/feature-unlock';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { GET } from '@/app/api/hapcards/[id]/ohaeng-interpretation/route';
 import { mockChartCoreSelf, mockChartCoreRelation } from '../../../../../fixtures/hapcard';
 
@@ -20,6 +25,8 @@ const STORED_INTERPRETATION = {
   tip: '저장된 팁입니다.',
 };
 
+const HAPCARD_CACHE_KEY = 'hapcard-cache-key-001';
+
 const HAPCARD_ROW = {
   hapcard_id: HAPCARD_ID,
   user_id: USER_ID,
@@ -27,6 +34,7 @@ const HAPCARD_ROW = {
   mode: '돈합',
   user_chart_hash: 'user-chart-hash',
   relation_chart_hash: 'relation-chart-hash',
+  cache_key: HAPCARD_CACHE_KEY,
   content: {},
 };
 
@@ -86,6 +94,9 @@ function makeParams(id = HAPCARD_ID) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 기본값: 잠금 해제됨(결제/무료차감 완료) — 기존 happy-path 케이스 유지.
+  vi.mocked(createServiceRoleClient).mockReturnValue({} as never);
+  vi.mocked(isFeatureUnlocked).mockResolvedValue(true);
 });
 
 describe('GET /api/hapcards/[id]/ohaeng-interpretation', () => {
@@ -142,5 +153,27 @@ describe('GET /api/hapcards/[id]/ohaeng-interpretation', () => {
     expect(res.status).toBe(404);
     const body = await res.json();
     expect(body.error.code).toBe('HAPCARD_NOT_FOUND');
+  });
+
+  it('미결제(잠금 미해제) → 402, 본문(interpretation) 미포함', async () => {
+    // content 에 본문이 저장돼 있어도 잠금 미해제면 유출되면 안 된다.
+    const { client } = makeClient({
+      hapcardRow: { ...HAPCARD_ROW, content: { ohaeng_interpretation: STORED_INTERPRETATION } },
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(false);
+
+    const res = await GET(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(res.status).toBe(402);
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('hapcard');
+    expect(body.ref).toBe(HAPCARD_CACHE_KEY);
+    expect(body.amount_krw).toBe(FEATURE_PRICES_KRW.hapcard.amount_krw);
+    // 본문 유출 차단 — 응답에 해석 본문이 실리면 안 된다.
+    expect(body.interpretation).toBeUndefined();
+    // 게이트는 hapcard cache_key 로 평가한다.
+    expect(isFeatureUnlocked).toHaveBeenCalledWith(expect.anything(), USER_ID, 'hapcard', HAPCARD_CACHE_KEY);
   });
 });

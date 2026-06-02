@@ -2,7 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { apiErrorResponse } from '@/lib/errors/route-response';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
+import { isFeatureUnlocked } from '@/lib/payments/feature-unlock';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { buildRoleAnalysis } from '@/lib/hapcard/role-analysis';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
@@ -15,6 +18,7 @@ interface HapcardRow {
   mode: Mode;
   user_chart_hash: string;
   relation_chart_hash: string;
+  cache_key: string;
   content: {
     role_analysis?: RoleAnalysis;
   } | null;
@@ -40,7 +44,7 @@ export async function GET(
   const db = supabase as unknown as SupabaseClient;
   const hapcardRes = await db
     .from('hapcards')
-    .select('hapcard_id,user_id,relation_id,mode,user_chart_hash,relation_chart_hash,content')
+    .select('hapcard_id,user_id,relation_id,mode,user_chart_hash,relation_chart_hash,cache_key,content')
     .eq('hapcard_id', id)
     .eq('user_id', userId)
     .maybeSingle();
@@ -54,6 +58,14 @@ export async function GET(
   }
 
   const hapcard = hapcardRes.data as HapcardRow;
+
+  // pay-per-use 읽기 게이트 (ADR-039, 모델 C, Phase 7). 미결제 선생성 본문 유출 차단 —
+  // 본문이 content 에 저장돼 있거나 rules 로 재계산되더라도 잠금 미해제면 반환하지 않는다.
+  const service = createServiceRoleClient();
+  if (!(await isFeatureUnlocked(service, userId, 'hapcard', hapcard.cache_key))) {
+    return paymentRequiredResponse('hapcard', hapcard.cache_key, FEATURE_PRICES_KRW.hapcard.amount_krw);
+  }
+
   if (hapcard.content?.role_analysis) {
     return NextResponse.json({
       analysis: hapcard.content.role_analysis,
