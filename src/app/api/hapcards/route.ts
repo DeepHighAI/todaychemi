@@ -10,7 +10,9 @@ import {
   type BuildHapcardDeps,
 } from '@/lib/hapcard/builder';
 import { buildRagQueryText } from '@/lib/rag/query-text';
-import { FEATURE_TOKEN_COSTS } from '@/lib/payments/token-costs';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
@@ -18,17 +20,12 @@ import {
 import { todayKST } from '@/lib/today/kst-date';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
-import { apiErrorResponse } from '@/lib/errors/route-response';
+import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
-}
-
-function tokenRpcInserted(data: unknown): boolean {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  return (data as { inserted?: unknown }).inserted === true;
 }
 
 export async function POST(request: NextRequest) {
@@ -112,34 +109,34 @@ export async function POST(request: NextRequest) {
     ragQueryText: buildRagQueryText,
   };
 
+  // pay-per-use 게이트 (ADR-039, 모델 C). charged=true 는 mode==='free' 신규 차감일 때만 —
+  // 생성 실패 시 그 경우에만 환불. pay_required 는 선생성 후 402(본문 보류), 현금결제는 별도 라우트.
   let charged = false;
   let billingRef = '';
 
   try {
     const cacheKey = await getHapcardCacheKey(input, supabaseUserClient);
     billingRef = cacheKey;
-    const existingRes = await supabaseUserClient
-      .from('hapcards')
-      .select('hapcard_id')
-      .eq('cache_key', cacheKey)
-      .maybeSingle();
-    if (existingRes.error) {
-      return apiErrorResponse('INTERNAL_ERROR', existingRes.error.message, 500);
-    }
 
-    if (!existingRes.data) {
-      const { data: deductData, error: deductErr } = await serviceClient.rpc('deduct_tokens_once', {
-        uid: userId,
-        delta: -FEATURE_TOKEN_COSTS.hapcardCreate,
-        reason: 'hapcard_use',
-        ref: cacheKey,
-      });
-      if (deductErr) {
-        return apiErrorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
+    const resolution = await resolveFeatureCharge(serviceClient, userId, 'hapcard', cacheKey);
+    charged = resolution.charged;
+
+    if (resolution.mode === 'pay_required') {
+      // 잔액 부족 — 선생성 LLM 비용 남용 게이트 먼저.
+      const limit = await checkCashGenLimit(serviceClient, userId);
+      if (!limit.allowed) {
+        return apiErrorResponse(
+          'RATE_LIMITED',
+          `daily pre-generation limit ${limit.count}/${limit.limit}`,
+          429,
+        );
       }
-      charged = tokenRpcInserted(deductData);
+      // 선생성(캐시 저장) — 성공해도 본문은 보류하고 402 로 결제 요구. 실패는 catch 에서 처리(charged=false → 환불 없음).
+      await buildHapcard(input, deps);
+      return paymentRequiredResponse(resolution.price.feature_id, cacheKey, resolution.price.amount_krw);
     }
 
+    // free | unlocked — 본문 공개 (buildHapcard 는 캐시 hit 시 재호출 없이 캐시 반환).
     const result = await buildHapcard(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
@@ -148,7 +145,7 @@ export async function POST(request: NextRequest) {
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
-        delta: FEATURE_TOKEN_COSTS.hapcardCreate,
+        delta: FEATURE_PRICES_KRW.hapcard.token_cost,
         reason: 'hapcard_refund',
         ref: billingRef,
       });

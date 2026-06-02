@@ -168,6 +168,37 @@ export async function buildReplay(
     .single();
 
   if (error || !row) {
+    // 동시 insert / 재요청 시 (hapcard_id, jinjin_date) unique 충돌(23505) — 먼저 쓴 row 가 진실.
+    // whatif/builder.ts 와 동일하게 기존 row 를 재조회해 반환(throw 금지). 멱등성 패리티(ADR-039).
+    if ((error as { code?: string } | null)?.code === '23505') {
+      const retry = await deps.supabaseServiceClient
+        .from('hapcard_replays')
+        .select('*')
+        .eq('hapcard_id', hapcard.hapcard_id)
+        .eq('jinjin_date', input.jinjin_date)
+        .maybeSingle();
+      if (retry.data) {
+        const existing = retry.data as {
+          replay_id: string;
+          content: HapcardResult['content'];
+          prompt_version: string;
+          llm_model: string;
+          cache_key: string;
+          created_at: string;
+        };
+        return {
+          ...hapcard,
+          replay_id: existing.replay_id,
+          jinjin_date: input.jinjin_date,
+          content: existing.content,
+          prompt_version: existing.prompt_version,
+          llm_model: existing.llm_model as LlmModel,
+          cache_key: existing.cache_key,
+          created_at: existing.created_at,
+        };
+      }
+      throw new Error('HAPCARD_REPLAY_INSERT_FAILED: race recovery missed');
+    }
     throw new Error(`HAPCARD_REPLAY_INSERT_FAILED: ${error?.message ?? 'unknown'}`);
   }
 

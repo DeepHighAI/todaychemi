@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
@@ -10,21 +9,18 @@ import {
   type BuildWhatifDeps,
 } from '@/lib/whatif/builder';
 import { buildWhatifRagQueryText } from '@/lib/whatif/query-text';
-import { FEATURE_TOKEN_COSTS } from '@/lib/payments/token-costs';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { DiagnosticTypeSchema, type WhatifErrorCode } from '@/types/diagnostic';
 import type { ChartCore } from '@/types/chart';
-import { apiErrorResponse } from '@/lib/errors/route-response';
+import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { fetchLatestUserChart } from '@/lib/chart/queries';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
-}
-
-function tokenRpcInserted(data: unknown): boolean {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  return (data as { inserted?: unknown }).inserted === true;
 }
 
 export async function POST(
@@ -73,33 +69,28 @@ export async function POST(
     ragQueryText: buildWhatifRagQueryText,
   };
 
+  // pay-per-use 게이트 (ADR-039, 모델 C). ref = whatif cacheKey.
   let charged = false;
   let billingRef = '';
 
   try {
     const cacheKey = getWhatifCacheKey(input);
     billingRef = cacheKey;
-    const cacheClient = supabaseUserClient as unknown as SupabaseClient;
-    const existingRes = await cacheClient
-      .from('whatif_results')
-      .select('whatif_id')
-      .eq('cache_key', cacheKey)
-      .maybeSingle();
-    if (existingRes.error) {
-      return apiErrorResponse('INTERNAL_ERROR', existingRes.error.message, 500);
-    }
 
-    if (!existingRes.data) {
-      const { data: deductData, error: deductErr } = await serviceClient.rpc('deduct_tokens_once', {
-        uid: userId,
-        delta: -FEATURE_TOKEN_COSTS.whatif,
-        reason: 'whatif_use',
-        ref: cacheKey,
-      });
-      if (deductErr) {
-        return apiErrorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
+    const resolution = await resolveFeatureCharge(serviceClient, userId, 'whatif', cacheKey);
+    charged = resolution.charged;
+
+    if (resolution.mode === 'pay_required') {
+      const limit = await checkCashGenLimit(serviceClient, userId);
+      if (!limit.allowed) {
+        return apiErrorResponse(
+          'RATE_LIMITED',
+          `daily pre-generation limit ${limit.count}/${limit.limit}`,
+          429,
+        );
       }
-      charged = tokenRpcInserted(deductData);
+      await buildWhatif(input, deps); // 선생성 — 본문 보류
+      return paymentRequiredResponse(resolution.price.feature_id, cacheKey, resolution.price.amount_krw);
     }
 
     const { result } = await buildWhatif(input, deps);
@@ -109,7 +100,7 @@ export async function POST(
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
-        delta: FEATURE_TOKEN_COSTS.whatif,
+        delta: FEATURE_PRICES_KRW.whatif.token_cost,
         reason: 'whatif_refund',
         ref: billingRef,
       });

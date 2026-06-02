@@ -10,6 +10,10 @@ import {
   type BuildReplayInput,
   type BuildReplayDeps,
 } from '@/lib/replay/builder';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { isFeatureUnlocked } from '@/lib/payments/feature-unlock';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import {
   HapcardDbRowSchema,
   ReplayRequestSchema,
@@ -17,7 +21,7 @@ import {
   type ReplayErrorCode,
   type HapcardResult,
 } from '@/types/hapcard';
-import { apiErrorResponse } from '@/lib/errors/route-response';
+import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
 
 export async function POST(
@@ -64,8 +68,13 @@ export async function POST(
   }
   const hapcard = { ...hapcardRes.data, ...parseResult.data } as unknown as HapcardResult;
 
-  // 4. idempotency 체크 — 오늘 이미 replay 존재 시 토큰 차감 없이 기존 반환
+  // 4. 일진/ref/서비스 클라이언트 — 한 번만 산출(자정 경계 desync 방지). ref 는 dated (idempotency 버그 수정).
   const jinjin_date = todayKST();
+  const ref = `replay:${id}:${jinjin_date}`;
+  const serviceClient = createServiceRoleClient();
+
+  // 5. idempotency 체크 — 오늘 이미 replay 존재 시. 모델 C: 선생성된 row 가 미결제일 수 있으므로
+  //    잠금 게이트(isFeatureUnlocked) 통과 시에만 본문 공개. 미결제면 재빌드 없이 결제 요구.
   const idempotencyRes = await supabaseUserClient
     .from('hapcard_replays')
     .select('*')
@@ -73,27 +82,18 @@ export async function POST(
     .eq('jinjin_date', jinjin_date)
     .maybeSingle();
   if (idempotencyRes.data) {
-    return NextResponse.json(idempotencyRes.data, { status: 200 });
+    if (await isFeatureUnlocked(serviceClient, userId, 'replay', ref)) {
+      return NextResponse.json(idempotencyRes.data, { status: 200 });
+    }
+    return paymentRequiredResponse('replay', ref, FEATURE_PRICES_KRW.replay.amount_krw);
   }
 
-  // 5. LLM outage 게이트
+  // 6. LLM outage 게이트
   if (process.env.LLM_ALL_PROVIDERS_DOWN === 'true') {
     return apiErrorResponse('REPLAY_DURING_OUTAGE', 'LLM providers unavailable', 503);
   }
 
-  // 6. 토큰 차감 (-4p, spec §7 D2)
-  const serviceClient = createServiceRoleClient();
-  const { error: deductErr } = await serviceClient.rpc('deduct_tokens', {
-    uid: userId,
-    delta: -4,
-    reason: 'replay_use',
-    ref: id,
-  });
-  if (deductErr) {
-    return apiErrorResponse('INSUFFICIENT_TOKENS', deductErr.message, 402);
-  }
-
-  // 7. replay 생성 — 실패 시 토큰 환불 후 500
+  // 7. pay-per-use 게이트 (ADR-039, 모델 C). ref = dated replay key. charged=true 는 free 신규 차감만.
   const input: BuildReplayInput = {
     hapcard,
     jinjin_date,
@@ -105,25 +105,44 @@ export async function POST(
     openaiClient: createOpenAiClient() as unknown as BuildReplayDeps['openaiClient'],
   };
 
+  let charged = false;
   try {
-    const result = await buildReplay(input, deps);
+    const resolution = await resolveFeatureCharge(serviceClient, userId, 'replay', ref);
+    charged = resolution.charged;
+
+    if (resolution.mode === 'pay_required') {
+      const limit = await checkCashGenLimit(serviceClient, userId);
+      if (!limit.allowed) {
+        return apiErrorResponse(
+          'RATE_LIMITED',
+          `daily pre-generation limit ${limit.count}/${limit.limit}`,
+          429,
+        );
+      }
+      await buildReplay(input, deps); // 선생성 — 본문 보류
+      return paymentRequiredResponse(resolution.price.feature_id, ref, resolution.price.amount_krw);
+    }
+
+    const result = await buildReplay(input, deps); // free | unlocked
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     const message = toErrorMessage(err);
-    const { error: refundErr } = await serviceClient.rpc('refund_tokens', {
-      uid: userId,
-      delta: 4,
-      reason: 'replay_refund',
-      ref: id,
-    });
-    if (refundErr) {
-      console.error('replay_refund_failed', {
-        user_id: userId,
-        hapcard_id: id,
-        phase: 'build_error',
-        original_error: message,
-        refund_error: refundErr.message,
+    if (charged) {
+      const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
+        uid: userId,
+        delta: FEATURE_PRICES_KRW.replay.token_cost,
+        reason: 'replay_refund',
+        ref,
       });
+      if (refundErr) {
+        console.error('replay_refund_failed', {
+          user_id: userId,
+          hapcard_id: id,
+          phase: 'build_error',
+          original_error: message,
+          refund_error: refundErr.message,
+        });
+      }
     }
     return apiErrorResponse('INTERNAL_ERROR', message, 500);
   }

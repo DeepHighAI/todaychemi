@@ -6,12 +6,18 @@ vi.mock('@/lib/supabase/service-role');
 vi.mock('@/lib/hapcard/builder');
 vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/rag/query-text');
+// pay-per-use 게이트는 라우트 단에서 mock — 게이트 내부는 feature-gate/cash-gen-limit 자체 테스트가 커버.
+vi.mock('@/lib/payments/feature-gate');
+vi.mock('@/lib/payments/cash-gen-limit');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildHapcard, getHapcardCacheKey } from '@/lib/hapcard/builder';
 import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { buildRagQueryText } from '@/lib/rag/query-text';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { POST } from '@/app/api/hapcards/route';
 import type { ChartCore } from '@/types/chart';
 import type { HapcardResult } from '@/types/hapcard';
@@ -168,7 +174,10 @@ beforeEach(() => {
   vi.mocked(buildRagQueryText).mockReturnValue('테스트 쿼리');
   vi.mocked(getHapcardCacheKey).mockResolvedValue('cache-key-abc');
   vi.mocked(buildHapcard).mockResolvedValue(HAPCARD_RESULT);
-  rpcFn.mockResolvedValue({ data: { balance_after: 92, inserted: true }, error: null });
+  // 기본: 무료 경로(부적 차감 성공). rpcFn 은 이제 refund_tokens_once 전용.
+  vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.hapcard, charged: true });
+  vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: true, count: 0, limit: 5 });
+  rpcFn.mockResolvedValue({ data: { balance_after: 100, inserted: true }, error: null });
 });
 
 describe('POST /api/hapcards', () => {
@@ -182,12 +191,8 @@ describe('POST /api/hapcards', () => {
     const body = await res.json();
     expect(body.hapcard_id).toBe(HAPCARD_RESULT.hapcard_id);
     expect(body.compat_score).toBe(72);
-    expect(rpcFn).toHaveBeenCalledWith('deduct_tokens_once', {
-      uid: 'user-uuid-001',
-      delta: -8,
-      reason: 'hapcard_use',
-      ref: 'cache-key-abc',
-    });
+    // 게이트가 (service, userId, feature, ref) 로 호출됐는지 — 라우트↔게이트 배선 검증.
+    expect(resolveFeatureCharge).toHaveBeenCalledWith(SERVICE_CLIENT, 'user-uuid-001', 'hapcard', 'cache-key-abc');
   });
 
   it('401 → 미인증 (auth.getUser 가 null user 반환)', async () => {
@@ -313,28 +318,118 @@ describe('POST /api/hapcards', () => {
     });
   });
 
-  it('402 → hapcard_create 토큰 잔액 부족 시 buildHapcard 미호출', async () => {
+  it('pay_required + 한도 OK → 선생성 후 402 PAYMENT_REQUIRED (본문 보류)', async () => {
     const supabase = makeAuthedSupabaseClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
-    rpcFn.mockResolvedValueOnce({ data: null, error: { message: 'INSUFFICIENT_TOKENS' } });
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.hapcard, charged: false });
 
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(402);
     const body = await res.json();
-    expect(body.error.code).toBe('INSUFFICIENT_TOKENS');
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('hapcard');
+    expect(body.ref).toBe('cache-key-abc');
+    expect(body.amount_krw).toBe(800);
+    // 선생성: buildHapcard 는 호출되되 본문은 반환하지 않음
+    expect(buildHapcard).toHaveBeenCalledOnce();
+    // 현금 경로는 부적 차감/환불 없음
+    expect(rpcFn).not.toHaveBeenCalled();
+  });
+
+  it('pay_required + 일일 한도 초과 → 429 RATE_LIMITED, buildHapcard 미호출', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.hapcard, charged: false });
+    vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: false, count: 5, limit: 5 });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error.code).toBe('RATE_LIMITED');
     expect(buildHapcard).not.toHaveBeenCalled();
   });
 
-  it('cache hit → 토큰 차감 없이 buildHapcard 반환', async () => {
-    const supabase = makeAuthedSupabaseClient({ hapcardCache: { hapcard_id: HAPCARD_RESULT.hapcard_id } });
+  it('pay_required 선생성 중 GROUNDING_FAILED → 422, 환불 없음', async () => {
+    const supabase = makeAuthedSupabaseClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.hapcard, charged: false });
+    vi.mocked(buildHapcard).mockRejectedValue(new Error('GROUNDING_FAILED: x'));
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe('GROUNDING_FAILED');
+    expect(rpcFn).not.toHaveBeenCalled(); // charged=false → 환불 호출 없음
+  });
+
+  it('unlocked → 부적 차감 없이 캐시 본문 200, 한도 체크 없음', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'unlocked', price: FEATURE_PRICES_KRW.hapcard, charged: false });
 
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(200);
-    expect(rpcFn).not.toHaveBeenCalled();
     expect(buildHapcard).toHaveBeenCalledOnce();
+    expect(rpcFn).not.toHaveBeenCalled();
+    expect(checkCashGenLimit).not.toHaveBeenCalled();
+  });
+
+  it('free(charged=false, 멱등 재차감) + build 실패 → 500, 환불 호출 없음', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.hapcard, charged: false });
+    vi.mocked(buildHapcard).mockRejectedValue(new Error('UNEXPECTED'));
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    expect(rpcFn).not.toHaveBeenCalled();
+  });
+
+  it('unlocked + build 실패 → 500, 환불 호출 없음', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'unlocked', price: FEATURE_PRICES_KRW.hapcard, charged: false });
+    vi.mocked(buildHapcard).mockRejectedValue(new Error('UNEXPECTED'));
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    expect(rpcFn).not.toHaveBeenCalled();
+  });
+
+  it('real-gate 통합: 미잠금 + 부적 부족 → 402 end-to-end (게이트 mock 미사용)', async () => {
+    const realGate = (await vi.importActual('@/lib/payments/feature-gate')) as {
+      resolveFeatureCharge: typeof resolveFeatureCharge;
+    };
+    vi.mocked(resolveFeatureCharge).mockImplementation(realGate.resolveFeatureCharge);
+
+    // 최소 from-chain: token_ledger/payments 둘 다 miss(미잠금), deduct rpc → error(잔액 부족).
+    const leaf = { maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) };
+    const chain: Record<string, unknown> = {};
+    chain.select = vi.fn(() => chain);
+    chain.eq = vi.fn(() => chain);
+    chain.limit = vi.fn(() => leaf);
+    const localService = {
+      from: vi.fn(() => chain),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'INSUFFICIENT_TOKENS', code: 'P0001' } }),
+    };
+    vi.mocked(createServiceRoleClient).mockReturnValue(localService as never);
+
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('hapcard');
+    expect(body.amount_krw).toBe(800);
   });
 
   it('buildHapcard 호출 시 user_id, relation_id, mode, charts, hashes 정확히 전달', async () => {

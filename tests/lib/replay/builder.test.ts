@@ -329,4 +329,94 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     const insertCall = insert.mock.calls[0][0];
     expect(insertCall.content.classic_citation).toEqual([]);
   });
+
+  // pay-per-use 모델 C: 동시 더블탭/재요청 시 (hapcard_id, jinjin_date) unique 충돌(23505) →
+  // whatif/builder 와 동일하게 기존 row 를 재조회해 반환(throw 금지). 멱등성 패리티.
+  describe('idempotency 23505 recovery', () => {
+    const EXISTING_ROW = {
+      replay_id: 'existing-replay-999',
+      hapcard_id: MOCK_HAPCARD.hapcard_id,
+      user_id: MOCK_HAPCARD.user_id,
+      jinjin_date: JINJIN_DATE,
+      replay_reason: null,
+      content: { main_text: '기존 재해석', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
+      prompt_version: 'v0.3',
+      llm_model: 'gpt-5',
+      cache_key: 'existing-cache-key',
+      created_at: '2026-05-06T02:00:00Z',
+    };
+
+    function makeConflictClients(existingRow: unknown) {
+      const chartRow = {
+        chart_core: {
+          year_pillar: '갑자', month_pillar: '을축', day_pillar: '병인', hour_pillar: null,
+          day_master_element: '화', five_elements_counts: { 목: 2, 화: 1, 토: 1, 금: 0, 수: 0 },
+          gender_normalized: 'M', yunse: MOCK_YUNSE_CORE,
+        },
+      };
+      const maybeSingle = vi.fn().mockResolvedValue({ data: chartRow, error: null });
+      const limitFn = vi.fn().mockReturnValue({ maybeSingle });
+      const orderFn = vi.fn().mockReturnValue({ limit: limitFn });
+      const eq2 = vi.fn().mockReturnValue({ order: orderFn });
+      const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
+      const selectChart = vi.fn().mockReturnValue({ eq: eq1 });
+
+      // INSERT → 23505 conflict
+      const single = vi.fn().mockResolvedValue({ data: null, error: { code: '23505', message: 'duplicate key' } });
+      const insert = vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ single }) });
+
+      // retry: select('*').eq('hapcard_id').eq('jinjin_date').maybeSingle()
+      const retryMaybeSingle = vi.fn().mockResolvedValue({ data: existingRow, error: null });
+      const retryEq2 = vi.fn().mockReturnValue({ maybeSingle: retryMaybeSingle });
+      const retryEq1 = vi.fn().mockReturnValue({ eq: retryEq2 });
+      const selectReplay = vi.fn().mockReturnValue({ eq: retryEq1 });
+
+      const from = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hapcard_replays') return { insert, select: selectReplay };
+        return { select: selectChart };
+      });
+      const client = { from } as unknown as SupabaseClient;
+      return { userClient: client, serviceClient: client, insert, retryMaybeSingle };
+    }
+
+    it('insert 23505 → 기존 row 재조회해서 반환 (throw 안 함)', async () => {
+      (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+        output: { main_text: '신규 재해석', cause_factors: [], classic_citation: [], actions: [], why_cards: [], ohaeng_interpretation: { title: 't', summary: 's', points: [], tip: 'x' } },
+        usage: { token_in: 10, token_out: 20, total_usd: 0 },
+        model: 'gpt-5',
+      });
+      const { userClient, serviceClient, retryMaybeSingle } = makeConflictClients(EXISTING_ROW);
+
+      const result = await buildReplay(
+        { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
+        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+      );
+
+      // 기존 persisted row 가 진실의 원천 — 재조회된 row 의 값 반환
+      expect(result.replay_id).toBe('existing-replay-999');
+      expect(result.cache_key).toBe('existing-cache-key');
+      expect(result.created_at).toBe('2026-05-06T02:00:00Z');
+      expect(result.content.main_text).toBe('기존 재해석');
+      // base 필드는 input hapcard 에서
+      expect(result.hapcard_id).toBe(MOCK_HAPCARD.hapcard_id);
+      expect(result.jinjin_date).toBe(JINJIN_DATE);
+      expect(retryMaybeSingle).toHaveBeenCalledTimes(1);
+    });
+
+    it('23505 인데 재조회도 miss → race recovery missed throw', async () => {
+      (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+        output: { main_text: 'x', cause_factors: [], classic_citation: [], actions: [], why_cards: [], ohaeng_interpretation: { title: 't', summary: 's', points: [], tip: 'x' } },
+        usage: { token_in: 10, token_out: 20, total_usd: 0 },
+        model: 'gpt-5',
+      });
+      const { userClient, serviceClient } = makeConflictClients(null);
+
+      await expect(
+        buildReplay(
+          { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
+          { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+        ),
+      ).rejects.toThrow('HAPCARD_REPLAY_INSERT_FAILED');
+    });
+  });
 });

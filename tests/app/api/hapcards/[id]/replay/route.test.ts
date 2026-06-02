@@ -4,10 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/supabase/service-role');
 vi.mock('@/lib/replay/builder');
+vi.mock('@/lib/payments/feature-gate');
+vi.mock('@/lib/payments/cash-gen-limit');
+vi.mock('@/lib/payments/feature-unlock');
+vi.mock('@/lib/today/kst-date');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildReplay } from '@/lib/replay/builder';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { isFeatureUnlocked } from '@/lib/payments/feature-unlock';
+import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
+import { todayKST } from '@/lib/today/kst-date';
 import { POST } from '@/app/api/hapcards/[id]/replay/route';
 import type { HapcardResult, HapcardReplayResult } from '@/types/hapcard';
 
@@ -16,6 +25,9 @@ import type { HapcardResult, HapcardReplayResult } from '@/types/hapcard';
 const HAPCARD_ID = 'hapcard-uuid-001';
 const USER_ID = 'user-uuid-001';
 const JINJIN_DATE = '2026-05-06';
+// 라우트가 todayKST() 로 산출하는 일진 — mock 으로 고정해 ref 단언을 결정형으로.
+const TODAY = '2026-06-02';
+const REF = `replay:${HAPCARD_ID}:${TODAY}`;
 
 const HAPCARD_ROW: HapcardResult = {
   hapcard_id: HAPCARD_ID,
@@ -92,20 +104,14 @@ function makeUserClient(opts: {
   return { auth: { getUser }, from };
 }
 
-function makeServiceClient(opts: {
-  deductError?: { message: string; code?: string } | null;
-} = {}) {
-  const deduct = vi.fn().mockResolvedValue({
-    data: opts.deductError ? null : 10,
-    error: opts.deductError ?? null,
-  });
+// 게이트(deduct)는 mock 된 resolveFeatureCharge 가 담당. serviceClient.rpc 는 환불(refund_tokens_once)만.
+function makeServiceClient() {
   const refund = vi.fn().mockResolvedValue({ data: 14, error: null });
   const rpc = vi.fn((name: string) => {
-    if (name === 'deduct_tokens') return deduct();
-    if (name === 'refund_tokens') return refund();
+    if (name === 'refund_tokens_once') return refund();
     return Promise.resolve({ data: null, error: null });
   });
-  return { client: { rpc }, deduct, refund };
+  return { client: { rpc }, refund };
 }
 
 function makeRequest(body: unknown) {
@@ -123,6 +129,11 @@ function makeParams(id = HAPCARD_ID) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(buildReplay).mockResolvedValue(REPLAY_RESULT);
+  vi.mocked(todayKST).mockReturnValue(TODAY);
+  // 기본: 무료 경로. isFeatureUnlocked 기본 true (idempotency hit 시 본문 공개).
+  vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.replay, charged: true });
+  vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: true, count: 0, limit: 5 });
+  vi.mocked(isFeatureUnlocked).mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -172,35 +183,88 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(buildReplay).not.toHaveBeenCalled();
   });
 
-  it('200 → idempotency hit — 기존 replay 반환, 토큰 차감 없음', async () => {
+  it('200 → idempotency hit + 잠금해제됨 → 저장된 row 반환, 재빌드 없음', async () => {
     const userClient = makeUserClient({ idempotencyRow: REPLAY_RESULT });
-    const { client: svcClient, deduct } = makeServiceClient();
+    const { client: svcClient } = makeServiceClient();
     vi.mocked(createServerClient).mockResolvedValue(userClient as never);
     vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(true);
 
     const res = await POST(makeRequest({}), makeParams());
 
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.replay_id).toBe('replay-uuid-001');
-    expect(deduct).not.toHaveBeenCalled();
     expect(buildReplay).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled(); // idempotency hit 은 게이트 미진입
   });
 
-  it('402 → 토큰 잔액 부족 (deduct_tokens RPC 에러)', async () => {
-    const userClient = makeUserClient({});
-    const { client: svcClient } = makeServiceClient({
-      deductError: { message: 'INSUFFICIENT_TOKENS', code: 'P0001' },
-    });
+  it('402 → idempotency row 존재하나 미잠금(선생성 미결제) → 재빌드 없이 PAYMENT_REQUIRED', async () => {
+    const userClient = makeUserClient({ idempotencyRow: REPLAY_RESULT });
+    const { client: svcClient } = makeServiceClient();
     vi.mocked(createServerClient).mockResolvedValue(userClient as never);
     vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(false);
 
     const res = await POST(makeRequest({}), makeParams());
 
     expect(res.status).toBe(402);
     const body = await res.json();
-    expect(body.error.code).toBe('INSUFFICIENT_TOKENS');
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('replay');
+    expect(body.ref).toBe(REF);
+    expect(body.amount_krw).toBe(400);
     expect(buildReplay).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
+  });
+
+  it('402 → pay_required (잔액 부족) → 선생성 후 PAYMENT_REQUIRED', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.replay, charged: false });
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('replay');
+    expect(body.ref).toBe(REF);
+    expect(body.amount_krw).toBe(400);
+    expect(buildReplay).toHaveBeenCalledOnce(); // 선생성
+    expect(refund).not.toHaveBeenCalled();
+  });
+
+  it('429 → pay_required + 일일 한도 초과 → buildReplay 미호출', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.replay, charged: false });
+    vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: false, count: 5, limit: 5 });
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error.code).toBe('RATE_LIMITED');
+    expect(buildReplay).not.toHaveBeenCalled();
+  });
+
+  it('500 → pay_required 선생성 실패 → 환불 없음 (charged=false)', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'pay_required', price: FEATURE_PRICES_KRW.replay, charged: false });
+    vi.mocked(buildReplay).mockRejectedValue(new Error('LLM_TIMEOUT'));
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(500);
+    expect(refund).not.toHaveBeenCalled();
   });
 
   it('503 → LLM_ALL_PROVIDERS_DOWN 환경 변수가 true', async () => {
@@ -272,9 +336,9 @@ describe('POST /api/hapcards/[id]/replay', () => {
     consoleSpy.mockRestore();
   });
 
-  it('201 → 성공 경로 — HapcardReplayResult 반환', async () => {
+  it('201 → 성공 경로(free) — HapcardReplayResult 반환, 게이트 dated ref 호출', async () => {
     const userClient = makeUserClient({});
-    const { client: svcClient, deduct } = makeServiceClient();
+    const { client: svcClient } = makeServiceClient();
     vi.mocked(createServerClient).mockResolvedValue(userClient as never);
     vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
 
@@ -284,11 +348,48 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.replay_id).toBe('replay-uuid-001');
     expect(body.jinjin_date).toBe(JINJIN_DATE);
-    expect(deduct).toHaveBeenCalledTimes(1);
+    // 게이트가 dated ref (replay:{id}:{today}) 로 호출됐는지 — idempotency 버그 수정 검증.
+    expect(resolveFeatureCharge).toHaveBeenCalledWith(svcClient, USER_ID, 'replay', REF);
     expect(buildReplay).toHaveBeenCalledTimes(1);
     const [input] = vi.mocked(buildReplay).mock.calls[0];
     expect(input.hapcard.hapcard_id).toBe(HAPCARD_ID);
     expect(input.replay_reason).toBe('궁금해서');
+  });
+
+  it('500 → free(charged=false, 멱등 재차감) build 실패 → 환불 호출 없음', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.replay, charged: false });
+    vi.mocked(buildReplay).mockRejectedValue(new Error('crash'));
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(500);
+    expect(refund).not.toHaveBeenCalled();
+  });
+
+  it('real-gate 통합: 미잠금 + 부적 부족 → 402 end-to-end (게이트 mock 미사용)', async () => {
+    const realGate = (await vi.importActual('@/lib/payments/feature-gate')) as {
+      resolveFeatureCharge: typeof resolveFeatureCharge;
+    };
+    vi.mocked(resolveFeatureCharge).mockImplementation(realGate.resolveFeatureCharge);
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(false); // 실제 게이트가 호출하는 unlock 검사
+
+    const userClient = makeUserClient({});
+    const localRpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'INSUFFICIENT_TOKENS', code: 'P0001' } });
+    const localService = { rpc: localRpc };
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(localService as never);
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error.code).toBe('PAYMENT_REQUIRED');
+    expect(body.feature).toBe('replay');
+    expect(body.amount_krw).toBe(400);
   });
 
   it('500 → DB row score_breakdown에 yunse_adjustment 누락 시 INTERNAL_ERROR', async () => {
