@@ -70,4 +70,26 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
     expect(res.price.amount_krw).toBe(400);
     expect(res.price.token_cost).toBe(4);
   });
+
+  it('P0001 + DEDUCT_DELTA_MUST_BE_NEGATIVE → 던짐 (잔액 부족 아님 — pay_required 금지)', async () => {
+    // INSUFFICIENT_TOKENS 와 동일 errcode(P0001)를 공유하므로 message 까지 봐야 한다 (codex #6).
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(false);
+    const { service } = makeService({
+      error: { message: 'DEDUCT_DELTA_MUST_BE_NEGATIVE', code: 'P0001' },
+    });
+
+    await expect(resolveFeatureCharge(service, USER_ID, 'hapcard', REF)).rejects.toMatchObject({
+      code: 'P0001',
+      message: 'DEDUCT_DELTA_MUST_BE_NEGATIVE',
+    });
+  });
+
+  it('비-P0001 일시적 DB 에러(예: 08006) → 던짐 (잔액 있는 유저에 현금 요구 금지)', async () => {
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(false);
+    const { service } = makeService({ error: { message: 'connection failure', code: '08006' } });
+
+    await expect(resolveFeatureCharge(service, USER_ID, 'whatif', REF)).rejects.toMatchObject({
+      code: '08006',
+    });
+  });
 });

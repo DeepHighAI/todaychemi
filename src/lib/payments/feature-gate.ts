@@ -48,7 +48,15 @@ export async function resolveFeatureCharge(
     ref,
   });
   if (error) {
-    return { mode: 'pay_required', price, charged: false };
+    // 잔액 부족(INSUFFICIENT_TOKENS, errcode P0001)만 현금 결제 요구로 본다.
+    // DEDUCT_DELTA_MUST_BE_NEGATIVE 도 P0001 을 공유하므로 message 까지 2중 검사 (codex #6).
+    // 일시적 DB 에러(deadlock 등)는 그대로 던져 라우트 catch 가 500 으로 매핑하게 한다.
+    const e = error as { code?: string; message?: string };
+    const isInsufficient = e.code === 'P0001' && /INSUFFICIENT_TOKENS/.test(e.message ?? '');
+    if (isInsufficient) {
+      return { mode: 'pay_required', price, charged: false };
+    }
+    throw error;
   }
   return { mode: 'free', price, charged: tokenRpcInserted(data) };
 }
