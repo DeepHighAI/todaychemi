@@ -363,30 +363,38 @@ create table public.payments (
   toss_order_id    text    not null unique,
   product_id       text,
   amount_krw       int     not null,
-  token_amount     int     not null,
+  token_amount     int,                      -- legacy token-pack only; feature_use에서는 NULL
+  charge_type      text    not null default 'token_charge',  -- 'token_charge'(legacy) | 'feature_use'
+  feature_id       text    check (feature_id is null or feature_id in ('hapcard', 'whatif', 'replay')),
+  feature_ref      text,                     -- feature_use: cache_key | replay:{id}:{jinjin_date}
   status           text    not null check (status in ('pending', 'confirmed', 'failed', 'refunded', 'tampered', 'invalid')),
   failure_code     text,
   failure_message  text,
   receipt_url      text,
   confirmed_at     timestamptz,
   created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now()
+  updated_at       timestamptz not null default now(),
+  -- feature_use는 feature_id+feature_ref 필수·product_id 없음; token_charge는 그 반대
+  constraint payments_feature_use_shape check (
+    (charge_type = 'feature_use' and feature_id is not null and feature_ref is not null and product_id is null)
+    or (charge_type = 'token_charge' and feature_id is null and feature_ref is null)
+  )
 );
 
 create index on public.payments (user_id, created_at desc);
 create index on public.payments (toss_order_id);
 create index on public.payments (user_id, status, created_at desc);
-create unique index token_ledger_purchase_reference_unique_idx
-  on public.token_ledger (user_id, reason, reference_id)
-  where reason = 'purchase' and reference_id is not null;
+create unique index payments_feature_open_uidx
+  on public.payments (user_id, feature_id, feature_ref)
+  where charge_type = 'feature_use' and status in ('pending', 'confirmed');
 
 alter table public.payments enable row level security;
 create policy "payments_own_read" on public.payments for select using (auth.uid() = user_id);
--- insert/update는 service_role 전용 (/api/payments/init, /api/payments/confirm)
+-- insert/update는 service_role 전용 (/api/payments/feature/init, /api/payments/feature/confirm)
 
--- supabase/migrations/20260521060000_wallet_payments.sql
-create or replace function public.confirm_token_purchase(...)
-returns int;
+-- supabase/migrations/20260601000000_feature_pay_per_use.sql
+create or replace function public.confirm_feature_payment(...)
+returns text;
 ```
 
 ---

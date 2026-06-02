@@ -39,7 +39,7 @@ import { useEffect, useRef } from 'react';
 
 interface PaymentWidgetProps {
   orderId: string;
-  orderName: string;        // 예: "부적 55개"
+  orderName: string;        // 예: "합카드 결제"
   amount: number;           // 원 단위 (KRW)
   customerKey: string;      // 서버가 생성·저장한 UUID 기반 Toss customerKey
   clientKey: string;        // TOSS_CLIENT_KEY를 서버 API로 전달
@@ -69,7 +69,7 @@ export function PaymentWidget({ orderId, orderName, amount, customerKey, clientK
       await widgetRef.current.requestPayment({
         orderId,
         orderName,
-        successUrl: `${window.location.origin}/api/payments/confirm`,
+        successUrl: `${window.location.origin}/api/payments/feature/confirm`,
         failUrl: `${window.location.origin}/payments/fail`,
       });
     } catch {
@@ -87,10 +87,10 @@ export function PaymentWidget({ orderId, orderName, amount, customerKey, clientK
 }
 ```
 
-### 2.2 결제 승인 Route Handler (app/api/payments/confirm/route.ts)
+### 2.2 결제 승인 Route Handler (app/api/payments/feature/confirm/route.ts)
 
 ```typescript
-import { confirmPaymentForUser } from '@/lib/payments/complete';
+import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 
 export async function GET(request: NextRequest) {
   const paymentKey = request.nextUrl.searchParams.get('paymentKey');
@@ -98,10 +98,13 @@ export async function GET(request: NextRequest) {
   const amount = Number(request.nextUrl.searchParams.get('amount'));
 
   // amount는 successUrl 값 그대로 신뢰하지 않는다.
-  // confirmPaymentForUser가 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm을 호출한다.
-  await confirmPaymentForUser({ userId, paymentKey, orderId, amount: Number(amount) });
+  // confirmFeaturePaymentForUser가 서버 저장 주문 금액과 먼저 비교한 뒤,
+  // 저장 금액으로 Toss confirm을 호출하고 기능 잠금 해제만 확정한다.
+  await confirmFeaturePaymentForUser({ userId, paymentKey, orderId, amount, feature, ref });
 
-  return NextResponse.redirect(new URL('/payments/success', request.url));
+  const target = new URL(next ?? '/feed', request.url);
+  target.searchParams.set('paid', ref);
+  return NextResponse.redirect(target, 303);
 }
 ```
 
@@ -110,23 +113,22 @@ export async function GET(request: NextRequest) {
 | 라우트 | 역할 |
 |---|---|
 | `GET /api/me/wallet` | 보유 부적, 최근 원장, 이번 달 사용량 + 최근 14일 사용량 조회 |
-| `POST /api/payments/init` | 서버 상품 카탈로그 기준 `orderId`, `customerKey`, 금액, 상품, 지급 부적 수를 저장 |
-| `GET /api/payments/order?orderId=` | 본인 주문 + Toss client key + 저장된 customerKey 조회 |
-| `GET /payments/charge` | V2 Payment Widget 렌더링 및 `requestPayment` |
-| `GET /api/payments/confirm?paymentKey=&orderId=&amount=` | 서버 저장 금액 검증 후 Toss confirm + `confirm_token_purchase` RPC 실행 |
-| `GET /payments/success` | 사용자 성공 화면 |
+| `POST /api/payments/feature/init` | 기능(`hapcard`/`whatif`/`replay`)과 `feature_ref` 소유권을 확인하고 pending feature payment를 생성 또는 재사용 |
+| `GET /api/payments/feature/confirm?paymentKey=&orderId=&amount=` | 서버 저장 금액 검증 후 Toss confirm + `confirm_feature_payment` RPC로 기능 결제 확정 |
+| `FeaturePaySheet` | 기능 화면 안에서 V2 Payment Widget 렌더링 및 `requestPayment` |
 | `GET /payments/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
-| `/payment/*` | legacy compat redirect |
 
-상품 카탈로그: `tokens_10` 10부적/1,000원, `tokens_50` 55부적/4,500원, `tokens_100` 120부적/8,000원.
+기능 가격 카탈로그: 합카드 800원, 만약합 500원, 다시합 400원. 단일 출처는 `src/lib/payments/feature-prices.ts`.
 
-기능 차감: 합보기 생성 `8p`, 다시합 `4p`, 만약합 `5p`. 세 기능은 서버에서 `token_ledger` 차감/환불/idempotency를 처리하며 캐시 적중은 신규 차감하지 않는다.
+무료 부적 잔액이 충분하면 합카드 `8p`, 다시합 `4p`, 만약합 `5p`를 서버에서 `token_ledger` 차감/환불/idempotency로 처리한다. 잔액이 부족하면 현금 결제 후 기능 잠금 해제만 확정하며, 유료 결제로 `token_ledger.reason='purchase'` 적립을 만들지 않는다. 캐시 적중 또는 이미 결제 완료된 `feature_ref`는 신규 차감/결제하지 않는다.
+
+원자성은 **모델 C**(선생성 → 성공 시 결제): 본문을 먼저 생성·보류한 뒤 무료 차감 불가 시 402로 결제를 요구하고, confirm 후 동일 요청 재호출로 잠금이 해제된다(빌드 실패 시 `charged` 플래그로 환불). 미결제 선생성 누적은 일일 `CASH_GEN_DAILY_LIMIT`(기본 5, 초과 시 429)로 제한한다. **잠금 단일 진실은 `isFeatureUnlocked`** — 본문을 반환하는 GET 라우트(`ohaeng-interpretation`·`role-analysis`)도 hapcard `cache_key`로 게이트를 통과해야 한다(미결제 본문 유출 차단). `snapshots`·OG·share는 점수·메타데이터만 노출하므로 게이트하지 않는다. 상세 결정: `docs/adr/ADR-039-pay-per-use-billing.md`.
 
 ---
 
 ## 3. Webhook Handler
 
-이번 MVP 지갑 구현의 1차 진실 경로는 `/api/payments/confirm` redirect confirm이다. `POST /api/payments/webhook`은 가상계좌·환불·취소 자동화 단계에서 활성화한다.
+이번 MVP pay-per-use 구현의 1차 진실 경로는 `/api/payments/feature/confirm` redirect confirm이다. `POST /api/payments/webhook`은 가상계좌·환불·취소 자동화 단계에서 활성화한다.
 
 `POST /api/payments/webhook`
 
@@ -225,7 +227,10 @@ CREATE TABLE payments (
   toss_payment_key text UNIQUE,              -- 승인 전 NULL 가능
   product_id       text,
   amount_krw       integer NOT NULL,         -- KRW 단위
-  token_amount     integer NOT NULL,         -- 충전 부적 수
+  token_amount     integer,                  -- legacy token-pack only; feature_use에서는 NULL
+  charge_type      text NOT NULL DEFAULT 'token_charge',  -- 'token_charge'(legacy) | 'feature_use'
+  feature_id       text,                     -- 'hapcard' | 'whatif' | 'replay' (feature_use)
+  feature_ref      text,                     -- feature_use unlock ref: cache_key | replay:{id}:{date}
   status           text NOT NULL,            -- 'pending' | 'confirmed' | 'failed' | 'refunded' | 'tampered' | 'invalid'
   failure_code     text,
   failure_message  text,
@@ -246,9 +251,9 @@ CREATE TABLE token_ledger (
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- 결제 확정은 confirm_token_purchase RPC로만 처리한다.
--- 중복 success redirect는 toss_order_id/status 기준으로 멱등 처리한다.
--- token_ledger reason='purchase' + reference_id=payment_id는 partial unique index로 중복 지급을 방어한다.
+-- 기능 결제 확정은 confirm_feature_payment RPC로 처리한다.
+-- 중복 success redirect는 toss_order_id/status/feature_ref 기준으로 멱등 처리한다.
+-- pay-per-use 현금 결제는 token_ledger purchase 적립을 만들지 않고 기능 unlock만 확정한다.
 ```
 
 무료 부적 보상은 결제 상품이 아니며 모두 `reason='bonus'`로 기록한다. `award_free_talisman_session_rewards`는 KST 일일 첫 인증 앱 진입 `+1`, 정책 기준일 이후 신규 온보딩 완료 사용자 가입 `+5`를 멱등 지급한다. 공유 보상은 Kakao webhook으로 서버 검증된 공유만 `award_hapcard_share_reward`가 `delta=+1`로 기록하며 제한은 사용자+hapcard당 1회, KST 기준 하루 최대 5회다.
