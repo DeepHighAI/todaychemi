@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Plus, Receipt, Sparkles } from 'lucide-react';
+import { ChevronRight, Receipt, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import type { LedgerEntry, WalletBalance } from '@/types/wallet';
@@ -9,7 +9,6 @@ import type { LedgerEntry, WalletBalance } from '@/types/wallet';
 interface TalismanCardProps {
   balance: WalletBalance;
   ledger: LedgerEntry[];
-  onCharge: () => void;
 }
 
 const REASON_LABEL: Record<string, string> = {
@@ -24,7 +23,7 @@ const REASON_LABEL: Record<string, string> = {
   bonus: '보너스',
 };
 
-export function TalismanCard({ balance, ledger, onCharge }: TalismanCardProps) {
+export function TalismanCard({ balance, ledger }: TalismanCardProps) {
   const t = useTranslations('me.wallet');
   const [expanded, setExpanded] = useState(false);
   const recent = ledger.slice(0, 4);
@@ -73,14 +72,6 @@ export function TalismanCard({ balance, ledger, onCharge }: TalismanCardProps) {
         </div>
 
         <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={onCharge}
-            className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[var(--r-pill)] bg-primary text-sm font-bold text-primary-foreground active:translate-y-px"
-          >
-            <Plus size={18} />
-            {t('charge')}
-          </button>
           <button
             type="button"
             aria-expanded={expanded}

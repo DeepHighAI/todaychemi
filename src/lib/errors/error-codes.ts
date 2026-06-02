@@ -47,8 +47,7 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   TODAY_BUILD_FAIL: '오늘카드를 만들지 못했어요. 잠시 후 다시 시도해주세요.',
 };
 
-// 특정 에러 코드에 대한 CTA 링크 정의 (현재: INSUFFICIENT_TOKENS → 충전 페이지)
-// pay-per-use 전환(ADR-039): 충전 페이지 제거 + 결제 시트 도입은 Phase 5/6 에서 함께 처리한다.
-export const ERROR_CTA: Partial<Record<ErrorCode, { label: string; href: string }>> = {
-  INSUFFICIENT_TOKENS: { label: '충전하러 가기', href: '/payments/charge' },
-};
+// 에러 코드별 정적 CTA 링크 정의.
+// pay-per-use 전환(ADR-039): 충전 페이지 제거 + 결제는 인뷰 pay-sheet 로 처리하므로
+// INSUFFICIENT_TOKENS/PAYMENT_REQUIRED 정적 CTA 없음 (현재 정의된 정적 CTA 없음).
+export const ERROR_CTA: Partial<Record<ErrorCode, { label: string; href: string }>> = {};

@@ -36,10 +36,9 @@ describe('ERROR_CODES 카탈로그', () => {
     }
   });
 
-  it('토큰 부족 CTA는 충전 페이지로 연결한다 (Phase 5/6에서 결제 시트로 전환 예정)', () => {
-    expect(ERROR_CTA.INSUFFICIENT_TOKENS).toEqual({
-      label: '충전하러 가기',
-      href: '/payments/charge',
-    });
+  it('충전 페이지 제거(ADR-039) — INSUFFICIENT_TOKENS/PAYMENT_REQUIRED 정적 CTA 없음', () => {
+    // pay-per-use: 충전 페이지 삭제 + 결제는 인뷰 pay-sheet 로 처리.
+    expect(ERROR_CTA.INSUFFICIENT_TOKENS).toBeUndefined();
+    expect(ERROR_CTA.PAYMENT_REQUIRED).toBeUndefined();
   });
 });

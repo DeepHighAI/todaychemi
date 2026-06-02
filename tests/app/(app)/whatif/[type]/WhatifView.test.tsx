@@ -54,7 +54,7 @@ describe('WhatifView', () => {
     expect(init.method).toBe('POST');
   });
 
-  it('INSUFFICIENT_TOKENS 에러 → error-card 렌더 + 충전하러 가기 링크', async () => {
+  it('INSUFFICIENT_TOKENS 에러 → error-card 렌더 (충전 링크 없음 ADR-039)', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 402,
@@ -62,7 +62,7 @@ describe('WhatifView', () => {
     });
     renderWithProviders(<WhatifView />);
     await screen.findByTestId('error-card');
-    expect(screen.getByRole('link', { name: '충전하러 가기' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '충전하러 가기' })).toBeNull();
   });
 
   it('PAYMENT_REQUIRED(402) → 결제 시트 렌더, ErrorCard 미노출', async () => {

@@ -116,13 +116,7 @@ export default function MePage() {
       <MeHero chart={chart} />
       <MeEditRow onClick={() => setEditOpen(true)} />
       <MeEditDrawer open={editOpen} onOpenChange={setEditOpen} />
-      {wallet && (
-        <TalismanCard
-          balance={wallet.balance}
-          ledger={wallet.ledger}
-          onCharge={() => router.push('/payments/charge')}
-        />
-      )}
+      {wallet && <TalismanCard balance={wallet.balance} ledger={wallet.ledger} />}
       <PillarGrid chart={chart} />
       <OhaengBars data={chart.five_elements_counts} />
       <DayMasterCard element={chart.day_master_element} />

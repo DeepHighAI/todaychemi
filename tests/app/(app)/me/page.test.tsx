@@ -125,22 +125,13 @@ describe('MePage (내 사주맵 화면)', () => {
     expect(screen.getByTestId('yunse-card')).toBeInTheDocument();
   });
 
-  it('chart 있을 때 부적 지갑 카드 렌더', async () => {
+  it('chart 있을 때 부적 지갑 카드 렌더 (잔액/이력만, 충전 버튼 제거 ADR-039)', async () => {
     mockChartAndWallet();
     await renderMePage();
     await waitFor(() => expect(screen.getByTestId('talisman-card')).toBeInTheDocument());
     expect(screen.getByText('55')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /충전/ })).toBeInTheDocument();
-  });
-
-  it('부적 충전 CTA는 결제 페이지로 이동한다', async () => {
-    mockChartAndWallet();
-    await renderMePage();
-    await waitFor(() => expect(screen.getByTestId('talisman-card')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByRole('button', { name: /충전/ }));
-
-    expect(routerMocks.push).toHaveBeenCalledWith('/payments/charge');
+    // pay-per-use: 충전 진입점 제거 — 충전 버튼 없음.
+    expect(screen.queryByRole('button', { name: /충전/ })).toBeNull();
   });
 
   it('chart 있을 때 개인정보 권리 행사 링크와 계정 삭제 요청을 제공한다', async () => {

@@ -75,10 +75,9 @@ describe('ErrorCard', () => {
     expect(screen.getByRole('button', { name: '제보' })).toBeInTheDocument();
   });
 
-  it('INSUFFICIENT_TOKENS → [충전하러 가기] 링크 표시 (href=/payments/charge)', () => {
+  it('INSUFFICIENT_TOKENS → 충전 링크 없음 (ADR-039: 인뷰 결제 시트로 전환)', () => {
     renderWithProviders(<ErrorCard code="INSUFFICIENT_TOKENS" />);
-    const link = screen.getByRole('link', { name: '충전하러 가기' });
-    expect(link).toHaveAttribute('href', '/payments/charge');
+    expect(screen.queryByRole('link', { name: '충전하러 가기' })).toBeNull();
   });
 
   it('CTA 미정의 코드(CALC_FAIL) → 링크 미표시', () => {
@@ -86,9 +85,9 @@ describe('ErrorCard', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('INSUFFICIENT_TOKENS — 카피와 CTA 링크 동시 표시', () => {
+  it('INSUFFICIENT_TOKENS — 카피만 표시(정적 링크 없음)', () => {
     renderWithProviders(<ErrorCard code="INSUFFICIENT_TOKENS" />);
     expect(screen.getByText('포인트가 부족해요. 충전 후 다시 시도해주세요.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '충전하러 가기' })).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });
