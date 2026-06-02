@@ -7,6 +7,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createTossCustomerKey, createTossOrderId } from '@/lib/payments/ids';
 import { getTossPaymentsClientKey } from '@/lib/payments/env';
 import { FEATURE_PRICES_KRW, FeatureIdSchema } from '@/lib/payments/feature-prices';
+import { verifyFeatureRefOwnership } from '@/lib/payments/feature-ref-ownership';
 import type { FeaturePaymentInitResponse } from '@/types/feature-payment';
 
 // pay-per-use 피처 결제 시작 (ADR-039, 모델 C). 잔액 부족(402) 이후 클라이언트가 호출.
@@ -33,6 +34,13 @@ export async function POST(request: Request) {
   }
 
   const service = createServiceRoleClient();
+
+  // ref 소유 검증 — 사용자가 실제로 선생성된 결과 행을 소유할 때만 결제 허용 (codex #4).
+  // 정상 흐름은 선생성 후 402 → init 이므로 행이 항상 존재. 미존재 ref 결제(self-harm) 차단.
+  const owns = await verifyFeatureRefOwnership(service, user.id, feature, ref);
+  if (!owns) {
+    return apiErrorResponse('PAYMENT_REF_NOT_FOUND', 'no pre-generated result for this ref', 404);
+  }
 
   // 동일 (user, feature, ref) 의 열린 주문(pending/confirmed)은 하나만 — 중복 청구 방지(부분 unique).
   const { data: existing, error: lookupErr } = await service
@@ -81,11 +89,34 @@ export async function POST(request: Request) {
       })
       .select('toss_order_id, toss_customer_key')
       .single();
-    if (insertErr || !inserted) {
-      return apiErrorResponse('INTERNAL_ERROR', insertErr?.message ?? '', 500);
+    if (insertErr) {
+      // 동시 더블탭 — 부분 unique(payments_feature_open_uidx) 위반 시 기존 주문 재사용 (codex #7).
+      if (insertErr.code !== '23505') {
+        return apiErrorResponse('INTERNAL_ERROR', insertErr.message, 500);
+      }
+      const retry = await service
+        .from('payments')
+        .select('toss_order_id, toss_customer_key, status')
+        .eq('user_id', user.id)
+        .eq('feature_id', feature)
+        .eq('feature_ref', ref)
+        .in('status', ['pending', 'confirmed'])
+        .maybeSingle();
+      if (retry.data?.status === 'confirmed') {
+        const unlockedBody: FeaturePaymentInitResponse = { ok: true, unlocked: true };
+        return NextResponse.json(unlockedBody, { status: 200 });
+      }
+      if (!retry.data) {
+        return apiErrorResponse('INTERNAL_ERROR', insertErr.message, 500);
+      }
+      orderId = retry.data.toss_order_id;
+      customerKey = retry.data.toss_customer_key ?? newCustomerKey;
+    } else if (!inserted) {
+      return apiErrorResponse('INTERNAL_ERROR', '', 500);
+    } else {
+      orderId = inserted.toss_order_id;
+      customerKey = inserted.toss_customer_key ?? newCustomerKey;
     }
-    orderId = inserted.toss_order_id;
-    customerKey = inserted.toss_customer_key ?? newCustomerKey;
   }
 
   const body: FeaturePaymentInitResponse = {
