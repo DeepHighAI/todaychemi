@@ -65,15 +65,14 @@ test.describe('launch public smoke', () => {
     await expectHealthyPage(page);
   });
 
-  test('payment charge login gate and invalid auth callback fail safely', async ({ page }) => {
-    await page.goto('/payments/charge');
-    await expect(page.getByText('로그인이 필요해요')).toBeVisible();
-    await expect(page.getByRole('button', { name: '로그인하고 충전' })).toBeVisible();
-    await expectHealthyPage(page);
-
-    await page.getByRole('button', { name: '로그인하고 충전' }).click();
-    await expect(page).toHaveURL(/\/login\?next=\/payments\/charge$/);
-    await expectHealthyPage(page);
+  test('feature payment unauthenticated init and invalid auth callback fail safely', async ({ page }) => {
+    const initResponse = await page.request.post('/api/payments/feature/init', {
+      data: { feature: 'hapcard', ref: 'launch-smoke-ref' },
+    });
+    expect(initResponse.status()).toBe(401);
+    expect(await initResponse.json()).toEqual({
+      error: { code: 'UNAUTHORIZED', message: '' },
+    });
 
     await page.goto('/auth/callback');
     await expect(page).toHaveURL(/\/login\?error=auth_callback_failed/);
@@ -107,7 +106,8 @@ test.describe('launch public smoke', () => {
     expect(response?.status()).toBe(200);
     await expect(page.getByText('INTERNAL_ERROR')).toBeVisible();
     await expect(page.getByText('500 internal error launch smoke')).toBeVisible();
-    await expect(page.getByRole('link', { name: '다시 충전' })).toHaveAttribute('href', '/payments/charge');
+    await expect(page.getByRole('link', { name: '내 사주맵' })).toHaveAttribute('href', '/me');
+    await expect(page.getByRole('link', { name: '합피드로' })).toHaveAttribute('href', '/feed');
     await expectHealthyPage(page);
   });
 });

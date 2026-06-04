@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -12,6 +13,7 @@ import {
 import { isLaunchExternalChecklistPlaceholderCell } from '../../scripts/verify-launch-evidence-readiness';
 
 const tempDirs: string[] = [];
+const PNPM = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 function tempRoot(): string {
   const dir = mkdtempSync(join(tmpdir(), 'external-settings-checklist-'));
@@ -150,6 +152,22 @@ afterEach(() => {
 });
 
 describe('verify-external-settings-checklist', () => {
+  it('prints concrete next steps when the current launch checklist is still incomplete', () => {
+    const result = spawnSync(PNPM, ['verify:external-settings-checklist'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      shell: process.platform === 'win32',
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toContain('Next step:');
+    expect(result.stdout).toContain('docs/runbooks/external_launch_settings.md');
+    expect(result.stdout).toContain('MVP does not require a custom domain');
+    expect(result.stdout).toContain('pnpm verify:origin-shape-readiness -- --origin https://<project>.vercel.app');
+    expect(result.stdout).toContain('pnpm print:launch-dashboard-plan -- --origin https://<project>.vercel.app');
+    expect(result.stdout).toContain('production-equivalent env loaded in local shell, CI, or validation environment');
+  });
+
   it('accepts a filled secret-free checklist', () => {
     const root = tempRoot();
     write(root, 'docs/qa/external_settings_checklist.md', completedChecklist());
@@ -302,6 +320,21 @@ describe('verify-external-settings-checklist', () => {
 
     expect(scanExternalSettingsChecklist('docs/qa/external_settings_checklist.md', root).map((finding) => finding.label)).toContain(
       'external settings checklist evidence is still a placeholder: live_ck_... prefix only',
+    );
+  });
+
+  it('flags angle-bracket placeholders in completed evidence cells across launch verifiers', () => {
+    const root = tempRoot();
+    write(
+      root,
+      'docs/qa/external_settings_checklist.md',
+      completedChecklist().replace('project=Default project, id_prefix=proj_', 'project=<OpenAI project name>, id_prefix=proj_'),
+    );
+
+    expect(isExternalSettingsChecklistPlaceholderEvidence('project=<OpenAI project name>, id_prefix=proj_')).toBe(true);
+    expect(isLaunchExternalChecklistPlaceholderCell('project=<OpenAI project name>, id_prefix=proj_')).toBe(true);
+    expect(scanExternalSettingsChecklist('docs/qa/external_settings_checklist.md', root).map((finding) => finding.label)).toContain(
+      'external settings checklist evidence is still a placeholder: project=<OpenAI project name>, id_prefix=proj_',
     );
   });
 

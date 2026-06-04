@@ -40,7 +40,7 @@ pnpm verify:launch-evidence-readiness docs/qa/launch_gate_<date>_<env>.json docs
 - `pnpm verify:external-settings-readiness`는 dashboard/env/checklist evidence 관련 blocker를 빠르게 재확인하는 preflight이며, 이것만으로는 오픈 판정에 충분하지 않다.
 - `--summary-json` 결과는 secret-free 상태/exit/duration만 담으므로 evidence 문서에 경로를 남긴다.
 - `pnpm create:launch-evidence`는 summary JSON을 날짜별 evidence 문서 초안으로 변환한다. dashboard/smoke/Toss/Sentry 증거는 운영자가 수동으로 채운다.
-- `--go-no-go`를 생략하면 FAIL summary는 `오픈 보류`, PASS summary는 `조건부 가능`으로 기록한다. 자동 생성기로 `서비스 오픈 가능`을 바로 기록하지 않는다. production smoke와 live payment/token ledger 증거를 수동으로 채운 뒤 evidence 문서의 판정값을 변경하고 verifier를 통과시킨다.
+- `--go-no-go`를 생략하면 FAIL summary는 `오픈 보류`, PASS summary는 `조건부 가능`으로 기록한다. 자동 생성기로 `서비스 오픈 가능`을 바로 기록하지 않는다. production smoke와 live feature payment/unlock/token ledger 증거를 수동으로 채운 뒤 evidence 문서의 판정값을 변경하고 verifier를 통과시킨다.
 - PASS summary가 `조건부 가능` 초안을 만들더라도 dashboard/smoke/payment/monitoring/canary evidence와 Decision 섹션의 `Reason`, `Known risks accepted`, `Rollback trigger`, `Next review time`은 수동으로 채운다. launch summary JSON과 외부 설정 체크리스트를 함께 검증하지 않거나 이 필드가 비어 있으면 `pnpm verify:launch-evidence-readiness`가 실패한다.
 - `pnpm verify:launch-evidence-readiness`는 evidence artifact와 외부 설정 체크리스트에 secret 값이나 원본 PII 직렬화가 없는지 검사한다.
 - 실패한 항목이 있으면 해당 P0/P1 항목에 증거를 붙이고 오픈을 중단한다.
@@ -62,7 +62,7 @@ Preview dashboard 확인:
 - Google/Kakao OAuth provider가 preview redirect와 충돌하지 않는다.
 - Vercel Preview env에 production secret이 실수로 노출되지 않았고, 필요한 preview secret만 들어 있다.
 - Sentry event가 preview release/environment로 수집된다.
-- payment live charge는 preview에서 열지 않는다. 결제 실거래 테스트는 Toss live dashboard 승인 범위에 따라 production 직전 window에서만 수행한다.
+- live feature payment는 preview에서 열지 않는다. 결제 실거래 테스트는 Toss live dashboard 승인 범위에 따라 production 직전 window에서만 수행한다.
 
 ## 3. Production 배포 직전 수동 확인
 
@@ -102,7 +102,7 @@ pnpm verify:launch-readiness
 
 판정은 세 가지 중 하나만 기록한다.
 
-- 서비스 오픈 가능: 모든 P0 PASS, production smoke PASS, live payment/token ledger 증거 확보.
+- 서비스 오픈 가능: 모든 P0 PASS, production smoke PASS, live feature payment/unlock/token ledger 증거 확보.
 - 조건부 가능: P0는 닫혔고 P1만 남았으며, 운영자가 known risk와 rollback 조건을 명시적으로 승인.
 - 오픈 보류: P0 하나라도 열려 있거나 `pnpm verify:launch-readiness`가 FAIL.
 
@@ -120,7 +120,7 @@ pnpm verify:launch-evidence-readiness docs/qa/launch_gate_<date>_production.json
 문제가 발생하면 아래 순서로 실행한다.
 
 1. Vercel Dashboard에서 last known-good deployment를 production으로 promote한다.
-2. 결제 관련 장애이면 charge CTA를 숨기거나 관련 Vercel env/feature flag를 내려 신규 결제를 막는다.
+2. 결제 관련 장애이면 paid feature CTA를 숨기거나 관련 Vercel env/feature flag를 내려 신규 결제를 막는다.
 3. Toss dashboard에서 추가 결제 노출을 멈추고, 이미 발생한 결제는 `payments.toss_order_id` 기준으로 보존한다.
 4. Supabase에서 `payments`와 `token_ledger` before/after row를 먼저 export한 뒤, service-role repair는 별도 승인 후 수행한다.
 5. LLM/prompt 문제이면 `docs/runbooks/prompt_rollback.md` 절차로 prompt version을 되돌리거나 deployment를 rollback한다.

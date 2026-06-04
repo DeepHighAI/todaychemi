@@ -95,7 +95,7 @@ pnpm print:vercel-env-plan
 | Google OAuth callback | `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback` |
 | Kakao Web platform origin | `<APP_ORIGIN>` |
 | Kakao OAuth callback | `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback` |
-| Toss Success URL | `<APP_ORIGIN>/api/payments/confirm` |
+| Toss Success URL | `<APP_ORIGIN>/api/payments/feature/confirm` |
 | Toss Fail/Cancel URL | `<APP_ORIGIN>/payments/fail` |
 
 체크리스트의 custom-domain 관련 Evidence는 아래처럼 기록한다.
@@ -194,14 +194,14 @@ project=<선택한 OpenAI project 이름>, id_prefix=proj_, zdr=confirmed, budge
 1. Toss dashboard에서 live client key와 secret key를 확인한다.
 2. Vercel env에는 `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`만 넣는다.
 3. `TOSS_PAYMENTS_CLIENT_KEY`, `TOSS_PAYMENTS_SECRET_KEY` legacy alias는 비워둔다.
-4. Success URL은 `${NEXT_PUBLIC_APP_URL}/api/payments/confirm`로 넣는다.
+4. Success URL은 `${NEXT_PUBLIC_APP_URL}/api/payments/feature/confirm`로 넣는다.
 5. Fail/Cancel URL은 `${NEXT_PUBLIC_APP_URL}/payments/fail`로 넣는다.
-6. 오픈 직전 1,000원 live smoke를 진행하고 order id만 evidence에 남긴다.
+6. 오픈 직전 최저가 유료 기능 live smoke를 진행하고 `toss_order_id`/`feature_ref`만 evidence에 남긴다.
 
 체크리스트 Evidence 예시:
 
 ```text
-keys=live_ck/live_sk present, success=/api/payments/confirm, fail=/payments/fail
+keys=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail
 ```
 
 ### 6. Sentry / Operations
@@ -362,7 +362,7 @@ Toss dashboard에 Vercel Production URL 기준 redirect를 등록한다.
 
 ```text
 Success URL:
-https://<vercel-production-url>/api/payments/confirm
+https://<vercel-production-url>/api/payments/feature/confirm
 
 Fail/Cancel URL:
 https://<vercel-production-url>/payments/fail
@@ -370,12 +370,12 @@ https://<vercel-production-url>/payments/fail
 
 오픈 전 live smoke:
 
-1. 1,000원 token pack으로 실제 결제 1건을 진행한다.
-2. `/payments/success` 도달을 확인한다.
-3. `payments.status='paid'`를 확인한다.
-4. `token_ledger.reason='purchase'` 1건과 잔액 증가를 확인한다.
+1. 무료 부적이 부족한 계정으로 합카드/만약합/다시합 중 하나를 열어 feature pay sheet를 띄운다.
+2. 실제 저액 결제 1건을 진행하고 원래 기능 화면으로 `paid=<ref>`가 붙어 복귀하는지 확인한다.
+3. `payments.status='confirmed'`, `charge_type='feature_use'`, `feature_id`, `feature_ref`를 확인한다.
+4. 유료 결제로 `token_ledger.reason='purchase'` 또는 잔액 증가가 생기지 않는지 확인한다.
 5. 취소/실패 URL도 실제 화면에서 안전하게 표시되는지 확인한다.
-6. 중복 confirm 요청이 token을 중복 지급하지 않는지 확인한다.
+6. 중복 confirm 요청이 결제 확정/잠금해제를 중복 처리하지 않는지 확인한다.
 
 ## Sentry / Operations
 
@@ -398,6 +398,13 @@ Sentry 설정에서 default PII 전송이 꺼져 있는지 확인한다. 이 프
 
 외부 값을 채우는 동안에는 빠른 확인부터 실행한다. `pnpm verify:external-settings-readiness` 안에는 checklist 검증도 포함되어 있지만, 실패 위치를 더 빨리 보려면 checklist 명령을 바로 한 번 더 실행한다.
 
+중요: Vercel dashboard에 입력한 환경변수는 로컬 터미널의 `pnpm verify:launch-readiness`가 자동으로 읽지 않는다. 전체 launch gate는 다음 둘 중 하나에서 실행한다.
+
+1. production과 같은 값이 주입된 로컬 shell 또는 `.env.local`에서 실행한다. 값 자체는 문서나 로그에 남기지 않는다.
+2. 같은 환경변수가 주입된 CI/운영 검증 환경에서 실행한다.
+
+Vercel dashboard 설정 증거는 `docs/qa/external_settings_checklist.md`에 secret-free로 기록하고, full gate 실행 증거는 launch evidence 파일에 command 결과만 기록한다. Vercel env를 바꾼 뒤에는 반드시 redeploy한 다음 production smoke를 실행한다.
+
 ```bash
 pnpm print:launch-dashboard-plan -- --origin https://<project>.vercel.app
 pnpm print:vercel-env-plan
@@ -418,7 +425,7 @@ pnpm verify:launch-readiness -- --summary-json docs/qa/launch_gate_2026-06-01_pr
 pnpm create:launch-evidence -- --summary-json docs/qa/launch_gate_2026-06-01_production.json --out docs/qa/launch_evidence_2026-06-01_production.md --environment Production --go-no-go "조건부 가능"
 ```
 
-Evidence 파일에 dashboard evidence, production smoke, live payment ledger evidence, monitoring, canary, decision을 직접 채운 뒤 검증한다.
+Evidence 파일에 dashboard evidence, production smoke, live feature payment/unlock/token ledger evidence, monitoring, canary, decision을 직접 채운 뒤 검증한다.
 `조건부 가능` 상태로 남기더라도 Production evidence여야 하며, launch summary JSON과 외부 설정 체크리스트를 함께 검증하고 `Reason`, `Known risks accepted`, `Rollback trigger`, `Next review time`을 반드시 채운다.
 
 ```bash

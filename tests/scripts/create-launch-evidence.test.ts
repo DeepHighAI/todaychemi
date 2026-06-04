@@ -70,7 +70,7 @@ describe('create-launch-evidence script', () => {
     expect(markdown).toContain('Reason: Launch readiness gate failed; required failures must be cleared before production open.');
     expect(markdown).toContain('| Working tree status | dirty - uncommitted local changes present |');
     expect(markdown).toContain('## Canary Evidence');
-    expect(markdown).toContain('| Payment charge and ledger canary | first live low-value order | TBD |');
+    expect(markdown).toContain('| Feature payment and unlock canary | first live low-value feature order | TBD |');
     expect(markdown).toContain('| paid manual refund/cancel drill | TBD | toss_order_id and owner only |');
     expect(markdown).toContain('| monetary refund/cancel drill | toss_order_id | Toss dashboard/manual refund status and before/after ledger export recorded | TBD |');
     expect(markdown).toContain('| Manual refund/cancel operator canary | first live low-value order or approved dry run | TBD |');

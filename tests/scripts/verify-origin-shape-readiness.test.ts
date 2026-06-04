@@ -45,6 +45,6 @@ describe('production origin readiness checks', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Production origin shape readiness PASS');
     expect(result.stdout).toContain('Supabase Redirect URL: https://twoday-mvp.vercel.app/auth/callback');
-    expect(result.stdout).toContain('Toss Success URL: https://twoday-mvp.vercel.app/api/payments/confirm');
+    expect(result.stdout).toContain('Toss Success URL: https://twoday-mvp.vercel.app/api/payments/feature/confirm');
   });
 });

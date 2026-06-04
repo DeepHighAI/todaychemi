@@ -43,24 +43,65 @@ function requireEnv(key: string): string {
 }
 
 function checkLocalMigration(): boolean {
-  const migrationPath = resolve(
+  const tossHardeningPath = resolve(
     process.cwd(),
     'supabase/migrations/20260530090000_toss_v2_payment_hardening.sql',
   );
+  const featurePayPerUsePath = resolve(
+    process.cwd(),
+    'supabase/migrations/20260601000000_feature_pay_per_use.sql',
+  );
 
-  if (!existsSync(migrationPath)) {
+  if (!existsSync(tossHardeningPath)) {
     console.log('[local migration] FAIL missing 20260530090000_toss_v2_payment_hardening.sql');
     return false;
   }
+  if (!existsSync(featurePayPerUsePath)) {
+    console.log('[local migration] FAIL missing 20260601000000_feature_pay_per_use.sql');
+    return false;
+  }
 
-  const sql = readFileSync(migrationPath, 'utf8');
-  const hasCustomerKey = sql.includes('toss_customer_key');
-  const hasPurchaseUniqueIndex = sql.includes('token_ledger_purchase_reference_unique_idx');
+  const tossSql = readFileSync(tossHardeningPath, 'utf8');
+  const featureSql = readFileSync(featurePayPerUsePath, 'utf8');
+  const hasCustomerKey = tossSql.includes('toss_customer_key');
+  const hasPurchaseUniqueIndex = tossSql.includes('token_ledger_purchase_reference_unique_idx');
+  const hasFeatureColumns =
+    featureSql.includes('charge_type')
+    && featureSql.includes('feature_id')
+    && featureSql.includes('feature_ref');
+  const hasFeatureConfirmRpc = featureSql.includes('confirm_feature_payment');
+  const dropsLegacyTokenPurchase = featureSql.includes('drop function if exists public.confirm_token_purchase');
 
   console.log(`[local migration] ${hasCustomerKey ? 'OK' : 'FAIL'} toss_customer_key`);
   console.log(`[local migration] ${hasPurchaseUniqueIndex ? 'OK' : 'FAIL'} purchase reference unique index`);
+  console.log(`[local migration] ${hasFeatureColumns ? 'OK' : 'FAIL'} pay-per-use payment feature columns`);
+  console.log(`[local migration] ${hasFeatureConfirmRpc ? 'OK' : 'FAIL'} confirm_feature_payment RPC`);
+  console.log(`[local migration] ${dropsLegacyTokenPurchase ? 'OK' : 'FAIL'} legacy token-purchase RPC removal`);
 
-  return hasCustomerKey && hasPurchaseUniqueIndex;
+  return hasCustomerKey
+    && hasPurchaseUniqueIndex
+    && hasFeatureColumns
+    && hasFeatureConfirmRpc
+    && dropsLegacyTokenPurchase;
+}
+
+function checkPaymentSpec(): boolean {
+  const specPath = resolve(process.cwd(), 'docs/specs/payments.md');
+  if (!existsSync(specPath)) {
+    console.log('[local spec] FAIL missing docs/specs/payments.md');
+    return false;
+  }
+
+  const source = readFileSync(specPath, 'utf8');
+  const hasCurrentConfirmChecklist = source.includes(
+    '`/api/payments/feature/confirm` 서버 저장 금액 검증 확인',
+  );
+  const hasStaleTokenConfirmChecklist = /`\/api\/payments\/confirm`\s+서버 저장 금액 검증 확인/.test(source);
+
+  console.log(`[local spec] ${hasCurrentConfirmChecklist ? 'OK' : 'FAIL'} feature confirm amount verification checklist`);
+  console.log(`[local spec] ${!hasStaleTokenConfirmChecklist ? 'OK' : 'FAIL'} no stale token-charge confirm checklist`);
+
+  return hasCurrentConfirmChecklist && !hasStaleTokenConfirmChecklist;
 }
 
 async function checkSelect(
@@ -93,10 +134,11 @@ async function main() {
   let ok = true;
 
   ok = checkLocalMigration() && ok;
+  ok = checkPaymentSpec() && ok;
 
   ok = await checkSelect(
     client,
-    'payments charge columns',
+    'payments pay-per-use columns',
     'payments',
     [
       'payment_id',
@@ -105,6 +147,9 @@ async function main() {
       'toss_customer_key',
       'toss_payment_key',
       'product_id',
+      'charge_type',
+      'feature_id',
+      'feature_ref',
       'amount_krw',
       'token_amount',
       'status',
@@ -124,9 +169,9 @@ async function main() {
   ) && ok;
 
   console.log('');
-  console.log('Manual security checks still required:');
+  console.log('Remaining dashboard checks:');
+  console.log('- Keep pnpm db:push:dry PASS so production payment migrations remain up to date.');
   console.log('- Supabase advisor must show token/payment SECURITY DEFINER RPCs are not executable by anon/authenticated.');
-  console.log('- Confirm production has the 20260530090000 migration applied in Supabase migration history.');
   console.log('- Verify Toss live keys and payment dashboard settings outside the database.');
 
   if (!ok) {

@@ -219,7 +219,7 @@ function main() {
   console.log('- Sentry project DSNs are configured in Vercel production and preview.');
   console.log('- Alerts exist for payment confirm failures, LLM failures/rate limits, and 5xx spikes.');
   console.log('- Production canary is run after deploy and recorded with evidence.');
-  console.log('- Production E2E smoke covers signup/login, onboarding, relation, feed, hapcard, replay, whatif, today, me, charge/use/refund.');
+  console.log('- Production E2E smoke covers signup/login, onboarding, relation, feed, hapcard, replay, whatif, today, me, pay-per-use feature payment/use/refund.');
 
   if (!ok) {
     console.error('\nOperations readiness FAIL');

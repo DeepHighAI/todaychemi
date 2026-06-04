@@ -22,7 +22,7 @@
 project=twoday, origin=https://twoday-mvp.vercel.app, branch=main
 site_url=production origin, redirect=/auth/callback, providers=google+kakao
 openai_project=<선택한 project 이름>, id_prefix=proj_, zdr=confirmed
-toss=live_ck/live_sk present, success=/api/payments/confirm, fail=/payments/fail
+toss=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail
 alerts=payment-confirm-failure,llm-provider-outage,5xx-spike
 custom_domain=not_purchased_for_mvp, trigger=after_market_validation, owner=<name>
 ```
@@ -121,11 +121,11 @@ Project ref must be `jamhkucluhiibqpjsiov`.
 |---|---:|---|
 | Toss live client key configured | TBD | `live_ck_` prefix only |
 | Toss live secret key configured | TBD | `live_sk_` prefix only |
-| Success URL is `${NEXT_PUBLIC_APP_URL}/api/payments/confirm` | TBD | URL path only |
+| Success URL is `${NEXT_PUBLIC_APP_URL}/api/payments/feature/confirm` | TBD | URL path only |
 | Fail/cancel URL is `${NEXT_PUBLIC_APP_URL}/payments/fail` | TBD | URL path only |
 | Business/payment method settings approved for live traffic | TBD | checked |
-| Live low-value charge smoke completed | TBD | toss_order_id only |
-| Duplicate confirm did not double-credit tokens | TBD | toss_order_id only |
+| Live low-value feature payment smoke completed | TBD | toss_order_id/feature_ref only |
+| Duplicate confirm did not double-confirm/unlock feature | TBD | toss_order_id/feature_ref only |
 | Refund/cancel operating owner confirmed | TBD | owner only |
 | Manual monetary refund/cancel drill completed or explicitly deferred | TBD | toss_order_id/owner only |
 
@@ -144,6 +144,8 @@ Project ref must be `jamhkucluhiibqpjsiov`.
 ## Verification Commands
 
 Run after dashboard values are configured and Vercel is redeployed.
+
+Note: Vercel dashboard env values are not automatically available to a local terminal. Run the full launch gate from a shell, CI job, or validation environment that has production-equivalent env values loaded. Record only command PASS/FAIL summaries, never the secret values.
 
 ```bash
 pnpm print:launch-dashboard-plan -- --origin https://<project>.vercel.app

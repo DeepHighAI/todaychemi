@@ -17,33 +17,41 @@ const PNPM = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 const SOURCE_CHECKS: SourceCheck[] = [
   {
-    label: 'Toss product catalog matches token launch packs',
-    file: 'src/lib/payments/products.ts',
+    label: 'Feature price catalog matches pay-per-use launch prices',
+    file: 'src/lib/payments/feature-prices.ts',
     patterns: [
-      /tokens_10[\s\S]*tokens:\s*10[\s\S]*amount_krw:\s*1000/,
-      /tokens_50[\s\S]*tokens:\s*55[\s\S]*amount_krw:\s*4500/,
-      /tokens_100[\s\S]*tokens:\s*120[\s\S]*amount_krw:\s*8000/,
+      /hapcard:\s*\{[^}]*amount_krw:\s*800[\s\S]*token_cost:\s*8/,
+      /whatif:\s*\{[^}]*amount_krw:\s*500[\s\S]*token_cost:\s*5/,
+      /replay:\s*\{[^}]*amount_krw:\s*400[\s\S]*token_cost:\s*4/,
     ],
   },
   {
-    label: 'Payment init stores Toss order and customer keys server-side',
-    file: 'src/app/api/payments/init/route.ts',
+    label: 'Feature payment init verifies owned refs and stores server-side Toss order data',
+    file: 'src/app/api/payments/feature/init/route.ts',
     patterns: [
       'createTossOrderId',
       'createTossCustomerKey',
+      'verifyFeatureRefOwnership',
+      "charge_type: 'feature_use'",
+      'feature_id',
+      'feature_ref',
       'toss_customer_key',
       "status: 'pending'",
+      "code !== '23505'",
+      'getTossPaymentsClientKey',
     ],
   },
   {
-    label: 'Payment order route validates ownership, product amount, and status',
-    file: 'src/app/api/payments/order/route.ts',
+    label: 'Feature payment confirm validates feature/ref/amount and unlocks through RPC',
+    file: 'src/lib/payments/feature-complete.ts',
     patterns: [
-      ".eq('user_id', user.id)",
-      'PAYMENT_PRODUCT_MISMATCH',
-      'PAYMENT_CUSTOMER_KEY_MISSING',
-      'PAYMENT_ALREADY_CONFIRMED',
-      'PAYMENT_NOT_PAYABLE',
+      ".eq('user_id', input.userId)",
+      "payment.charge_type !== 'feature_use'",
+      'PAYMENT_FEATURE_MISMATCH',
+      'PAYMENT_AMOUNT_MISMATCH',
+      'confirmOrQueryTossPayment',
+      "rpc('confirm_feature_payment'",
+      'already_confirmed',
     ],
   },
   {
@@ -57,46 +65,78 @@ const SOURCE_CHECKS: SourceCheck[] = [
     ],
   },
   {
-    label: 'Server confirm validates amount and credits tokens through RPC',
+    label: 'Feature confirm callback avoids raw paymentKey logging and redirects only to allowed app paths',
+    file: 'src/app/api/payments/feature/confirm/route.ts',
+    patterns: [
+      "tags: { area: 'payments', payment_step: 'feature_confirm' }",
+      'extra: { order_id: orderId, code, feature }',
+      'resolveNext',
+      "target.searchParams.set('paid', ref)",
+      "if (!next || !next.startsWith('/') || next.startsWith('//'))",
+      "/^\\/(hapcard|whatif)(\\/|$)/",
+      'redirectToFail',
+    ],
+  },
+  {
+    label: 'Shared payment problem marker records failed/tampered/invalid states without token credit',
     file: 'src/lib/payments/complete.ts',
     patterns: [
       'confirmTossPayment',
       'getTossPayment',
-      'PAYMENT_AMOUNT_MISMATCH',
-      "rpc('confirm_token_purchase'",
+      'PAYMENT_CONFIRM_RETRYABLE',
+      'markPaymentFailedForUser',
       'markPaymentTamperedForUser',
+      'markPaymentInvalidForUser',
+      "status: 'tampered'",
+      "status: 'invalid'",
     ],
   },
   {
-    label: 'Payment confirm route avoids logging raw paymentKey to Sentry extras',
-    file: 'src/app/api/payments/confirm/route.ts',
+    label: 'Feature pay sheet uses server-created orders and canonical feature confirm/fail URLs',
+    file: 'src/components/payments/feature-pay-sheet.tsx',
     patterns: [
-      "tags: { area: 'payments', payment_step: 'confirm' }",
-      'extra: { order_id: orderId, code }',
-      'redirectToFail',
-      'redirectWithQuery',
-    ],
-  },
-  {
-    label: 'Charge UI uses server-created orders and canonical confirm/fail URLs',
-    file: 'src/app/payments/charge/charge-client.tsx',
-    patterns: [
-      '/api/payments/init',
-      '/api/payments/order?orderId=',
+      '/api/payments/feature/init',
       'loadTossPayments',
       'requestPayment',
-      '/api/payments/confirm',
+      '/api/payments/feature/confirm',
       '/payments/fail',
+      'featureRef',
+      "replay ? '&replay=1' : ''",
     ],
   },
   {
-    label: 'Replay spend path is idempotent, deducts tokens, and refunds on build failure',
+    label: 'Hapcard create path gates free tokens, cash generation, and paid unlocks',
+    file: 'src/app/api/hapcards/route.ts',
+    patterns: [
+      "resolveFeatureCharge(serviceClient, userId, 'hapcard', cacheKey)",
+      'checkCashGenLimit',
+      'paymentRequiredResponse',
+      "rpc('refund_tokens_once'",
+      "reason: 'hapcard_refund'",
+      'hapcard_refund_failed',
+    ],
+  },
+  {
+    label: 'Whatif path gates free tokens, cash generation, and paid unlocks',
+    file: 'src/app/api/whatif/[type]/route.ts',
+    patterns: [
+      "resolveFeatureCharge(serviceClient, userId, 'whatif', cacheKey)",
+      'checkCashGenLimit',
+      'paymentRequiredResponse',
+      "rpc('refund_tokens_once'",
+      "reason: 'whatif_refund'",
+      'whatif_refund_failed',
+    ],
+  },
+  {
+    label: 'Replay path gates free tokens, cash generation, paid unlocks, and idempotent refunds',
     file: 'src/app/api/hapcards/[id]/replay/route.ts',
     patterns: [
       'hapcard_replays',
-      "rpc('deduct_tokens'",
-      "reason: 'replay_use'",
-      "rpc('refund_tokens'",
+      "resolveFeatureCharge(serviceClient, userId, 'replay', ref)",
+      'checkCashGenLimit',
+      'paymentRequiredResponse',
+      "rpc('refund_tokens_once'",
       "reason: 'replay_refund'",
       'replay_refund_failed',
     ],
@@ -117,35 +157,41 @@ const SOURCE_CHECKS: SourceCheck[] = [
 
 const VITEST_RUNS: VitestRun[] = [
   {
-    label: 'payment product/env/idempotency unit tests',
+    label: 'payment catalog/env/idempotency unit tests',
     files: [
-      'tests/lib/payments/products.test.ts',
+      'tests/lib/payments/feature-prices.test.ts',
       'tests/lib/payments/ids.test.ts',
       'tests/lib/payments/env.test.ts',
       'tests/lib/payments/toss-server.test.ts',
     ],
   },
   {
-    label: 'payment server route and completion tests',
+    label: 'feature payment server route and completion tests',
     files: [
       'tests/lib/payments/complete.test.ts',
-      'tests/app/api/payments/init/route.test.ts',
-      'tests/app/api/payments/order/route.test.ts',
-      'tests/app/api/payments/confirm/route.test.ts',
+      'tests/lib/payments/feature-complete.test.ts',
+      'tests/app/api/payments/feature/init/route.test.ts',
+      'tests/app/api/payments/feature/confirm/route.test.ts',
     ],
   },
   {
-    label: 'payment UI result and wallet tests',
+    label: 'feature payment UI result and wallet tests',
     files: [
-      'tests/app/payments/charge/charge-client.test.tsx',
-      'tests/app/payments/success/page.test.tsx',
+      'tests/components/payments/feature-pay-sheet.test.tsx',
       'tests/app/payments/fail/page.test.tsx',
       'tests/app/api/me/wallet/route.test.ts',
     ],
   },
   {
-    label: 'token spend/refund replay tests',
+    label: 'feature gate and paid route tests',
     files: [
+      'tests/lib/payments/feature-gate.test.ts',
+      'tests/lib/payments/feature-unlock.test.ts',
+      'tests/lib/payments/feature-ref-ownership.test.ts',
+      'tests/lib/payments/cash-gen-limit.test.ts',
+      'tests/lib/errors/route-response.test.ts',
+      'tests/app/api/hapcards/route.test.ts',
+      'tests/app/api/whatif/[type]/route.test.ts',
       'tests/app/api/hapcards/[id]/replay/route.test.ts',
       'tests/lib/replay/builder.test.ts',
     ],
@@ -221,8 +267,8 @@ function main() {
   console.log('');
   console.log('Manual launch checks still required:');
   console.log('- Toss live dashboard keys and allowed redirect URLs.');
-  console.log('- Production Supabase payment migration and protected RPC grants.');
-  console.log('- Live charge/cancel/fail/refund smoke on the production domain.');
+  console.log('- Keep pnpm db:push:dry and verify:supabase-security-readiness PASS before production smoke.');
+  console.log('- Live feature payment/cancel/fail/manual refund smoke on the production domain.');
 
   if (!ok) {
     console.error('\nPayment flow readiness FAIL');

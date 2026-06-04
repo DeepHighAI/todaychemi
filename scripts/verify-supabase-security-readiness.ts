@@ -9,9 +9,9 @@ interface FunctionCheck {
 
 const FUNCTIONS: FunctionCheck[] = [
   {
-    name: 'confirm_token_purchase',
-    signaturePattern: String.raw`uuid\s*,\s*text\s*,\s*text\s*,\s*text\s*,\s*(?:int|integer)\s*,\s*(?:int|integer)\s*,\s*text\s*,\s*(?:timestamptz|timestamp\s+with\s+time\s+zone)`,
-    reason: 'credits purchased tokens and confirms payments',
+    name: 'confirm_feature_payment',
+    signaturePattern: String.raw`uuid\s*,\s*text\s*,\s*text\s*,\s*text\s*,\s*text\s*,\s*(?:int|integer)\s*,\s*text\s*,\s*(?:timestamptz|timestamp\s+with\s+time\s+zone)`,
+    reason: 'confirms pay-per-use feature payments without crediting tokens',
   },
   {
     name: 'deduct_tokens',
@@ -91,7 +91,7 @@ function hasSearchPath(sql: string, fn: FunctionCheck): boolean {
 
 function hasRoleRevoke(sql: string, fn: FunctionCheck, role: 'anon' | 'authenticated'): boolean {
   return new RegExp(
-    String.raw`revoke\s+(?:all|execute)\s+on\s+function\s+${fnPattern(fn)}\s+from\s+${role}\b`,
+    String.raw`revoke\s+(?:all|execute)\s+on\s+function\s+${fnPattern(fn)}\s+from\s+[^;]*\b${role}\b`,
     'i',
   ).test(sql);
 }
@@ -129,11 +129,21 @@ function main() {
     ok = searchPath && anonRevoke && authenticatedRevoke && serviceGrant && ok;
   }
 
+  const legacyTokenPurchaseDropped = new RegExp(
+    String.raw`drop\s+function\s+if\s+exists\s+public\.confirm_token_purchase\s*\(\s*uuid\s*,\s*text\s*,\s*text\s*,\s*text\s*,\s*(?:int|integer)\s*,\s*(?:int|integer)\s*,\s*text\s*,\s*(?:timestamptz|timestamp\s+with\s+time\s+zone)\s*\)`,
+    'i',
+  ).test(sql);
+
+  console.log('legacy confirm_token_purchase');
+  console.log(`  [${legacyTokenPurchaseDropped ? 'OK' : 'FAIL'}] dropped by pay-per-use migration`);
+  ok = legacyTokenPurchaseDropped && ok;
+
   console.log('');
-  console.log('Manual Supabase checks still required:');
-  console.log('- Apply the approved security migration to production Supabase.');
-  console.log('- Re-run Supabase security advisors after migration application.');
-  console.log('- Verify has_function_privilege for anon/authenticated is false on protected RPCs.');
+  console.log('Remaining Supabase dashboard evidence:');
+  console.log('- Keep pnpm db:push:dry PASS so remote migrations stay up to date.');
+  console.log('- Re-run Supabase security advisors and record secret-free evidence.');
+  console.log('- If checking manually, verify has_function_privilege for anon/authenticated is false on active protected RPCs.');
+  console.log('- If checking manually, verify confirm_token_purchase no longer exists after the pay-per-use migration.');
 
   if (!ok) {
     console.error('\nSupabase security readiness FAIL');

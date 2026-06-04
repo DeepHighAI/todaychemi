@@ -99,7 +99,7 @@ function main() {
   console.log(`- Supabase Redirect URL: ${origin}/auth/callback`);
   console.log(`- Google/Kakao Web origin: ${origin}`);
   console.log(`- Google/Kakao OAuth callback: ${SUPABASE_CALLBACK}`);
-  console.log(`- Toss Success URL: ${origin}/api/payments/confirm`);
+  console.log(`- Toss Success URL: ${origin}/api/payments/feature/confirm`);
   console.log(`- Toss Fail/Cancel URL: ${origin}/payments/fail`);
 
   if (new URL(origin).hostname.endsWith('.vercel.app')) {

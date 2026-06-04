@@ -196,6 +196,7 @@ const EXTERNAL_CHECKLIST_PLACEHOLDER_CELLS = new Set([
   'public anon',
   'tbd',
   'toss_order_id/owner only',
+  'toss_order_id/feature_ref only',
   'toss_order_id only',
   'unset confirmation',
   'url path only',
@@ -224,7 +225,7 @@ function normalizeChecklistCell(cell: string): string {
 }
 
 export function isLaunchExternalChecklistPlaceholderCell(cell: string): boolean {
-  return EXTERNAL_CHECKLIST_PLACEHOLDER_CELLS.has(normalizeChecklistCell(cell));
+  return EXTERNAL_CHECKLIST_PLACEHOLDER_CELLS.has(normalizeChecklistCell(cell)) || /<[^>]+>/.test(cell);
 }
 
 function isTableSeparator(line: string): boolean {

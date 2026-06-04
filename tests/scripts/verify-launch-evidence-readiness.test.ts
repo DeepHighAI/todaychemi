@@ -215,7 +215,7 @@ describe('verify-launch-evidence-readiness', () => {
       '## Payment Ledger Evidence',
       '| Event | Non-sensitive Reference | Expected | Actual |',
       '|---|---|---|---|',
-      '| payment confirm | toss_order_id | confirmed payment + purchase ledger | matched |',
+      '| payment confirm | toss_order_id/feature_ref | confirmed feature unlock, no purchase ledger | matched |',
       '',
       '## Monitoring',
       '| Signal | Window | Result |',
@@ -229,7 +229,7 @@ describe('verify-launch-evidence-readiness', () => {
       '',
       '## Decision',
       'Final decision: 서비스 오픈 가능',
-      'Reason: Launch readiness, dashboard evidence, production smoke, and live payment/token ledger evidence are marked complete by operator.',
+      'Reason: Launch readiness, dashboard evidence, production smoke, and live feature payment/unlock/token ledger evidence are marked complete by operator.',
       'Known risks accepted: none',
       'Rollback trigger: payment, auth, LLM, or 5xx launch threshold breach',
       'Next review time: 2026-06-01 12:00 KST',
@@ -244,7 +244,7 @@ describe('verify-launch-evidence-readiness', () => {
       '| Vercel production project | PASS | project=twoday, origin=https://example.invalid |',
       '| Supabase Auth redirects | PASS | redirect=/auth/callback, providers=google+kakao |',
       '| OpenAI ZDR project | PASS | project=Default project, id_prefix=proj_, zdr=confirmed |',
-      '| Toss live dashboard | PASS | keys=live prefixes present, success=/api/payments/confirm |',
+      '| Toss live dashboard | PASS | keys=live prefixes present, success=/api/payments/feature/confirm |',
       '| Sentry alerts | PASS | alerts=payment-confirm-failure,llm-provider-outage,5xx-spike |',
     ].join('\n'));
 
@@ -446,7 +446,7 @@ describe('verify-launch-evidence-readiness', () => {
       '## Payment Ledger Evidence',
       '| Event | Non-sensitive Reference | Expected | Actual |',
       '|---|---|---|---|',
-      '| payment confirm | toss_order_id | confirmed payment + purchase ledger | matched |',
+      '| payment confirm | toss_order_id/feature_ref | confirmed feature unlock, no purchase ledger | matched |',
       '',
       '## Monitoring',
       '| Signal | Window | Result |',
@@ -473,7 +473,7 @@ describe('verify-launch-evidence-readiness', () => {
       '| Vercel production project | PASS | project=twoday, origin=https://example.invalid |',
       '| Supabase Auth redirects | PASS | redirect=/auth/callback, providers=google+kakao |',
       '| OpenAI ZDR project | PASS | project=Default project, id_prefix=proj_, zdr=confirmed |',
-      '| Toss live dashboard | PASS | keys=live prefixes present, success=/api/payments/confirm |',
+      '| Toss live dashboard | PASS | keys=live prefixes present, success=/api/payments/feature/confirm |',
       '| Sentry alerts | PASS | alerts=payment-confirm-failure,llm-provider-outage,5xx-spike |',
     ].join('\n'));
 

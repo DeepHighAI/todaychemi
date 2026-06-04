@@ -224,7 +224,7 @@ function resolveGoNoGo(summary: LaunchSummary, args: Args): GoNoGoDecision {
 
 function decisionReason(summary: LaunchSummary, decision: GoNoGoDecision): string {
   if (decision === '서비스 오픈 가능') {
-    return 'Launch readiness, dashboard evidence, production smoke, and live payment/token ledger evidence are marked complete by operator.';
+    return 'Launch readiness, dashboard evidence, production smoke, and live feature payment/unlock/token ledger evidence are marked complete by operator.';
   }
   if (decision === '조건부 가능') {
     return 'Launch readiness gate passed; accepted residual risks and rollback conditions must be recorded before public traffic.';
@@ -294,7 +294,7 @@ Record only non-sensitive IDs and redacted summaries.
 | hapcard create/view | TBD | hapcard id only |
 | replay token spend/refund | TBD | ledger reference id only |
 | whatif | TBD | result id only |
-| paid charge success | TBD | toss_order_id only |
+| paid feature payment success | TBD | toss_order_id/feature_ref only |
 | paid fail/cancel | TBD | toss_order_id only |
 | paid manual refund/cancel drill | TBD | toss_order_id and owner only |
 | OG/share | TBD | URL path only |
@@ -305,8 +305,8 @@ Record only non-sensitive IDs and redacted summaries.
 | Event | Non-sensitive Reference | Expected | Actual |
 |---|---|---|---|
 | payment init | toss_order_id | pending payment row | TBD |
-| payment confirm | toss_order_id | confirmed payment + purchase ledger | TBD |
-| duplicate confirm | toss_order_id | idempotent no double credit | TBD |
+| payment confirm | toss_order_id/feature_ref | confirmed feature unlock, no purchase ledger | TBD |
+| duplicate confirm | toss_order_id/feature_ref | idempotent no double unlock | TBD |
 | replay spend | replay reference id | negative ledger | TBD |
 | replay refund | replay reference id | refund ledger on failure | TBD |
 | monetary refund/cancel drill | toss_order_id | Toss dashboard/manual refund status and before/after ledger export recorded | TBD |
@@ -326,7 +326,7 @@ Record only non-sensitive IDs and redacted summaries.
 | Check | Window | Result |
 |---|---|---:|
 | Production canary start time | first 15 min | TBD |
-| Payment charge and ledger canary | first live low-value order | TBD |
+| Feature payment and unlock canary | first live low-value feature order | TBD |
 | Manual refund/cancel operator canary | first live low-value order or approved dry run | TBD |
 | Auth/OAuth canary | first production smoke account | TBD |
 | LLM fallback/circuit breaker budget canary | first 15 min | TBD |

@@ -31,7 +31,7 @@ Question: May we apply `supabase/migrations/20260530090000_toss_v2_payment_harde
 Why it matters:
 - Payment init/order/confirm code expects `payments.toss_customer_key`.
 - Remote production currently fails `payments.toss_customer_key` read checks.
-- Without this migration, live paid charge cannot be considered safe.
+- Without this migration, live paid feature payment cannot be considered safe.
 
 Recommended decision: approve after confirming this migration is exactly the intended Toss V2 hardening migration.
 
@@ -60,9 +60,12 @@ Status: Approved by user and applied on 2026-05-31 via `20260531013539_protected
 Question: May we create and apply a migration that fixes `search_path`, revokes `EXECUTE` from `anon`/`authenticated`, and grants only required server roles for protected token/payment/admin RPCs?
 
 Affected RPCs:
-- `confirm_token_purchase`
+- `confirm_feature_payment` (current pay-per-use RPC)
+- `confirm_token_purchase` (historical token-pack RPC, dropped by `20260601000000_feature_pay_per_use.sql`)
 - `deduct_tokens`
+- `deduct_tokens_once`
 - `refund_tokens`
+- `refund_tokens_once`
 - `award_free_talisman_session_rewards`
 - `award_hapcard_share_reward`
 - `match_classics`
@@ -89,23 +92,30 @@ pnpm verify:db-rls-readiness
 pnpm verify:launch-readiness
 ```
 
-Result as of 2026-05-31:
+Result as of 2026-06-03:
 - `pnpm verify:supabase-security-readiness`: PASS.
 - `pnpm verify:db-rls-readiness`: PASS, including live Supabase RLS integration.
-- Live `has_function_privilege` check: `anon` and `authenticated` cannot execute the seven protected RPCs; `service_role` can.
-- Live `pg_proc.proconfig` check: all seven protected RPCs have `search_path=public`.
+- Live `has_function_privilege` check: `anon` and `authenticated` cannot execute active protected RPCs; `service_role` can.
+- Live `pg_proc.proconfig` check: active protected RPCs have `search_path=public`.
+- Pay-per-use migration drops legacy `confirm_token_purchase`.
 - Supabase security advisor no longer reports protected RPC public execution findings.
 
 ## D3 - Canonical Paid Launch Catalog
 
-Status: Approved by user and applied on 2026-05-31. PRD token products are canonical: 10 tokens / 1,000 KRW, 55 tokens / 4,500 KRW, 120 tokens / 8,000 KRW.
+Status: Approved by user and applied on 2026-05-31 for token products, then superseded by approved pay-per-use work on 2026-06-01/03. Current launch branch uses feature prices: hapcard 800 KRW, whatif 500 KRW, replay 400 KRW.
 
 Question: Which paid launch policy is canonical?
 
-Option A: PRD token products are canonical.
+Option A: PRD token products are canonical. Historical decision, superseded on the pay-per-use branch.
 - 10 tokens / 1,000 KRW
 - 55 tokens / 4,500 KRW
 - 120 tokens / 8,000 KRW
+
+Option C: pay-per-use feature prices are canonical for current launch branch.
+- Hapcard create: 800 KRW
+- Whatif: 500 KRW
+- Replay: 400 KRW
+- No `token_ledger.reason='purchase'` credit on cash payment.
 
 Option B: older `fluttering-gathering-island.md` pricing/subscription text is canonical.
 
@@ -127,20 +137,21 @@ pnpm verify:billing-policy-readiness
 pnpm verify:payment-flow-readiness
 ```
 
-Result as of 2026-05-31:
+Result as of 2026-06-03:
 - `pnpm verify:billing-policy-readiness`: PASS.
 - `pnpm verify:payment-flow-readiness`: PASS.
 
 ## D4 - Paid Feature Spend Gates
 
-Status: Approved by user and applied on 2026-05-31. Hapcard create, replay, and whatif are paid launch features with idempotent spend/refund and cache-hit no-charge behavior.
+Status: Approved by user and applied on 2026-05-31 for token spend, then extended by approved pay-per-use work on 2026-06-01/03. Hapcard create, replay, and whatif are paid launch features with idempotent free-token spend/refund, cache-hit no-charge behavior, and one-time Toss feature payment when balance is insufficient.
 
 Question: Should launch charge tokens for hapcard creation and whatif, or keep only replay paid for launch?
 
 Current state:
-- Hapcard creation spends 8 tokens and refunds on post-charge generation failure.
-- Replay spends 4 tokens and refunds on post-charge generation failure.
-- Whatif spends 5 tokens and refunds on post-charge generation failure.
+- Hapcard creation spends 8 free tokens when balance exists and refunds on post-charge generation failure.
+- Replay spends 4 free tokens when balance exists and refunds on post-charge generation failure.
+- Whatif spends 5 free tokens when balance exists and refunds on post-charge generation failure.
+- Insufficient balance opens one-time Toss feature payment and unlocks only the requested `feature_ref`.
 - Duplicate feature requests are idempotent through token ledger reference constraints/RPCs.
 
 Option A: charge only replay at launch and explicitly document hapcard/whatif as free for launch.
@@ -299,7 +310,7 @@ pnpm verify:launch-readiness
 ```
 
 Result as of 2026-05-31:
-- `pnpm verify:supply-chain-readiness`: PASS with critical 0 / high 0 / moderate 3 / low 0 / info 0 on the latest 2026-05-31 run. Moderate advisories are non-blocking but remain review evidence before hardening sign-off.
+- `pnpm verify:supply-chain-readiness`: PASS with critical 0 / high 0 / moderate 3 / low 0 / info 0 on the latest 2026-06-03 run. Moderate advisories are non-blocking but remain review evidence before hardening sign-off.
 - `pnpm audit --prod --json`: confirms the moderate advisories are `postcss`, `brace-expansion`, and `ws`.
 - `pnpm tsc --noEmit`, `pnpm lint`, `pnpm vitest run`, `pnpm build`, and `pnpm e2e:auth` pass from the earlier full validation; rerun after any new override approval.
 

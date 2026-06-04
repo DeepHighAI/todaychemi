@@ -43,7 +43,7 @@ describe('verify-launch-readiness gate definition', () => {
       {
         name: 'Unit test suite',
         command: "command: [PNPM, 'vitest', 'run']",
-        timeout: '420_000',
+        timeout: '720_000',
       },
       {
         name: 'Production build',

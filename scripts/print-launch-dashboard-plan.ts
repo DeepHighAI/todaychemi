@@ -21,8 +21,25 @@ function printDerivedUrls(origin: string) {
   console.log(`- Supabase Redirect URL: ${origin}/auth/callback`);
   console.log(`- Google/Kakao Web origin: ${origin}`);
   console.log(`- Google/Kakao OAuth callback: ${SUPABASE_CALLBACK}`);
-  console.log(`- Toss Success URL: ${origin}/api/payments/confirm`);
+  console.log(`- Toss Success URL: ${origin}/api/payments/feature/confirm`);
   console.log(`- Toss Fail/Cancel URL: ${origin}/payments/fail`);
+}
+
+function printChecklistEvidenceExamples(origin: string) {
+  const hostname = new URL(origin).hostname;
+  const projectName = hostname.endsWith('.vercel.app')
+    ? hostname.replace(/\.vercel\.app$/, '')
+    : '<project-name>';
+
+  console.log('');
+  console.log('체크리스트 Evidence 예시:');
+  console.log(`- Production Origin: project=${projectName}, origin=${origin}, branch=main`);
+  console.log(`- Supabase Auth: site_url=${origin}, redirect=/auth/callback, providers=google+kakao`);
+  console.log(`- Google/Kakao: origin=${origin}, callback=${SUPABASE_CALLBACK}`);
+  console.log('- OpenAI/ZDR: project=<OpenAI project name>, id_prefix=proj_, zdr=confirmed');
+  console.log('- Toss: keys=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail');
+  console.log('- Sentry/Ops: alerts=payment-confirm-failure,llm-provider-outage,5xx-spike; owner=<name>');
+  console.log('- Custom domain: custom_domain=not_purchased_for_mvp, trigger=after_market_validation, owner=<name>');
 }
 
 function main() {
@@ -41,6 +58,7 @@ function main() {
     }
     console.log(`[origin] OK ${origin}`);
     printDerivedUrls(origin);
+    printChecklistEvidenceExamples(origin);
   } else {
     console.log('');
     console.log('[origin] TBD: Vercel Production *.vercel.app origin을 먼저 확정한다.');
@@ -87,6 +105,9 @@ function main() {
 
   console.log('');
   console.log('7. 검증 순서');
+  console.log('- 주의: Vercel dashboard env는 로컬 터미널에 자동 주입되지 않는다.');
+  console.log('- pnpm verify:launch-readiness 는 production-equivalent env가 로드된 로컬 shell, CI, 또는 검증 환경에서 실행한다.');
+  console.log('- command 결과만 evidence에 기록하고 secret 값은 기록하지 않는다.');
   console.log('- pnpm verify:origin-shape-readiness -- --origin https://<project>.vercel.app');
   console.log('- pnpm verify:external-settings-readiness');
   console.log('- pnpm verify:external-settings-checklist');

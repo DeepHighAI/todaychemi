@@ -69,6 +69,7 @@ const PLACEHOLDER_EVIDENCE = new Set([
   'public anon',
   'tbd',
   'toss_order_id/owner only',
+  'toss_order_id/feature_ref only',
   'toss_order_id only',
   'unset confirmation',
   'url path only',
@@ -108,7 +109,7 @@ function normalizeEvidenceCell(cell: string): string {
 }
 
 export function isExternalSettingsChecklistPlaceholderEvidence(cell: string): boolean {
-  return PLACEHOLDER_EVIDENCE.has(normalizeEvidenceCell(cell));
+  return PLACEHOLDER_EVIDENCE.has(normalizeEvidenceCell(cell)) || /<[^>]+>/.test(cell);
 }
 
 function normalizeStatusReason(status: string): string {
@@ -330,6 +331,14 @@ function main() {
       const context = finding.context ? ` (${finding.context})` : '';
       console.log(`- ${location} - ${finding.label}${context}`);
     }
+    console.log('');
+    console.log('Next step:');
+    console.log('- Open docs/runbooks/external_launch_settings.md and fill this checklist section by section.');
+    console.log('- MVP does not require a custom domain; use the fixed Vercel Production *.vercel.app origin.');
+    console.log('- Before dashboard entry, run: pnpm verify:origin-shape-readiness -- --origin https://<project>.vercel.app');
+    console.log('- Dashboard plan: pnpm print:launch-dashboard-plan -- --origin https://<project>.vercel.app');
+    console.log('- Full launch gate must run with production-equivalent env loaded in local shell, CI, or validation environment.');
+    console.log('- Record only secret-free evidence: project name, origin, URL path, prefix, alert name, owner, and PASS result.');
     console.error('\nExternal settings checklist readiness FAIL');
     process.exit(1);
   }

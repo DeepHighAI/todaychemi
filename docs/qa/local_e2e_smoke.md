@@ -403,7 +403,7 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 | 증상 | 확인 |
 |---|---|
-| ErrorCard "토큰이 부족해요" | 사용자 토큰 잔액 부족. `/payments/charge` 충전 flow와 token ledger 확인 필요 |
+| ErrorCard "토큰이 부족해요" | 사용자 무료 부적 잔액 부족. pay-per-use feature pay sheet와 `payments.feature_*` unlock 확인 필요 |
 | ErrorCard "처리 중 오류" | LLM 키·예산 확인 |
 | WhatifSheet 미열림 | Console error, `WhatifTrigger` → `WhatifSheet` import 확인 |
 
@@ -538,6 +538,6 @@ pnpm dev
 | 항목 | 상태 |
 |---|---|
 | Google OAuth | `docs/runbooks/google_oauth.md` 기준 Dashboard Client ID/Secret 설정 후 smoke 필요. Email/Password는 계속 신뢰 |
-| 토큰 충전 페이지 | `/payments/charge` 구현됨. Live Toss/Supabase/Vercel env 설정 후 결제 smoke 필요 |
+| 기능 결제 시트 | `/api/payments/feature/init` + `FeaturePaySheet` 기준. Live Toss/Supabase/Vercel env 설정 후 feature 결제 smoke 필요 |
 | Playwright 자동화 | `pnpm e2e` 기본 public/protected shell smoke 구성됨. `pnpm e2e:auth`는 `pnpm seed:test-user` 후 seeded email login + authenticated API smoke를 opt-in 실행 |
 | KASI_SERVICE_KEY | `.env.example` 과 실제 코드 모두 `KASI_SERVICE_KEY` 사용 |

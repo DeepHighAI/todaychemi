@@ -22,7 +22,7 @@
     "seed:test-user": "tsx scripts/seed-test-user.ts",
     "db:link": "pnpm dlx supabase link --project-ref jamhkucluhiibqpjsiov",
     "db:status": "pnpm dlx supabase projects list",
-    "db:push:dry": "pnpm dlx supabase db push --dry-run --linked",
+    "db:push:dry": "tsx scripts/db-push-dry-run.ts",
     "db:push": "pnpm dlx supabase db push --linked",
     "verify:launch-env": "tsx scripts/verify-launch-env.ts",
     "verify:launch-readiness": "tsx scripts/verify-launch-readiness.ts",

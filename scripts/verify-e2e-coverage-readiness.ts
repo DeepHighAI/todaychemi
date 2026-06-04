@@ -21,8 +21,8 @@ const E2E_DIR = path.join(ROOT, 'tests', 'e2e');
 const REQUIRED_FLOWS: FlowRequirement[] = [
   {
     id: 'public_shell',
-    label: 'public shell, legal pages, and login-gated protected route smoke',
-    patterns: [/\/start/, /\/login/, /\/signup/, /\/legal\/privacy/, /\/legal\/refund/, /\/payments\/charge/],
+    label: 'public shell, legal pages, and unauthenticated feature-payment guard smoke',
+    patterns: [/\/start/, /\/login/, /\/signup/, /\/legal\/privacy/, /\/legal\/refund/, /\/api\/payments\/feature\/init/],
   },
   {
     id: 'signup_login',
@@ -70,14 +70,14 @@ const REQUIRED_FLOWS: FlowRequirement[] = [
     patterns: [/page\.goto\('\/me'\)|toHaveURL\(\/\\\/me\$\//, /wallet/i],
   },
   {
-    id: 'paid_charge',
-    label: 'paid charge success/fail/cancel smoke',
-    patterns: [/payments\/charge/i, /payments\/success/i, /payments\/fail/i],
+    id: 'paid_feature_payment',
+    label: 'pay-per-use payment init/fail/cancel smoke',
+    patterns: [/api\/payments\/feature\/init/i, /payments\/fail/i, /pay-per-use|PAYMENT_REQUIRED|feature payment/i],
   },
   {
-    id: 'paid_use_refund',
-    label: 'paid token spend and refund/idempotency smoke',
-    patterns: [/deduct_tokens/i, /refund_tokens/i, /idempot/i],
+    id: 'paid_feature_use_refund',
+    label: 'paid feature use and refund/idempotency smoke',
+    patterns: [/refund_tokens(?:_once)?/i, /idempot/i, /pay-per-use|unlock/i],
   },
   {
     id: 'og_share_401_404',

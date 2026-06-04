@@ -71,7 +71,7 @@ const SOURCE_CHECKS: SourceCheck[] = [
     patterns: [
       'LLM_ALL_PROVIDERS_DOWN',
       'REPLAY_DURING_OUTAGE',
-      "rpc('refund_tokens'",
+      /rpc\('refund_tokens(?:_once)?'/,
       'replay_refund_failed',
     ],
   },

@@ -112,19 +112,19 @@ function main() {
 
   console.log('');
   ok = checkSource(
-    'Charge UI sends successUrl to same-origin server confirm route',
-    'src/app/payments/charge/charge-client.tsx',
-    /successUrl:\s*`\$\{window\.location\.origin\}\/api\/payments\/confirm`/,
+    'Feature pay sheet sends successUrl to same-origin feature confirm route',
+    'src/components/payments/feature-pay-sheet.tsx',
+    /successUrl\s*=[\s\S]{0,200}`\$\{origin\}\/api\/payments\/feature\/confirm/,
   ) && ok;
   ok = checkSource(
-    'Charge UI sends failUrl to same-origin fail page',
-    'src/app/payments/charge/charge-client.tsx',
-    /failUrl:\s*`\$\{window\.location\.origin\}\/payments\/fail`/,
+    'Feature pay sheet sends failUrl to same-origin fail page',
+    'src/components/payments/feature-pay-sheet.tsx',
+    /failUrl:\s*`\$\{origin\}\/payments\/fail`/,
   ) && ok;
   ok = checkSource(
-    'Confirm route redirects using request origin, not user input',
-    'src/app/api/payments/confirm/route.ts',
-    /new URL\(pathname,\s*request\.nextUrl\.origin\)/,
+    'Feature confirm route redirects using request origin and allowlisted app paths',
+    'src/app/api/payments/feature/confirm/route.ts',
+    /request\.nextUrl\.origin[\s\S]*hapcard\|whatif/,
   ) && ok;
 
   console.log('');

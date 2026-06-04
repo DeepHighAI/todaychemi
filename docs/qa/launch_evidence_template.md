@@ -2,7 +2,7 @@
 
 > 사용 시점: Local launch gate, Vercel Preview smoke, Production smoke, 또는 rollback/canary 검증 직후 복사해서 날짜별 evidence 문서로 저장한다. 비밀키 값, 원본 PII, birth_date, nickname, email, gender 원본은 기록하지 않는다.
 >
-> 자동 초안: `pnpm verify:launch-readiness -- --summary-json <json>` 실행 후 `pnpm create:launch-evidence -- --summary-json <json> --out <md> --environment <Local|Preview|Production> --domain <url>`을 사용한다. `서비스 오픈 가능`은 자동 생성 옵션으로 찍지 않는다. Production smoke와 live payment/token ledger 증거를 수동으로 채운 뒤 판정값을 변경하고 `pnpm verify:launch-evidence-readiness <json> <md> docs/qa/external_settings_checklist.md`로 검증한다.
+> 자동 초안: `pnpm verify:launch-readiness -- --summary-json <json>` 실행 후 `pnpm create:launch-evidence -- --summary-json <json> --out <md> --environment <Local|Preview|Production> --domain <url>`을 사용한다. `서비스 오픈 가능`은 자동 생성 옵션으로 찍지 않는다. Production smoke와 live feature payment/unlock/token ledger 증거를 수동으로 채운 뒤 판정값을 변경하고 `pnpm verify:launch-evidence-readiness <json> <md> docs/qa/external_settings_checklist.md`로 검증한다.
 >
 > `조건부 가능`도 자동 초안 그대로는 충분하지 않다. Production evidence의 dashboard/smoke/payment/monitoring/canary 섹션과 Decision 섹션의 `Reason`, `Known risks accepted`, `Rollback trigger`, `Next review time`을 운영자가 채우고, launch summary JSON과 외부 설정 체크리스트를 함께 검증해야 통과한다.
 
@@ -63,7 +63,7 @@ Record only non-sensitive IDs and redacted summaries.
 | hapcard create/view | TBD | hapcard id only |
 | replay token spend/refund | TBD | ledger reference id only |
 | whatif | TBD | result id only |
-| paid charge success | TBD | toss_order_id only |
+| paid feature payment success | TBD | toss_order_id/feature_ref only |
 | paid fail/cancel | TBD | toss_order_id only |
 | paid manual refund/cancel drill | TBD | toss_order_id and owner only |
 | OG/share | TBD | URL path only |
@@ -74,8 +74,8 @@ Record only non-sensitive IDs and redacted summaries.
 | Event | Non-sensitive Reference | Expected | Actual |
 |---|---|---|---|
 | payment init | toss_order_id | pending payment row | TBD |
-| payment confirm | toss_order_id | confirmed payment + purchase ledger | TBD |
-| duplicate confirm | toss_order_id | idempotent no double credit | TBD |
+| payment confirm | toss_order_id/feature_ref | confirmed feature unlock, no purchase ledger | TBD |
+| duplicate confirm | toss_order_id/feature_ref | idempotent no double unlock | TBD |
 | replay spend | replay reference id | negative ledger | TBD |
 | replay refund | replay reference id | refund ledger on failure | TBD |
 | monetary refund/cancel drill | toss_order_id | Toss dashboard/manual refund status and before/after ledger export recorded | TBD |
@@ -95,7 +95,7 @@ Record only non-sensitive IDs and redacted summaries.
 | Check | Window | Result |
 |---|---|---:|
 | Production canary start time | first 15 min | TBD |
-| Payment charge and ledger canary | first live low-value order | TBD |
+| Feature payment and unlock canary | first live low-value feature order | TBD |
 | Manual refund/cancel operator canary | first live low-value order or approved dry run | TBD |
 | Auth/OAuth canary | first production smoke account | TBD |
 | LLM fallback/circuit breaker budget canary | first 15 min | TBD |

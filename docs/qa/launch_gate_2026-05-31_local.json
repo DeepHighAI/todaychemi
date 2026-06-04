@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-01T07:47:00.273Z",
+  "generatedAt": "2026-06-04T05:57:49.790Z",
   "cwd": "C:\\DEV\\SAJU",
   "verdict": "FAIL",
   "requiredFailures": [
@@ -18,7 +18,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 4716,
+      "durationMs": 3624,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:launch-env"
     },
@@ -28,7 +28,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 2108,
+      "durationMs": 2438,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:secret-boundary-readiness"
     },
@@ -38,7 +38,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 2162,
+      "durationMs": 2368,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:launch-audit-readiness"
     },
@@ -48,7 +48,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 3843,
+      "durationMs": 3846,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:external-settings-checklist"
     },
@@ -58,7 +58,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 11931,
+      "durationMs": 19152,
       "timeoutMs": 180000,
       "command": "pnpm.cmd tsc --noEmit"
     },
@@ -68,7 +68,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 42565,
+      "durationMs": 61104,
       "timeoutMs": 180000,
       "command": "pnpm.cmd lint"
     },
@@ -78,8 +78,8 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 259578,
-      "timeoutMs": 420000,
+      "durationMs": 628674,
+      "timeoutMs": 720000,
       "command": "pnpm.cmd vitest run"
     },
     {
@@ -88,7 +88,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 67386,
+      "durationMs": 101197,
       "timeoutMs": 300000,
       "command": "pnpm.cmd build"
     },
@@ -98,7 +98,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 9141,
+      "durationMs": 19335,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:auth-readiness"
     },
@@ -108,7 +108,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 2745,
+      "durationMs": 5018,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:openai-readiness"
     },
@@ -118,7 +118,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 6541,
+      "durationMs": 16972,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:llm-boundary-readiness"
     },
@@ -128,7 +128,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 17738,
+      "durationMs": 36728,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:llm-resilience-readiness"
     },
@@ -138,7 +138,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 3145,
+      "durationMs": 4289,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:payment-readiness"
     },
@@ -148,7 +148,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 27130,
+      "durationMs": 52172,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:payment-flow-readiness"
     },
@@ -158,7 +158,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 2801,
+      "durationMs": 4119,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:toss-live-readiness"
     },
@@ -168,7 +168,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 1477,
+      "durationMs": 2888,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:billing-policy-readiness"
     },
@@ -178,7 +178,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 11885,
+      "durationMs": 20065,
       "timeoutMs": 180000,
       "command": "pnpm.cmd verify:db-rls-readiness"
     },
@@ -188,7 +188,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 7071,
+      "durationMs": 11185,
       "timeoutMs": 180000,
       "command": "pnpm.cmd db:push:dry"
     },
@@ -198,7 +198,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 1771,
+      "durationMs": 2863,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:supabase-security-readiness"
     },
@@ -208,7 +208,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 2931,
+      "durationMs": 3846,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:vercel-readiness"
     },
@@ -218,7 +218,7 @@
       "status": "fail",
       "exitCode": 1,
       "timedOut": false,
-      "durationMs": 2960,
+      "durationMs": 3066,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:ops-readiness"
     },
@@ -228,7 +228,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 3054,
+      "durationMs": 4004,
       "timeoutMs": 180000,
       "command": "pnpm.cmd verify:supply-chain-readiness"
     },
@@ -238,7 +238,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 59629,
+      "durationMs": 63531,
       "timeoutMs": 300000,
       "command": "pnpm.cmd e2e"
     },
@@ -248,7 +248,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 66641,
+      "durationMs": 57096,
       "timeoutMs": 300000,
       "command": "pnpm.cmd e2e:auth"
     },
@@ -258,7 +258,7 @@
       "status": "pass",
       "exitCode": 0,
       "timedOut": false,
-      "durationMs": 2068,
+      "durationMs": 1459,
       "timeoutMs": 120000,
       "command": "pnpm.cmd verify:e2e-coverage-readiness"
     }

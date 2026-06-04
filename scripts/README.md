@@ -26,7 +26,7 @@
 - `verify-supply-chain-readiness.ts` — `pnpm audit --prod --json` 기반 production high/critical advisory readiness 점검
 - `verify-payment-flow-readiness.ts` — 결제 성공/실패/중복/토큰차감/환불 플로우 소스 불변식과 focused tests 점검
 - `verify-toss-live-readiness.ts` — Toss live key prefix, production origin, success/fail redirect source invariant 점검
-- `verify-payment-readiness.ts` — 결제 코드가 요구하는 원격 Supabase 컬럼을 read-only로 점검
+- `verify-payment-readiness.ts` — 결제 코드가 요구하는 원격 Supabase 컬럼과 pay-per-use 결제 스펙 정합성을 read-only로 점검
 - `verify-supabase-security-readiness.ts` — 보호 RPC의 search_path/revoke/grant migration readiness 점검
 - `verify-vercel-readiness.ts` — Vercel 링크와 production origin 설정을 로컬에서 점검
 

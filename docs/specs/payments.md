@@ -299,7 +299,7 @@ npx ngrok http 3000
 - [ ] 환불·취소 자동화 활성화 시 Toss 대시보드 → webhook URL 프로덕션 URL로 변경
 - [ ] Toss 대시보드 → 사업자 정보 등록 완료
 - [x] 환불 정책 약관 페이지 등록 (`/legal/refund`, `/terms/refund` alias)
-- [ ] `/api/payments/confirm` 서버 저장 금액 검증 확인 (클라이언트 조작 방지)
+- [ ] `/api/payments/feature/confirm` 서버 저장 금액 검증 확인 (클라이언트 successUrl amount 조작 방지)
 - [ ] payments 테이블 RLS 정책 확인 (user_id 기준)
 - [ ] `/cso` 스킬 보안 감사 통과
 - [ ] `/qa` 스킬 결제 플로우 E2E 통과

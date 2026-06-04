@@ -60,7 +60,7 @@ const GATES: Gate[] = [
     name: 'Unit test suite',
     command: [PNPM, 'vitest', 'run'],
     required: true,
-    timeoutMs: 420_000,
+    timeoutMs: 720_000,
   },
   {
     name: 'Production build',

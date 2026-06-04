@@ -230,13 +230,13 @@ PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 
 
 ## 7. 결제 라우트 상세
 
-### v1 지갑/충전 라우트
+### v1 pay-per-use 기능 결제 라우트
 
-1. `POST /api/payments/init`: `product_id`만 받고 서버의 상품 카탈로그에서 금액·부적 수·`orderId`·UUID 기반 `customerKey`를 결정해 저장한다.
-2. `/payments/charge`: TossPayments V2 `loadTossPayments → widgets({ customerKey }) → setAmount → renderPaymentMethods/renderAgreement → requestPayment`.
-3. `/api/payments/confirm`: successUrl의 `amount`를 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm API를 호출하고 `confirm_token_purchase` RPC로 `payments.status='confirmed'`와 `token_ledger.reason='purchase'` 충전을 한 트랜잭션으로 처리한다.
-4. 중복 success redirect는 `toss_order_id`/confirmed 상태 기준으로 부적 중복 지급 없이 멱등 처리한다.
-5. `/payment/*` legacy 경로는 `/payments/*` 또는 `/api/payments/confirm`으로 redirect한다.
+1. `POST /api/payments/feature/init`: 기능(`hapcard`/`whatif`/`replay`)과 `feature_ref` 소유권을 서버에서 확인한 뒤 `orderId`·UUID 기반 `customerKey`·금액을 저장하거나 기존 pending 주문을 재사용한다.
+2. `FeaturePaySheet`: 기능 화면 안에서 TossPayments V2 `loadTossPayments → widgets({ customerKey }) → setAmount → renderPaymentMethods/renderAgreement → requestPayment`.
+3. `/api/payments/feature/confirm`: successUrl의 `amount`를 서버 저장 주문 금액과 먼저 비교한 뒤, 저장 금액으로 Toss confirm API를 호출하고 `confirm_feature_payment` RPC로 `payments.status='confirmed'`와 기능 unlock을 확정한다.
+4. 중복 success redirect는 `toss_order_id`/confirmed/`feature_ref` 기준으로 중복 unlock 없이 멱등 처리한다.
+5. `/payments/fail`은 Toss 실패/취소 및 결제 승인 실패 UX를 담당한다.
 
 ### 무료 부적 보상 라우트
 

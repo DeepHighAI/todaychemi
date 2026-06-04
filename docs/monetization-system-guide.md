@@ -513,30 +513,31 @@ export interface TossProduct {
   currency: 'KRW';
 }
 
-export const TOSS_PRODUCTS: Record<string, TossProduct> = {
-  tokens_10:  { productId: 'tokens_10',  type: 'consumable', tokensGranted: 10,  label: '10 토큰 (₩1,000)',  amount: 1000,  currency: 'KRW' },
-  tokens_50:  { productId: 'tokens_50',  type: 'consumable', tokensGranted: 55,  label: '55 토큰 (₩4,500)',  amount: 4500,  currency: 'KRW' },
-  tokens_100: { productId: 'tokens_100', type: 'consumable', tokensGranted: 120, label: '120 토큰 (₩8,000)', amount: 8000,  currency: 'KRW' },
+export const FEATURE_PRICES: Record<string, TossProduct> = {
+  hapcard: { productId: 'hapcard', type: 'consumable', tokensGranted: 0, label: '합카드 결제 (₩800)', amount: 800, currency: 'KRW' },
+  whatif:  { productId: 'whatif',  type: 'consumable', tokensGranted: 0, label: '만약합 결제 (₩500)', amount: 500, currency: 'KRW' },
+  replay:  { productId: 'replay',  type: 'consumable', tokensGranted: 0, label: '다시합 결제 (₩400)', amount: 400, currency: 'KRW' },
 };
 ```
 
-> **서버에서만 가격 신뢰**: 클라이언트가 보낸 `productId`로 서버에서 `TOSS_PRODUCTS[productId].amount`를 조회하여 Toss confirm API에 전달. 클라이언트 금액은 절대 신뢰 금지.
+> **서버에서만 가격 신뢰**: 클라이언트가 보낸 `feature_id`로 서버에서 `FEATURE_PRICES[feature_id].amount`를 조회하여 Toss confirm API에 전달. 클라이언트 금액은 절대 신뢰 금지.
 
 ### 4.2 웹 결제 흐름 (TossPayments V2 위젯)
 
 ```
 [클라이언트]
-purchase CTA → router.push(`/payments/charge`)
+유료 기능 CTA → FeaturePaySheet 열기
 
-payments/charge:
-  POST /api/payments/init 로 서버가 orderId/customerKey/amount/token_amount 저장
+FeaturePaySheet:
+  POST /api/payments/feature/init 로 서버가 orderId/customerKey/amount/feature_ref 저장
   widgets.setAmount({ currency: 'KRW', value: product.amount })
   widgets.requestPayment({ orderId, orderName, successUrl, failUrl })
-    └─ Toss 인증 완료 → redirect to complete?paymentKey=...&orderId=...
+    └─ Toss 인증 완료 → redirect to /api/payments/feature/confirm?paymentKey=...&orderId=...
 
-complete/page.tsx:
-  csrfPost('/api/payments/complete', { paymentKey, orderId, productId })
-  fetchStatus(true)  // force 갱신
+api/payments/feature/confirm:
+  confirm_feature_payment RPC 로 결제 확정
+  token_ledger purchase 적립 없이 feature_ref unlock
+  303 redirect back to feature screen with paid=<feature_ref>
 ```
 
 클라이언트 위젯 초기화 (`src/hooks/use-toss-widgets.ts`):
