@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -50,9 +50,15 @@ async function requestAccountDeletion(): Promise<{ deletion_requested_at: string
   return (await res.json()) as { deletion_requested_at: string };
 }
 
+async function requestSignOut(): Promise<void> {
+  const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+  if (!res.ok) throw new Error('SIGN_OUT_FAILED');
+}
+
 export default function MePage() {
   const t = useTranslations('me');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: chart, isLoading, isError, refetch } = useQuery({
     queryKey: ['me-chart'],
     queryFn: fetchMyChart,
@@ -70,6 +76,8 @@ export default function MePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   async function handleDeleteAccount() {
     setDeleteLoading(true);
@@ -81,6 +89,20 @@ export default function MePage() {
       setDeleteError(t('privacyControls.deleteError'));
     } finally {
       setDeleteLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    setLogoutLoading(true);
+    setLogoutError(null);
+    try {
+      await requestSignOut();
+      queryClient.clear();
+      router.replace('/login');
+      router.refresh();
+    } catch {
+      setLogoutError(t('info.logoutError'));
+      setLogoutLoading(false);
     }
   }
 
@@ -131,7 +153,14 @@ export default function MePage() {
         onAbout={() => setAboutOpen(true)}
         onLang={() => setLangOpen(true)}
         onDeleteAccount={() => setDeleteOpen(true)}
+        onLogout={handleLogout}
+        logoutLoading={logoutLoading}
       />
+      {logoutError && (
+        <p role="alert" className="rounded-[var(--r-sm)] bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+          {logoutError}
+        </p>
+      )}
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
       <LangSheet open={langOpen} onOpenChange={setLangOpen} />
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

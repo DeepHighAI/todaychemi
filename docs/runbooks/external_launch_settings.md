@@ -71,7 +71,7 @@ origin=https://<project>.vercel.app, scope=production+preview, checked_at=2026-0
 checked
 presence only
 sk-...
-live_sk_전체값
+live_gsk_전체값
 ```
 
 Vercel env 입력 전, 아래 명령으로 넣을 key 목록과 비워둘 legacy alias를 먼저 확인한다.
@@ -121,7 +121,7 @@ pnpm verify:origin-shape-readiness -- --origin https://<project>.vercel.app
 | Vercel project | `project name only` | `project=twoday, origin=https://twoday-mvp.vercel.app, branch=main` |
 | Production origin | `origin only` | `origin=https://twoday-mvp.vercel.app, source=Vercel Settings/Domains` |
 | OpenAI project | `project name/id prefix only` | `project=TWODAY Production, id_prefix=proj_, zdr=confirmed` |
-| Toss live key | `live_ck_ prefix only` | `live client/secret key prefixes confirmed in Vercel Production, no legacy aliases` |
+| Toss live key | `live_gck_ prefix only` | `live client/secret key prefixes confirmed in Vercel Production, no legacy aliases` |
 | Sentry alert | `alert name only` | `alerts=payment-confirm-failure,llm-provider-outage,5xx-spike` |
 
 실제 key, full project id, DSN, service role key, token, email, birth_date, nickname, gender 원본은 절대 적지 않는다.
@@ -201,7 +201,7 @@ project=<선택한 OpenAI project 이름>, id_prefix=proj_, zdr=confirmed, budge
 체크리스트 Evidence 예시:
 
 ```text
-keys=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail
+keys=live_gck/live_gsk present, success=/api/payments/feature/confirm, fail=/payments/fail
 ```
 
 ### 6. Sentry / Operations
@@ -232,8 +232,8 @@ alerts=payment-confirm-failure,llm-provider-outage,5xx-spike; owner=<name>
 | `ANTHROPIC_API_KEY` | yes | Claude fallback용 Anthropic production key | `verify:launch-env`, `verify:ops-readiness`, 수동 fallback smoke |
 | `LLM_DAILY_BUDGET_USD` | yes | MVP 1일 LLM 예산 한도 | `verify:launch-env`, `verify:ops-readiness`, `verify:llm-resilience-readiness` |
 | `KASI_SERVICE_KEY` | yes | KASI API key | `verify:launch-env`, core flow smoke |
-| `TOSS_CLIENT_KEY` | yes | Toss live client key, `live_ck_*` | `verify:launch-env`, `verify:toss-live-readiness` |
-| `TOSS_SECRET_KEY` | yes | Toss live secret key, `live_sk_*` | `verify:launch-env`, `verify:toss-live-readiness` |
+| `TOSS_CLIENT_KEY` | yes | Toss live client key, `live_gck_*` | `verify:launch-env`, `verify:toss-live-readiness` |
+| `TOSS_SECRET_KEY` | yes | Toss live secret key, `live_gsk_*` | `verify:launch-env`, `verify:toss-live-readiness` |
 | `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` | yes | Kakao app JavaScript key | `verify:launch-env`, `verify:auth-readiness` |
 | `KAKAO_ADMIN_KEY` | yes | Kakao app admin key | `verify:launch-env`, `verify:auth-readiness` |
 | `SENTRY_DSN` | yes | Sentry server DSN | `verify:launch-env`, `verify:ops-readiness` |
@@ -354,8 +354,8 @@ https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback
 Production에는 live key만 사용한다.
 
 ```env
-TOSS_CLIENT_KEY=live_ck_...
-TOSS_SECRET_KEY=live_sk_...
+TOSS_CLIENT_KEY=live_gck_...
+TOSS_SECRET_KEY=live_gsk_...
 ```
 
 Toss dashboard에 Vercel Production URL 기준 redirect를 등록한다.

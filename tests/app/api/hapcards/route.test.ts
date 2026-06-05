@@ -9,6 +9,7 @@ vi.mock('@/lib/rag/query-text');
 // pay-per-use 게이트는 라우트 단에서 mock — 게이트 내부는 feature-gate/cash-gen-limit 자체 테스트가 커버.
 vi.mock('@/lib/payments/feature-gate');
 vi.mock('@/lib/payments/cash-gen-limit');
+vi.mock('@/lib/today/lazy-relation-chart');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -17,6 +18,7 @@ import { createOpenAiClient, createEmbeddingsClient } from '@/lib/llm/clients';
 import { buildRagQueryText } from '@/lib/rag/query-text';
 import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
+import { ensureRelationChartRow } from '@/lib/today/lazy-relation-chart';
 import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { POST } from '@/app/api/hapcards/route';
 import type { ChartCore } from '@/types/chart';
@@ -174,6 +176,7 @@ beforeEach(() => {
   vi.mocked(buildRagQueryText).mockReturnValue('테스트 쿼리');
   vi.mocked(getHapcardCacheKey).mockResolvedValue('cache-key-abc');
   vi.mocked(buildHapcard).mockResolvedValue(HAPCARD_RESULT);
+  vi.mocked(ensureRelationChartRow).mockResolvedValue(null);
   // 기본: 무료 경로(부적 차감 성공). rpcFn 은 이제 refund_tokens_once 전용.
   vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.hapcard, charged: true });
   vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: true, count: 0, limit: 5 });
@@ -270,9 +273,33 @@ describe('POST /api/hapcards', () => {
     expect(buildHapcard).not.toHaveBeenCalled();
   });
 
-  it('404 → relation_chart 가 해당 relation_id+version 으로 없음', async () => {
+  it('relation_chart 누락 + lazy compute 성공 → buildHapcard 까지 진행', async () => {
     const supabase = makeAuthedSupabaseClient({ relationChart: null });
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(ensureRelationChartRow).mockResolvedValueOnce({
+      chart_core: RELATION_CHART_CORE,
+      chart_hash: 'lazy-rel-hash',
+    });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    expect(ensureRelationChartRow).toHaveBeenCalledWith(
+      supabase,
+      VALID_BODY.relation_id,
+      'user-uuid-001',
+      expect.any(String),
+      VALID_BODY.theory_profile_version,
+    );
+    const [input] = vi.mocked(buildHapcard).mock.calls[0];
+    expect(input.relation).toEqual(RELATION_CHART_CORE);
+    expect(input.relation_chart_hash).toBe('lazy-rel-hash');
+  });
+
+  it('404 → relation_chart 가 해당 relation_id+version 으로 없고 lazy compute 도 실패', async () => {
+    const supabase = makeAuthedSupabaseClient({ relationChart: null });
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(ensureRelationChartRow).mockResolvedValueOnce(null);
 
     const res = await POST(makeRequest(VALID_BODY));
 

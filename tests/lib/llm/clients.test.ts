@@ -43,11 +43,34 @@ describe('createOpenAiClient', () => {
     expect(() => createOpenAiClient()).toThrow(/OPENAI_API_KEY/);
   });
 
-  it('production에서 OPENAI_PROJECT_ID 누락 시 ConfigError throw', async () => {
+  it('Vercel 배포 환경에서 OPENAI_PROJECT_ID 누락 시 ConfigError throw', async () => {
     delete process.env.OPENAI_PROJECT_ID;
-    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
     const { createOpenAiClient } = await import('@/lib/llm/clients');
     expect(() => createOpenAiClient()).toThrow(/OPENAI_PROJECT_ID/);
+  });
+
+  it('Vercel preview 환경에서도 OPENAI_PROJECT_ID 누락 시 ConfigError throw', async () => {
+    delete process.env.OPENAI_PROJECT_ID;
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    const { createOpenAiClient } = await import('@/lib/llm/clients');
+    expect(() => createOpenAiClient()).toThrow(/OPENAI_PROJECT_ID/);
+  });
+
+  it('로컬 next start 환경에서는 OPENAI_PROJECT_ID 없이도 OpenAI SDK 인스턴스 생성', async () => {
+    delete process.env.OPENAI_PROJECT_ID;
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', '');
+
+    const { createOpenAiClient } = await import('@/lib/llm/clients');
+    createOpenAiClient();
+
+    expect(OpenAiCtor).toHaveBeenCalledTimes(1);
+    expect(OpenAiCtor.mock.calls[0][0]).toEqual({
+      apiKey: 'sk-test-key',
+      project: undefined,
+      timeout: 60_000,
+    });
   });
 
   it('반환 객체는 chat.completions.create 와 embeddings.create 노출', async () => {
@@ -57,9 +80,9 @@ describe('createOpenAiClient', () => {
     expect(typeof client.embeddings.create).toBe('function');
   });
 
-  it('legacy llm/openai export도 canonical factory를 사용해 production project를 강제', async () => {
+  it('legacy llm/openai export도 canonical factory를 사용해 Vercel project를 강제', async () => {
     delete process.env.OPENAI_PROJECT_ID;
-    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
     const { createOpenAiClient } = await import('@/lib/llm/openai');
     expect(() => createOpenAiClient()).toThrow(/OPENAI_PROJECT_ID/);
   });

@@ -105,8 +105,8 @@ function main() {
   let ok = true;
 
   ok = checkProductionOrigin(envValue(env, 'NEXT_PUBLIC_APP_URL')) && ok;
-  ok = checkPrefix('TOSS_CLIENT_KEY', envValue(env, 'TOSS_CLIENT_KEY'), 'live_ck_') && ok;
-  ok = checkPrefix('TOSS_SECRET_KEY', envValue(env, 'TOSS_SECRET_KEY'), 'live_sk_') && ok;
+  ok = checkPrefix('TOSS_CLIENT_KEY', envValue(env, 'TOSS_CLIENT_KEY'), 'live_gck_') && ok;
+  ok = checkPrefix('TOSS_SECRET_KEY', envValue(env, 'TOSS_SECRET_KEY'), 'live_gsk_') && ok;
   ok = checkUnset('TOSS_PAYMENTS_CLIENT_KEY legacy alias', envValue(env, 'TOSS_PAYMENTS_CLIENT_KEY')) && ok;
   ok = checkUnset('TOSS_PAYMENTS_SECRET_KEY legacy alias', envValue(env, 'TOSS_PAYMENTS_SECRET_KEY')) && ok;
 

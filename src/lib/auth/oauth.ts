@@ -2,7 +2,6 @@
 
 import { recordLegalConsent } from '@/lib/legal/client-consent';
 import type { LegalConsentProvider, LegalConsentState } from '@/lib/legal/consent';
-import { createClient } from '@/lib/supabase/client';
 
 export async function signInWithOAuthProvider(
   provider: LegalConsentProvider,
@@ -13,18 +12,12 @@ export async function signInWithOAuthProvider(
     await recordLegalConsent(legalConsent, 'oauth', provider);
   }
 
-  const supabase = createClient();
-  const callbackUrl = new URL('/auth/callback', window.location.origin);
-  callbackUrl.searchParams.set('provider', provider);
+  const oauthStartUrl = new URL('/auth/oauth', window.location.origin);
+  oauthStartUrl.searchParams.set('provider', provider);
   const next = sanitizeNextPath(options.next);
-  if (next) callbackUrl.searchParams.set('next', next);
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
-  if (error) throw error;
+  if (next) oauthStartUrl.searchParams.set('next', next);
+
+  window.location.assign(oauthStartUrl.toString());
 }
 
 function sanitizeNextPath(next?: string): string | null {

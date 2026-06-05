@@ -45,12 +45,12 @@ export const VERCEL_ENV_ROWS: VercelEnvRow[] = [
   {
     key: 'TOSS_CLIENT_KEY',
     source: 'TossPayments live dashboard',
-    note: 'must start with live_ck_',
+    note: 'must start with live_gck_',
   },
   {
     key: 'TOSS_SECRET_KEY',
     source: 'TossPayments live dashboard',
-    note: 'must start with live_sk_; server-only secret',
+    note: 'must start with live_gsk_; server-only secret',
   },
   {
     key: 'NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY',

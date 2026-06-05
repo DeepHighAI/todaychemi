@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/supabase/client');
-
-import { createClient } from '@/lib/supabase/client';
-
-const mockSignInWithOAuth = vi.fn();
+const mockLocationAssign = vi.fn();
 const ACCEPTED_LEGAL_CONSENT = { terms: true, privacy: true, age: true } as const;
 
 beforeEach(() => {
@@ -13,10 +9,12 @@ beforeEach(() => {
     'fetch',
     vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 })),
   );
-  vi.mocked(createClient).mockReturnValue({
-    auth: { signInWithOAuth: mockSignInWithOAuth },
-  } as unknown as ReturnType<typeof createClient>);
-  vi.stubGlobal('window', { location: { origin: 'https://test.example.com' } });
+  vi.stubGlobal('window', {
+    location: {
+      origin: 'https://test.example.com',
+      assign: mockLocationAssign,
+    },
+  });
 });
 
 afterEach(() => {
@@ -24,8 +22,7 @@ afterEach(() => {
 });
 
 describe('signInWithKakao', () => {
-  it('calls signInWithOAuth with kakao provider and shared auth callback', async () => {
-    mockSignInWithOAuth.mockResolvedValue({ error: null });
+  it('records legal consent and redirects to the shared server OAuth starter', async () => {
     const { signInWithKakao } = await import('@/lib/auth/kakao');
 
     await signInWithKakao(ACCEPTED_LEGAL_CONSENT);
@@ -38,31 +35,23 @@ describe('signInWithKakao', () => {
         body: JSON.stringify({ ...ACCEPTED_LEGAL_CONSENT, flow: 'oauth', provider: 'kakao' }),
       }),
     );
-    expect(mockSignInWithOAuth).toHaveBeenCalledOnce();
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'kakao',
-      options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=kakao',
-      },
-    });
+    expect(mockLocationAssign).toHaveBeenCalledOnce();
+    expect(mockLocationAssign).toHaveBeenCalledWith(
+      'https://test.example.com/auth/oauth?provider=kakao',
+    );
   });
 
-  it('preserves a safe next path in the OAuth callback URL', async () => {
-    mockSignInWithOAuth.mockResolvedValue({ error: null });
+  it('preserves a safe next path in the OAuth starter URL', async () => {
     const { signInWithKakao } = await import('@/lib/auth/kakao');
 
     await signInWithKakao(ACCEPTED_LEGAL_CONSENT, { next: '/guest/complete' });
 
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'kakao',
-      options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2Fguest%2Fcomplete',
-      },
-    });
+    expect(mockLocationAssign).toHaveBeenCalledWith(
+      'https://test.example.com/auth/oauth?provider=kakao&next=%2Fguest%2Fcomplete',
+    );
   });
 
   it('can reuse an existing guest consent nonce without recording a new OAuth consent', async () => {
-    mockSignInWithOAuth.mockResolvedValue({ error: null });
     const { signInWithKakao } = await import('@/lib/auth/kakao');
 
     await signInWithKakao(
@@ -71,16 +60,12 @@ describe('signInWithKakao', () => {
     );
 
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'kakao',
-      options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2Fguest%2Fcomplete',
-      },
-    });
+    expect(mockLocationAssign).toHaveBeenCalledWith(
+      'https://test.example.com/auth/oauth?provider=kakao&next=%2Fguest%2Fcomplete',
+    );
   });
 
   it('can defer legal consent until after the OAuth callback', async () => {
-    mockSignInWithOAuth.mockResolvedValue({ error: null });
     const { signInWithKakao } = await import('@/lib/auth/kakao');
 
     await signInWithKakao(
@@ -89,12 +74,9 @@ describe('signInWithKakao', () => {
     );
 
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'kakao',
-      options: {
-        redirectTo: 'https://test.example.com/auth/callback?provider=kakao&next=%2F',
-      },
-    });
+    expect(mockLocationAssign).toHaveBeenCalledWith(
+      'https://test.example.com/auth/oauth?provider=kakao&next=%2F',
+    );
   });
 
   it('throws before OAuth when legal consent is incomplete', async () => {
@@ -104,14 +86,19 @@ describe('signInWithKakao', () => {
       signInWithKakao({ terms: true, privacy: false, age: true }),
     ).rejects.toThrow('LEGAL_CONSENT_REQUIRED');
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
-    expect(mockSignInWithOAuth).not.toHaveBeenCalled();
+    expect(mockLocationAssign).not.toHaveBeenCalled();
   });
 
-  it('throws when signInWithOAuth returns an error', async () => {
-    const fakeError = { message: 'provider disabled' };
-    mockSignInWithOAuth.mockResolvedValue({ error: fakeError });
+  it('throws before OAuth when legal consent recording fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: false }), { status: 500 })),
+    );
     const { signInWithKakao } = await import('@/lib/auth/kakao');
 
-    await expect(signInWithKakao(ACCEPTED_LEGAL_CONSENT)).rejects.toEqual(fakeError);
+    await expect(signInWithKakao(ACCEPTED_LEGAL_CONSENT)).rejects.toThrow(
+      'LEGAL_CONSENT_REQUIRED',
+    );
+    expect(mockLocationAssign).not.toHaveBeenCalled();
   });
 });

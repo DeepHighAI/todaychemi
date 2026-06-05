@@ -33,7 +33,8 @@ export async function POST(
   // 1. body parse + validate (strict — 미지 필드 거부)
   let body: ReplayRequest;
   try {
-    const raw = await request.json();
+    const rawText = await request.text();
+    const raw = rawText.trim() ? JSON.parse(rawText) : {};
     const parsed = ReplayRequestSchema.safeParse(raw);
     if (!parsed.success) {
       return apiErrorResponse('INVALID_BODY', parsed.error.message, 400);

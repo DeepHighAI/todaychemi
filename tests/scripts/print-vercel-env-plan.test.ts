@@ -32,7 +32,7 @@ describe('print-vercel-env-plan', () => {
     expect(result.stdout).toContain('Keep these legacy aliases unset for launch');
     expect(result.stdout).toContain('pnpm verify:external-settings-readiness');
     expect(result.stdout).not.toMatch(/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/);
-    expect(result.stdout).not.toMatch(/\blive_sk_[A-Za-z0-9_-]{8,}\b/);
+    expect(result.stdout).not.toMatch(/\blive_gsk_[A-Za-z0-9_-]{8,}\b/);
     expect(result.stdout).not.toMatch(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/);
   });
 });

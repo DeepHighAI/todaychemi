@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, Download, FileText, Globe2, Info, Mail, Shield, Trash2 } from 'lucide-react';
+import { ChevronRight, Download, FileText, Globe2, Info, LogOut, Mail, Shield, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface InfoCardProps {
@@ -9,9 +9,19 @@ interface InfoCardProps {
   onAbout: () => void;
   onLang: () => void;
   onDeleteAccount: () => void;
+  onLogout: () => void;
+  logoutLoading?: boolean;
 }
 
-export function InfoCard({ onPrivacy, onTerms, onAbout, onLang, onDeleteAccount }: InfoCardProps) {
+export function InfoCard({
+  onPrivacy,
+  onTerms,
+  onAbout,
+  onLang,
+  onDeleteAccount,
+  onLogout,
+  logoutLoading = false,
+}: InfoCardProps) {
   const t = useTranslations('me.info');
 
   return (
@@ -31,6 +41,14 @@ export function InfoCard({ onPrivacy, onTerms, onAbout, onLang, onDeleteAccount 
       <InfoRow Icon={Trash2} label={t('deleteAccount')} sub={t('deleteAccountSub')} onClick={onDeleteAccount} danger />
       <InfoRow Icon={Info} label={t('about')} sub={t('aboutSub')} onClick={onAbout} />
       <InfoRow Icon={Mail} label={t('contact')} sub="02 3443 1028" href="tel:0234431028" />
+      <InfoRow
+        Icon={LogOut}
+        label={t('logout')}
+        sub={logoutLoading ? t('logoutLoading') : t('logoutSub')}
+        onClick={onLogout}
+        danger
+        disabled={logoutLoading}
+      />
     </section>
   );
 }
@@ -42,6 +60,7 @@ function InfoRow({
   onClick,
   href,
   danger = false,
+  disabled = false,
 }: {
   Icon: React.ComponentType<{ size?: number }>;
   label: string;
@@ -49,6 +68,7 @@ function InfoRow({
   onClick?: () => void;
   href?: string;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   const content = (
     <>
@@ -62,9 +82,9 @@ function InfoRow({
       <ChevronRight size={18} className="text-muted-foreground" />
     </>
   );
-  const className = 'flex w-full items-center gap-3 border-t border-[var(--hairline)] px-4 py-3.5';
+  const className = `flex w-full items-center gap-3 border-t border-[var(--hairline)] px-4 py-3.5 ${disabled ? 'opacity-60' : ''}`;
   if (href) {
     return <a href={href} className={className}>{content}</a>;
   }
-  return <button type="button" onClick={onClick} className={className}>{content}</button>;
+  return <button type="button" onClick={onClick} disabled={disabled} className={className}>{content}</button>;
 }

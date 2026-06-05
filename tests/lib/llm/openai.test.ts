@@ -104,6 +104,7 @@ function makeMockServiceClient(opts?: { budgetRows?: Array<{ total_usd: number }
 
 describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     process.env = { ...ORIGINAL_ENV };
     delete process.env.LLM_DAILY_BUDGET_USD;
     resetLlmCircuitBreakersForTest();
@@ -469,6 +470,47 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     ).rejects.toThrow('USER_QUOTA_EXCEEDED');
 
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('Vercel production에서 LLM_DAILY_BUDGET_USD 누락 → OpenAI 호출 전 USER_QUOTA_EXCEEDED', async () => {
+    process.env.VERCEL_ENV = 'production';
+    delete process.env.LLM_DAILY_BUDGET_USD;
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient();
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: makeValidPayload() },
+        {
+          openaiClient: { chat: { completions: { create } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+        },
+      ),
+    ).rejects.toThrow('LLM_DAILY_BUDGET_USD is required in production');
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('로컬 next start 환경에서는 LLM_DAILY_BUDGET_USD 없이도 OpenAI 호출 진행', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    delete process.env.VERCEL_ENV;
+    delete process.env.LLM_DAILY_BUDGET_USD;
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase, budgetEq } = makeMockServiceClient();
+
+    const result = await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload() },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(budgetEq).not.toHaveBeenCalled();
+    expect(result.output).toBeDefined();
   });
 
   it('401 auth 에러 → 즉시 throw, 재시도 없음', async () => {

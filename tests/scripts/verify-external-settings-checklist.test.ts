@@ -72,7 +72,7 @@ function completedChecklist(): string {
     '## Toss Payments',
     '| Item | Result | Evidence |',
     '|---|---:|---|',
-    '| Toss live client key configured | PASS | live_ck prefix confirmed |',
+    '| Toss live client key configured | PASS | live_gck prefix confirmed |',
     '',
     '## Sentry / Operations',
     '| Item | Result | Evidence |',
@@ -275,7 +275,7 @@ describe('verify-external-settings-checklist', () => {
       completedChecklist()
         .replace('project=twoday', 'owner/date')
         .replace('project=Default project, id_prefix=proj_', 'project name/id prefix only')
-        .replace('live_ck prefix confirmed', '`proj_...` shape only'),
+        .replace('live_gck prefix confirmed', '`proj_...` shape only'),
     );
 
     const labels = scanExternalSettingsChecklist('docs/qa/external_settings_checklist.md', root).map((finding) => finding.label);
@@ -316,10 +316,10 @@ describe('verify-external-settings-checklist', () => {
 
   it('flags normalized live key prefix placeholder evidence cells', () => {
     const root = tempRoot();
-    write(root, 'docs/qa/external_settings_checklist.md', completedChecklist().replace('live_ck prefix confirmed', 'live_ck_... prefix only'));
+    write(root, 'docs/qa/external_settings_checklist.md', completedChecklist().replace('live_gck prefix confirmed', 'live_gck_... prefix only'));
 
     expect(scanExternalSettingsChecklist('docs/qa/external_settings_checklist.md', root).map((finding) => finding.label)).toContain(
-      'external settings checklist evidence is still a placeholder: live_ck_... prefix only',
+      'external settings checklist evidence is still a placeholder: live_gck_... prefix only',
     );
   });
 

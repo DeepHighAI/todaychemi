@@ -3,7 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 function parseBudgetUsd(): number | null {
   const raw = process.env.LLM_DAILY_BUDGET_USD;
   if (!raw) {
-    if (process.env.NODE_ENV === 'production') {
+    const vercelEnv = process.env.VERCEL_ENV;
+    const requiresBudget = vercelEnv === 'production' || vercelEnv === 'preview';
+    if (requiresBudget) {
       throw new Error('USER_QUOTA_EXCEEDED: LLM_DAILY_BUDGET_USD is required in production');
     }
     return null;

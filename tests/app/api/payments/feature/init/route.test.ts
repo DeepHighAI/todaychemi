@@ -72,7 +72,8 @@ function request(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv('TOSS_CLIENT_KEY', 'test_ck_abc');
+  vi.stubEnv('TOSS_CLIENT_KEY', 'test_gck_abc');
+  vi.stubEnv('TOSS_SECRET_KEY', 'test_gsk_abc');
   // 기본: 사용자가 ref 의 선생성 결과를 소유 (codex #4). 미소유 케이스만 개별 override.
   vi.mocked(verifyFeatureRefOwnership).mockResolvedValue(true);
 });
@@ -106,7 +107,7 @@ describe('POST /api/payments/feature/init', () => {
     expect(body.unlocked).toBe(false);
     expect(body.payment.amount_krw).toBe(800);
     expect(body.payment.order_name).toBe('합카드 보기');
-    expect(body.payment.client_key).toBe('test_ck_abc');
+    expect(body.payment.client_key).toBe('test_gck_abc');
     expect(body.payment.order_id).toBe('twoday_1_abcdef');
   });
 
@@ -168,6 +169,40 @@ describe('POST /api/payments/feature/init', () => {
 
     const res = await POST(request({ feature: 'hapcard', ref: REF }));
     expect(res.status).toBe(401);
+  });
+
+  it('프로덕션 Toss client key 누락 → 503 PAYMENT_CONFIG_MISSING, 주문 생성 안 함', async () => {
+    vi.stubEnv('TOSS_CLIENT_KEY', '');
+    vi.stubEnv('NEXT_PUBLIC_TOSS_CLIENT_KEY', '');
+    vi.stubEnv('TOSS_PAYMENTS_CLIENT_KEY', '');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
+
+    const res = await POST(request({ feature: 'hapcard', ref: REF }));
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error.code).toBe('PAYMENT_CONFIG_MISSING');
+    expect(body.error.message).toBe('payment provider is not configured');
+    expect(createServiceRoleClient).not.toHaveBeenCalled();
+    expect(verifyFeatureRefOwnership).not.toHaveBeenCalled();
+  });
+
+  it('프로덕션 Toss secret key 누락 → 503 PAYMENT_CONFIG_MISSING, 주문 생성 안 함', async () => {
+    vi.stubEnv('TOSS_CLIENT_KEY', 'live_gck_abc');
+    vi.stubEnv('TOSS_SECRET_KEY', '');
+    vi.stubEnv('TOSS_PAYMENTS_SECRET_KEY', '');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
+
+    const res = await POST(request({ feature: 'hapcard', ref: REF }));
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error.code).toBe('PAYMENT_CONFIG_MISSING');
+    expect(body.error.message).toBe('payment provider is not configured');
+    expect(createServiceRoleClient).not.toHaveBeenCalled();
+    expect(verifyFeatureRefOwnership).not.toHaveBeenCalled();
   });
 
   it('ref 미소유(선생성 결과 없음) → 404 PAYMENT_REF_NOT_FOUND, insert 안 함 (codex #4)', async () => {

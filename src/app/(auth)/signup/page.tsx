@@ -187,7 +187,7 @@ export default function SignupPage() {
               onClick={handleKakao}
               disabled={loading}
               variant="outline"
-              className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
+              className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-white hover:bg-[var(--kakao-yellow-hover)] hover:text-white disabled:text-white"
             >
               {loading ? t('loading') : '카카오로 시작하기'}
             </Button>

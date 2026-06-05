@@ -11,6 +11,8 @@ describe('verify-toss-live-readiness script', () => {
   it('fails launch readiness when Toss legacy aliases are present', () => {
     expect(source).toContain("checkPrefix('TOSS_CLIENT_KEY'");
     expect(source).toContain("checkPrefix('TOSS_SECRET_KEY'");
+    expect(source).toContain("'live_gck_'");
+    expect(source).toContain("'live_gsk_'");
     expect(source).toContain("checkUnset('TOSS_PAYMENTS_CLIENT_KEY legacy alias'");
     expect(source).toContain("checkUnset('TOSS_PAYMENTS_SECRET_KEY legacy alias'");
     expect(source).toContain("console.log(`[env] ${ok ? 'OK' : 'FAIL'} ${label} unset for launch canonical env`)");

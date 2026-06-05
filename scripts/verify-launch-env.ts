@@ -205,14 +205,14 @@ function checkValueShapes(env: Map<string, string>): boolean {
   ok = checkWhenPresent(
     env,
     'TOSS_CLIENT_KEY',
-    'TOSS_CLIENT_KEY uses live_ck_* prefix',
-    (value) => value.startsWith('live_ck_'),
+    'TOSS_CLIENT_KEY uses live_gck_* prefix',
+    (value) => value.startsWith('live_gck_'),
   ) && ok;
   ok = checkWhenPresent(
     env,
     'TOSS_SECRET_KEY',
-    'TOSS_SECRET_KEY uses live_sk_* prefix',
-    (value) => value.startsWith('live_sk_'),
+    'TOSS_SECRET_KEY uses live_gsk_* prefix',
+    (value) => value.startsWith('live_gsk_'),
   ) && ok;
   ok = checkWhenPresent(
     env,

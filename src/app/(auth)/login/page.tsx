@@ -132,7 +132,7 @@ export default function LoginPage() {
           onClick={handleKakao}
           disabled={loading}
           variant="outline"
-          className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
+          className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-white hover:bg-[var(--kakao-yellow-hover)] hover:text-white disabled:text-white"
         >
           {loading ? t('loading') : t('kakaoButton')}
         </Button>

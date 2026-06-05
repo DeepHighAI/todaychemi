@@ -33,6 +33,13 @@ function clearWidgetContainers() {
   document.querySelector(AGREEMENT_SELECTOR)?.replaceChildren();
 }
 
+function getInitErrorMessage(errorCode?: string) {
+  if (errorCode === 'PAYMENT_CONFIG_MISSING') {
+    return '결제 설정이 아직 준비되지 않았어요. 잠시 후 다시 시도해주세요.';
+  }
+  return '결제를 시작할 수 없어요. 잠시 후 다시 시도해주세요.';
+}
+
 export function FeaturePaySheet({
   feature,
   featureRef,
@@ -44,6 +51,8 @@ export function FeaturePaySheet({
 }: FeaturePaySheetProps) {
   const [status, setStatus] = useState<Status>('idle');
   const [payment, setPayment] = useState<FeaturePaymentInit | null>(null);
+  const [errorMessage, setErrorMessage] = useState(getInitErrorMessage());
+  const [retryNonce, setRetryNonce] = useState(0);
   const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
 
   useEffect(() => {
@@ -54,6 +63,7 @@ export function FeaturePaySheet({
     void (async () => {
       setStatus('loading');
       setPayment(null);
+      setErrorMessage(getInitErrorMessage());
       widgetsRef.current = null;
       clearWidgetContainers();
       try {
@@ -63,7 +73,13 @@ export function FeaturePaySheet({
           body: JSON.stringify({ feature, ref: featureRef }),
         });
         if (!res.ok) {
-          if (!cancelled) setStatus('error');
+          const errorBody = (await res.json().catch(() => null)) as
+            | { error?: { code?: string } }
+            | null;
+          if (!cancelled) {
+            setErrorMessage(getInitErrorMessage(errorBody?.error?.code));
+            setStatus('error');
+          }
           return;
         }
         const body = (await res.json()) as FeaturePaymentInitResponse;
@@ -94,7 +110,11 @@ export function FeaturePaySheet({
     // onPaid/onOpenChange 는 인라인 콜백일 수 있어 deps 에서 제외 — 포함 시 매 렌더 재-init 루프.
     // 취소 플래그로 stale 적용 방지. (charge-client 동일 패턴)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, feature, featureRef]);
+  }, [open, feature, featureRef, retryNonce]);
+
+  function retryInit() {
+    setRetryNonce((value) => value + 1);
+  }
 
   async function handlePay() {
     if (!widgetsRef.current || !payment) return;
@@ -155,35 +175,41 @@ export function FeaturePaySheet({
           </div>
 
           <div className="space-y-3 overflow-y-auto px-5 pb-6 pt-5">
-            <div
-              id="feature-payment-methods"
-              className="min-h-[200px] rounded-[var(--r-sm)] border border-[var(--hairline)] bg-background"
-            />
-            <div
-              id="feature-payment-agreement"
-              className="min-h-[80px] rounded-[var(--r-sm)] border border-[var(--hairline)] bg-background"
-            />
+            {status !== 'error' && (
+              <>
+                <div
+                  id="feature-payment-methods"
+                  className="min-h-[200px] rounded-[var(--r-sm)] border border-[var(--hairline)] bg-background"
+                />
+                <div
+                  id="feature-payment-agreement"
+                  className="min-h-[80px] rounded-[var(--r-sm)] border border-[var(--hairline)] bg-background"
+                />
+              </>
+            )}
 
             {status === 'error' && (
               <p
                 role="alert"
                 className="rounded-[var(--r-sm)] bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
               >
-                결제를 시작할 수 없어요. 잠시 후 다시 시도해주세요.
+                {errorMessage}
               </p>
             )}
 
             <Button
               type="button"
               className="h-12 w-full"
-              disabled={status !== 'ready'}
-              onClick={handlePay}
+              disabled={status === 'idle' || status === 'loading' || status === 'paying'}
+              onClick={status === 'error' ? retryInit : handlePay}
             >
               {status === 'ready' && payment
                 ? `₩${payment.amount_krw.toLocaleString()} 결제하기`
-                : status === 'paying'
-                  ? '결제창 여는 중…'
-                  : '결제 준비 중…'}
+                : status === 'error'
+                  ? '다시 시도'
+                  : status === 'paying'
+                    ? '결제창 여는 중…'
+                    : '결제 준비 중…'}
             </Button>
           </div>
         </Drawer.Content>

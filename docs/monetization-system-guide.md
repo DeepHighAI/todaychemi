@@ -1094,8 +1094,8 @@ trackEvent('amulet_modal_close');
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | ✅ |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` | ✅ |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | ✅ |
-| `TOSS_CLIENT_KEY` | `test_ck_...` | ✅ (웹 결제) |
-| `TOSS_SECRET_KEY` | `test_sk_...` | ✅ (웹 결제) |
+| `TOSS_CLIENT_KEY` | `test_gck_...` | ✅ (결제위젯) |
+| `TOSS_SECRET_KEY` | `test_gsk_...` | ✅ (결제위젯 서버 승인) |
 | `CSRF_SECRET` | `<32자 이상 랜덤>` | ✅ |
 | `ADMIN_SECRET_KEY` | `<랜덤>` | 선택 (관리자 API) |
 

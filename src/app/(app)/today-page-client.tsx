@@ -23,12 +23,10 @@ import { RelationChip } from '@/components/today/relation-chip';
 import { AvoidActionCards } from '@/components/today/avoid-action-cards';
 import { WhatifTrigger } from '@/components/today/whatif-trigger';
 import { LoadingState } from '@/components/feedback/LoadingState';
-import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { SwipeRow } from '@/components/layout/swipe-row';
 
 import { formatTodayTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
-import { isErrorCode, type ErrorCode } from '@/lib/errors/error-codes';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 import type { FeedListItem } from '@/types/relation';
@@ -90,12 +88,20 @@ export default function TodayPageClient() {
 
   const [confirmDelete, setConfirmDelete] = useState<FeedListItem | null>(null);
 
-  const card = todayQuery.data;
+  const todayErrorMsg = todayQuery.error?.message;
+  const showFallbackToday = todayQuery.isError && todayErrorMsg !== 'UNAUTHORIZED';
+  const fallbackCard: DailyHapCard = {
+    headline: t('fallback.headline'),
+    headline_reason: t('fallback.headline_reason'),
+    avoid_phrase: t('fallback.avoid_phrase'),
+    avoid_phrase_reason: t('fallback.avoid_phrase_reason'),
+    favorable_action: t('fallback.favorable_action'),
+    favorable_action_reason: t('fallback.favorable_action_reason'),
+    reused_from_yesterday: false,
+  };
+  const card = todayQuery.data ?? (showFallbackToday ? fallbackCard : undefined);
   const chart = chartQuery.data ?? null;
   const relations = relationsQuery.data ?? [];
-
-  const todayErrorMsg = todayQuery.error?.message;
-  const todayErrorCode: ErrorCode = isErrorCode(todayErrorMsg) ? todayErrorMsg : 'INTERNAL_ERROR';
 
   useEffect(() => {
     if (todayQuery.isError && todayErrorMsg === 'UNAUTHORIZED') router.push('/start');
@@ -109,12 +115,6 @@ export default function TodayPageClient() {
 
       {todayQuery.isLoading && (
         <div className="px-4"><LoadingState /></div>
-      )}
-
-      {todayQuery.isError && todayErrorMsg !== 'UNAUTHORIZED' && (
-        <div className="px-4">
-          <ErrorCard code={todayErrorCode} onRetry={() => todayQuery.refetch()} />
-        </div>
       )}
 
       {card && (
@@ -142,65 +142,76 @@ export default function TodayPageClient() {
               ) : null
             }
           />
+        </>
+      )}
 
-          {/* 빠른 인연 등록 카드 (canvas IHome) */}
-          <section className="px-4">
-            <Link href="/relations/new"
-              className="flex items-center gap-3 bg-[var(--p-90)] rounded-[var(--r-md)] p-3.5 active:scale-[0.99] transition">
-              <span className="w-11 h-11 rounded-[14px] flex items-center justify-center"
-                style={{ background: 'var(--p-40)', color: 'white' }}>
-                <Plus size={22} strokeWidth={2.5} />
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="font-eyebrow block text-[var(--p-40)]">{t('compat.eyebrow')}</span>
-                <span className="font-bold text-[14px] text-[var(--p-10)] block mt-0.5">{t('compat.title')}</span>
-              </span>
-              <ChevronRight size={20} className="text-[var(--p-30)] shrink-0" />
-            </Link>
-          </section>
+      {/* 빠른 인연 등록 카드 (canvas IHome) */}
+      <section className="px-4">
+        <Link href="/relations/new"
+          className="flex items-center gap-3 bg-[var(--p-90)] rounded-[var(--r-md)] p-3.5 active:scale-[0.99] transition">
+          <span className="w-11 h-11 rounded-[14px] flex items-center justify-center"
+            style={{ background: 'var(--p-40)', color: 'white' }}>
+            <Plus size={22} strokeWidth={2.5} />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="font-eyebrow block text-[var(--p-40)]">{t('compat.eyebrow')}</span>
+            <span className="font-bold text-[14px] text-[var(--p-10)] block mt-0.5">{t('compat.title')}</span>
+          </span>
+          <ChevronRight size={20} className="text-[var(--p-30)] shrink-0" />
+        </Link>
+      </section>
 
-          {/* 인연 리스트 — swipe-to-delete */}
-          {topRelations.length > 0 && (
-            <section className="px-4 space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <p className="font-eyebrow text-muted-foreground">{t('recent.title')}</p>
-                <Link href="/feed" className="text-[12px] font-semibold text-primary">{t('recent.viewAll')}</Link>
-              </div>
-              <ul className="space-y-2">
-                {topRelations.map((r) => (
-                  <li key={r.relation_id}>
-                    <SwipeRow
-                      onDelete={() => setConfirmDelete(r)}
-                      onClick={() => router.push(`/hapcard/${r.relation_id}?mode=${encodeURIComponent(r.mode ?? '썸합')}`)}
-                    >
-                      <div className="bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center font-bold text-[13px] shrink-0"
-                          style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}>
-                          {r.nickname.slice(0, 2)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[14px] text-foreground truncate">{r.nickname}</p>
-                          <p className="text-[12px] text-muted-foreground truncate">
-                            {r.mode ? tMode(r.mode) : t('recent.uninterpreted')}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          {r.compat_score !== null && r.compat_score !== undefined ? (
-                            <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
-                              {formatTodayTemperature(r.compat_score)}
-                            </p>
-                          ) : (
-                            <Lock size={18} className="text-[var(--p-40)] inline-block" />
-                          )}
-                        </div>
-                      </div>
-                    </SwipeRow>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+      {/* 인연 리스트 — swipe-to-delete */}
+      {topRelations.length > 0 && (
+        <section className="px-4 space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <p className="font-eyebrow text-muted-foreground">{t('recent.title')}</p>
+            <Link href="/feed" className="text-[12px] font-semibold text-primary">{t('recent.viewAll')}</Link>
+          </div>
+          <ul className="space-y-2">
+            {topRelations.map((r) => (
+              <li key={r.relation_id}>
+                <SwipeRow
+                  onDelete={() => setConfirmDelete(r)}
+                  onClick={() => {
+                    if (chartQuery.isLoading) return;
+                    if (!chart) {
+                      router.push('/onboarding');
+                      return;
+                    }
+                    router.push(`/hapcard/${r.relation_id}?mode=${encodeURIComponent(r.mode ?? '썸합')}`);
+                  }}
+                >
+                  <div className="bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-[12px] flex items-center justify-center font-bold text-[13px] shrink-0"
+                      style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}>
+                      {r.nickname.slice(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-[14px] text-foreground truncate">{r.nickname}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">
+                        {r.mode ? tMode(r.mode) : t('recent.uninterpreted')}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {r.compat_score !== null && r.compat_score !== undefined ? (
+                        <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
+                          {formatTodayTemperature(r.compat_score)}
+                        </p>
+                      ) : (
+                        <Lock size={18} className="text-[var(--p-40)] inline-block" />
+                      )}
+                    </div>
+                  </div>
+                </SwipeRow>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
+      {card && (
+        <>
           <AvoidActionCards card={card} />
           {chart && <WhatifTrigger />}
         </>

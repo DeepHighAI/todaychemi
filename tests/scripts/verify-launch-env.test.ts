@@ -32,8 +32,8 @@ describe('verify-launch-env script', () => {
     expect(source).toContain('NEXT_PUBLIC_APP_URL is https production origin without trailing slash');
     expect(source).toContain('OPENAI_PROJECT_ID uses proj_* format');
     expect(source).toContain('/^proj_[A-Za-z0-9]+$/');
-    expect(source).toContain('TOSS_CLIENT_KEY uses live_ck_* prefix');
-    expect(source).toContain('TOSS_SECRET_KEY uses live_sk_* prefix');
+    expect(source).toContain('TOSS_CLIENT_KEY uses live_gck_* prefix');
+    expect(source).toContain('TOSS_SECRET_KEY uses live_gsk_* prefix');
     expect(source).toContain('LLM_DAILY_BUDGET_USD is a positive number');
     expect(source).toContain("key: 'ANTHROPIC_API_KEY'");
     expect(source).toMatch(/key:\s*'ANTHROPIC_API_KEY'[\s\S]{0,120}severity:\s*'required'/);

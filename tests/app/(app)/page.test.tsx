@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -139,12 +140,14 @@ describe('TodayPage (composition)', () => {
     expect(screen.queryByText('별명6')).toBeNull();
   });
 
-  it('today fetch 실패 시 ErrorCard 렌더', async () => {
+  it('today fetch 실패 시 ErrorCard 대신 fallback 홈 콘텐츠를 렌더', async () => {
     setupRoutes({
       today: { ok: false, status: 500, body: { ok: false, code: 'INTERNAL_ERROR' } },
     });
     await renderTodayPage();
-    await waitFor(() => expect(screen.getByTestId('error-card')).toBeInTheDocument());
+    expect(await screen.findByText('오늘은 천천히 확인해요')).toBeInTheDocument();
+    expect(screen.getByText('가벼운 정리부터 하기')).toBeInTheDocument();
+    expect(screen.queryByTestId('error-card')).toBeNull();
   });
 
   it('chart 있을 때 WhatifTrigger 카드 렌더', async () => {
@@ -160,6 +163,28 @@ describe('TodayPage (composition)', () => {
     expect(screen.queryByRole('button', { name: '또 다른 나' })).toBeNull();
   });
 
+  it('chart=null 이면 최근 인연 클릭 시 합카드 대신 온보딩으로 안내한다', async () => {
+    const user = userEvent.setup();
+    setupRoutes({
+      meChart: { ok: true, body: { ok: true, chart: null } },
+      relations: {
+        ok: true,
+        body: {
+          items: [
+            { relation_id: 'r1', nickname: '봄달이', mode: '일합', created_at: '2026-05-05T10:00:00Z' },
+          ],
+        },
+      },
+    });
+    await renderTodayPage();
+
+    const relationName = await screen.findByText('봄달이');
+    await user.click(relationName);
+
+    expect(mockPush).toHaveBeenCalledWith('/onboarding');
+    expect(mockPush).not.toHaveBeenCalledWith('/hapcard/r1?mode=%EC%9D%BC%ED%95%A9');
+  });
+
   it('today 로딩 중에는 LoadingState 렌더', async () => {
     // today 영원히 pending → loading state 유지
     mockFetch.mockImplementation((url: string) => {
@@ -172,6 +197,35 @@ describe('TodayPage (composition)', () => {
     expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
   });
 
+  it('today 로딩 중에도 최근 인연 클릭으로 합카드 진입 가능', async () => {
+    const user = userEvent.setup();
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/today') return new Promise(() => {});
+      if (url === '/api/me/chart') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, chart: CHART }) });
+      }
+      if (url === '/api/relations') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              { relation_id: 'r1', nickname: '봄달이', mode: '일합', created_at: '2026-05-05T10:00:00Z' },
+            ],
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected: ${url}`));
+    });
+    await renderTodayPage();
+
+    expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
+    const relationName = await screen.findByText('봄달이');
+    await user.click(relationName);
+
+    expect(mockPush).toHaveBeenCalledWith('/hapcard/r1?mode=%EC%9D%BC%ED%95%A9');
+  });
+
   it('/api/today 401 UNAUTHORIZED → router.push("/start") 호출', async () => {
     setupRoutes({
       today: { ok: false, status: 401, body: { error: { code: 'UNAUTHORIZED', message: '' } } },
@@ -180,12 +234,13 @@ describe('TodayPage (composition)', () => {
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/start'));
   });
 
-  it('/api/today 500 INTERNAL_ERROR → "잠시 문제가 생겼어요" 렌더 (LLM_TIMEOUT 아님)', async () => {
+  it('/api/today 500 INTERNAL_ERROR → 에러 문구 없이 fallback 홈 렌더', async () => {
     setupRoutes({
       today: { ok: false, status: 500, body: { error: { code: 'INTERNAL_ERROR', message: '' } } },
     });
     await renderTodayPage();
-    expect(await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('오늘은 천천히 확인해요')).toBeInTheDocument();
+    expect(screen.queryByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeNull();
     expect(screen.queryByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeNull();
   });
 
@@ -195,12 +250,13 @@ describe('TodayPage (composition)', () => {
     expect(await screen.findByText('다른 사람과의 사주')).toBeInTheDocument();
   });
 
-  it('/api/today 500 LLM_TIMEOUT → "AI가 많이 생각 중이에요" 렌더', async () => {
+  it('/api/today 500 LLM_TIMEOUT → 에러 문구 없이 fallback 홈 렌더', async () => {
     setupRoutes({
       today: { ok: false, status: 500, body: { error: { code: 'LLM_TIMEOUT', message: '' } } },
     });
     await renderTodayPage();
-    expect(await screen.findByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('오늘은 천천히 확인해요')).toBeInTheDocument();
+    expect(screen.queryByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.')).toBeNull();
   });
 
   // F2.3: 인연 chip 인터랙티브 와이어링

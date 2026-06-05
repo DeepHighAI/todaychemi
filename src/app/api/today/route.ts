@@ -114,8 +114,6 @@ export async function GET(request: Request) {
 
     const target = todayKST();
     const prev = yesterdayKST();
-    const openai = createOpenAiClient();
-    const llmCostClient = createServiceRoleClient();
     const url = new URL(request.url);
     const preferredRelationId = url.searchParams.get('relation_id') ?? undefined;
     const featureEnabled = todayWithRelationEnabled();
@@ -185,9 +183,13 @@ export async function GET(request: Request) {
         return chart;
       },
 
-      callLlm: (input) => callDailyHapLlm(input, openai, supabase, user.id, {
-        costClient: llmCostClient,
-      }),
+      callLlm: (input) => {
+        const openai = createOpenAiClient();
+        const llmCostClient = createServiceRoleClient();
+        return callDailyHapLlm(input, openai, supabase, user.id, {
+          costClient: llmCostClient,
+        });
+      },
 
       // Task 1: 단계별 latency + 실패 phase 캡처. 실패 시 error_events 적재 (best-effort).
       recordTrace: async (trace: TodayTrace) => {

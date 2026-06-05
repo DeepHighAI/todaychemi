@@ -22,7 +22,7 @@ import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 const PAYMENT = {
   order_id: 'twoday_feat_1',
   customer_key: 'cust_feat_1',
-  client_key: 'ck_feat_test',
+  client_key: 'test_gck_feat',
   amount_krw: 800,
   order_name: '합카드 보기',
   feature: 'hapcard',
@@ -90,7 +90,7 @@ describe('FeaturePaySheet', () => {
     mockInit({ ok: true, unlocked: false, payment: PAYMENT });
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
-    await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('ck_feat_test'));
+    await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('test_gck_feat'));
     expect(toss.setAmount).toHaveBeenCalledWith({ value: 800, currency: 'KRW' });
     expect(toss.renderPaymentMethods).toHaveBeenCalledWith({
       selector: '#feature-payment-methods',
@@ -156,8 +156,47 @@ describe('FeaturePaySheet', () => {
     mockInit({ error: { code: 'PAYMENT_REF_NOT_FOUND', message: 'x' } }, 404);
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        '결제를 시작할 수 없어요. 잠시 후 다시 시도해주세요.',
+      ),
+    );
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeEnabled();
     expect(toss.loadTossPayments).not.toHaveBeenCalled();
+  });
+
+  it('Toss 설정 누락 → 설정 안내를 보여주고 재시도할 수 있음', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              error: { code: 'PAYMENT_CONFIG_MISSING', message: 'payment provider is not configured' },
+            }),
+            { status: 503 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ ok: true, unlocked: false, payment: PAYMENT }), {
+            status: 201,
+          }),
+        ),
+    );
+    renderWithProviders(<FeaturePaySheet {...baseProps} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        '결제 설정이 아직 준비되지 않았어요. 잠시 후 다시 시도해주세요.',
+      ),
+    );
+    expect(toss.loadTossPayments).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('test_gck_feat'));
   });
 
   it('open=false → init 호출 안 함', () => {

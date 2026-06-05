@@ -40,7 +40,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     label: 'Toss secret/client key value',
-    regex: /\b(?:live|test)_(?:sk|ck)_[A-Za-z0-9_-]{8,}\b/,
+    regex: /\b(?:live|test)_(?:g?sk|g?ck)_[A-Za-z0-9_-]{8,}\b/,
   },
   {
     label: 'Supabase service-role JWT assignment',
@@ -174,10 +174,10 @@ const EXTERNAL_CHECKLIST_PLACEHOLDER_CELLS = new Set([
   'dashboard/contract reference no secret',
   'fixed production origin',
   'localhost paths only',
-  'live_ck_... prefix only',
-  'live_ck_ prefix only',
-  'live_sk_... prefix only',
-  'live_sk_ prefix only',
+  'live_gck_... prefix only',
+  'live_gck_ prefix only',
+  'live_gsk_... prefix only',
+  'live_gsk_ prefix only',
   'number only',
   'origin only',
   'origin only no path',

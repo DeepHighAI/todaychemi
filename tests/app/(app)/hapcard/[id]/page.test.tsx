@@ -36,6 +36,9 @@ describe('HapcardPage', () => {
     let resolve: (v: unknown) => void;
     mockFetch.mockReturnValue(new Promise((r) => { resolve = r; }));
     await renderHapcardPage();
+    expect(await screen.findByTestId('hapcard-loading-state')).toBeInTheDocument();
+    expect(screen.getByText('두 사람의 흐름을 분석하고 있어요')).toBeInTheDocument();
+    expect(screen.getByTestId('hapcard-loading-estimate')).toHaveTextContent('보통 20~40초 정도 걸려요');
     expect(await screen.findByTestId('hapcard-skeleton')).toBeInTheDocument();
     resolve!({ ok: true, json: async () => mockHapcardResult });
   });
@@ -211,7 +214,10 @@ describe('HapcardPage', () => {
       json: async () => ({ error: { code: 'USER_CHART_NOT_FOUND', message: 'not found' } }),
     });
     await renderHapcardPage();
-    expect(await screen.findByText('오늘 우리는 준비 중')).toBeInTheDocument();
+    expect(await screen.findByText('내 사주맵이 먼저 필요해요')).toBeInTheDocument();
+    expect(screen.getByText('오늘 우리는을 보려면 내 사주맵을 먼저 등록해야 해요.')).toBeInTheDocument();
+    const cta = screen.getByRole('link', { name: '내 사주맵 등록하기' });
+    expect(cta).toHaveAttribute('href', '/onboarding');
   });
 
   it('shows generic error on 401', async () => {

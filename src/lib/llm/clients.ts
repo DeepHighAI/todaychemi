@@ -9,7 +9,11 @@ export function createOpenAiClient(): OpenAI {
     throw new ConfigError('Missing env: OPENAI_API_KEY');
   }
   const project = process.env.OPENAI_PROJECT_ID;
-  if (process.env.NODE_ENV === 'production' && !project) {
+  const vercelEnv = process.env.VERCEL_ENV;
+  const requiresProjectRouting = vercelEnv === 'production' || vercelEnv === 'preview';
+  // Local `next start` also uses NODE_ENV=production. Vercel production/preview
+  // deployments expose VERCEL_ENV, so keep project routing mandatory there.
+  if (requiresProjectRouting && !project) {
     throw new ConfigError('Missing env: OPENAI_PROJECT_ID');
   }
   return new OpenAI({ apiKey, project: project || undefined, timeout: 60_000 });

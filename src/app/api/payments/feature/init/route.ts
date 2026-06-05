@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { ConfigError } from '@/lib/config-error';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { createTossCustomerKey, createTossOrderId } from '@/lib/payments/ids';
-import { getTossPaymentsClientKey } from '@/lib/payments/env';
+import { getTossPaymentsClientKey, getTossPaymentsSecretKey } from '@/lib/payments/env';
 import { FEATURE_PRICES_KRW, FeatureIdSchema } from '@/lib/payments/feature-prices';
 import { verifyFeatureRefOwnership } from '@/lib/payments/feature-ref-ownership';
 import type { FeaturePaymentInitResponse } from '@/types/feature-payment';
@@ -31,6 +32,21 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return apiErrorResponse('UNAUTHORIZED', '', 401);
+  }
+
+  let clientKey: string;
+  try {
+    clientKey = getTossPaymentsClientKey();
+    getTossPaymentsSecretKey();
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      return apiErrorResponse(
+        'PAYMENT_CONFIG_MISSING',
+        'payment provider is not configured',
+        503,
+      );
+    }
+    throw error;
   }
 
   const service = createServiceRoleClient();
@@ -125,7 +141,7 @@ export async function POST(request: Request) {
     payment: {
       order_id: orderId,
       customer_key: customerKey,
-      client_key: getTossPaymentsClientKey(),
+      client_key: clientKey,
       amount_krw: price.amount_krw,
       order_name: price.order_name,
       feature,

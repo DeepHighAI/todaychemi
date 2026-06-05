@@ -119,7 +119,7 @@ describe('verify-launch-evidence-readiness', () => {
       '|---|---:|---:|---|',
       '| `OPENAI_API_KEY` | sk-proj-abcdefghijklmnopqrstuvwxyz123456 | TBD | pasted by mistake |',
       '| `OPENAI_PROJECT_ID` | proj_abcdefghijklmnop123456 | TBD | pasted by mistake |',
-      '| `TOSS_SECRET_KEY` | live_sk_abcdefghi123456789 | TBD | pasted by mistake |',
+      '| `TOSS_SECRET_KEY` | live_gsk_abcdefghi123456789 | TBD | pasted by mistake |',
       '| `SENTRY_DSN` | https://0123456789abcdef0123456789abcdef@o450123456789.ingest.sentry.io/450123456789 | TBD | pasted by mistake |',
       '| `SUPABASE_SERVICE_ROLE_KEY` | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2aWNlX3JvbGUifQ.abcdefghijklmnopqrstuvwxyz | TBD | pasted by mistake |',
     ].join('\n'));
@@ -310,7 +310,7 @@ describe('verify-launch-evidence-readiness', () => {
       '| Item | Result | Evidence |',
       '|---|---:|---|',
       '| Vercel production project | TBD | project name only |',
-      '| Toss live dashboard | FAIL | live_ck_... prefix only |',
+      '| Toss live dashboard | FAIL | live_gck_... prefix only |',
       '| OpenAI ZDR project | PASS | TBD |',
       '| OpenAI project selected | PASS | project name/id prefix only |',
     ].join('\n'));
@@ -322,7 +322,7 @@ describe('verify-launch-evidence-readiness', () => {
         '서비스 오픈 가능 external settings checklist must not contain TBD placeholders',
         '서비스 오픈 가능 external settings checklist must not contain FAIL status cells',
         '서비스 오픈 가능 external settings checklist evidence is still a placeholder: project name only',
-        '서비스 오픈 가능 external settings checklist evidence is still a placeholder: live_ck_... prefix only',
+        '서비스 오픈 가능 external settings checklist evidence is still a placeholder: live_gck_... prefix only',
         '서비스 오픈 가능 external settings checklist evidence is still a placeholder: TBD',
         '서비스 오픈 가능 external settings checklist evidence is still a placeholder: project name/id prefix only',
       ]),

@@ -18,8 +18,8 @@ pnpm add @tosspayments/tosspayments-sdk
 환경변수:
 
 ```bash
-TOSS_CLIENT_KEY=test_ck_...             # 클라이언트 key (서버 API가 checkout payload로 전달)
-TOSS_SECRET_KEY=test_sk_...             # 서버 전용 (결제 승인/취소)
+TOSS_CLIENT_KEY=test_gck_...            # Payment Widget client key (서버 API가 checkout payload로 전달)
+TOSS_SECRET_KEY=test_gsk_...            # Payment Widget secret key, 서버 전용 (결제 승인/취소)
 # 임시 호환 alias: TOSS_PAYMENTS_CLIENT_KEY / TOSS_PAYMENTS_SECRET_KEY
 ```
 
@@ -270,14 +270,14 @@ CREATE TABLE token_ledger (
 | `4000000000000002` | 잔액 부족 실패 |
 | `4000000000000028` | 도난 카드 실패 |
 
-> 테스트 환경에서는 `test_ck_*` / `test_sk_*` 키 사용. 실 결제 없음.
+> 테스트 환경에서는 `test_gck_*` / `test_gsk_*` 결제위젯 키 사용. 실 결제 없음.
 
 ### Sandbox 환경 확인
 
 ```bash
 # .env.local sandbox 설정
-TOSS_CLIENT_KEY=test_ck_...
-TOSS_SECRET_KEY=test_sk_...
+TOSS_CLIENT_KEY=test_gck_...
+TOSS_SECRET_KEY=test_gsk_...
 ```
 
 ### Webhook 로컬 테스트
@@ -294,8 +294,8 @@ npx ngrok http 3000
 
 ## 7. Phase 1 출시 전 체크리스트
 
-- [ ] `test_ck_*` → `live_ck_*` 키 교체 (Vercel Production 환경변수)
-- [ ] `test_sk_*` → `live_sk_*` 키 교체 (Vercel Production 환경변수)
+- [ ] `test_gck_*` → `live_gck_*` 키 교체 (Vercel Production 환경변수)
+- [ ] `test_gsk_*` → `live_gsk_*` 키 교체 (Vercel Production 환경변수)
 - [ ] 환불·취소 자동화 활성화 시 Toss 대시보드 → webhook URL 프로덕션 URL로 변경
 - [ ] Toss 대시보드 → 사업자 정보 등록 완료
 - [x] 환불 정책 약관 페이지 등록 (`/legal/refund`, `/terms/refund` alias)

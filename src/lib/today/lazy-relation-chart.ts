@@ -4,6 +4,11 @@ import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 import { fetchLatestRelationChartForVersion } from '@/lib/chart/queries';
 import { computeChart } from '@/lib/chart/compute';
 
+export interface EnsuredRelationChart {
+  chart_core: ChartCore;
+  chart_hash: string;
+}
+
 // G2 / Phase 3 F3.1 — relation chart 미존재 시 KASI computeChart + relation_charts upsert.
 // 순서:
 //   1. 기존 chart 조회 → 있으면 그대로 반환 (canonical fast path)
@@ -17,14 +22,28 @@ export async function ensureRelationChart(
   userId: string,
   kasiServiceKey: string,
 ): Promise<ChartCore | null> {
+  const row = await ensureRelationChartRow(supabase, relationId, userId, kasiServiceKey);
+  return row?.chart_core ?? null;
+}
+
+export async function ensureRelationChartRow(
+  supabase: SupabaseClient<Database>,
+  relationId: string,
+  userId: string,
+  kasiServiceKey: string,
+  theoryProfileVersion = DEFAULT_THEORY_PROFILE_VERSION,
+): Promise<EnsuredRelationChart | null> {
   // Step 1: 기존 chart 확인
   const { data: existing } = await fetchLatestRelationChartForVersion(
     supabase,
     relationId,
-    DEFAULT_THEORY_PROFILE_VERSION,
+    theoryProfileVersion,
   );
   if (existing) {
-    return existing.chart_core as unknown as ChartCore;
+    return {
+      chart_core: existing.chart_core as unknown as ChartCore,
+      chart_hash: existing.chart_hash,
+    };
   }
 
   // Step 2: relations row fetch (chart 미생성 인연의 birth 필드)
@@ -60,7 +79,7 @@ export async function ensureRelationChart(
         birth_time_knowledge: r.birth_time_knowledge,
         birth_time: r.birth_time,
         gender: r.gender,
-        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+        theory_profile_version: theoryProfileVersion,
       },
       kasiServiceKey,
     );
@@ -73,12 +92,15 @@ export async function ensureRelationChart(
         user_id: userId,
         chart_hash: computeResult.chart_hash,
         chart_core: computeResult.chart_core,
-        theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+        theory_profile_version: theoryProfileVersion,
       },
       { onConflict: 'chart_hash' },
     );
 
-    return computeResult.chart_core;
+    return {
+      chart_core: computeResult.chart_core,
+      chart_hash: computeResult.chart_hash,
+    };
   } catch (err) {
     console.error('[ensureRelationChart] computeChart failed', { relationId, err });
     // F3.3: error_events 테이블에 영구 기록 (운영 디버깅용)

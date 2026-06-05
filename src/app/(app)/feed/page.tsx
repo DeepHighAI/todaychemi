@@ -11,7 +11,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
@@ -40,12 +40,19 @@ export default function FeedPage() {
   const tMode = useTranslations('relations.new.mode');
   const tFilter = useTranslations('feed.filter.modes');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const focusedRelationId = searchParams.get('focus');
   const qc = useQueryClient();
 
   const [activeFilter, setActiveFilter] = useState<FilterMode>('all');
   const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
 
-  const { data, isLoading, isError } = useQuery({ queryKey: ['feed'], queryFn: fetchFeed });
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['feed', focusedRelationId ?? ''],
+    queryFn: fetchFeed,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
   const del = useMutation({
     mutationFn: deleteRelation,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
@@ -61,7 +68,18 @@ export default function FeedPage() {
     { value: '오래합', label: tFilter('오래합') },
   ], [t, tFilter]);
 
-  const items = useMemo(() => data ?? [], [data]);
+  const items = useMemo(() => {
+    const feedItems = data ?? [];
+    if (!focusedRelationId) return feedItems;
+
+    const focused = feedItems.find(item => item.relation_id === focusedRelationId);
+    if (!focused) return feedItems;
+
+    return [
+      focused,
+      ...feedItems.filter(item => item.relation_id !== focusedRelationId),
+    ];
+  }, [data, focusedRelationId]);
   const filtered = activeFilter === 'all' ? items : items.filter(i => i.mode === activeFilter);
 
   // 오늘 변화 큼 인연 1개 (canvas의 cool Liquid Glass card)

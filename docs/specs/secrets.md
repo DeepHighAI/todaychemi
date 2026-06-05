@@ -113,8 +113,8 @@ OPENAI_API_KEY=<openai-api-key>
 OPENAI_PROJECT_ID=<openai-project-id>
 ANTHROPIC_API_KEY=<anthropic-api-key>
 KASI_SERVICE_KEY=<kasi-service-key>
-TOSS_CLIENT_KEY=test_ck_<redacted>        # 개발: test_ 접두사
-TOSS_SECRET_KEY=test_sk_<redacted>        # 개발: test_ 접두사
+TOSS_CLIENT_KEY=test_gck_<redacted>       # 개발: Payment Widget test key
+TOSS_SECRET_KEY=test_gsk_<redacted>       # 개발: Payment Widget test secret
 SENTRY_DSN=<sentry-server-dsn>
 NEXT_PUBLIC_SENTRY_DSN=<sentry-browser-dsn>
 LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
@@ -122,8 +122,8 @@ LLM_DAILY_BUDGET_USD=5                   # 개발 환경 낮은 예산
 
 ### Sandbox vs Production 키 구분
 
-- 토스페이먼츠: 개발/테스트 시 `test_ck_*` / `test_sk_*` 사용 (실결제 없음)
-- 운영 배포 시 `live_ck_*` / `live_sk_*` 으로 교체 (Vercel Production 환경에만 등록)
+- 토스페이먼츠 결제위젯: 개발/테스트 시 `test_gck_*` / `test_gsk_*` 사용 (실결제 없음)
+- 운영 배포 시 `live_gck_*` / `live_gsk_*` 으로 교체 (Vercel Production 환경에만 등록)
 - OpenAI: 개발 환경에서 `LLM_DAILY_BUDGET_USD` 낮게 설정하여 비용 제어
 
 ---

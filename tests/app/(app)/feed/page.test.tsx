@@ -1,19 +1,26 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '@testing-library/react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { NextIntlClientProvider } from 'next-intl';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderWithProviders } from '../../../utils/render-with-providers';
 import type { FeedItem } from '@/types/relation';
+import messages from '../../../../messages/ko.json';
 
+const mockUseSearchParams = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+  useSearchParams: mockUseSearchParams,
 }));
 
 const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseSearchParams.mockReturnValue(new URLSearchParams());
   vi.stubGlobal('fetch', mockFetch);
 });
 
@@ -24,6 +31,17 @@ afterEach(() => {
 async function renderFeedPage() {
   const { default: FeedPage } = await import('@/app/(app)/feed/page');
   return renderWithProviders(<FeedPage />);
+}
+
+async function renderFeedPageWithQueryClient(queryClient: QueryClient) {
+  const { default: FeedPage } = await import('@/app/(app)/feed/page');
+  return render(
+    <NextIntlClientProvider locale="ko" messages={messages}>
+      <QueryClientProvider client={queryClient}>
+        <FeedPage />
+      </QueryClientProvider>
+    </NextIntlClientProvider>,
+  );
 }
 
 describe('FeedPage', () => {
@@ -98,6 +116,31 @@ describe('FeedPage', () => {
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/feed'));
     expect(mockFetch).not.toHaveBeenCalledWith('/api/relations');
+  });
+
+  it('focus query forces fresh feed data so newly created money relation appears', async () => {
+    // Regression: ISSUE-001 — /feed?focus=... reused the fresh root feed cache for 60s.
+    // Found by /qa on 2026-06-05.
+    // Report: browser comment on /feed?focus=f5b3166f-188a-4577-bdc2-d9ccf29a4d43.
+    mockUseSearchParams.mockReturnValue(new URLSearchParams({ focus: 'r-money' }));
+    const staleItems: FeedItem[] = [
+      { relation_id: 'r-old', nickname: '너야', mode: '첫합', compat_score: 77, change_score: 0, has_significant_change: false, created_at: '2026-06-04T10:00:00Z' },
+    ];
+    const freshItems: FeedItem[] = [
+      { relation_id: 'r-old', nickname: '너야', mode: '첫합', compat_score: 77, change_score: 0, has_significant_change: false, created_at: '2026-06-04T10:00:00Z' },
+      { relation_id: 'r-money', nickname: '돈새', mode: '돈합', compat_score: null, change_score: 0, has_significant_change: false, created_at: '2026-06-05T10:00:00Z' },
+    ];
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 60_000 } },
+    });
+    queryClient.setQueryData(['feed'], staleItems);
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: freshItems }) });
+
+    await renderFeedPageWithQueryClient(queryClient);
+
+    expect(await screen.findByText('돈이 오가는 사이')).toBeInTheDocument();
+    expect(screen.getAllByText('돈새')).toHaveLength(2);
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/feed'));
   });
 
   it('compat_score가 있는 인연 — 오늘온도로 표시됨', async () => {

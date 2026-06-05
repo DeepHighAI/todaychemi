@@ -5,6 +5,7 @@ vi.mock('@/lib/today/builder');
 vi.mock('@/lib/today/relation-picker');
 vi.mock('@/lib/today/lazy-relation-chart');
 vi.mock('@/lib/llm/clients');
+vi.mock('@/lib/today/openai');
 vi.mock('@/lib/chart/queries');
 vi.mock('@/lib/supabase/service-role');
 
@@ -15,6 +16,8 @@ import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
 import {
   fetchLatestUserChartForVersion,
 } from '@/lib/chart/queries';
+import { createOpenAiClient } from '@/lib/llm/clients';
+import { callDailyHapLlm } from '@/lib/today/openai';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { GET } from '@/app/api/today/route';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -83,6 +86,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   upsertMock.mockClear();
   vi.mocked(createServiceRoleClient).mockReturnValue({ from: vi.fn() } as never);
+  vi.mocked(createOpenAiClient).mockReturnValue({} as never);
+  vi.mocked(callDailyHapLlm).mockResolvedValue(CARD);
   vi.mocked(buildDailyHap).mockResolvedValue(CARD);
   vi.mocked(pickTodayRelation).mockResolvedValue(null);
   vi.mocked(fetchLatestUserChartForVersion).mockResolvedValue({
@@ -131,6 +136,39 @@ describe('GET /api/today (기본 회귀)', () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('OpenAI client 생성은 builder LLM 단계까지 지연한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    await GET(makeRequest());
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+  });
+
+  it('builder 가 callLlm 을 호출할 때 OpenAI client 를 생성한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) =>
+      deps.callLlm({
+        self_chart: SELF_CHART,
+        relation_chart: null,
+        today_date: '2026-05-28',
+      }),
+    );
+
+    const res = await GET(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(createOpenAiClient).toHaveBeenCalledTimes(1);
+    expect(callDailyHapLlm).toHaveBeenCalledWith(
+      {
+        self_chart: SELF_CHART,
+        relation_chart: null,
+        today_date: '2026-05-28',
+      },
+      expect.anything(),
+      expect.anything(),
+      'user-001',
+      expect.objectContaining({ costClient: expect.anything() }),
+    );
   });
 });
 

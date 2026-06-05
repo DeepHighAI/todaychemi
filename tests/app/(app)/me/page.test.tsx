@@ -7,10 +7,16 @@ import type { ChartCore } from '@/types/chart';
 
 const routerMocks = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: routerMocks.push }),
+  useRouter: () => ({
+    push: routerMocks.push,
+    replace: routerMocks.replace,
+    refresh: routerMocks.refresh,
+  }),
   usePathname: () => '/me',
 }));
 
@@ -19,6 +25,8 @@ const mockFetch = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   routerMocks.push.mockClear();
+  routerMocks.replace.mockClear();
+  routerMocks.refresh.mockClear();
   vi.stubGlobal('fetch', mockFetch);
 });
 
@@ -73,6 +81,13 @@ function mockChartAndWallet(chart: ChartCore | null = CHART) {
           deletion_requested_at: '2026-05-25T00:00:00.000Z',
           already_requested: false,
         }),
+      });
+    }
+    if (url.includes('/api/auth/sign-out') && method === 'POST') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
       });
     }
     if (url.includes('/api/me/wallet')) {
@@ -158,6 +173,57 @@ describe('MePage (내 사주맵 화면)', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('/api/me/delete-request', { method: 'POST' });
       expect(screen.getByText('계정 삭제 요청이 접수됐어요.')).toBeInTheDocument();
+    });
+  });
+
+  it('로그아웃 클릭 시 세션 종료 API 호출 후 로그인 화면으로 이동한다', async () => {
+    mockChartAndWallet();
+    await renderMePage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /로그아웃/ })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /로그아웃/ }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/sign-out', { method: 'POST' });
+      expect(routerMocks.replace).toHaveBeenCalledWith('/login');
+      expect(routerMocks.refresh).toHaveBeenCalled();
+    });
+  });
+
+  it('로그아웃 실패 시 현재 화면에 에러 문구를 보여준다', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/api/auth/sign-out') && method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          json: async () => ({ ok: false }),
+        });
+      }
+      if (url.includes('/api/me/wallet')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => WALLET,
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, chart: CHART }),
+      });
+    });
+    await renderMePage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /로그아웃/ })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /로그아웃/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        '로그아웃에 실패했어요. 잠시 후 다시 시도해주세요.',
+      );
+      expect(routerMocks.replace).not.toHaveBeenCalled();
     });
   });
 

@@ -12,7 +12,7 @@ const TOSS_PAYMENT = {
 };
 
 beforeEach(() => {
-  vi.stubEnv('TOSS_SECRET_KEY', 'test_sk_secret');
+  vi.stubEnv('TOSS_SECRET_KEY', 'test_gsk_secret');
 });
 
 afterEach(() => {
@@ -37,7 +37,7 @@ describe('Toss server API utilities', () => {
     const headers = init.headers as Record<string, string>;
 
     expect(init.method).toBe('POST');
-    expect(headers.Authorization).toBe(`Basic ${Buffer.from('test_sk_secret:', 'utf8').toString('base64')}`);
+    expect(headers.Authorization).toBe(`Basic ${Buffer.from('test_gsk_secret:', 'utf8').toString('base64')}`);
     expect(headers['Content-Type']).toBe('application/json');
     expect(headers['Idempotency-Key']).toBe('twoday_confirm_osa_1_abcdef_1bd12a3c982415c1b176ff6b');
     expect(JSON.parse(init.body as string)).toEqual({

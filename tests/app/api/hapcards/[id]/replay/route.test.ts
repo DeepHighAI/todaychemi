@@ -122,6 +122,12 @@ function makeRequest(body: unknown) {
   }) as unknown as Parameters<typeof POST>[0];
 }
 
+function makeEmptyRequest() {
+  return new Request(`http://localhost/api/hapcards/${HAPCARD_ID}/replay`, {
+    method: 'POST',
+  }) as unknown as Parameters<typeof POST>[0];
+}
+
 function makeParams(id = HAPCARD_ID) {
   return { params: Promise.resolve({ id }) };
 }
@@ -167,6 +173,22 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
     expect(buildReplay).not.toHaveBeenCalled();
+  });
+
+  it('201 → 버튼의 빈 POST body 를 기본 재해석 요청으로 허용한다', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+
+    const res = await POST(makeEmptyRequest(), makeParams());
+
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.replay_id).toBe('replay-uuid-001');
+    expect(buildReplay).toHaveBeenCalledTimes(1);
+    const [input] = vi.mocked(buildReplay).mock.calls[0];
+    expect(input.replay_reason).toBeUndefined();
   });
 
   it('404 → hapcard 미존재 또는 다른 user 소유', async () => {

@@ -17,6 +17,7 @@ import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
 } from '@/lib/chart/queries';
+import { ensureRelationChartRow } from '@/lib/today/lazy-relation-chart';
 import { todayKST } from '@/lib/today/kst-date';
 import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from '@/types/hapcard';
 import type { ChartCore } from '@/types/chart';
@@ -77,14 +78,23 @@ export async function POST(request: NextRequest) {
       500,
     );
   }
-  if (!relationChartRes.data) {
+  let relationChart = relationChartRes.data as unknown as ChartRow | null;
+  if (!relationChart) {
+    relationChart = await ensureRelationChartRow(
+      supabaseUserClient,
+      body.relation_id,
+      userId,
+      process.env.KASI_SERVICE_KEY ?? '',
+      body.theory_profile_version,
+    ) as unknown as ChartRow | null;
+  }
+  if (!relationChart) {
     return apiErrorResponse(
       'RELATION_CHART_NOT_FOUND',
       `relation chart for relation_id=${body.relation_id} not found`,
       404,
     );
   }
-  const relationChart = relationChartRes.data as unknown as ChartRow;
 
   // 5. buildHapcard 호출
   const input: BuildHapcardInput = {

@@ -26,6 +26,7 @@ import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardTimeline } from '@/components/hapcard/timeline';
+import { HapcardLoadingState } from '@/components/hapcard/loading-state';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { HapcardShare } from '@/components/hapcard/share';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
@@ -36,7 +37,7 @@ import { formatDetailSummaryLines, formatHapcardActionItems, formatHeroCoachLine
 import { scoreToTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
 
-const CHART_PENDING_CODES: HapcardErrorCode[] = ['RELATION_CHART_NOT_FOUND', 'USER_CHART_NOT_FOUND'];
+const RELATION_CHART_PENDING_CODES: HapcardErrorCode[] = ['RELATION_CHART_NOT_FOUND'];
 
 async function callHapcard(relationId: string, mode: string): Promise<HapcardResult> {
   const res = await fetch('/api/hapcards', {
@@ -62,9 +63,17 @@ async function deleteRelation(id: string) {
   if (!res.ok) throw new Error('DELETE_FAILED');
 }
 
-function isChartPendingError(e: unknown): boolean {
+function getErrorCode(e: unknown): HapcardErrorCode | undefined {
+  return (e as { code?: HapcardErrorCode })?.code;
+}
+
+function isUserChartMissingError(e: unknown): boolean {
+  return getErrorCode(e) === 'USER_CHART_NOT_FOUND';
+}
+
+function isRelationChartPendingError(e: unknown): boolean {
   const code = (e as { code?: string })?.code;
-  return CHART_PENDING_CODES.includes(code as HapcardErrorCode);
+  return RELATION_CHART_PENDING_CODES.includes(code as HapcardErrorCode);
 }
 
 type ExpandTab = 'summary' | 'ohaeng' | 'evidence' | 'area' | 'flow';
@@ -126,7 +135,7 @@ export default function HapcardView() {
     );
   }
 
-  if (!mode || (isError && !isChartPendingError(error))) {
+  if (!mode || (isError && !isUserChartMissingError(error) && !isRelationChartPendingError(error))) {
     return (
       <main className="bg-background min-h-screen px-4 pt-8">
         <p className="font-sub text-destructive text-center py-8">{t('errors.generic')}</p>
@@ -134,7 +143,21 @@ export default function HapcardView() {
     );
   }
 
-  if (isError && isChartPendingError(error)) {
+  if (isError && isUserChartMissingError(error)) {
+    return (
+      <main className="bg-background min-h-screen px-4 pt-8">
+        <div className="rounded-2xl bg-card p-6 text-center space-y-3">
+          <p className="font-h3 text-foreground">{t('errors.userChartMissing.title')}</p>
+          <p className="font-sub text-muted-foreground">{t('errors.userChartMissing.body')}</p>
+          <Link href="/onboarding" className="inline-block text-sm text-primary underline">
+            {t('errors.userChartMissing.cta')}
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (isError && isRelationChartPendingError(error)) {
     return (
       <main className="bg-background min-h-screen px-4 pt-8">
         <div className="rounded-2xl bg-card p-6 text-center space-y-3">
@@ -151,11 +174,7 @@ export default function HapcardView() {
   if (isLoading) {
     return (
       <main className="bg-background min-h-screen px-4 pt-8">
-        <div data-testid="hapcard-skeleton" className="space-y-3 animate-pulse">
-          <div className="h-10 rounded-2xl bg-card" />
-          <div className="h-40 rounded-2xl bg-card" />
-          <div className="h-24 rounded-2xl bg-card" />
-        </div>
+        <HapcardLoadingState />
       </main>
     );
   }

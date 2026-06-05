@@ -26,13 +26,13 @@ describe('print-launch-dashboard-plan', () => {
     expect(result.stdout).toContain('체크리스트 Evidence 예시:');
     expect(result.stdout).toContain('Production Origin: project=twoday-mvp, origin=https://twoday-mvp.vercel.app, branch=main');
     expect(result.stdout).toContain('Supabase Auth: site_url=https://twoday-mvp.vercel.app, redirect=/auth/callback, providers=google+kakao');
-    expect(result.stdout).toContain('Toss: keys=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail');
+    expect(result.stdout).toContain('Toss: keys=live_gck/live_gsk present, success=/api/payments/feature/confirm, fail=/payments/fail');
     expect(result.stdout).toContain('custom_domain=not_purchased_for_mvp');
     expect(result.stdout).toContain('Vercel dashboard env는 로컬 터미널에 자동 주입되지 않는다');
     expect(result.stdout).toContain('production-equivalent env가 로드된 로컬 shell, CI, 또는 검증 환경');
     expect(result.stdout).toContain('pnpm verify:launch-readiness -- --summary-json');
     expect(result.stdout).not.toMatch(/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/);
-    expect(result.stdout).not.toMatch(/\blive_sk_[A-Za-z0-9_-]{8,}\b/);
+    expect(result.stdout).not.toMatch(/\blive_gsk_[A-Za-z0-9_-]{8,}\b/);
     expect(result.stdout).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   });
 

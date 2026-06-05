@@ -7,7 +7,7 @@
 1. 각 `TBD`를 `OK`, `PASS`, `N/A(구체적 사유)` 중 하나로 바꾼다.
 2. Evidence에는 실제 secret 값을 적지 않는다.
 3. Evidence에는 실제 증거를 적는다. `origin only`, `checked`, `presence only`, `project name only` 같은 작성 안내문을 그대로 두면 검증에 실패한다.
-4. 공개 가능한 값만 적는다: project name, origin, URL path, `proj_...` prefix, `live_ck_`/`live_sk_` prefix, alert name, owner, command PASS/FAIL.
+4. 공개 가능한 값만 적는다: project name, origin, URL path, `proj_...` prefix, `live_gck_`/`live_gsk_` prefix, alert name, owner, command PASS/FAIL.
 5. 설정을 바꾼 뒤 Vercel에서 redeploy하고 아래 Verification Commands를 다시 실행한다.
 6. `pnpm verify:external-settings-checklist`가 PASS해야 이 checklist가 완료된 것이다.
 7. `N/A(사유)`, `N/A(reason)`, `N/A(TBD)`처럼 placeholder 사유는 검증에 실패한다.
@@ -22,7 +22,7 @@
 project=twoday, origin=https://twoday-mvp.vercel.app, branch=main
 site_url=production origin, redirect=/auth/callback, providers=google+kakao
 openai_project=<선택한 project 이름>, id_prefix=proj_, zdr=confirmed
-toss=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail
+toss=live_gck/live_gsk present, success=/api/payments/feature/confirm, fail=/payments/fail
 alerts=payment-confirm-failure,llm-provider-outage,5xx-spike
 custom_domain=not_purchased_for_mvp, trigger=after_market_validation, owner=<name>
 ```
@@ -54,8 +54,8 @@ Record only presence and environment scope. Evidence must be secret-free and spe
 | `ANTHROPIC_API_KEY` | TBD | TBD | value never recorded |
 | `LLM_DAILY_BUDGET_USD` | TBD | TBD | number only |
 | `KASI_SERVICE_KEY` | TBD | TBD | value never recorded |
-| `TOSS_CLIENT_KEY` | TBD | TBD | `live_ck_...` prefix only |
-| `TOSS_SECRET_KEY` | TBD | TBD | `live_sk_...` prefix only |
+| `TOSS_CLIENT_KEY` | TBD | TBD | `live_gck_...` prefix only |
+| `TOSS_SECRET_KEY` | TBD | TBD | `live_gsk_...` prefix only |
 | `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` | TBD | TBD | public |
 | `KAKAO_ADMIN_KEY` | TBD | TBD | value never recorded |
 | `SENTRY_DSN` | TBD | TBD | value never recorded |
@@ -119,8 +119,8 @@ Project ref must be `jamhkucluhiibqpjsiov`.
 
 | Item | Result | Evidence |
 |---|---:|---|
-| Toss live client key configured | TBD | `live_ck_` prefix only |
-| Toss live secret key configured | TBD | `live_sk_` prefix only |
+| Toss live client key configured | TBD | `live_gck_` prefix only |
+| Toss live secret key configured | TBD | `live_gsk_` prefix only |
 | Success URL is `${NEXT_PUBLIC_APP_URL}/api/payments/feature/confirm` | TBD | URL path only |
 | Fail/cancel URL is `${NEXT_PUBLIC_APP_URL}/payments/fail` | TBD | URL path only |
 | Business/payment method settings approved for live traffic | TBD | checked |

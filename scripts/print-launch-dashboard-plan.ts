@@ -37,7 +37,7 @@ function printChecklistEvidenceExamples(origin: string) {
   console.log(`- Supabase Auth: site_url=${origin}, redirect=/auth/callback, providers=google+kakao`);
   console.log(`- Google/Kakao: origin=${origin}, callback=${SUPABASE_CALLBACK}`);
   console.log('- OpenAI/ZDR: project=<OpenAI project name>, id_prefix=proj_, zdr=confirmed');
-  console.log('- Toss: keys=live_ck/live_sk present, success=/api/payments/feature/confirm, fail=/payments/fail');
+  console.log('- Toss: keys=live_gck/live_gsk present, success=/api/payments/feature/confirm, fail=/payments/fail');
   console.log('- Sentry/Ops: alerts=payment-confirm-failure,llm-provider-outage,5xx-spike; owner=<name>');
   console.log('- Custom domain: custom_domain=not_purchased_for_mvp, trigger=after_market_validation, owner=<name>');
 }
@@ -93,7 +93,7 @@ function main() {
 
   console.log('');
   console.log('5. Toss Payments');
-  console.log('- live_ck_ / live_sk_ key만 Vercel env에 넣는다.');
+  console.log('- live_gck_ / live_gsk_ key만 Vercel env에 넣는다.');
   console.log('- Success/Fail URL은 위 Toss URL을 사용한다.');
   console.log('- live 저액 결제, 중복 confirm, fail/cancel, 수동 환불/취소 owner evidence를 기록한다.');
 
