@@ -15,7 +15,7 @@ export type HapcardComponent =
 // LLM 모델 식별자 (db_schema.md §5 hapcards.llm_model 허용값 — migration 0006/0026 CHECK 제약과 동일)
 export type LlmModel = 'gpt-5o' | 'gpt-5' | 'gpt-5-mini' | 'claude-fallback';
 
-// 오늘 우리는 시각 보조 데이터 — DB 저장 X, 런타임 첨부 (builder.ts → transport)
+// 오늘 케미 시각 보조 데이터 — DB 저장 X, 런타임 첨부 (builder.ts → transport)
 // ChartCore에서 파생: day_pillar(일주 chip), day_master_element(오행 컬러), five_elements_counts(오행맵 막대)
 export interface HapcardVisuals {
   user: {
@@ -92,14 +92,14 @@ export interface RoleAnalysis {
   tip: string;
 }
 
-// 오늘 우리는 결과 — db_schema.md §5 hapcards 테이블 1:1 매핑
+// 오늘 케미 결과 — db_schema.md §5 hapcards 테이블 1:1 매핑
 // ADR-035: compat_score는 결정형 (LLM 점수 개입 금지). 본 인터페이스의 score 필드는 fortune-core 출력만 저장.
 export interface HapcardResult {
   hapcard_id: string;
   user_id: string;
   relation_id: string;
   mode: Mode;
-  // 오늘 우리는은 KST 날짜별 결과다. 같은 인연/모드도 날짜가 다르면 별도 분석한다.
+  // 오늘 케미는 KST 날짜별 결과다. 같은 인연/모드도 날짜가 다르면 별도 분석한다.
   target_date: string;
   // 점수 (DDL: numeric(5,2))
   compat_score: number;

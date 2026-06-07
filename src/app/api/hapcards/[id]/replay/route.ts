@@ -23,6 +23,27 @@ import {
 } from '@/types/hapcard';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+
+function createLazyReplayDeps(
+  supabaseUserClient: BuildReplayDeps['supabaseUserClient'],
+  supabaseServiceClient: BuildReplayDeps['supabaseServiceClient'],
+): BuildReplayDeps {
+  return {
+    supabaseUserClient,
+    supabaseServiceClient,
+    openaiClient: {
+      chat: {
+        completions: {
+          create: (req, options) => {
+            const client = createOpenAiClient() as unknown as BuildReplayDeps['openaiClient'];
+            return client.chat.completions.create(req, options);
+          },
+        },
+      },
+    },
+  };
+}
 
 export async function POST(
   request: NextRequest,
@@ -59,6 +80,9 @@ export async function POST(
     .eq('hapcard_id', id)
     .eq('user_id', userId)
     .maybeSingle();
+  if (hapcardRes.error) {
+    return apiErrorResponse('INTERNAL_ERROR', hapcardRes.error.message, 500);
+  }
   if (!hapcardRes.data) {
     return apiErrorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
   }
@@ -82,6 +106,9 @@ export async function POST(
     .eq('hapcard_id', id)
     .eq('jinjin_date', jinjin_date)
     .maybeSingle();
+  if (idempotencyRes.error) {
+    return apiErrorResponse('INTERNAL_ERROR', idempotencyRes.error.message, 500);
+  }
   if (idempotencyRes.data) {
     if (await isFeatureUnlocked(serviceClient, userId, 'replay', ref)) {
       return NextResponse.json(idempotencyRes.data, { status: 200 });
@@ -101,9 +128,7 @@ export async function POST(
     replay_reason: body.replay_reason,
   };
   const deps: BuildReplayDeps = {
-    supabaseUserClient,
-    supabaseServiceClient: serviceClient,
-    openaiClient: createOpenAiClient() as unknown as BuildReplayDeps['openaiClient'],
+    ...createLazyReplayDeps(supabaseUserClient, serviceClient),
   };
 
   let charged = false;
@@ -128,6 +153,7 @@ export async function POST(
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     const message = toErrorMessage(err);
+    const safeMessage = sanitizeErrorForLog(err);
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
@@ -140,11 +166,11 @@ export async function POST(
           user_id: userId,
           hapcard_id: id,
           phase: 'build_error',
-          original_error: message,
-          refund_error: refundErr.message,
+          original_error: safeMessage,
+          refund_error: sanitizeErrorForLog(refundErr.message),
         });
       }
     }
-    return apiErrorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }
 }

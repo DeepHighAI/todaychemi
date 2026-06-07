@@ -3,10 +3,12 @@ import { deriveCacheKey } from '@/lib/hapcard/cache-key';
 import type { Mode } from '@/types/mode';
 
 const BASE = {
+  relation_id: 'rel-001',
   user_chart_hash: 'a'.repeat(64),
   relation_chart_hash: 'b'.repeat(64),
   mode: '일합' as Mode,
   prompt_version: 'v0.2',
+  model_id: 'gpt-5',
   theory_profile_version: '2026-05',
   target_date: '2026-05-21',
 };
@@ -32,7 +34,13 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
     });
   });
 
-  describe('필드 민감도 — 6필드 변경 시 다른 키', () => {
+  describe('필드 민감도 — relation + 7필드 변경 시 다른 키', () => {
+    it('relation_id 변경 → 다른 키', () => {
+      const a = deriveCacheKey(BASE);
+      const b = deriveCacheKey({ ...BASE, relation_id: 'rel-002' });
+      expect(a).not.toBe(b);
+    });
+
     it('user_chart_hash 변경 → 다른 키', () => {
       const a = deriveCacheKey(BASE);
       const b = deriveCacheKey({ ...BASE, user_chart_hash: 'c'.repeat(64) });
@@ -54,6 +62,12 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
     it('prompt_version 변경 → 다른 키', () => {
       const a = deriveCacheKey(BASE);
       const b = deriveCacheKey({ ...BASE, prompt_version: 'v0.3' });
+      expect(a).not.toBe(b);
+    });
+
+    it('model_id 변경 → 다른 키', () => {
+      const a = deriveCacheKey(BASE);
+      const b = deriveCacheKey({ ...BASE, model_id: 'gpt-5-mini' });
       expect(a).not.toBe(b);
     });
 
@@ -81,20 +95,24 @@ describe('deriveCacheKey — llm_governance §1.3', () => {
   describe('필드 순서 고정 (동일 데이터, 다른 객체 키 순서)', () => {
     it('객체 리터럴 키 순서가 달라도 동일 키', () => {
       const a = deriveCacheKey({
+        relation_id: BASE.relation_id,
         user_chart_hash: BASE.user_chart_hash,
         relation_chart_hash: BASE.relation_chart_hash,
         mode: BASE.mode,
         prompt_version: BASE.prompt_version,
+        model_id: BASE.model_id,
         theory_profile_version: BASE.theory_profile_version,
         target_date: BASE.target_date,
       });
       const b = deriveCacheKey({
         target_date: BASE.target_date,
         theory_profile_version: BASE.theory_profile_version,
+        model_id: BASE.model_id,
         prompt_version: BASE.prompt_version,
         mode: BASE.mode,
         relation_chart_hash: BASE.relation_chart_hash,
         user_chart_hash: BASE.user_chart_hash,
+        relation_id: BASE.relation_id,
       });
       expect(a).toBe(b);
     });

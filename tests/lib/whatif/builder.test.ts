@@ -36,20 +36,32 @@ const BASE_INPUT = {
   chart: MOCK_CHART_CORE,
   chart_hash: MOCK_CHART_HASH,
 };
+const EXPECTED_CACHE_KEY = deriveCacheKey({
+  chart_hash: MOCK_CHART_HASH,
+  type: 'work',
+  prompt_version: MOCK_PROMPT_VERSION,
+  model_id: 'gpt-5-mini',
+});
 
 const MOCK_EMBEDDING = Array(1536).fill(0.1) as number[];
 const MOCK_RAG_HITS: never[] = [];
 
 function makeMockUserClient(opts: {
   cacheHit?: boolean;
+  cacheError?: boolean;
+  cachedRow?: ReturnType<typeof makeMockInsertedRow>;
   insertError?: boolean;
   insertRaceConflict?: boolean;
 }) {
-  const row = makeMockInsertedRow();
+  const row = opts.cachedRow ?? makeMockInsertedRow(EXPECTED_CACHE_KEY);
   const dbRow = { whatif_id: row.id, ...row };
 
   const maybySingle = vi.fn().mockResolvedValue(
-    opts.cacheHit ? { data: dbRow, error: null } : { data: null, error: null },
+    opts.cacheError
+      ? { data: null, error: { message: 'cache lookup down' } }
+      : opts.cacheHit
+        ? { data: dbRow, error: null }
+        : { data: null, error: null },
   );
   const eqChain = { maybeSingle: maybySingle };
   const selectChain = { eq: vi.fn().mockReturnValue(eqChain) };
@@ -119,6 +131,49 @@ describe('buildWhatif', () => {
     expect(result.id).toBeDefined();
   });
 
+  it('cache hit row가 요청 type과 다르면 stale cache로 보고 반환하지 않는다', async () => {
+    const staleRow = {
+      ...makeMockInsertedRow(EXPECTED_CACHE_KEY),
+      type: 'love' as const,
+    };
+    const { client, insertFn } = makeMockUserClient({
+      cacheHit: true,
+      cachedRow: staleRow,
+    });
+
+    await expect(buildWhatif(BASE_INPUT, makeDeps(client))).rejects.toThrow('WHATIF_CACHE_MISMATCH');
+
+    expect(mockCallOpenAi).not.toHaveBeenCalled();
+    expect(insertFn).not.toHaveBeenCalled();
+  });
+
+  it('cache hit row가 현재 llm_model과 다르면 stale cache로 보고 반환하지 않는다', async () => {
+    const staleRow = {
+      ...makeMockInsertedRow(EXPECTED_CACHE_KEY),
+      llm_model: 'gpt-5',
+    };
+    const { client, insertFn } = makeMockUserClient({
+      cacheHit: true,
+      cachedRow: staleRow,
+    });
+
+    await expect(buildWhatif(BASE_INPUT, makeDeps(client))).rejects.toThrow('WHATIF_CACHE_MISMATCH');
+
+    expect(mockCallOpenAi).not.toHaveBeenCalled();
+    expect(insertFn).not.toHaveBeenCalled();
+  });
+
+  it('cache lookup error → LLM/INSERT 없이 WHATIF_CACHE_LOOKUP_FAILED', async () => {
+    const { client, insertFn } = makeMockUserClient({ cacheError: true });
+
+    await expect(buildWhatif(BASE_INPUT, makeDeps(client))).rejects.toThrow(
+      'WHATIF_CACHE_LOOKUP_FAILED',
+    );
+
+    expect(mockCallOpenAi).not.toHaveBeenCalled();
+    expect(insertFn).not.toHaveBeenCalled();
+  });
+
   it('cache miss → 전체 파이프라인 → INSERT 1회 → id 반환', async () => {
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     const { result } = await buildWhatif(BASE_INPUT, makeDeps(client));
@@ -128,13 +183,14 @@ describe('buildWhatif', () => {
     expect(result.type).toBe('work');
   });
 
-  it('cache_key = deriveCacheKey(chart_hash, type, prompt_version)', async () => {
+  it('cache_key = deriveCacheKey(chart_hash, type, prompt_version, model_id)', async () => {
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
     const expectedKey = deriveCacheKey({
       chart_hash: MOCK_CHART_HASH,
       type: 'work',
       prompt_version: MOCK_PROMPT_VERSION,
+      model_id: 'gpt-5-mini',
     });
     const insertArgs = insertFn.mock.calls[0][0];
     expect(insertArgs.cache_key).toBe(expectedKey);
@@ -203,7 +259,7 @@ describe('buildWhatif', () => {
 
   it('D4 race: INSERT 23505 → SELECT 재실행 → 기존 row 반환, callOpenAi 1회만', async () => {
     const { client, maybySingle } = makeMockUserClient({ insertRaceConflict: true });
-    const row = makeMockInsertedRow();
+    const row = makeMockInsertedRow(EXPECTED_CACHE_KEY);
     const dbRow = { whatif_id: row.id, ...row };
     maybySingle.mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: dbRow, error: null });
@@ -259,6 +315,30 @@ describe('buildWhatif', () => {
 });
 
 describe('buildWhatif — PII 가드 (AGENTS.md §5)', () => {
+  it('DB chart_core에 런타임 extra PII 키가 섞여도 callOpenAi userPayload에서 제거한다', async () => {
+    const chartWithPii = {
+      ...MOCK_CHART_CORE,
+      birth_date: '1990-01-01',
+      nickname: '민감한별명',
+      email: 'secret@example.com',
+      birth_place: 'Seoul',
+      gender: 'M',
+    } as unknown as typeof MOCK_CHART_CORE;
+    const { client } = makeMockUserClient({ cacheHit: false });
+
+    await buildWhatif({ ...BASE_INPUT, chart: chartWithPii }, makeDeps(client));
+
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    const json = JSON.stringify(callInput.userPayload);
+    expect(json).not.toMatch(/birth_date/i);
+    expect(json).not.toMatch(/nickname/i);
+    expect(json).not.toMatch(/email/i);
+    expect(json).not.toMatch(/birth_place/i);
+    expect(json).not.toMatch(/"gender"/);
+    expect(json).not.toContain('secret@example.com');
+    expect(json).not.toContain('민감한별명');
+  });
+
   it('callOpenAi userPayload JSON에 birth_date 없음', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));

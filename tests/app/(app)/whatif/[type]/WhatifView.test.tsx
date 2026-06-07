@@ -81,6 +81,23 @@ describe('WhatifView', () => {
     expect(screen.queryByTestId('error-card')).toBeNull();
   });
 
+  it('PAYMENT_REQUIRED(402) 이지만 ref 누락 → INTERNAL_ERROR ErrorCard, 결제 시트 미노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({
+        error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
+        feature: 'whatif',
+        amount_krw: 500,
+      }),
+    });
+    renderWithProviders(<WhatifView />);
+
+    expect(await screen.findByText(ERROR_COPY['INTERNAL_ERROR'])).toBeInTheDocument();
+    expect(screen.queryByTestId('feature-pay-sheet')).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('GROUNDING_FAILED → ErrorCard 노출', async () => {
     mockFetch.mockResolvedValue({
       ok: false,

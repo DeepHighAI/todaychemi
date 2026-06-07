@@ -42,6 +42,6 @@ describe('HapcardCtaBar', () => {
     const root = screen.getByTestId('hapcard-cta-bar');
     expect(root).toBeInTheDocument();
     expect(root).toHaveAttribute('role', 'region');
-    expect(root).toHaveAttribute('aria-label', '오늘 우리는 액션');
+    expect(root).toHaveAttribute('aria-label', '오늘 케미 액션');
   });
 });

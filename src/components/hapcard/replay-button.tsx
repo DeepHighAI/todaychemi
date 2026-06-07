@@ -17,16 +17,24 @@ import {
 } from '@/components/ui/dialog';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { ERROR_COPY, type ErrorCode } from '@/lib/errors/error-codes';
+import type { HapcardResult } from '@/types/hapcard';
 
 interface Props {
   hapcardId: string;
+  relationId: string;
   mode: string;
+  targetDate: string;
 }
 
 type State = 'idle' | 'loading' | 'success' | 'error';
 type DisplayCode = Extract<ErrorCode, 'REPLAY_DURING_OUTAGE' | 'HAPCARD_NOT_FOUND' | 'INTERNAL_ERROR'>;
 
-async function postReplay(hapcardId: string): Promise<unknown> {
+function getPaymentRef(e: unknown): string | null {
+  const ref = (e as { ref?: unknown })?.ref;
+  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
+async function postReplay(hapcardId: string): Promise<HapcardResult> {
   const res = await fetch(`/api/hapcards/${hapcardId}/replay`, { method: 'POST' });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -34,10 +42,10 @@ async function postReplay(hapcardId: string): Promise<unknown> {
     // 402 PAYMENT_REQUIRED 는 결제 시트용 ref 를 함께 전달.
     throw Object.assign(new Error(code), { code, ref: body?.ref, amount_krw: body?.amount_krw });
   }
-  return res.json();
+  return res.json() as Promise<HapcardResult>;
 }
 
-export function HapcardReplayButton({ hapcardId, mode }: Props) {
+export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }: Props) {
   const t = useTranslations('hapcard');
   const qc = useQueryClient();
   const sp = useSearchParams();
@@ -55,8 +63,9 @@ export function HapcardReplayButton({ hapcardId, mode }: Props) {
 
   const mutation = useMutation({
     mutationFn: () => postReplay(hapcardId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['hapcard', hapcardId] });
+    onSuccess: (result) => {
+      qc.setQueryData(['hapcard', relationId, mode, targetDate], result);
+      qc.invalidateQueries({ queryKey: ['hapcard-snapshots', hapcardId] });
       setState('success');
       timerRef.current = setTimeout(() => setOpen(false), 1500);
     },
@@ -64,7 +73,13 @@ export function HapcardReplayButton({ hapcardId, mode }: Props) {
       const e = err as { code?: string; ref?: string };
       // 잔액 부족 → 결제 시트 (현금 결제 후 ?replay=1 로 복귀 재발화).
       if (e.code === 'PAYMENT_REQUIRED') {
-        setPayRef(e.ref ?? '');
+        const ref = getPaymentRef(e);
+        if (!ref) {
+          setErrorCode('INTERNAL_ERROR');
+          setState('error');
+          return;
+        }
+        setPayRef(ref);
         setOpen(false);
         setState('idle');
         setPayOpen(true);
@@ -180,7 +195,7 @@ export function HapcardReplayButton({ hapcardId, mode }: Props) {
       <FeaturePaySheet
         feature="replay"
         featureRef={payRef}
-        next={`/hapcard/${hapcardId}?mode=${mode}`}
+        next={`/hapcard/${relationId}?mode=${encodeURIComponent(mode)}`}
         replay
         open={payOpen}
         onOpenChange={setPayOpen}

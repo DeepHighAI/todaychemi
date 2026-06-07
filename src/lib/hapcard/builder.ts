@@ -16,6 +16,7 @@ import { deriveVisuals } from '@/lib/hapcard/visuals';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
 import { SCORING_VERSION } from '@/lib/scoring/constants';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 export interface BuildHapcardInput {
   user_id: string;
@@ -48,6 +49,28 @@ export interface BuildHapcardResult {
   cacheKey: string;
 }
 
+function assertCacheRowMatchesInput(
+  row: HapcardResult,
+  input: BuildHapcardInput,
+  cacheKey: string,
+  promptVersion: string,
+): void {
+  const mismatches: string[] = [];
+
+  if (row.user_id !== input.user_id) mismatches.push('user_id');
+  if (row.relation_id !== input.relation_id) mismatches.push('relation_id');
+  if (row.mode !== input.mode) mismatches.push('mode');
+  if (row.target_date !== input.target_date) mismatches.push('target_date');
+  if (row.prompt_version !== promptVersion) mismatches.push('prompt_version');
+  if (row.cache_key !== cacheKey) mismatches.push('cache_key');
+  if (row.user_chart_hash !== input.self_chart_hash) mismatches.push('user_chart_hash');
+  if (row.relation_chart_hash !== input.relation_chart_hash) mismatches.push('relation_chart_hash');
+
+  if (mismatches.length > 0) {
+    throw new Error(`HAPCARD_CACHE_MISMATCH: ${mismatches.join(',')}`);
+  }
+}
+
 export async function getHapcardCacheKey(
   input: BuildHapcardInput,
   client: SupabaseClient,
@@ -57,12 +80,15 @@ export async function getHapcardCacheKey(
     MODE_TO_PROMPT_NAME[input.mode],
     input.user_id,
   );
+  const modelId = selectLlmModel('hapcard');
 
   return deriveCacheKey({
+    relation_id: input.relation_id,
     user_chart_hash: input.self_chart_hash,
     relation_chart_hash: input.relation_chart_hash,
     mode: input.mode,
     prompt_version: prompt.version,
+    model_id: modelId,
     theory_profile_version: input.theory_profile_version,
     target_date: input.target_date,
   });
@@ -154,13 +180,16 @@ export async function buildHapcardWithMeta(
     MODE_TO_PROMPT_NAME[input.mode],
     input.user_id,
   );
+  const llmModel = selectLlmModel('hapcard');
 
   // 2. cache key 파생 — target_date 포함: 같은 인연/모드도 KST 날짜별 별도 결과
   const cacheKey = deriveCacheKey({
+    relation_id: input.relation_id,
     user_chart_hash: input.self_chart_hash,
     relation_chart_hash: input.relation_chart_hash,
     mode: input.mode,
     prompt_version: prompt.version,
+    model_id: llmModel,
     theory_profile_version: input.theory_profile_version,
     target_date: input.target_date,
   });
@@ -175,13 +204,15 @@ export async function buildHapcardWithMeta(
     throw new Error(`HAPCARD_CACHE_LOOKUP_FAILED: ${cacheRes.error.message}`);
   }
   if (cacheRes.data) {
+    const cacheRow = cacheRes.data as HapcardResult;
+    assertCacheRowMatchesInput(cacheRow, input, cacheKey, prompt.version);
     const relation_nickname = await fetchRelationNickname(
       deps.supabaseUserClient,
       input.relation_id,
     );
     return {
       result: {
-      ...(cacheRes.data as HapcardResult),
+      ...cacheRow,
       visuals: deriveVisuals(input.self, input.relation),
       relation_nickname,
       relation_gender_normalized: input.relation.gender_normalized,
@@ -233,7 +264,6 @@ export async function buildHapcardWithMeta(
     openaiClient: deps.openaiClient,
     supabaseServiceRole: deps.supabaseServiceClient,
   };
-  const llmModel = selectLlmModel('hapcard');
   const callInput = { systemPrompt, userPayload: payload, model: llmModel };
   let llmResult = await callOpenAi(callInput, callDeps);
   let grounding = validateClassicCitations(
@@ -305,13 +335,15 @@ export async function buildHapcardWithMeta(
       .eq('cache_key', cacheKey)
       .maybeSingle();
     if (retry.data) {
+      const retryRow = retry.data as HapcardResult;
+      assertCacheRowMatchesInput(retryRow, input, cacheKey, prompt.version);
       const relation_nickname = await fetchRelationNickname(
         deps.supabaseUserClient,
         input.relation_id,
       );
       return {
         result: {
-          ...(retry.data as HapcardResult),
+          ...retryRow,
           visuals: deriveVisuals(datedCharts.self, datedCharts.relation),
           relation_nickname,
           relation_gender_normalized: datedCharts.relation.gender_normalized,
@@ -342,7 +374,11 @@ export async function buildHapcardWithMeta(
         mode_adjustment: scoreOutput.mode_adjustment,
       },
     });
-  if (snapRes.error) console.error('[hapcard] snapshot upsert failed', snapRes.error);
+  if (snapRes.error) {
+    console.error('[hapcard] snapshot upsert failed', {
+      error: sanitizeErrorForLog(snapRes.error.message),
+    });
+  }
 
   const relation_nickname = await fetchRelationNickname(
     deps.supabaseUserClient,

@@ -4,7 +4,7 @@
  * Canvas reference: type-d/screens-interactive.jsx::IHome SwipeRow list
  *
  * Improvements over original 2-col grid:
- *  - Rich rows: avatar (일주 chip), 별명, 모드+시간, 오늘온도, delta
+ *  - Rich rows: avatar (일주 chip), 별명, 모드+시간, 케미온도, delta
  *  - Top "오늘 변화 큼" 인연 1개를 mini Liquid Glass card로 강조
  *  - 좌측 스와이프 → 삭제 (확인 모달)
  */
@@ -55,7 +55,11 @@ export default function FeedPage() {
   });
   const del = useMutation({
     mutationFn: deleteRelation,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['feed'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['feed'] });
+      qc.invalidateQueries({ queryKey: ['relations'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+    },
   });
 
   const filters = useMemo<{ value: FilterMode; label: string }[]>(() => [

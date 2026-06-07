@@ -14,6 +14,11 @@ import { WhatifDoFirst } from '@/components/whatif/whatif-do-first';
 import { WhatifFirstMeetTips } from '@/components/whatif/whatif-first-meet-tips';
 import { WhatifClassicCitation } from '@/components/whatif/whatif-classic-citation';
 
+function getPaymentRef(e: unknown): string | null {
+  const ref = (e as { ref?: unknown })?.ref;
+  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
 async function callWhatif(type: DiagnosticType): Promise<WhatifResult> {
   const res = await fetch(`/api/whatif/${type}`, { method: 'POST' });
   if (!res.ok) {
@@ -47,11 +52,12 @@ export function WhatifView() {
   if (isError) {
     const err = error as { code?: string; ref?: string };
     // 402 PAYMENT_REQUIRED → 결제 시트 (ErrorCard 보다 먼저 가로채기). 닫으면 ErrorCard fallback.
-    if (err.code === 'PAYMENT_REQUIRED' && !payDismissed) {
+    const payRef = getPaymentRef(error);
+    if (err.code === 'PAYMENT_REQUIRED' && payRef && !payDismissed) {
       return (
         <FeaturePaySheet
           feature="whatif"
-          featureRef={err.ref ?? ''}
+          featureRef={payRef}
           next={`/whatif/${type}`}
           open
           onOpenChange={(o) => {
@@ -62,9 +68,10 @@ export function WhatifView() {
       );
     }
     // 그 외 에러는 ErrorCard 로 통합 처리 (CTA 는 error-codes.ts 기반)
-    const safeCode = ERROR_CODES.includes(err.code as ErrorCode)
-      ? (err.code as ErrorCode)
-      : 'INTERNAL_ERROR';
+    const safeCode =
+      err.code !== 'PAYMENT_REQUIRED' && ERROR_CODES.includes(err.code as ErrorCode)
+        ? (err.code as ErrorCode)
+        : 'INTERNAL_ERROR';
     return <ErrorCard code={safeCode} onRetry={() => refetch()} />;
   }
 

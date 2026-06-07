@@ -48,7 +48,7 @@ describe('RelationDetailPage', () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => DETAIL_OK });
     await renderDetailPage();
     expect(await screen.findAllByText('봄달')).not.toHaveLength(0);
-    expect(await screen.findByText('합카드 보기')).toBeInTheDocument();
+    expect(await screen.findByText('케미카드 보기')).toBeInTheDocument();
   });
 
   it('fetch 에러 → 에러 카드 표시', async () => {
@@ -74,7 +74,7 @@ describe('RelationDetailPage', () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue({ ok: true, json: async () => DETAIL_OK });
     await renderDetailPage();
-    const btn = await screen.findByRole('button', { name: '합카드 보기' });
+    const btn = await screen.findByRole('button', { name: '케미카드 보기' });
     await user.click(btn);
     expect(mockPush).toHaveBeenCalledWith(`/hapcard/rel-001?mode=${encodeURIComponent('친구합')}`);
   });

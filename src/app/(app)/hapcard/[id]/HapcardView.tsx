@@ -76,6 +76,11 @@ function isRelationChartPendingError(e: unknown): boolean {
   return RELATION_CHART_PENDING_CODES.includes(code as HapcardErrorCode);
 }
 
+function getPaymentRef(e: unknown): string | null {
+  const ref = (e as { ref?: unknown })?.ref;
+  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
 type ExpandTab = 'summary' | 'ohaeng' | 'evidence' | 'area' | 'flow';
 
 export default function HapcardView() {
@@ -107,6 +112,7 @@ export default function HapcardView() {
       setDeleted(true);
       qc.invalidateQueries({ queryKey: ['feed'] });
       qc.invalidateQueries({ queryKey: ['relations'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
     },
   });
 
@@ -120,11 +126,12 @@ export default function HapcardView() {
 
   // 402 PAYMENT_REQUIRED → 결제 시트 (generic 에러 분기보다 먼저 가로채기). 닫으면 generic fallback.
   const payErr = error as { code?: string; ref?: string } | null;
-  if (isError && payErr?.code === 'PAYMENT_REQUIRED' && mode && !payDismissed) {
+  const payRef = getPaymentRef(error);
+  if (isError && payErr?.code === 'PAYMENT_REQUIRED' && payRef && mode && !payDismissed) {
     return (
       <FeaturePaySheet
         feature="hapcard"
-        featureRef={payErr.ref ?? ''}
+        featureRef={payRef}
         next={`/hapcard/${id}?mode=${mode}`}
         open
         onOpenChange={(o) => {
@@ -240,7 +247,7 @@ export default function HapcardView() {
       )}
 
       <main className="bg-background min-h-screen px-4 pt-2 pb-32 space-y-3">
-        {/* ── Liquid Glass hero: 오늘온도 + 결론 + 강점/주의 ── */}
+        {/* ── Liquid Glass hero: 케미온도 + 결론 + 강점/주의 ── */}
         <section className="bg-liquid-hero rounded-[var(--r-xl)] p-5 relative overflow-hidden">
           <span aria-hidden className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
@@ -323,7 +330,12 @@ export default function HapcardView() {
         <HapcardActions actions={actionItems} />
 
         {/* ── 그럴리 없어! 다시 ── */}
-        <HapcardReplayButton hapcardId={data.hapcard_id} mode={mode!} />
+        <HapcardReplayButton
+          hapcardId={data.hapcard_id}
+          relationId={data.relation_id}
+          mode={mode!}
+          targetDate={targetDate}
+        />
       </main>
 
       {/* ── 삭제 확인 ── */}

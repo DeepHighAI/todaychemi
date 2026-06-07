@@ -131,10 +131,12 @@ const MOCK_LLM_RESULT = {
 };
 
 const EXPECTED_CACHE_KEY = deriveCacheKey({
+  relation_id: BASE_INPUT.relation_id,
   user_chart_hash: BASE_INPUT.self_chart_hash,
   relation_chart_hash: BASE_INPUT.relation_chart_hash,
   mode: BASE_INPUT.mode,
   prompt_version: MOCK_PROMPT.version,
+  model_id: 'gpt-5',
   theory_profile_version: BASE_INPUT.theory_profile_version,
   target_date: BASE_INPUT.target_date,
 });
@@ -292,7 +294,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () => {
+describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
   it('cache hit → 기존 행 반환, callOpenAi 호출 0회, INSERT 0회', async () => {
     const existingRow = makeInsertedRow(EXPECTED_CACHE_KEY);
     const { client, insert } = makeMockUserClient({ cachedRow: existingRow });
@@ -300,6 +302,37 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     const result = await buildHapcard(BASE_INPUT, makeDeps(client));
 
     expect(result.hapcard_id).toBe(existingRow.hapcard_id);
+    expect(callOpenAi).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('cache hit row가 요청 relation_id와 다르면 stale cache로 보고 반환하지 않는다', async () => {
+    const staleRow = {
+      ...makeInsertedRow(EXPECTED_CACHE_KEY),
+      relation_id: 'rel-other',
+    };
+    const { client, insert } = makeMockUserClient({
+      cachedRow: staleRow,
+      relationNickname: '현재 인연',
+    });
+
+    await expect(buildHapcard(BASE_INPUT, makeDeps(client))).rejects.toThrow('HAPCARD_CACHE_MISMATCH');
+
+    expect(callOpenAi).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('cache hit row가 fallback llm_model이어도 cache_key가 현재 routed model 기준이면 반환한다', async () => {
+    const fallbackRow = {
+      ...makeInsertedRow(EXPECTED_CACHE_KEY),
+      llm_model: 'claude-fallback' as const,
+    };
+    const { client, insert } = makeMockUserClient({ cachedRow: fallbackRow });
+
+    const result = await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    expect(result.hapcard_id).toBe(fallbackRow.hapcard_id);
+    expect(result.llm_model).toBe('claude-fallback');
     expect(callOpenAi).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
@@ -368,7 +401,7 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     });
   });
 
-  it('cache_key = sha256(self_hash + rel_hash + mode + prompt.version + theory_profile_version + target_date)', async () => {
+  it('cache_key = sha256(relation_id + self_hash + rel_hash + mode + prompt.version + llm_model + theory_profile_version + target_date)', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));
@@ -386,7 +419,7 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     expect(insertCall.prompt_version).toBe(MOCK_PROMPT.version);
   });
 
-  it('합카드 모델은 gpt-5로 호출하고 저장한다', async () => {
+  it('케미카드 모델은 gpt-5로 호출하고 저장한다', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 
     await buildHapcard(BASE_INPUT, makeDeps(client));
@@ -631,6 +664,26 @@ describe('buildHapcard — 오늘 우리는 빌더 오케스트레이터', () =>
     expect(row.scoring_version).toBe('1');
     expect(row.prompt_version).toBe(MOCK_PROMPT.version);
     expect(row.target_date).toBe(BASE_INPUT.target_date);
+  });
+
+  it('hapcard_score_snapshots upsert 실패 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+    const { client: svcClient, snapshotUpsert } = makeMockServiceClientWithSnapshot();
+    snapshotUpsert.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'snapshot failed birth_date=1995-06-15 birth_time=10:30:00 gender=F' },
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await buildHapcard(BASE_INPUT, makeDeps(client, svcClient));
+
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1995-06-15');
+    expect(calls).not.toContain('10:30:00');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 
   it('cache hit → hapcard_score_snapshots upsert 0회', async () => {

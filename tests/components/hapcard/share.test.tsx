@@ -44,8 +44,8 @@ const CREATE_RESPONSE = {
   share_id: '550e8400-e29b-41d4-a716-446655440001',
   url: 'https://hap.plae/h/share-token',
   og_image_url: 'https://hap.plae/api/og/share/share-token',
-  title: '봄달님과의 친구 사이',
-  text: '봄달님과의 오늘온도: 38.4°C · 오늘사이에서 확인해봐',
+  title: '봄달님과의 친구 관계',
+  text: '봄달님과의 케미온도: 38.4°C · 오늘케미에서 확인해봐',
   expires_at: '2026-06-23T00:00:00.000Z',
 };
 
@@ -69,20 +69,20 @@ describe('HapcardShare', () => {
     expect(document.querySelector('[data-testid="hapcard-share"]')).not.toBeNull();
   });
 
-  it('"오늘 우리는 공유하기" 버튼 표시', () => {
+  it('"오늘 케미 공유하기" 버튼 표시', () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    expect(screen.getByRole('button', { name: '오늘 우리는 공유하기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '오늘 케미 공유하기' })).toBeInTheDocument();
   });
 
   it('버튼 클릭 → ShareSheet 열림 (카카오톡 버튼 표시)', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 케미 공유하기' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '카카오톡' })).toBeInTheDocument());
   });
 
   it('링크 복사 클릭 → share token 생성 후 copyShareLink 호출, 보상 API 미호출', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 케미 공유하기' }));
     await waitFor(() => screen.getByRole('button', { name: '링크 복사' }));
     fireEvent.click(screen.getByRole('button', { name: '링크 복사' }));
 
@@ -100,7 +100,7 @@ describe('HapcardShare', () => {
 
   it('인스타그램/카드 공유 성공 → 보상 API 없이 공유 완료 메시지 표시', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 케미 공유하기' }));
     await waitFor(() => screen.getByRole('button', { name: '인스타그램/카드' }));
     fireEvent.click(screen.getByRole('button', { name: '인스타그램/카드' }));
 
@@ -111,7 +111,7 @@ describe('HapcardShare', () => {
 
   it('카카오톡 클릭 → Kakao SDK 호출, client complete API는 호출하지 않음', async () => {
     renderWithProviders(<HapcardShare {...SHARE_PROPS} />);
-    fireEvent.click(screen.getByRole('button', { name: '오늘 우리는 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '오늘 케미 공유하기' }));
     await waitFor(() => screen.getByRole('button', { name: '카카오톡' }));
     fireEvent.click(screen.getByRole('button', { name: '카카오톡' }));
 

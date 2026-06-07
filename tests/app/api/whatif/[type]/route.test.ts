@@ -177,6 +177,25 @@ describe('POST /api/whatif/[type]', () => {
     expect(buildWhatif).not.toHaveBeenCalled();
   });
 
+  it('user_charts lookup DB 에러 응답에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const supabase = makeAuthedClient({
+      chartError: { message: 'lookup failed birth_date=1991-03-15 birth_time=14:30 gender=F' },
+    });
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+
+    const res = await POST(makeRequest(), makeParams('work'));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(body)).not.toContain('1991-03-15');
+    expect(JSON.stringify(body)).not.toContain('14:30');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    expect(JSON.stringify(body)).toContain('birth_date=[redacted]');
+    expect(JSON.stringify(body)).toContain('birth_time=[redacted]');
+    expect(JSON.stringify(body)).toContain('gender=[redacted]');
+    expect(buildWhatif).not.toHaveBeenCalled();
+  });
+
   it('422 GROUNDING_FAILED → buildWhatif 가 GROUNDING_FAILED throw', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const supabase = makeAuthedClient({});
@@ -190,7 +209,7 @@ describe('POST /api/whatif/[type]', () => {
     expect(body.error.code).toBe('GROUNDING_FAILED');
     expect(consoleSpy).toHaveBeenCalledWith(
       'whatif_build_failed',
-      expect.objectContaining({ type: 'work', error: 'GROUNDING_FAILED: []' }),
+      expect.objectContaining({ type: 'work', error: 'Error: GROUNDING_FAILED: []' }),
     );
     consoleSpy.mockRestore();
   });
@@ -208,6 +227,7 @@ describe('POST /api/whatif/[type]', () => {
   });
 
   it('500 INTERNAL_ERROR → buildWhatif 가 generic error throw', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const supabase = makeAuthedClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
     vi.mocked(buildWhatif).mockRejectedValue(new Error('unexpected crash'));
@@ -217,6 +237,31 @@ describe('POST /api/whatif/[type]', () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe('INTERNAL_ERROR');
+    consoleSpy.mockRestore();
+  });
+
+  it('buildWhatif 실패 로그와 응답에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const supabase = makeAuthedClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    rpcFn.mockResolvedValueOnce({ data: null, error: { message: 'refund birth_time=14:30' } });
+    vi.mocked(buildWhatif).mockRejectedValue(
+      new Error('unexpected birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+
+    const res = await POST(makeRequest(), makeParams('work'));
+    const body = await res.json();
+
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1991-03-15');
+    expect(logged).not.toContain('14:30');
+    expect(logged).not.toContain('gender=F');
+    expect(JSON.stringify(body)).not.toContain('1991-03-15');
+    expect(JSON.stringify(body)).not.toContain('14:30');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    expect(logged).toContain('birth_date=[redacted]');
+    expect(logged).toContain('birth_time=[redacted]');
+    consoleSpy.mockRestore();
   });
 
   it('buildWhatif 호출 시 input.user_id, type, chart, chart_hash 정확히 전달', async () => {
@@ -233,7 +278,7 @@ describe('POST /api/whatif/[type]', () => {
     expect(input.chart_hash).toBe(MOCK_CHART_HASH);
   });
 
-  it('buildWhatif deps — 5개 필드 모두 정확히 전달', async () => {
+  it('buildWhatif deps — DB/RAG는 직접 전달하고 LLM 클라이언트는 lazy wrapper로 전달', async () => {
     const supabase = makeAuthedClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
 
@@ -242,13 +287,45 @@ describe('POST /api/whatif/[type]', () => {
     const [, deps] = vi.mocked(buildWhatif).mock.calls[0];
     expect(deps.supabaseUserClient).toBe(supabase);
     expect(deps.supabaseServiceClient).toBe(SERVICE_CLIENT);
-    expect(deps.openaiClient).toBe(OPENAI_CLIENT);
-    expect(deps.embeddingsClient).toBe(EMBEDDINGS_CLIENT);
     expect(deps.ragQueryText).toBe(buildWhatifRagQueryText);
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+    expect(createEmbeddingsClient).not.toHaveBeenCalled();
+
+    await deps.openaiClient.chat.completions.create({ model: 'gpt-5-mini' });
+    expect(createOpenAiClient).toHaveBeenCalledTimes(1);
+    expect(OPENAI_CLIENT.chat.completions.create).toHaveBeenCalledWith(
+      { model: 'gpt-5-mini' },
+      undefined,
+    );
+
+    await deps.embeddingsClient.create({ model: 'text-embedding-3-small', input: 'query' });
+    expect(createEmbeddingsClient).toHaveBeenCalledTimes(1);
+    expect(EMBEDDINGS_CLIENT.create).toHaveBeenCalledWith({
+      model: 'text-embedding-3-small',
+      input: 'query',
+    });
+  });
+
+  it('pay_required + 일일 한도 초과는 LLM 클라이언트를 만들지 않고 429로 멈춘다', async () => {
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({
+      mode: 'pay_required',
+      price: FEATURE_PRICES_KRW.whatif,
+      charged: false,
+    });
+    vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: false, count: 5, limit: 5 });
+    const supabase = makeAuthedClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(429);
+    expect(buildWhatif).not.toHaveBeenCalled();
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+    expect(createEmbeddingsClient).not.toHaveBeenCalled();
   });
 });
 
-describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
+describe('만약에 우리 유료 이용 (pay-per-use 모델 C)', () => {
   function makeAuthedForPaidUse(opts?: Parameters<typeof makeAuthedClient>[0]) {
     const supabase = makeAuthedClient({});
     const client = opts ? makeAuthedClient(opts) : supabase;
@@ -267,7 +344,7 @@ describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('whatif');
     expect(body.ref).toBe(WHATIF_RESULT.cache_key);
-    expect(body.amount_krw).toBe(500);
+    expect(body.amount_krw).toBe(800);
     expect(buildWhatif).toHaveBeenCalledOnce(); // 선생성
     expect(rpcFn).not.toHaveBeenCalled();
   });
@@ -314,7 +391,7 @@ describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
     expect(res.status).toBe(422);
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: USER_ID,
-      delta: 5,
+      delta: 8,
       reason: 'whatif_refund',
       ref: WHATIF_RESULT.cache_key,
     });
@@ -329,7 +406,7 @@ describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
     expect(res.status).toBe(500);
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: USER_ID,
-      delta: 5,
+      delta: 8,
       reason: 'whatif_refund',
       ref: WHATIF_RESULT.cache_key,
     });
@@ -345,6 +422,22 @@ describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
     expect(res.status).toBe(200);
     expect(rpcFn).not.toHaveBeenCalled();
     expect(checkCashGenLimit).not.toHaveBeenCalled();
+  });
+
+  it('unlocked + buildWhatif cache hit 경로는 route 레벨에서 LLM 클라이언트를 즉시 만들지 않는다', async () => {
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({
+      mode: 'unlocked',
+      price: FEATURE_PRICES_KRW.whatif,
+      charged: false,
+    });
+    vi.mocked(buildWhatif).mockResolvedValue({ result: WHATIF_RESULT, fromCache: true } as never);
+    makeAuthedForPaidUse({ whatifCache: { whatif_id: WHATIF_RESULT.id } });
+
+    const res = await POST(makeRequest(), makeParams('work'));
+
+    expect(res.status).toBe(200);
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+    expect(createEmbeddingsClient).not.toHaveBeenCalled();
   });
 
   it('unlocked 빌드 성공 시 환불 실패 로그를 남기지 않는다', async () => {
@@ -408,6 +501,6 @@ describe('만약합 유료 이용 (pay-per-use 모델 C)', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('whatif');
-    expect(body.amount_krw).toBe(500);
+    expect(body.amount_krw).toBe(800);
   });
 });

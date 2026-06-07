@@ -16,11 +16,36 @@ import { DiagnosticTypeSchema, type WhatifErrorCode } from '@/types/diagnostic';
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { fetchLatestUserChart } from '@/lib/chart/queries';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
+}
+
+function createLazyWhatifDeps(
+  supabaseUserClient: BuildWhatifDeps['supabaseUserClient'],
+  supabaseServiceClient: BuildWhatifDeps['supabaseServiceClient'],
+): BuildWhatifDeps {
+  return {
+    supabaseUserClient,
+    supabaseServiceClient,
+    openaiClient: {
+      chat: {
+        completions: {
+          create: (req, options) => {
+            const client = createOpenAiClient() as unknown as BuildWhatifDeps['openaiClient'];
+            return client.chat.completions.create(req, options);
+          },
+        },
+      },
+    },
+    embeddingsClient: {
+      create: (params) => createEmbeddingsClient().create(params),
+    },
+    ragQueryText: buildWhatifRagQueryText,
+  };
 }
 
 export async function POST(
@@ -46,7 +71,11 @@ export async function POST(
   // 3. user_charts fetch — latest by created_at (self-anchor, theory_profile_version 미사용)
   const userChartRes = await fetchLatestUserChart(supabaseUserClient, userId);
   if (userChartRes.error) {
-    return apiErrorResponse('INTERNAL_ERROR', `user_charts lookup: ${userChartRes.error.message}`, 500);
+    return apiErrorResponse(
+      'INTERNAL_ERROR',
+      `user_charts lookup: ${sanitizeErrorForLog(userChartRes.error.message)}`,
+      500,
+    );
   }
   if (!userChartRes.data) {
     return apiErrorResponse('USER_CHART_NOT_FOUND', 'user chart not found', 404);
@@ -61,13 +90,7 @@ export async function POST(
     chart_hash: userChart.chart_hash,
   };
   const serviceClient = createServiceRoleClient();
-  const deps: BuildWhatifDeps = {
-    supabaseUserClient,
-    supabaseServiceClient: serviceClient,
-    openaiClient: createOpenAiClient() as unknown as BuildWhatifDeps['openaiClient'],
-    embeddingsClient: createEmbeddingsClient(),
-    ragQueryText: buildWhatifRagQueryText,
-  };
+  const deps = createLazyWhatifDeps(supabaseUserClient, serviceClient);
 
   // pay-per-use 게이트 (ADR-039, 모델 C). ref = whatif cacheKey.
   let charged = false;
@@ -97,6 +120,7 @@ export async function POST(
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const message = toErrorMessage(err);
+    const safeMessage = sanitizeErrorForLog(err);
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
@@ -108,15 +132,15 @@ export async function POST(
         console.error('whatif_refund_failed', {
           user_id: userId,
           type,
-          original_error: message,
-          refund_error: refundErr.message,
+          original_error: safeMessage,
+          refund_error: sanitizeErrorForLog(refundErr.message),
         });
       }
     }
-    console.error('whatif_build_failed', { user_id: userId, type, error: message });
+    console.error('whatif_build_failed', { user_id: userId, type, error: safeMessage });
     if (message.startsWith('GROUNDING_FAILED')) {
-      return apiErrorResponse('GROUNDING_FAILED', message, 422);
+      return apiErrorResponse('GROUNDING_FAILED', safeMessage, 422);
     }
-    return apiErrorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }
 }

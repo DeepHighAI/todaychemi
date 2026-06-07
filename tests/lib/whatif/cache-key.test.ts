@@ -6,6 +6,7 @@ const BASE = {
   chart_hash: 'a'.repeat(64),
   type: 'work' as DiagnosticType,
   prompt_version: 'v0.1',
+  model_id: 'gpt-5-mini',
 };
 
 describe('deriveCacheKey (whatif) — 결정성 + 민감도', () => {
@@ -22,6 +23,12 @@ describe('deriveCacheKey (whatif) — 결정성 + 민감도', () => {
   it('다른 prompt_version → 다른 hash', () => {
     const a = deriveCacheKey(BASE);
     const b = deriveCacheKey({ ...BASE, prompt_version: 'v0.2' });
+    expect(a).not.toBe(b);
+  });
+
+  it('다른 model_id → 다른 hash', () => {
+    const a = deriveCacheKey(BASE);
+    const b = deriveCacheKey({ ...BASE, model_id: 'gpt-5' });
     expect(a).not.toBe(b);
   });
 });

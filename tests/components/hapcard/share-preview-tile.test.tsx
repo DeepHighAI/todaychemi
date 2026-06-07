@@ -24,10 +24,10 @@ describe('HapcardSharePreviewTile', () => {
     expect(tile.className).toMatch(/aspect-square/);
   });
 
-  it('닉네임 + 모드 + 오늘온도 노출', () => {
+  it('닉네임 + 모드 + 케미온도 노출', () => {
     renderWithProviders(<HapcardSharePreviewTile hapcard={MOCK} range="nickname-only" />);
     expect(screen.getByText(/봄달/)).toBeInTheDocument();
-    expect(screen.getByText(/끌리는 사이/)).toBeInTheDocument();
+    expect(screen.getByText(/썸 관계/)).toBeInTheDocument();
     expect(screen.getByText('38.2')).toBeInTheDocument();
     expect(screen.getByText('°C')).toBeInTheDocument();
     expect(screen.queryByText('73')).toBeNull();

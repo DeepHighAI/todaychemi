@@ -22,7 +22,7 @@ describe('HapcardAppBar', () => {
   it('타이틀과 testid 렌더', () => {
     renderWithProviders(<HapcardAppBar />);
     expect(screen.getByTestId('hapcard-app-bar')).toBeInTheDocument();
-    expect(screen.getByText('오늘 우리는')).toBeInTheDocument();
+    expect(screen.getByText('오늘 케미')).toBeInTheDocument();
   });
 
   it('back 버튼 클릭 시 router.back() 호출', async () => {

@@ -309,7 +309,26 @@ describe('POST /api/hapcards', () => {
     expect(buildHapcard).not.toHaveBeenCalled();
   });
 
+  it('500 → lazy relation chart DB 오류는 lookup failed 로 반환하고 build 미호출', async () => {
+    const supabase = makeAuthedSupabaseClient({ relationChart: null });
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(ensureRelationChartRow).mockRejectedValueOnce(
+      new Error('upsert failed birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('RELATION_CHART_LOOKUP_FAILED');
+    expect(JSON.stringify(body)).not.toContain('1995-06-15');
+    expect(JSON.stringify(body)).not.toContain('10:30:00');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    expect(buildHapcard).not.toHaveBeenCalled();
+  });
+
   it('500 → buildHapcard 가 unexpected error throw', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const supabase = makeAuthedSupabaseClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
     vi.mocked(buildHapcard).mockRejectedValue(new Error('UNEXPECTED: db crashed'));
@@ -321,10 +340,35 @@ describe('POST /api/hapcards', () => {
     expect(body.error.code).toBe('INTERNAL_ERROR');
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: 'user-uuid-001',
-      delta: 8,
+      delta: 10,
       reason: 'hapcard_refund',
       ref: 'cache-key-abc',
     });
+    consoleSpy.mockRestore();
+  });
+
+  it('buildHapcard 실패 로그와 응답에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    rpcFn.mockResolvedValueOnce({ data: null, error: { message: 'refund birth_date=1995-06-15' } });
+    vi.mocked(buildHapcard).mockRejectedValue(
+      new Error('UNEXPECTED birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+
+    const res = await POST(makeRequest(VALID_BODY));
+    const body = await res.json();
+
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1995-06-15');
+    expect(logged).not.toContain('10:30:00');
+    expect(logged).not.toContain('gender=F');
+    expect(JSON.stringify(body)).not.toContain('1995-06-15');
+    expect(JSON.stringify(body)).not.toContain('10:30:00');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    expect(logged).toContain('birth_date=[redacted]');
+    expect(logged).toContain('birth_time=[redacted]');
+    consoleSpy.mockRestore();
   });
 
   it('422 → buildHapcard 가 GROUNDING_FAILED throw', async () => {
@@ -339,7 +383,7 @@ describe('POST /api/hapcards', () => {
     expect(body.error.code).toBe('GROUNDING_FAILED');
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: 'user-uuid-001',
-      delta: 8,
+      delta: 10,
       reason: 'hapcard_refund',
       ref: 'cache-key-abc',
     });
@@ -357,7 +401,7 @@ describe('POST /api/hapcards', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('hapcard');
     expect(body.ref).toBe('cache-key-abc');
-    expect(body.amount_krw).toBe(800);
+    expect(body.amount_krw).toBe(1000);
     // 선생성: buildHapcard 는 호출되되 본문은 반환하지 않음
     expect(buildHapcard).toHaveBeenCalledOnce();
     // 현금 경로는 부적 차감/환불 없음
@@ -376,6 +420,24 @@ describe('POST /api/hapcards', () => {
     const body = await res.json();
     expect(body.error.code).toBe('RATE_LIMITED');
     expect(buildHapcard).not.toHaveBeenCalled();
+  });
+
+  it('pay_required + 일일 한도 초과는 LLM 클라이언트를 만들지 않고 429로 멈춘다', async () => {
+    const supabase = makeAuthedSupabaseClient({});
+    vi.mocked(createServerClient).mockResolvedValue(supabase as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({
+      mode: 'pay_required',
+      price: FEATURE_PRICES_KRW.hapcard,
+      charged: false,
+    });
+    vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: false, count: 5, limit: 5 });
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(429);
+    expect(buildHapcard).not.toHaveBeenCalled();
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+    expect(createEmbeddingsClient).not.toHaveBeenCalled();
   });
 
   it('pay_required 선생성 중 GROUNDING_FAILED → 422, 환불 없음', async () => {
@@ -456,10 +518,10 @@ describe('POST /api/hapcards', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('hapcard');
-    expect(body.amount_krw).toBe(800);
+    expect(body.amount_krw).toBe(1000);
   });
 
-  it('buildHapcard 호출 시 user_id, relation_id, mode, charts, hashes 정확히 전달', async () => {
+  it('buildHapcard 호출 시 input은 정확하고 LLM deps는 lazy wrapper로 전달', async () => {
     const supabase = makeAuthedSupabaseClient({});
     vi.mocked(createServerClient).mockResolvedValue(supabase as never);
 
@@ -478,9 +540,23 @@ describe('POST /api/hapcards', () => {
     expect(input.target_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(deps.supabaseUserClient).toBe(supabase);
     expect(deps.supabaseServiceClient).toBe(SERVICE_CLIENT);
-    expect(deps.openaiClient).toBe(OPENAI_CLIENT);
-    expect(deps.embeddingsClient).toBe(EMBEDDINGS_CLIENT);
     expect(deps.ragQueryText).toBe(buildRagQueryText);
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+    expect(createEmbeddingsClient).not.toHaveBeenCalled();
+
+    await deps.openaiClient.chat.completions.create({ model: 'gpt-5-mini' });
+    expect(createOpenAiClient).toHaveBeenCalledTimes(1);
+    expect(OPENAI_CLIENT.chat.completions.create).toHaveBeenCalledWith(
+      { model: 'gpt-5-mini' },
+      undefined,
+    );
+
+    await deps.embeddingsClient.create({ model: 'text-embedding-3-small', input: 'query' });
+    expect(createEmbeddingsClient).toHaveBeenCalledTimes(1);
+    expect(EMBEDDINGS_CLIENT.create).toHaveBeenCalledWith({
+      model: 'text-embedding-3-small',
+      input: 'query',
+    });
   });
 
   it('question_slot 옵션 필드는 그대로 builder 에 전달', async () => {

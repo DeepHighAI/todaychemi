@@ -23,10 +23,35 @@ import { HapcardRequestSchema, type HapcardRequest, type HapcardErrorCode } from
 import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;
+}
+
+function createLazyHapcardDeps(
+  supabaseUserClient: BuildHapcardDeps['supabaseUserClient'],
+  supabaseServiceClient: BuildHapcardDeps['supabaseServiceClient'],
+): BuildHapcardDeps {
+  return {
+    supabaseUserClient,
+    supabaseServiceClient,
+    openaiClient: {
+      chat: {
+        completions: {
+          create: (req, options) => {
+            const client = createOpenAiClient() as unknown as BuildHapcardDeps['openaiClient'];
+            return client.chat.completions.create(req, options);
+          },
+        },
+      },
+    },
+    embeddingsClient: {
+      create: (params) => createEmbeddingsClient().create(params),
+    },
+    ragQueryText: buildRagQueryText,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -80,13 +105,21 @@ export async function POST(request: NextRequest) {
   }
   let relationChart = relationChartRes.data as unknown as ChartRow | null;
   if (!relationChart) {
-    relationChart = await ensureRelationChartRow(
-      supabaseUserClient,
-      body.relation_id,
-      userId,
-      process.env.KASI_SERVICE_KEY ?? '',
-      body.theory_profile_version,
-    ) as unknown as ChartRow | null;
+    try {
+      relationChart = await ensureRelationChartRow(
+        supabaseUserClient,
+        body.relation_id,
+        userId,
+        process.env.KASI_SERVICE_KEY ?? '',
+        body.theory_profile_version,
+      ) as unknown as ChartRow | null;
+    } catch (err) {
+      return apiErrorResponse(
+        'RELATION_CHART_LOOKUP_FAILED',
+        sanitizeErrorForLog(err),
+        500,
+      );
+    }
   }
   if (!relationChart) {
     return apiErrorResponse(
@@ -111,13 +144,7 @@ export async function POST(request: NextRequest) {
   };
 
   const serviceClient = createServiceRoleClient();
-  const deps: BuildHapcardDeps = {
-    supabaseUserClient,
-    supabaseServiceClient: serviceClient,
-    openaiClient: createOpenAiClient() as unknown as BuildHapcardDeps['openaiClient'],
-    embeddingsClient: createEmbeddingsClient(),
-    ragQueryText: buildRagQueryText,
-  };
+  const deps = createLazyHapcardDeps(supabaseUserClient, serviceClient);
 
   // pay-per-use 게이트 (ADR-039, 모델 C). charged=true 는 mode==='free' 신규 차감일 때만 —
   // 생성 실패 시 그 경우에만 환불. pay_required 는 선생성 후 402(본문 보류), 현금결제는 별도 라우트.
@@ -150,8 +177,9 @@ export async function POST(request: NextRequest) {
     const result = await buildHapcard(input, deps);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
-    console.error('[POST /api/hapcards]', err);
     const message = toErrorMessage(err);
+    const safeMessage = sanitizeErrorForLog(err);
+    console.error('[POST /api/hapcards]', { error: safeMessage });
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
@@ -163,14 +191,14 @@ export async function POST(request: NextRequest) {
         console.error('hapcard_refund_failed', {
           user_id: userId,
           relation_id: input.relation_id,
-          original_error: message,
-          refund_error: refundErr.message,
+          original_error: safeMessage,
+          refund_error: sanitizeErrorForLog(refundErr.message),
         });
       }
     }
     if (message.startsWith('GROUNDING_FAILED')) {
-      return apiErrorResponse('GROUNDING_FAILED', message, 422);
+      return apiErrorResponse('GROUNDING_FAILED', safeMessage, 422);
     }
-    return apiErrorResponse('INTERNAL_ERROR', message, 500);
+    return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }
 }

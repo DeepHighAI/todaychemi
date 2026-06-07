@@ -35,6 +35,47 @@ export interface BuildWhatifDeps {
   ragQueryText: (input: BuildWhatifInput) => string;
 }
 
+function projectChartCoreForWhatif(chart: ChartCore): ChartCore {
+  return {
+    year_pillar: chart.year_pillar,
+    month_pillar: chart.month_pillar,
+    day_pillar: chart.day_pillar,
+    hour_pillar: chart.hour_pillar,
+    day_master_element: chart.day_master_element,
+    five_elements_counts: {
+      목: chart.five_elements_counts.목,
+      화: chart.five_elements_counts.화,
+      토: chart.five_elements_counts.토,
+      금: chart.five_elements_counts.금,
+      수: chart.five_elements_counts.수,
+    },
+    gender_normalized: chart.gender_normalized,
+    yunse: {
+      daeun: {
+        start_age: chart.yunse.daeun.start_age,
+        list: chart.yunse.daeun.list.map((item) => ({
+          age: item.age,
+          pillar: item.pillar,
+          year: item.year,
+        })),
+        current_index: chart.yunse.daeun.current_index,
+      },
+      seyun: {
+        current_pillar: chart.yunse.seyun.current_pillar,
+        current_year: chart.yunse.seyun.current_year,
+      },
+      wolun: {
+        current_pillar: chart.yunse.wolun.current_pillar,
+        current_month: chart.yunse.wolun.current_month,
+      },
+      iliun: {
+        today_pillar: chart.yunse.iliun.today_pillar,
+        today_date: chart.yunse.iliun.today_date,
+      },
+    },
+  };
+}
+
 function mapDbRow(data: unknown): WhatifResult {
   const r = data as {
     whatif_id: string;
@@ -60,12 +101,34 @@ function mapDbRow(data: unknown): WhatifResult {
   };
 }
 
+function assertCacheRowMatchesInput(
+  row: WhatifResult,
+  input: BuildWhatifInput,
+  cacheKey: string,
+  promptVersion: string,
+  modelId: string,
+): void {
+  const mismatches: string[] = [];
+
+  if (row.user_id !== input.user_id) mismatches.push('user_id');
+  if (row.type !== input.type) mismatches.push('type');
+  if (row.prompt_version !== promptVersion) mismatches.push('prompt_version');
+  if (row.llm_model !== modelId) mismatches.push('llm_model');
+  if (row.cache_key !== cacheKey) mismatches.push('cache_key');
+  if (row.chart_hash !== input.chart_hash) mismatches.push('chart_hash');
+
+  if (mismatches.length > 0) {
+    throw new Error(`WHATIF_CACHE_MISMATCH: ${mismatches.join(',')}`);
+  }
+}
+
 export function getWhatifCacheKey(input: BuildWhatifInput): string {
   const prompt = loadWhatifPrompt(input.type);
   return deriveCacheKey({
     chart_hash: input.chart_hash,
     type: input.type,
     prompt_version: prompt.version,
+    model_id: DEFAULT_LLM_MODEL,
   });
 }
 
@@ -75,12 +138,14 @@ export async function buildWhatif(
 ): Promise<BuildWhatifResult> {
   // 1. 프롬프트 로드
   const prompt = loadWhatifPrompt(input.type);
+  const modelId = DEFAULT_LLM_MODEL;
 
   // 2. 캐시 키 파생
   const cacheKey = deriveCacheKey({
     chart_hash: input.chart_hash,
     type: input.type,
     prompt_version: prompt.version,
+    model_id: modelId,
   });
 
   // 3. 캐시 조회 — 히트 시 즉시 반환
@@ -89,8 +154,13 @@ export async function buildWhatif(
     .select('*')
     .eq('cache_key', cacheKey)
     .maybeSingle();
+  if (cacheRes.error) {
+    throw new Error(`WHATIF_CACHE_LOOKUP_FAILED: ${cacheRes.error.message}`);
+  }
   if (cacheRes.data) {
-    return { result: mapDbRow(cacheRes.data), fromCache: true, cacheKey };
+    const cachedRow = mapDbRow(cacheRes.data);
+    assertCacheRowMatchesInput(cachedRow, input, cacheKey, prompt.version, modelId);
+    return { result: cachedRow, fromCache: true, cacheKey };
   }
 
   // 4. RAG retrieval
@@ -102,7 +172,7 @@ export async function buildWhatif(
   const systemPrompt = `${prompt.content}\n\n${JSON.stringify(ragHits, null, 2)}`;
 
   // 6. PII payload (AGENTS.md §5 — self_chart_core + type만 허용)
-  const userPayload = { self_chart_core: input.chart, type: input.type };
+  const userPayload = { self_chart_core: projectChartCoreForWhatif(input.chart), type: input.type };
   const payloadWhitelist = new Set(['self_chart_core', 'type']);
 
   // 7. LLM 호출 + grounding 검증 (최대 1회 재시도)
@@ -115,7 +185,7 @@ export async function buildWhatif(
     userPayload,
     schema: WhatifLlmOutputSchema,
     payloadWhitelist,
-    model: DEFAULT_LLM_MODEL,
+    model: modelId,
   };
 
   // validateClassicCitations는 HapcardLlmOutput 타입으로 정의되어 있으나 runtime 사용 필드는 동일 — 안전한 캐스트
@@ -149,7 +219,7 @@ export async function buildWhatif(
       ...(llmResult.output.classic_citation?.length && { classic_citation: llmResult.output.classic_citation }),
     } satisfies WhatifContent,
     prompt_version: prompt.version,
-    llm_model: DEFAULT_LLM_MODEL,
+    llm_model: modelId,
     cache_key: cacheKey,
     chart_hash: input.chart_hash,
   };
@@ -166,7 +236,11 @@ export async function buildWhatif(
         .select('*')
         .eq('cache_key', cacheKey)
         .maybeSingle();
-      if (retry.data) return { result: mapDbRow(retry.data), fromCache: true, cacheKey };
+      if (retry.data) {
+        const retryRow = mapDbRow(retry.data);
+        assertCacheRowMatchesInput(retryRow, input, cacheKey, prompt.version, modelId);
+        return { result: retryRow, fromCache: true, cacheKey };
+      }
       throw new Error('WHATIF_INSERT_FAILED: race recovery missed');
     }
     throw new Error(`WHATIF_INSERT_FAILED: ${insertRes.error.message}`);

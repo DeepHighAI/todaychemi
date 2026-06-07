@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/supabase/service-role');
 vi.mock('@/lib/replay/builder');
+vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/payments/feature-gate');
 vi.mock('@/lib/payments/cash-gen-limit');
 vi.mock('@/lib/payments/feature-unlock');
@@ -12,6 +13,7 @@ vi.mock('@/lib/today/kst-date');
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildReplay } from '@/lib/replay/builder';
+import { createOpenAiClient } from '@/lib/llm/clients';
 import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { checkCashGenLimit } from '@/lib/payments/cash-gen-limit';
 import { isFeatureUnlocked } from '@/lib/payments/feature-unlock';
@@ -68,6 +70,7 @@ function makeUserClient(opts: {
   hapcardRow?: HapcardResult | null;
   hapcardError?: { message: string } | null;
   idempotencyRow?: HapcardReplayResult | null;
+  idempotencyError?: { message: string } | null;
 }) {
   const userId = opts.userId === undefined ? USER_ID : opts.userId;
   const hapcardRow = opts.hapcardRow === undefined ? HAPCARD_ROW : opts.hapcardRow;
@@ -85,7 +88,7 @@ function makeUserClient(opts: {
   // hapcard_replays idempotency: .select().eq('hapcard_id').eq('jinjin_date').maybySingle()
   const idempotencyMaybe = vi.fn().mockResolvedValue({
     data: opts.idempotencyRow ?? null,
-    error: null,
+    error: opts.idempotencyError ?? null,
   });
 
   const makeChain = (maybeSingle: ReturnType<typeof vi.fn>) => {
@@ -114,6 +117,8 @@ function makeServiceClient() {
   return { client: { rpc }, refund };
 }
 
+const OPENAI_CLIENT = { chat: { completions: { create: vi.fn() } } };
+
 function makeRequest(body: unknown) {
   return new Request(`http://localhost/api/hapcards/${HAPCARD_ID}/replay`, {
     method: 'POST',
@@ -135,6 +140,7 @@ function makeParams(id = HAPCARD_ID) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(buildReplay).mockResolvedValue(REPLAY_RESULT);
+  vi.mocked(createOpenAiClient).mockReturnValue(OPENAI_CLIENT as never);
   vi.mocked(todayKST).mockReturnValue(TODAY);
   // 기본: 무료 경로. isFeatureUnlocked 기본 true (idempotency hit 시 본문 공개).
   vi.mocked(resolveFeatureCharge).mockResolvedValue({ mode: 'free', price: FEATURE_PRICES_KRW.replay, charged: true });
@@ -205,6 +211,41 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(buildReplay).not.toHaveBeenCalled();
   });
 
+  it('500 → hapcard 조회 오류는 404 not found 로 위장하지 않는다', async () => {
+    const userClient = makeUserClient({
+      hapcardRow: null,
+      hapcardError: { message: 'hapcard lookup failed' },
+    });
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(buildReplay).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
+  });
+
+  it('500 → idempotency 조회 오류는 재빌드나 과금으로 진행하지 않는다', async () => {
+    const userClient = makeUserClient({
+      idempotencyError: { message: 'idempotency lookup failed' },
+    });
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(buildReplay).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
+  });
+
   it('200 → idempotency hit + 잠금해제됨 → 저장된 row 반환, 재빌드 없음', async () => {
     const userClient = makeUserClient({ idempotencyRow: REPLAY_RESULT });
     const { client: svcClient } = makeServiceClient();
@@ -235,7 +276,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
     expect(body.ref).toBe(REF);
-    expect(body.amount_krw).toBe(400);
+    expect(body.amount_krw).toBe(600);
     expect(buildReplay).not.toHaveBeenCalled();
     expect(resolveFeatureCharge).not.toHaveBeenCalled();
   });
@@ -254,7 +295,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
     expect(body.ref).toBe(REF);
-    expect(body.amount_krw).toBe(400);
+    expect(body.amount_krw).toBe(600);
     expect(buildReplay).toHaveBeenCalledOnce(); // 선생성
     expect(refund).not.toHaveBeenCalled();
   });
@@ -273,6 +314,25 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.error.code).toBe('RATE_LIMITED');
     expect(buildReplay).not.toHaveBeenCalled();
+  });
+
+  it('429 → pay_required + 일일 한도 초과는 LLM 클라이언트를 만들지 않는다', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({
+      mode: 'pay_required',
+      price: FEATURE_PRICES_KRW.replay,
+      charged: false,
+    });
+    vi.mocked(checkCashGenLimit).mockResolvedValue({ allowed: false, count: 5, limit: 5 });
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(429);
+    expect(buildReplay).not.toHaveBeenCalled();
+    expect(createOpenAiClient).not.toHaveBeenCalled();
   });
 
   it('500 → pay_required 선생성 실패 → 환불 없음 (charged=false)', async () => {
@@ -337,10 +397,36 @@ describe('POST /api/hapcards/[id]/replay', () => {
         user_id: USER_ID,
         hapcard_id: HAPCARD_ID,
         phase: 'build_error',
-        original_error: 'boom',
+        original_error: 'Error: boom',
         refund_error: 'rpc unavailable',
       }),
     );
+    consoleSpy.mockRestore();
+  });
+
+  it('replay 실패 로그와 응답에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    refund.mockResolvedValueOnce({ data: null, error: { message: 'rpc birth_date=1995-06-15' } });
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(buildReplay).mockRejectedValue(
+      new Error('boom birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await POST(makeRequest({}), makeParams());
+    const body = await res.json();
+
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1995-06-15');
+    expect(logged).not.toContain('10:30:00');
+    expect(logged).not.toContain('gender=F');
+    expect(JSON.stringify(body)).not.toContain('1995-06-15');
+    expect(JSON.stringify(body)).not.toContain('10:30:00');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    expect(logged).toContain('birth_date=[redacted]');
+    expect(logged).toContain('birth_time=[redacted]');
     consoleSpy.mockRestore();
   });
 
@@ -373,9 +459,19 @@ describe('POST /api/hapcards/[id]/replay', () => {
     // 게이트가 dated ref (replay:{id}:{today}) 로 호출됐는지 — idempotency 버그 수정 검증.
     expect(resolveFeatureCharge).toHaveBeenCalledWith(svcClient, USER_ID, 'replay', REF);
     expect(buildReplay).toHaveBeenCalledTimes(1);
-    const [input] = vi.mocked(buildReplay).mock.calls[0];
+    const [input, deps] = vi.mocked(buildReplay).mock.calls[0];
     expect(input.hapcard.hapcard_id).toBe(HAPCARD_ID);
     expect(input.replay_reason).toBe('궁금해서');
+    expect(deps.supabaseUserClient).toBe(userClient);
+    expect(deps.supabaseServiceClient).toBe(svcClient);
+    expect(createOpenAiClient).not.toHaveBeenCalled();
+
+    await deps.openaiClient.chat.completions.create({ model: 'gpt-5-mini' });
+    expect(createOpenAiClient).toHaveBeenCalledTimes(1);
+    expect(OPENAI_CLIENT.chat.completions.create).toHaveBeenCalledWith(
+      { model: 'gpt-5-mini' },
+      undefined,
+    );
   });
 
   it('500 → free(charged=false, 멱등 재차감) build 실패 → 환불 호출 없음', async () => {
@@ -411,7 +507,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
-    expect(body.amount_krw).toBe(400);
+    expect(body.amount_krw).toBe(600);
   });
 
   it('500 → DB row score_breakdown에 yunse_adjustment 누락 시 INTERNAL_ERROR', async () => {

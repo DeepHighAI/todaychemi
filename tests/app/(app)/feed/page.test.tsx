@@ -11,8 +11,9 @@ import type { FeedItem } from '@/types/relation';
 import messages from '../../../../messages/ko.json';
 
 const mockUseSearchParams = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
+const mockRouterPush = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: mockRouterPush, back: vi.fn(), replace: vi.fn() }),
   useSearchParams: mockUseSearchParams,
 }));
 
@@ -48,7 +49,7 @@ describe('FeedPage', () => {
   it('renders feed title', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
     await renderFeedPage();
-    expect(await screen.findByText('너랑나랑')).toBeInTheDocument();
+    expect(await screen.findByText('케미피드')).toBeInTheDocument();
   });
 
   it('shows empty state when no relations exist', async () => {
@@ -90,7 +91,35 @@ describe('FeedPage', () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
     await renderFeedPage();
 
-    expect(await screen.findByText('친구')).toBeInTheDocument();
+    expect(await screen.findByText('친구 관계')).toBeInTheDocument();
+  });
+
+  it('일반 피드 row 클릭 시 relation detail 로 이동한다', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      { relation_id: 'r-row', nickname: '줄클릭', mode: '친구합', compat_score: 65, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    await user.click(await screen.findByRole('button', { name: /줄클릭/ }));
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/feed/r-row');
+  });
+
+  it('일반 피드 row 는 Enter 키로도 relation detail 로 이동한다', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      { relation_id: 'r-key', nickname: '키이동', mode: '친구합', compat_score: 65, change_score: 0, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items }) });
+    await renderFeedPage();
+
+    const row = await screen.findByRole('button', { name: /키이동/ });
+    row.focus();
+    await user.keyboard('{Enter}');
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/feed/r-key');
   });
 
   it('shows generic error when fetch fails', async () => {
@@ -138,12 +167,12 @@ describe('FeedPage', () => {
 
     await renderFeedPageWithQueryClient(queryClient);
 
-    expect(await screen.findByText('돈이 오가는 사이')).toBeInTheDocument();
-    expect(screen.getAllByText('돈새')).toHaveLength(2);
+    expect(await screen.findAllByText('돈새')).toHaveLength(2);
+    expect(screen.getAllByText('돈 관계').length).toBeGreaterThan(0);
     await waitFor(() => expect(mockFetch).toHaveBeenCalledWith('/api/feed'));
   });
 
-  it('compat_score가 있는 인연 — 오늘온도로 표시됨', async () => {
+  it('compat_score가 있는 인연 — 케미온도로 표시됨', async () => {
     const items: FeedItem[] = [
       { relation_id: 'r1', nickname: '봄달', mode: '친구합', compat_score: 72, change_score: 5, has_significant_change: false, created_at: '2026-05-05T10:00:00Z' },
     ];
@@ -189,7 +218,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     await screen.findByText('봄달이');
-    const 썸합btn = screen.getByRole('radio', { name: '끌림' });
+    const 썸합btn = screen.getByRole('radio', { name: '썸 관계' });
     await user.click(썸합btn);
 
     expect(screen.getByText('봄달이')).toBeInTheDocument();
@@ -205,7 +234,7 @@ describe('FeedPage', () => {
     await renderFeedPage();
 
     await screen.findByText('봄달이');
-    const 썸합btn = screen.getByRole('radio', { name: '끌림' });
+    const 썸합btn = screen.getByRole('radio', { name: '썸 관계' });
     await user.click(썸합btn);
 
     expect(await screen.findByText('이 관계 유형의 인연이 없어요.')).toBeInTheDocument();
@@ -228,9 +257,9 @@ describe('FeedPage', () => {
   });
 
   it.each([
-    ['돈합', '돈'],
-    ['첫합', '처음'],
-    ['오래합', '오래'],
+    ['돈합', '돈 관계'],
+    ['첫합', '첫 만남'],
+    ['오래합', '오래된 관계'],
   ])('%s 필터 클릭 시 해당 모드 항목만 표시된다', async (modeKey, labelText) => {
     const user = userEvent.setup();
     // 닉네임 3글자 이상: avatar slice(0,2)='대상' ≠ p='대상이' 충돌 방지
@@ -256,8 +285,60 @@ describe('FeedPage', () => {
   it('필터 7개 pill 모두 단축 라벨로 표시된다', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
     await renderFeedPage();
-    for (const name of ['전체', '일', '친구', '돈', '처음', '끌림', '오래']) {
+    for (const name of ['전체', '일 관계', '친구 관계', '돈 관계', '첫 만남', '썸 관계', '오래된 관계']) {
       expect(await screen.findByRole('radio', { name })).toBeInTheDocument();
     }
+  });
+
+  it('인연 삭제 성공 시 feed/relations/today 캐시를 함께 무효화한다', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      {
+        relation_id: 'r-feed',
+        nickname: '피드인연',
+        mode: '친구합',
+        compat_score: 65,
+        change_score: 0,
+        has_significant_change: false,
+        created_at: '2026-06-05T10:00:00Z',
+      },
+    ];
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/feed') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ items }),
+        });
+      }
+      if (url === '/api/relations/r-feed' && init?.method === 'DELETE') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await renderFeedPageWithQueryClient(queryClient);
+
+    const deleteButtons = await screen.findAllByRole('button', { name: '삭제' });
+    await user.click(deleteButtons[0]);
+    expect(await screen.findByText('피드인연 인연을 삭제할까요?')).toBeInTheDocument();
+    const confirmButtons = screen.getAllByRole('button', { name: '삭제' });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['feed'] });
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['relations'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
   });
 });

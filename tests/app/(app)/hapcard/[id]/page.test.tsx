@@ -47,7 +47,7 @@ describe('HapcardPage', () => {
     mockMode = null;
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 우리는을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe('HapcardPage', () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => mockHapcardResult });
     await renderHapcardPage();
     // Placeholder div has no testid; assert by its unique text content
-    expect(await screen.findByText('오늘 우리는 본문은 곧 준비됩니다.')).toBeInTheDocument();
+    expect(await screen.findByText('오늘 케미 본문은 곧 준비됩니다.')).toBeInTheDocument();
   });
 
   it('renders AppBar day pillars as Korean readings when visuals contain Hanja (ADR-038)', async () => {
@@ -199,7 +199,7 @@ describe('HapcardPage', () => {
       json: async () => ({ error: { code: 'RELATION_CHART_NOT_FOUND', message: 'not found' } }),
     });
     await renderHapcardPage();
-    expect(await screen.findByText('오늘 우리는 준비 중')).toBeInTheDocument();
+    expect(await screen.findByText('오늘 케미 준비 중')).toBeInTheDocument();
     expect(
       screen.getByText('인연의 사주맵 계산이 아직 준비되지 않았어요. 곧 자동으로 생성됩니다.'),
     ).toBeInTheDocument();
@@ -214,9 +214,9 @@ describe('HapcardPage', () => {
       json: async () => ({ error: { code: 'USER_CHART_NOT_FOUND', message: 'not found' } }),
     });
     await renderHapcardPage();
-    expect(await screen.findByText('내 사주맵이 먼저 필요해요')).toBeInTheDocument();
-    expect(screen.getByText('오늘 우리는을 보려면 내 사주맵을 먼저 등록해야 해요.')).toBeInTheDocument();
-    const cta = screen.getByRole('link', { name: '내 사주맵 등록하기' });
+    expect(await screen.findByText('내 프로필이 먼저 필요해요')).toBeInTheDocument();
+    expect(screen.getByText('오늘 케미를 보려면 내 프로필을 먼저 등록해야 해요.')).toBeInTheDocument();
+    const cta = screen.getByRole('link', { name: '내 프로필 등록하기' });
     expect(cta).toHaveAttribute('href', '/onboarding');
   });
 
@@ -228,7 +228,7 @@ describe('HapcardPage', () => {
     });
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 우리는을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
   });
 
@@ -240,7 +240,7 @@ describe('HapcardPage', () => {
     });
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 우리는을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
   });
 
@@ -248,7 +248,7 @@ describe('HapcardPage', () => {
     mockFetch.mockRejectedValue(new Error('Network Error'));
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 우리는을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
     ).toBeInTheDocument();
   });
 });
