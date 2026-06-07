@@ -26,8 +26,8 @@ describe('shareToKakao', () => {
     const { shareToKakao } = await import('@/lib/share/kakao-sdk');
     await shareToKakao({
       share_id: '550e8400-e29b-41d4-a716-446655440001',
-      title: '봄달님과의 친구 사이',
-      text: '봄달님과의 오늘온도: 38.4°C · 오늘사이에서 확인해봐',
+      title: '봄달님과의 친구 관계',
+      text: '봄달님과의 케미온도: 38.4°C · 오늘케미에서 확인해봐',
       url: 'https://hap.plae/h/share-token',
       og_image_url: 'https://hap.plae/api/og/share/share-token',
     });

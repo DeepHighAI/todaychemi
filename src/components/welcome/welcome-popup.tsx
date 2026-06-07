@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-// 오늘사이 첫 진입 소개 팝업
+// 오늘케미 첫 진입 소개 팝업
 // - 가입자(`/` 진입)와 게스트(`/guest/start` 진입) 양쪽에서 마운트되어 동일 카피 노출
 // - 동일 키로 1회만 노출되므로 한쪽에서 본 후 다른 쪽 진입에서는 자동 스킵
 // - localStorage 쓰기 실패(시크릿/사파리 ITP 등)에도 throw 하지 않음

@@ -53,7 +53,7 @@ export function buildSharePayload(input: SharePayloadInput & { range: ShareRange
     extra = ` · ${formatShareGenderLabel(gender_normalized)}`;
   }
 
-  const text = `${nick}님과의 오늘온도: ${formatTodayTemperature(score)}${extra} · 오늘사이에서 확인해봐`;
+  const text = `${nick}님과의 케미온도: ${formatTodayTemperature(score)}${extra} · 오늘케미에서 확인해봐`;
 
   return { title, text, url, og_image_url };
 }

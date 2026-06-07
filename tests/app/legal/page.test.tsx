@@ -8,7 +8,7 @@ describe('legal pages', () => {
     const { default: TermsPage } = await import('@/app/legal/terms/page');
     render(await TermsPage());
 
-    expect(screen.getByRole('heading', { name: '오늘사이 서비스 이용약관' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '오늘케미 서비스 이용약관' })).toBeInTheDocument();
     expect(screen.getAllByText(/2026년 6월 1일/).length).toBeGreaterThan(0);
   });
 
@@ -17,7 +17,7 @@ describe('legal pages', () => {
     render(await PrivacyPage());
 
     expect(
-      screen.getByRole('heading', { name: '오늘사이 개인정보 처리방침' }),
+      screen.getByRole('heading', { name: '오늘케미 개인정보 처리방침' }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('table').length).toBeGreaterThan(0);
   });
@@ -26,7 +26,7 @@ describe('legal pages', () => {
     const { default: RefundPage } = await import('@/app/legal/refund/page');
     render(await RefundPage());
 
-    expect(screen.getByRole('heading', { name: '오늘사이 환불 정책' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '오늘케미 환불 정책' })).toBeInTheDocument();
     expect(screen.getByText(/유상으로 충전한 부적/)).toBeInTheDocument();
   });
 });

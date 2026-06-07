@@ -58,4 +58,34 @@ describe('Supabase server client', () => {
     // setAll 내부 try/catch — supabase 사용 시 cookie write가 throw되더라도 호출자는 영향 없어야 함.
     expect(supabase).toBeDefined();
   });
+
+  it('setAll warning 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.resetModules();
+    vi.doMock('@supabase/ssr', () => ({
+      createServerClient: vi.fn((_url: string, _anonKey: string, options: unknown) => ({
+        auth: {},
+        from: vi.fn(),
+        __options: options,
+      })),
+    }));
+    cookieStore.set.mockImplementation(() => {
+      throw new Error('Cannot set birth_date=1991-03-15 birth_time=14:30 gender=F');
+    });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+    const options = (supabase as unknown as { __options: { cookies: { setAll: (cookies: unknown[]) => void } } }).__options;
+    options.cookies.setAll([{ name: 'sb-test', value: 'value', options: {} }]);
+
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+
+    vi.doUnmock('@supabase/ssr');
+  });
 });

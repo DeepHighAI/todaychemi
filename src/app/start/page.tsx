@@ -16,7 +16,7 @@ export default async function StartPage() {
     <main className="min-h-screen bg-background px-5 py-8">
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center gap-8">
         <div className="space-y-3">
-          <p className="font-eyebrow text-primary">오늘사이</p>
+          <p className="font-eyebrow text-primary">오늘케미</p>
           <h1 className="text-3xl font-black leading-tight text-foreground">
             오늘의 나를 먼저 보고,
             <br />
@@ -24,7 +24,7 @@ export default async function StartPage() {
           </h1>
           <p className="font-sub text-muted-foreground">
             회원가입 전에도 내 오늘 흐름을 가볍게 확인할 수 있어요.
-            친구와의 오늘 우리는을 보려면 그때 계정을 만들면 됩니다.
+            친구와의 오늘 케미를 보려면 그때 계정을 만들면 됩니다.
           </p>
         </div>
 

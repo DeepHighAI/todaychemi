@@ -29,7 +29,7 @@ beforeEach(() => {
         JSON.stringify({
           title: '이용약관',
           version: '2026-06-01',
-          markdown: '# 오늘사이 서비스 이용약관',
+          markdown: '# 오늘케미 서비스 이용약관',
         }),
         { status: 200 },
       ),

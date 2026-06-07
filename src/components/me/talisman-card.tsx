@@ -13,8 +13,8 @@ interface TalismanCardProps {
 
 const REASON_LABEL: Record<string, string> = {
   purchase: '충전',
-  hapcard_use: '오늘 우리는',
-  hapcard_refund: '오늘 우리는 환불',
+  hapcard_use: '오늘 케미',
+  hapcard_refund: '오늘 케미 환불',
   replay_use: '그럴리 없어! 다시',
   replay_refund: '재해석 환불',
   whatif_use: '또 다른 나',

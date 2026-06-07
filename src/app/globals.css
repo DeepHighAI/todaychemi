@@ -13,10 +13,10 @@
 }
 
 /* =========================================================================
- * 오늘사이 디자인 토큰 — PRD §7.2 (라이트/다크) + FRONTEND-PREP §디자인 토큰
+ * 오늘케미 디자인 토큰 — PRD §7.2 (라이트/다크) + FRONTEND-PREP §디자인 토큰
  *
  * shadcn/ui 호환을 위해 표준 변수(--background, --primary 등)와
- * 오늘사이 브랜드 토큰(--bg-canvas, --accent-water 등)을 양립.
+ * 오늘케미 브랜드 토큰(--bg-canvas, --accent-water 등)을 양립.
  * 무드: Notion × Apple Notes (PRD §7.1) — 따뜻하고 모던.
  * ========================================================================= */
 
@@ -46,14 +46,14 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* 오늘사이 PRD §7.2 직접 매핑 — Tailwind 유틸리티에서 bg-canvas, text-primary 등으로 사용 */
+  /* 오늘케미 PRD §7.2 직접 매핑 — Tailwind 유틸리티에서 bg-canvas, text-primary 등으로 사용 */
   --color-bg-canvas: var(--bg-canvas);
   --color-bg-card: var(--bg-card);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-hairline: var(--hairline);
 
-  /* 오행(五行) 컬러 — 일주 chip · 오행맵 · 오늘 우리는 reasons 강조 */
+  /* 오행(五行) 컬러 — 일주 chip · 오행맵 · 오늘 케미 reasons 강조 */
   --color-element-wood: var(--accent-wood);
   --color-element-fire: var(--accent-fire);
   --color-element-earth: var(--accent-earth);
@@ -122,7 +122,7 @@
   --font-noto-sans-kr: 'Osa Noto Sans KR';
   --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* PRD §7.2 오늘사이 브랜드 surface */
+  /* PRD §7.2 오늘케미 브랜드 surface */
   --bg-canvas: #fbf8f3;
   --bg-card: #ffffff;
   --text-primary: #1a1b23;
@@ -283,7 +283,7 @@
  * 다크 모드 — PRD §7.2
  * ========================================================================= */
 .dark {
-  /* PRD §7.2 오늘사이 브랜드 surface (다크) */
+  /* PRD §7.2 오늘케미 브랜드 surface (다크) */
   --bg-canvas: #14151c;
   --bg-card: #1c1d26;
   --text-primary: #ece6d6;

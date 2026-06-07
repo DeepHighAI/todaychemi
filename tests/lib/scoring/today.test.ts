@@ -6,7 +6,7 @@ import {
 } from '@/lib/scoring/today';
 import type { ChartCore } from '@/types/chart';
 
-// G2 / Phase 3 / C2 — 오늘 합온도 결정형 점수식
+// G2 / Phase 3 / C2 — 케미온도 결정형 점수식
 // 가중치 = { hap_chung: 0.25, sipsin: 0.15, ohaeng: 0.20, today_pillar_influence: 0.40 }
 // today_pillar_influence ∈ [0, 1] = 0.5 + 0.25 * delta(today, self) + 0.25 * delta(today, relation)
 // today_compat_score = round( clamp(0, 100, 100 * weighted_sum) )

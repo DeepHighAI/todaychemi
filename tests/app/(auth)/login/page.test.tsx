@@ -17,23 +17,33 @@ vi.mock('@/lib/auth/email', () => ({
   signInWithEmail: vi.fn(),
 }));
 
+vi.mock('@/lib/supabase/server');
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
-  useSearchParams: () => new URLSearchParams(),
+  redirect: vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  }),
 }));
 
 import { signInWithGoogle } from '@/lib/auth/google';
 import { signInWithKakao } from '@/lib/auth/kakao';
 import { signInWithEmail } from '@/lib/auth/email';
+import { createClient } from '@/lib/supabase/server';
 
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
 const mockSignInWithKakao = vi.mocked(signInWithKakao);
 const mockSignInWithEmail = vi.mocked(signInWithEmail);
 const mockRouterPush = vi.fn();
+const getUser = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRouterPush.mockReset();
+  vi.mocked(createClient).mockResolvedValue({
+    auth: { getUser },
+  } as never);
+  getUser.mockResolvedValue({ data: { user: null } });
 });
 
 afterEach(() => {
@@ -41,15 +51,20 @@ afterEach(() => {
 });
 
 async function renderLoginPage() {
+  const { LoginClient } = await import('@/app/(auth)/login/login-client');
+  return renderWithIntl(<LoginClient next="/" />);
+}
+
+async function loadLoginPage() {
   const { default: LoginPage } = await import('@/app/(auth)/login/page');
-  return renderWithIntl(<LoginPage />);
+  return LoginPage;
 }
 
 describe('LoginPage', () => {
   it('renders title and OAuth button texts from ko.json', async () => {
     await renderLoginPage();
 
-    expect(screen.getByRole('heading', { name: '오늘사이 로그인' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '오늘케미 로그인' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
     expect(screen.queryByText('소셜 로그인 필수 동의')).not.toBeInTheDocument();
@@ -74,6 +89,26 @@ describe('LoginPage', () => {
           age: false,
         },
         { next: '/', deferLegalConsent: true },
+      ),
+    );
+  });
+
+  it('passes a safe next path to Google OAuth', async () => {
+    mockSignInWithGoogle.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    const { LoginClient } = await import('@/app/(auth)/login/login-client');
+    renderWithIntl(<LoginClient next="/feed" />);
+
+    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
+
+    await waitFor(() =>
+      expect(mockSignInWithGoogle).toHaveBeenCalledWith(
+        {
+          terms: false,
+          privacy: false,
+          age: false,
+        },
+        { next: '/feed', deferLegalConsent: true },
       ),
     );
   });
@@ -169,6 +204,19 @@ describe('LoginPage — Email/Password', () => {
     await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/'));
   });
 
+  it('calls router.push(next) on successful sign-in', async () => {
+    mockSignInWithEmail.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    const { LoginClient } = await import('@/app/(auth)/login/login-client');
+    renderWithIntl(<LoginClient next="/feed" />);
+
+    await user.type(screen.getByLabelText('이메일'), 'test@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'secret123');
+    await user.click(screen.getByRole('button', { name: '이메일로 로그인' }));
+
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/feed'));
+  });
+
   it('shows errorInvalidCredentials message when signInWithEmail rejects', async () => {
     mockSignInWithEmail.mockRejectedValue(new Error('Invalid login credentials'));
     const user = userEvent.setup();
@@ -198,5 +246,34 @@ describe('LoginPage — Email/Password', () => {
     const link = screen.getByRole('link', { name: /가입하기/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/signup');
+  });
+});
+
+describe('LoginPage server redirects', () => {
+  it('redirects authenticated users to a safe next path', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const LoginPage = await loadLoginPage();
+
+    await expect(
+      LoginPage({ searchParams: Promise.resolve({ next: '/feed' }) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/feed');
+  });
+
+  it('normalizes auth-entry next paths to home to avoid redirect loops', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const LoginPage = await loadLoginPage();
+
+    await expect(
+      LoginPage({ searchParams: Promise.resolve({ next: '/login' }) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/');
+  });
+
+  it('drops unsafe external next URLs before rendering', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const LoginPage = await loadLoginPage();
+
+    await expect(
+      LoginPage({ searchParams: Promise.resolve({ next: 'https://evil.example.com' }) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/');
   });
 });

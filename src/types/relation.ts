@@ -18,6 +18,42 @@ export type Gender = z.infer<typeof GenderSchema>;
 // HH:mm:ss 또는 HH:mm 형태의 time 문자열 (Postgres `time` 타입 표현)
 const TimeStringRegex = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
+type BirthInputConsistency = {
+  birth_date_calendar: BirthCalendar;
+  is_lunar_leap: boolean;
+  birth_time_knowledge: BirthTimeKnowledge;
+  birth_time: string | null;
+};
+
+export function validateBirthInputConsistency(
+  value: BirthInputConsistency,
+  ctx: z.RefinementCtx,
+) {
+  if (value.birth_date_calendar === 'solar' && value.is_lunar_leap) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['is_lunar_leap'],
+      message: 'solar birth_date_calendar cannot use lunar leap flag',
+    });
+  }
+
+  if (value.birth_time_knowledge === 'unknown' && value.birth_time !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['birth_time'],
+      message: 'birth_time must be null when birth_time_knowledge is unknown',
+    });
+  }
+
+  if (value.birth_time_knowledge !== 'unknown' && value.birth_time === null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['birth_time'],
+      message: 'birth_time is required when birth_time_knowledge is exact or approximate',
+    });
+  }
+}
+
 export const RelationCreateSchema = z.object({
   nickname: z.string().min(1).max(20),                              // ADR-011: 별명만
   mode: ModeSchema,                                                  // 6모드 분류
@@ -30,15 +66,15 @@ export const RelationCreateSchema = z.object({
   birth_longitude: z.number().min(-180).max(180).nullable().optional(), // Expert Mode 경도 보정용만
   consent_confirmed: z.boolean().default(false),
   is_primary: z.boolean().default(false),
-}).strict();
+}).strict().superRefine(validateBirthInputConsistency);
 export type RelationCreate = z.infer<typeof RelationCreateSchema>;
 
-// 너랑나랑 카드 항목 — S-04 인연 목록 그리드 표시용 subset
+// 케미피드 카드 항목 — S-04 인연 목록 그리드 표시용 subset
 export type FeedListItem = Pick<RelationRow, 'relation_id' | 'nickname' | 'mode' | 'created_at'> & {
   compat_score?: number | null;
 };
 
-// Y4 ADR-036 — 너랑나랑 응답 항목 (compat_score + change_score + badge flag, 서버 정렬 후 반환)
+// Y4 ADR-036 — 케미피드 응답 항목 (compat_score + change_score + badge flag, 서버 정렬 후 반환)
 export interface FeedItem {
   relation_id: string;
   nickname: string;

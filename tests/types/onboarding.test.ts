@@ -41,6 +41,42 @@ describe('OnboardingRequestSchema', () => {
     expect(result.data.birth_time).toBeNull();
   });
 
+  it('rejects unknown birth_time_knowledge when birth_time is present', () => {
+    const result = OnboardingRequestSchema.safeParse({
+      ...validBodyExact,
+      birth_time_knowledge: 'unknown',
+      birth_time: '14:30',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects exact birth_time_knowledge when birth_time is null', () => {
+    const result = OnboardingRequestSchema.safeParse({
+      ...validBodyExact,
+      birth_time_knowledge: 'exact',
+      birth_time: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects approximate birth_time_knowledge when birth_time is null', () => {
+    const result = OnboardingRequestSchema.safeParse({
+      ...validBodyExact,
+      birth_time_knowledge: 'approximate',
+      birth_time: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects solar birth_date_calendar with lunar leap flag', () => {
+    const result = OnboardingRequestSchema.safeParse({
+      ...validBodyExact,
+      birth_date_calendar: 'solar',
+      is_lunar_leap: true,
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('parses HH:MM:SS format birth_time', () => {
     const result = OnboardingRequestSchema.safeParse({
       ...validBodyExact,

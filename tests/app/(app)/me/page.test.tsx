@@ -110,7 +110,7 @@ async function renderMePage() {
   return renderWithProviders(<MePage />);
 }
 
-describe('MePage (내 사주맵 화면)', () => {
+describe('MePage (내 프로필 화면)', () => {
   it('차트 로딩 중 → loading-state 렌더', async () => {
     mockFetch.mockImplementation(() => new Promise(() => {}));
     await renderMePage();
@@ -121,7 +121,7 @@ describe('MePage (내 사주맵 화면)', () => {
     mockChartAndWallet(null);
     await renderMePage();
     await waitFor(() => expect(screen.getByTestId('empty-state')).toBeInTheDocument());
-    expect(screen.getByText('내 사주맵이 아직 등록되지 않았어요.')).toBeInTheDocument();
+    expect(screen.getByText('내 프로필이 아직 등록되지 않았어요.')).toBeInTheDocument();
   });
 
   it('chart 있을 때 "내 정보 수정" 행 카드 렌더 (MeEditRow)', async () => {

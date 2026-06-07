@@ -48,6 +48,8 @@ function makeClient(opts: {
   userId?: string | null;
   insertError?: { code: string; message: string } | null;
   upsertChartError?: { code: string; message: string } | null;
+  existingChartRow?: { chart_id: string } | null;
+  existingChartError?: { code: string; message: string } | null;
 }) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
 
@@ -70,13 +72,28 @@ function makeClient(opts: {
     error: opts.upsertChartError ?? null,
   });
 
+  const existingChartMaybeSingle = vi.fn().mockResolvedValue({
+    data: opts.existingChartRow ?? null,
+    error: opts.existingChartError ?? null,
+  });
+  const existingChartLimit = vi.fn().mockReturnValue({ maybeSingle: existingChartMaybeSingle });
+  const existingChartEq = vi.fn().mockReturnValue({ limit: existingChartLimit });
+  const selectCharts = vi.fn().mockReturnValue({ eq: existingChartEq });
+
   const from = vi.fn().mockImplementation((table: string) => {
     if (table === 'users') return { insert: insertUsers };
-    if (table === 'user_charts') return { upsert: upsertCharts };
+    if (table === 'user_charts') return { upsert: upsertCharts, select: selectCharts };
     return { insert: vi.fn(), upsert: vi.fn() };
   });
 
-  return { auth: { getUser }, from, _insert: insertUsers, _upsertCharts: upsertCharts };
+  return {
+    auth: { getUser },
+    from,
+    _insert: insertUsers,
+    _upsertCharts: upsertCharts,
+    _selectCharts: selectCharts,
+    _existingChartEq: existingChartEq,
+  };
 }
 
 function makeRequest(body: unknown) {
@@ -182,6 +199,57 @@ describe('POST /api/onboarding', () => {
     expect(body.error.code).toBe('INVALID_BODY');
   });
 
+  it('400 → INVALID_BODY (unknown 시간인데 birth_time 이 남아 있음)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_time_knowledge: 'unknown',
+      birth_time: '14:30',
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('400 → INVALID_BODY (exact 시간인데 birth_time 이 null)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_time_knowledge: 'exact',
+      birth_time: null,
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('400 → INVALID_BODY (solar 날짜에 lunar leap flag true)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_date_calendar: 'solar',
+      is_lunar_leap: true,
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
   it('401 → UNAUTHORIZED (미인증)', async () => {
     const client = makeClient({ userId: null });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -195,7 +263,10 @@ describe('POST /api/onboarding', () => {
   });
 
   it('409 → USER_ALREADY_ONBOARDED (duplicate key)', async () => {
-    const client = makeClient({ insertError: { code: '23505', message: 'duplicate key' } });
+    const client = makeClient({
+      insertError: { code: '23505', message: 'duplicate key' },
+      existingChartRow: { chart_id: 'chart-001' },
+    });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));
@@ -203,6 +274,22 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body.error.code).toBe('USER_ALREADY_ONBOARDED');
+    expect(client._selectCharts).toHaveBeenCalledWith('chart_id');
+    expect(client._existingChartEq).toHaveBeenCalledWith('user_id', 'user-uuid-001');
+  });
+
+  it('duplicate users row에 chart가 없으면 409 성공으로 위장하지 않는다', async () => {
+    const client = makeClient({
+      insertError: { code: '23505', message: 'duplicate key' },
+      existingChartRow: null,
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('500 → INTERNAL_ERROR (generic DB failure)', async () => {
@@ -261,6 +348,20 @@ describe('POST /api/onboarding', () => {
 
   it('user_charts upsert 실패 → 500', async () => {
     const client = makeClient({ upsertChartError: { code: 'PGRST000', message: 'upsert fail' } });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('duplicate users row의 chart 조회 실패도 409 성공으로 위장하지 않는다', async () => {
+    const client = makeClient({
+      insertError: { code: '23505', message: 'duplicate key' },
+      existingChartError: { code: 'PGRST000', message: 'lookup fail' },
+    });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));

@@ -40,7 +40,7 @@ test.describe('launch public smoke', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/start$/);
-    await expect(page.getByText('오늘사이')).toBeVisible();
+    await expect(page.getByText('오늘케미')).toBeVisible();
     await expect(page.getByRole('link', { name: /기존 계정으로 바로 로그인/ })).toBeVisible();
     await expectHealthyPage(page);
 
@@ -57,7 +57,7 @@ test.describe('launch public smoke', () => {
     await expectHealthyPage(page);
 
     await page.goto('/legal/privacy');
-    await expect(page.locator('h1').filter({ hasText: '오늘사이 개인정보 처리방침' })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: '오늘케미 개인정보 처리방침' })).toBeVisible();
     await expectHealthyPage(page);
 
     await page.goto('/legal/refund');
@@ -106,8 +106,8 @@ test.describe('launch public smoke', () => {
     expect(response?.status()).toBe(200);
     await expect(page.getByText('INTERNAL_ERROR')).toBeVisible();
     await expect(page.getByText('500 internal error launch smoke')).toBeVisible();
-    await expect(page.getByRole('link', { name: '내 사주맵' })).toHaveAttribute('href', '/me');
-    await expect(page.getByRole('link', { name: '합피드로' })).toHaveAttribute('href', '/feed');
+    await expect(page.getByRole('link', { name: '내 프로필' })).toHaveAttribute('href', '/me');
+    await expect(page.getByRole('link', { name: '케미피드로' })).toHaveAttribute('href', '/feed');
     await expectHealthyPage(page);
   });
 });

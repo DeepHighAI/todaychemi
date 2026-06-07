@@ -14,7 +14,7 @@ export function HapcardCtaBar({ onAction, onShare }: HapcardCtaBarProps) {
     <div
       data-testid="hapcard-cta-bar"
       role="region"
-      aria-label="오늘 우리는 액션"
+      aria-label="오늘 케미 액션"
       className="fixed left-0 right-0 z-40 px-4 py-3 bg-background/90 backdrop-blur-sm border-t border-border flex flex-col items-center gap-1"
       style={{ bottom: 'calc(var(--tabbar-h) + env(safe-area-inset-bottom))' }}
     >

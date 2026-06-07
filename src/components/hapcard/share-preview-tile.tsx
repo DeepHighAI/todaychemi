@@ -45,14 +45,14 @@ export function HapcardSharePreviewTile({ hapcard, range }: Props) {
         {/* 상단: 아이브로 + 제목 */}
         <div>
           <div className="text-xs font-semibold opacity-85 tracking-wide">
-            오늘사이 · {payload.mode}
+            오늘케미 · {payload.mode}
           </div>
           <div className="mt-1.5 text-[22px] font-extrabold leading-tight">
             나 ↔ {payload.nickname}
           </div>
         </div>
 
-        {/* 중앙: 오늘온도 + 조건부 오행/성별 */}
+        {/* 중앙: 케미온도 + 조건부 오행/성별 */}
         <div className="text-center">
           <div className="font-extrabold leading-none tracking-[-0.05em] text-[88px]">
             {payload.temperature_label.replace('°C', '')}
@@ -75,11 +75,11 @@ export function HapcardSharePreviewTile({ hapcard, range }: Props) {
           )}
         </div>
 
-        {/* 하단: 날짜 + 오늘사이 핀 */}
+        {/* 하단: 날짜 + 오늘케미 핀 */}
         <div className="flex items-end justify-between">
           <div className="text-sm opacity-90">{todayKstString()}</div>
           <div className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold">
-            오늘사이에서 확인해봐
+            오늘케미에서 확인해봐
           </div>
         </div>
       </div>

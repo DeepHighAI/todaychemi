@@ -554,7 +554,7 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     rls: { enabled: true, policies: ['whatif_results_own'] },
   },
 
-  // §20260521011419 hapcards daily target_date — KST 날짜별 오늘 우리는 캐시
+  // §20260521011419 hapcards daily target_date — KST 날짜별 오늘 케미 캐시
   {
     index: 20260521011419,
     file: '20260521011419_hapcards_target_date.sql',

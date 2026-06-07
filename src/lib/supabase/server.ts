@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 
 import type { Database } from '@/types/database.types';
 
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { getSupabasePublicConfig } from './env';
 
 // Server (RSC / Route Handler / Server Action) Supabase client.
@@ -22,7 +23,9 @@ export async function createClient() {
             cookieStore.set(name, value, options);
           });
         } catch (err) {
-          console.warn('[supabase] cookie setAll failed (expected in RSC)', err);
+          console.warn('[supabase] cookie setAll failed (expected in RSC)', {
+            error: sanitizeErrorForLog(err),
+          });
           // RSC: cookies() read-only. middleware refreshes session cookies.
         }
       },

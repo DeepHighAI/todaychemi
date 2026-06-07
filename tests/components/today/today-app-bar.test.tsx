@@ -24,9 +24,9 @@ describe('TodayAppBar', () => {
     themeMock.setTheme.mockClear();
   });
 
-  it('"오늘의 사이" 제목을 h1로 렌더한다', () => {
+  it('"오늘의 케미" 제목을 h1로 렌더한다', () => {
     renderWithProviders(<TodayAppBar />);
-    expect(screen.getByRole('heading', { level: 1, name: '오늘의 사이' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: '오늘의 케미' })).toBeInTheDocument();
   });
 
   it('/relations/new 링크를 렌더한다', () => {

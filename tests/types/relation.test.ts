@@ -71,6 +71,42 @@ describe('RelationCreateSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('rejects unknown knowledge when birth_time is present', () => {
+    const result = RelationCreateSchema.safeParse({
+      ...VALID,
+      birth_time_knowledge: 'unknown',
+      birth_time: '09:00',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects exact knowledge when birth_time is null', () => {
+    const result = RelationCreateSchema.safeParse({
+      ...VALID,
+      birth_time_knowledge: 'exact',
+      birth_time: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects approximate knowledge when birth_time is null', () => {
+    const result = RelationCreateSchema.safeParse({
+      ...VALID,
+      birth_time_knowledge: 'approximate',
+      birth_time: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects solar calendar with lunar leap flag', () => {
+    const result = RelationCreateSchema.safeParse({
+      ...VALID,
+      birth_date_calendar: 'solar',
+      is_lunar_leap: true,
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('defaults is_lunar_leap to false when omitted', () => {
     const { is_lunar_leap: _omit, ...without } = VALID;
     const result = RelationCreateSchema.safeParse(without);

@@ -110,6 +110,46 @@ describe('updateSession middleware helper', () => {
     expect(getLocation(res)).toBe('http://localhost/');
   });
 
+  it('인증됨: /login?next=/feed → next 보호 경로로 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/login?next=/feed'));
+    expect(getLocation(res)).toBe('http://localhost/feed');
+  });
+
+  it('인증됨: /login 의 unsafe next 는 홈으로 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/login?next=https://evil.example.com'));
+    expect(getLocation(res)).toBe('http://localhost/');
+  });
+
+  it('인증됨: /login?next=/login 은 자기 자신으로 루프하지 않고 홈으로 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/login?next=/login'));
+    expect(getLocation(res)).toBe('http://localhost/');
+  });
+
+  it('인증됨: /signup → / 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/signup'));
+    expect(getLocation(res)).toBe('http://localhost/');
+  });
+
+  it('인증됨: /signup?intent=guest → 게스트 이어받기 경로로 리다이렉트', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    // @ts-expect-error — partial mock
+    const res = await updateSession(makeAuthedRequest('/signup?intent=guest'));
+    expect(getLocation(res)).toBe('http://localhost/guest/complete');
+  });
+
   it('미인증: /onboarding/dob, /today/me, /guest/complete 공개 경로 통과', async () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
     const { updateSession } = await import('@/lib/supabase/middleware');

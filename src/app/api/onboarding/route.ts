@@ -66,7 +66,18 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    if (error.code === '23505') return apiErrorResponse('USER_ALREADY_ONBOARDED', '', 409);
+    if (error.code === '23505') {
+      const { data: existingChart, error: existingChartError } = await db
+        .from('user_charts')
+        .select('chart_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (existingChartError || !existingChart) {
+        return apiErrorResponse('INTERNAL_ERROR', '', 500);
+      }
+      return apiErrorResponse('USER_ALREADY_ONBOARDED', '', 409);
+    }
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 

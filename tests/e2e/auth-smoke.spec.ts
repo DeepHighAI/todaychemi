@@ -71,7 +71,7 @@ test.describe('launch authenticated smoke @auth', () => {
     await page.getByRole('textbox', { name: /이메일/ }).fill(email);
     await page.getByLabel(/비밀번호/).fill(password);
     await submitEmailLogin(page);
-    await expect(page.locator('h1').filter({ hasText: '오늘사이 개인정보 처리방침' })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: '오늘케미 개인정보 처리방침' })).toBeVisible();
     await expectHealthyPage(page);
 
     const meResponse = await page.request.get('/api/me');

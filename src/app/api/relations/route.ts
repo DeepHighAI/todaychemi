@@ -10,6 +10,7 @@ import {
 } from '@/types/relation';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import { computeChart } from '@/lib/chart/compute';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 export async function GET() {
   const supabase = await createClient();
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
 
   // chart compute — 실패 시 relation은 등록 완료 (chartPending UX), chart는 추후 재시도 가능
   const relationId = (insertedRows as Array<{ relation_id: string }>)?.[0]?.relation_id ?? '';
+  if (!relationId) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+
   try {
     const computeResult = await computeChart(
       {
@@ -89,9 +92,14 @@ export async function POST(request: Request) {
       },
       { onConflict: 'chart_hash' },
     );
-    if (chartError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+    if (chartError) {
+      console.error('[relations] relation_charts upsert failed', {
+        error_code: chartError.code,
+        error: sanitizeErrorForLog(new Error(chartError.message)),
+      });
+    }
   } catch (err) {
-    console.error('[relations] computeChart failed', err);
+    console.error('[relations] computeChart failed', { error: sanitizeErrorForLog(err) });
     // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
   }
 

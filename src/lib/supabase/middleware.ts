@@ -31,6 +31,23 @@ function hasSupabaseAuthCookie(request: NextRequest): boolean {
     .some((cookie) => cookie.name.startsWith('sb-') && cookie.name.includes('auth-token'));
 }
 
+function sanitizeInternalPath(value: string | null): string | null {
+  if (!value) return null;
+  return value.startsWith('/') && !value.startsWith('//') ? value : null;
+}
+
+function resolveAuthenticatedLoginNext(request: NextRequest): URL {
+  const next = sanitizeInternalPath(request.nextUrl.searchParams.get('next'));
+  if (!next) return new URL('/', request.url);
+
+  const nextUrl = new URL(next, request.url);
+  if (nextUrl.pathname === '/login' || nextUrl.pathname === '/signup' || nextUrl.pathname === '/start') {
+    return new URL('/', request.url);
+  }
+
+  return nextUrl;
+}
+
 // Middleware helper — refresh Supabase auth cookies on every request.
 // Pattern: docs/patterns/nextjs15_supabase_ssr.md section 4.
 export async function updateSession(request: NextRequest) {
@@ -71,6 +88,17 @@ export async function updateSession(request: NextRequest) {
   const isPublic = PUBLIC_PATH_PATTERNS.some((p) => p.test(pathname));
 
   if (user && pathname === '/start') {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  if (user && pathname === '/login') {
+    return NextResponse.redirect(resolveAuthenticatedLoginNext(request));
+  }
+
+  if (user && pathname === '/signup') {
+    if (request.nextUrl.searchParams.get('intent') === 'guest') {
+      return NextResponse.redirect(new URL('/guest/complete', request.url));
+    }
     return NextResponse.redirect(new URL('/', request.url));
   }
 

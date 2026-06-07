@@ -6,9 +6,9 @@ import './globals.css';
 import Providers from './providers';
 
 export const metadata: Metadata = {
-  title: '오늘사이 (TWODAY) — 우리 오늘 무슨 사이야?',
+  title: '오늘케미 — 우리 사이, 오늘 케미는?',
   description:
-    '오늘 만나는 사람과의 흐름을 미리 확인해봐. 별명만으로 인연을 등록하고 오늘의 사이를 확인합니다.',
+    '오늘 만나는 사람과의 흐름을 미리 확인해봐. 별명만으로 인연을 등록하고 오늘의 케미를 확인합니다.',
 };
 
 export default async function RootLayout({

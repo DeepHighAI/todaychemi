@@ -50,7 +50,7 @@ export default async function PublicHapcardSharePage({ params }: Props) {
           href="/login"
           className="inline-flex h-12 items-center justify-center rounded-[var(--r-pill)] bg-primary px-5 text-sm font-bold text-primary-foreground active:translate-y-px"
         >
-          오늘사이에서 보기
+          오늘케미에서 보기
         </a>
       </section>
     </main>

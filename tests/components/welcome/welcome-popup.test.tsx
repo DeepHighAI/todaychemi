@@ -13,14 +13,14 @@ describe('WelcomePopup', () => {
     window.localStorage.clear();
   });
 
-  it('첫 진입 (seen=null) 시 오늘사이 소개 카피와 시작하기 버튼이 노출된다', async () => {
+  it('첫 진입 (seen=null) 시 오늘케미 소개 카피와 시작하기 버튼이 노출된다', async () => {
     const { WelcomePopup } = await import('@/components/welcome/welcome-popup');
     renderWithIntl(<WelcomePopup />);
     await waitFor(() => {
-      expect(screen.getByText('오늘사이')).toBeInTheDocument();
+      expect(screen.getByText('오늘케미')).toBeInTheDocument();
     });
     expect(
-      screen.getByText(/오늘 만나는 누군가와의 관계에 도움을 주기 위한 서비스입니다/),
+      screen.getByText(/오늘 만나는 누군가와의 케미 흐름을 미리 살펴보는 서비스입니다/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '시작하기' })).toBeInTheDocument();
   });
@@ -31,7 +31,7 @@ describe('WelcomePopup', () => {
     renderWithIntl(<WelcomePopup />);
     // 첫 effect 이후에도 노출되면 안 됨
     await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByText('오늘사이')).not.toBeInTheDocument();
+    expect(screen.queryByText('오늘케미')).not.toBeInTheDocument();
   });
 
   it('시작하기 버튼 클릭 시 localStorage 에 seen=1 이 기록된다', async () => {

@@ -46,7 +46,7 @@ export async function shareToKakao(payload: KakaoSharePayload): Promise<void> {
     },
     buttons: [
       {
-        title: '오늘사이에서 보기',
+        title: '오늘케미에서 보기',
         link: {
           mobileWebUrl: payload.url,
           webUrl: payload.url,

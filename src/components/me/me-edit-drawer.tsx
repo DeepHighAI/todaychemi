@@ -85,6 +85,8 @@ function MeEditForm({
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['me-chart'] });
       void qc.invalidateQueries({ queryKey: ['today'] });
+      void qc.invalidateQueries({ queryKey: ['whatif'] });
+      void qc.invalidateQueries({ queryKey: ['hapcard'] });
       void qc.invalidateQueries({ queryKey: ['me-profile'] });
       onSuccess();
     },

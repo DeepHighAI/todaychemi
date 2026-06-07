@@ -64,7 +64,7 @@ describe('Relations New — full 3-step flow', () => {
     const { default: ModePage } = await import('@/app/(app)/relations/new/mode/page');
     renderWithIntl(<ModePage />);
     const user3 = userEvent.setup();
-    await user3.click(screen.getByText('끌리는 사이'));
+    await user3.click(screen.getByText('썸 관계'));
     await user3.click(screen.getByRole('checkbox'));
     await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
     await user3.click(screen.getByRole('button', { name: '등록하기' }));

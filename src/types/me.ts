@@ -1,7 +1,8 @@
-import { z } from 'zod';
+import type { z } from 'zod';
+
 import { OnboardingRequestSchema } from './onboarding';
 
-export const MeUpdateRequestSchema = OnboardingRequestSchema.strict();
+export const MeUpdateRequestSchema = OnboardingRequestSchema;
 
 export type MeUpdateRequest = z.infer<typeof MeUpdateRequestSchema>;
 

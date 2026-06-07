@@ -34,6 +34,7 @@ const MOCK_CHART_HASH = 'b'.repeat(64);
 function makeClient(opts: {
   userId?: string | null;
   insertError?: { code: string; message: string } | null;
+  insertedRows?: Array<{ relation_id?: string }> | null;
   upsertChartError?: { code: string; message: string } | null;
   selectRows?: unknown[] | null;
   selectError?: { code: string; message: string } | null;
@@ -59,7 +60,7 @@ function makeClient(opts: {
 
   // relations INSERT chains .select('relation_id') → returns {data, error}
   const selectAfterInsert = vi.fn().mockResolvedValue({
-    data: opts.insertError ? null : [{ relation_id: 'rel-uuid-001' }],
+    data: opts.insertError ? null : (opts.insertedRows ?? [{ relation_id: 'rel-uuid-001' }]),
     error: opts.insertError ?? null,
   });
   const insertRelations = vi.fn().mockReturnValue({ select: selectAfterInsert });
@@ -151,6 +152,57 @@ describe('POST /api/relations', () => {
     expect(body.error.code).toBe('INVALID_BODY');
   });
 
+  it('400 → INVALID_BODY (unknown 시간인데 birth_time 이 남아 있음)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_time_knowledge: 'unknown',
+      birth_time: '09:00',
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('400 → INVALID_BODY (exact 시간인데 birth_time 이 null)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_time_knowledge: 'exact',
+      birth_time: null,
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('400 → INVALID_BODY (solar 날짜에 lunar leap flag true)', async () => {
+    const client = makeClient({});
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest({
+      ...VALID_BODY,
+      birth_date_calendar: 'solar',
+      is_lunar_leap: true,
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(client._insert).not.toHaveBeenCalled();
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
   it('401 → UNAUTHORIZED (미인증)', async () => {
     const client = makeClient({ userId: null });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
@@ -172,6 +224,19 @@ describe('POST /api/relations', () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('500 → INSERT 성공처럼 보이나 relation_id row가 없으면 chart compute 없이 실패', async () => {
+    const client = makeClient({ insertedRows: [] });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(computeChart).not.toHaveBeenCalled();
+    expect(client._upsertCharts).not.toHaveBeenCalled();
   });
 
   it('400 → INVALID_BODY on non-JSON body', async () => {
@@ -207,7 +272,10 @@ describe('POST /api/relations', () => {
   });
 
   it('computeChart 실패 → 200 (relation 등록 완료, chartPending UX)', async () => {
-    vi.mocked(computeChart).mockRejectedValue(new Error('KASI timeout'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(computeChart).mockRejectedValue(
+      new Error('KASI timeout birth_date=1995-07-20 birth_time=09:00 gender=F'),
+    );
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -217,17 +285,34 @@ describe('POST /api/relations', () => {
     expect(res.status).toBe(200);
     expect(client._insert).toHaveBeenCalledOnce();
     expect(client._upsertCharts).not.toHaveBeenCalled();
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1995-07-20');
+    expect(logged).not.toContain('09:00');
+    expect(logged).not.toContain('gender=F');
+    consoleSpy.mockRestore();
   });
 
-  it('relation_charts upsert 실패 → 500', async () => {
+  it('relation_charts upsert 실패 → 200 (relation 등록 완료, chartPending UX)', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const client = makeClient({ upsertChartError: { code: 'PGRST000', message: 'upsert fail' } });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(body.ok).toBe(true);
+    expect(body.relation_id).toBe('rel-uuid-001');
+    expect(client._insert).toHaveBeenCalledOnce();
+    expect(client._upsertCharts).toHaveBeenCalledOnce();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[relations] relation_charts upsert failed',
+      expect.objectContaining({
+        error_code: 'PGRST000',
+        error: expect.stringContaining('upsert fail'),
+      }),
+    );
+    consoleSpy.mockRestore();
   });
 });
 

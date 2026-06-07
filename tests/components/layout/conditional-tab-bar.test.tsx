@@ -18,7 +18,7 @@ vi.mock('next/link', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {
-      'nav.tab': { home: '홈', feed: '너랑나랑', me: '내 사주맵' },
+      'nav.tab': { home: '홈', feed: '케미피드', me: '내 프로필' },
     };
     return map[ns]?.[key] ?? key;
   },
@@ -33,31 +33,31 @@ async function renderConditionalTabBar(pathname: string) {
 describe('ConditionalTabBar', () => {
   it('/에서 TabBar를 렌더한다', async () => {
     await renderConditionalTabBar('/');
-    expect(screen.getByRole('link', { name: /너랑나랑/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /케미피드/ })).toBeInTheDocument();
   });
 
   it('/feed에서 TabBar를 렌더한다', async () => {
     await renderConditionalTabBar('/feed');
-    expect(screen.getByRole('link', { name: /너랑나랑/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /케미피드/ })).toBeInTheDocument();
   });
 
   it('/me에서 TabBar를 렌더한다', async () => {
     await renderConditionalTabBar('/me');
-    expect(screen.getByRole('link', { name: /내 사주맵/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /내 프로필/ })).toBeInTheDocument();
   });
 
   it('/onboarding에서 TabBar를 렌더하지 않는다', async () => {
     await renderConditionalTabBar('/onboarding');
-    expect(screen.queryByRole('link', { name: /너랑나랑/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /케미피드/ })).not.toBeInTheDocument();
   });
 
   it('/relations/new에서 TabBar를 렌더하지 않는다', async () => {
     await renderConditionalTabBar('/relations/new');
-    expect(screen.queryByRole('link', { name: /너랑나랑/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /케미피드/ })).not.toBeInTheDocument();
   });
 
   it('/onboarding/step 하위 경로에서 TabBar를 렌더하지 않는다', async () => {
     await renderConditionalTabBar('/onboarding/step');
-    expect(screen.queryByRole('link', { name: /너랑나랑/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /케미피드/ })).not.toBeInTheDocument();
   });
 });

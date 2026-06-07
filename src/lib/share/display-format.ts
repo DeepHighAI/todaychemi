@@ -1,12 +1,12 @@
 export const SHARE_OHAENG_ORDER = ['목', '화', '토', '금', '수'] as const;
 
 export const SHARE_MODE_LABELS: Record<string, string> = {
-  일합: '일로 연결된 사이',
-  친구합: '친구 사이',
-  돈합: '돈이 오가는 사이',
-  첫합: '처음 보는 사이',
-  썸합: '끌리는 사이',
-  오래합: '오래 알고 지낸 사이',
+  일합: '일 관계',
+  친구합: '친구 관계',
+  돈합: '돈 관계',
+  첫합: '첫 만남',
+  썸합: '썸 관계',
+  오래합: '오래된 관계',
 };
 
 export function formatShareModeLabel(mode: string): string {

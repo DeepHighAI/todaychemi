@@ -17,27 +17,35 @@ vi.mock('@/lib/auth/kakao', () => ({
   signInWithKakao: vi.fn(),
 }));
 
+vi.mock('@/lib/supabase/server');
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
-  useSearchParams: () => mockSearchParams,
+  redirect: vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  }),
 }));
 
 import { signUpWithEmail } from '@/lib/auth/email';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { signInWithKakao } from '@/lib/auth/kakao';
+import { createClient } from '@/lib/supabase/server';
 
 const mockSignUpWithEmail = vi.mocked(signUpWithEmail);
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
 const mockSignInWithKakao = vi.mocked(signInWithKakao);
 const mockRouterPush = vi.fn();
 const mockRouterReplace = vi.fn();
-let mockSearchParams = new URLSearchParams();
+const getUser = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRouterPush.mockReset();
   mockRouterReplace.mockReset();
-  mockSearchParams = new URLSearchParams();
+  vi.mocked(createClient).mockResolvedValue({
+    auth: { getUser },
+  } as never);
+  getUser.mockResolvedValue({ data: { user: null } });
   window.sessionStorage.clear();
 });
 
@@ -45,9 +53,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function renderSignupPage() {
+async function renderSignupPage(isGuestIntent = false) {
+  const { SignupClient } = await import('@/app/(auth)/signup/signup-client');
+  return renderWithIntl(<SignupClient isGuestIntent={isGuestIntent} />);
+}
+
+async function loadSignupPage() {
   const { default: SignupPage } = await import('@/app/(auth)/signup/page');
-  return renderWithIntl(<SignupPage />);
+  return SignupPage;
 }
 
 async function acceptLegalConsent(user: ReturnType<typeof userEvent.setup>) {
@@ -143,7 +156,6 @@ describe('SignupPage', () => {
   });
 
   it('guest intent reuses guest consent and routes email signup to /guest/complete', async () => {
-    mockSearchParams = new URLSearchParams('intent=guest');
     window.sessionStorage.setItem(
       'osa_guest_onboarding',
       JSON.stringify({
@@ -158,7 +170,7 @@ describe('SignupPage', () => {
     );
     mockSignUpWithEmail.mockResolvedValue(undefined);
     const user = userEvent.setup();
-    await renderSignupPage();
+    await renderSignupPage(true);
 
     expect(screen.queryByText('회원가입 필수 동의')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('이메일'), 'new@example.com');
@@ -177,7 +189,6 @@ describe('SignupPage', () => {
   });
 
   it('guest intent Google signup keeps next=/guest/complete without recording new consent', async () => {
-    mockSearchParams = new URLSearchParams('intent=guest');
     window.sessionStorage.setItem(
       'osa_guest_onboarding',
       JSON.stringify({
@@ -192,7 +203,7 @@ describe('SignupPage', () => {
     );
     mockSignInWithGoogle.mockResolvedValue(undefined);
     const user = userEvent.setup();
-    await renderSignupPage();
+    await renderSignupPage(true);
 
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
@@ -205,7 +216,6 @@ describe('SignupPage', () => {
   });
 
   it('guest intent Kakao signup keeps next=/guest/complete without recording new consent', async () => {
-    mockSearchParams = new URLSearchParams('intent=guest');
     window.sessionStorage.setItem(
       'osa_guest_onboarding',
       JSON.stringify({
@@ -220,7 +230,7 @@ describe('SignupPage', () => {
     );
     mockSignInWithKakao.mockResolvedValue(undefined);
     const user = userEvent.setup();
-    await renderSignupPage();
+    await renderSignupPage(true);
 
     await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
 
@@ -256,5 +266,25 @@ describe('SignupPage', () => {
     await user.click(screen.getByRole('button', { name: '이메일로 가입' }));
 
     await screen.findByText('요청이 너무 많아요. 잠시 후 다시 시도해주세요.');
+  });
+});
+
+describe('SignupPage server redirects', () => {
+  it('redirects authenticated users away from normal signup', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const SignupPage = await loadSignupPage();
+
+    await expect(
+      SignupPage({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/');
+  });
+
+  it('redirects authenticated guest-intent users to guest completion', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const SignupPage = await loadSignupPage();
+
+    await expect(
+      SignupPage({ searchParams: Promise.resolve({ intent: 'guest' }) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/guest/complete');
   });
 });

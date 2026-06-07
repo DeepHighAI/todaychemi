@@ -279,7 +279,7 @@ test.describe('launch core flow smoke', () => {
     await page.evaluate(() => window.localStorage.setItem('welcome_popup_seen_v1', '1'));
 
     await page.goto('/me');
-    await expect(page.getByText('내 사주맵', { exact: true })).toBeVisible();
+    await expect(page.getByText('내 프로필', { exact: true })).toBeVisible();
     await expect(page.getByText('부적 지갑')).toBeVisible();
     await expect(page.getByRole('button', { name: '충전' })).toHaveCount(0);
     await expectHealthyPage(page);
@@ -300,11 +300,11 @@ test.describe('launch core flow smoke', () => {
       }));
     });
     await page.goto('/relations/new/mode');
-    await page.getByRole('button', { name: /끌리는 사이/ }).click();
+    await page.getByRole('button', { name: /썸 관계/ }).click();
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: '등록하기' }).click();
     await expect(page).toHaveURL(/\/feed\?focus=relation-launch-smoke$/);
-    await expect(page.getByRole('heading', { name: '너랑나랑' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '케미피드' })).toBeVisible();
     await expect(page.getByText('테스트인연')).toBeVisible();
     await expectHealthyPage(page);
 
@@ -319,7 +319,7 @@ test.describe('launch core flow smoke', () => {
     await page.getByRole('button', { name: /그럴리 없어! 다시/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     // Replay paid-use UX smoke: server code owns refund_tokens_once/idempotency and pay-per-use unlocks.
-    await page.getByRole('button', { name: '재해석 받기' }).click();
+    await page.getByRole('button', { name: '케미 다시 맞추기' }).click();
     await expect(page.getByText('재해석 완료. 흐름이 갱신되었어요.')).toBeVisible();
     await expectHealthyPage(page);
 
@@ -330,7 +330,7 @@ test.describe('launch core flow smoke', () => {
 
     await page.goto('/payments/fail?code=CANCELED&message=launch%20cancel%20smoke');
     await expect(page.getByText('CANCELED')).toBeVisible();
-    await expect(page.getByRole('link', { name: '합피드로' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '케미피드로' })).toBeVisible();
     await expectHealthyPage(page);
 
     await mockJson(page, '**/api/launch-smoke/server-500', { error: { code: 'INTERNAL_ERROR', message: 'internal error launch smoke' } }, 500);

@@ -23,7 +23,7 @@ describe('buildSharePayload', () => {
     expect(typeof result.url).toBe('string');
   });
 
-  it('nickname-only → text에 nickname·오늘온도 포함, 생일·시간·장소 0건', () => {
+  it('nickname-only → text에 nickname·케미온도 포함, 생일·시간·장소 0건', () => {
     const result = buildSharePayload({ ...BASE_INPUT, range: 'nickname-only' });
     expect(result.text).toContain('봄달');
     expect(result.text).toContain('38.4°C');

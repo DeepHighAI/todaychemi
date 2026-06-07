@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { BirthCalendarSchema, BirthTimeKnowledgeSchema, GenderSchema } from './relation';
+import {
+  BirthCalendarSchema,
+  BirthTimeKnowledgeSchema,
+  GenderSchema,
+  validateBirthInputConsistency,
+} from './relation';
 
 const TimeStringRegex = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
@@ -14,7 +19,8 @@ export const OnboardingRequestSchema = z
     birth_time: z.string().regex(TimeStringRegex).nullable(),
     gender: GenderSchema,
   })
-  .strict();
+  .strict()
+  .superRefine(validateBirthInputConsistency);
 
 export type OnboardingRequest = z.infer<typeof OnboardingRequestSchema>;
 

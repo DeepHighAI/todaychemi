@@ -2,6 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient } from '@tanstack/react-query';
 import { renderWithProviders } from '../../utils/render-with-providers';
 import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 
@@ -121,6 +122,28 @@ describe('MeEditDrawer', () => {
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
+  });
+
+  it('저장 성공 → chart 기반 분석 캐시를 무효화한다', async () => {
+    mockFetch({ patchOk: true });
+    const invalidateQueries = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+
+    renderWithProviders(<MeEditDrawer open={true} onOpenChange={vi.fn()} />);
+
+    await waitFor(() => {
+      const input = screen.getByLabelText(/별명/i) as HTMLInputElement;
+      expect(input.value).toBe('하늘달');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /저장/ }));
+
+    await waitFor(() => {
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['whatif'] });
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['me-chart'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['today'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['me-profile'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['hapcard'] });
   });
 
   it('저장 실패 → error 메시지 노출 + drawer 유지', async () => {

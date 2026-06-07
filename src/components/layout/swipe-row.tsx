@@ -9,7 +9,14 @@
  *   </SwipeRow>
  */
 
-import { useRef, useState, useCallback, type ReactNode, type MouseEvent } from 'react';
+import {
+  useRef,
+  useState,
+  useCallback,
+  type ReactNode,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -57,6 +64,13 @@ export function SwipeRow({ children, onDelete, onClick, actionWidth = 84 }: Swip
     onClick?.(e);
   };
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    if (revealed) { setDx(0); setRevealed(false); return; }
+    onClick(e as unknown as MouseEvent);
+  };
+
   return (
     <div className="relative overflow-hidden rounded-[var(--r-md)]">
       {/* delete action (sits under row) */}
@@ -80,7 +94,10 @@ export function SwipeRow({ children, onDelete, onClick, actionWidth = 84 }: Swip
         onMouseUp={onEnd}
         onMouseLeave={onEnd}
         onClick={handleClick}
-        className="relative bg-card"
+        onKeyDown={handleKeyDown}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        className={`relative bg-card ${onClick ? 'cursor-pointer' : ''}`}
         style={{
           transform: `translateX(${dx}px)`,
           transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)',

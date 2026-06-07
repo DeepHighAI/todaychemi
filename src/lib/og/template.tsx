@@ -34,7 +34,7 @@ export function OgTemplate({ payload }: { payload: OgPayload }) {
           marginBottom: 24,
         }}
       >
-        오늘온도 {payload.temperature_label}
+        케미온도 {payload.temperature_label}
       </div>
 
       {payload.range === 'nickname-ohaeng' && payload.ohaeng_counts && (
@@ -61,7 +61,7 @@ export function OgTemplate({ payload }: { payload: OgPayload }) {
           letterSpacing: 2,
         }}
       >
-        오늘사이에서 확인해봐
+        오늘케미에서 확인해봐
       </div>
     </div>
   );

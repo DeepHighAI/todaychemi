@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
 
 export default function GlobalError({
   error,
@@ -12,8 +13,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
-    Sentry.captureException(error);
+    const safeError = sanitizeErrorForReporting(error);
+    console.error(safeError);
+    Sentry.captureException(safeError);
   }, [error]);
 
   return (

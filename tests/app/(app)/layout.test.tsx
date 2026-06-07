@@ -24,11 +24,11 @@ vi.mock('@/components/welcome/welcome-popup', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: (ns: string) => (key: string) => {
     const map: Record<string, Record<string, string>> = {
-      'nav.tab': { home: '홈', feed: '너랑나랑', me: '내 사주맵' },
-      home: { greeting: '오늘의 사이', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
+      'nav.tab': { home: '홈', feed: '케미피드', me: '내 프로필' },
+      home: { greeting: '오늘의 케미', add_relation: '+ 인연', reused_label: '어제 기준', yesterday: '어제' },
       'welcome.popup': {
-        title: '오늘사이',
-        body: '오늘사이는\n오늘 만나는 누군가와의 관계에 도움을 주기 위한 서비스입니다.',
+        title: '오늘케미',
+        body: '오늘케미는\n오늘 만나는 누군가와의 관계에 도움을 주기 위한 서비스입니다.',
         cta: '누군가와의 오늘을 미리 보세요',
         button: '시작하기',
       },
@@ -43,8 +43,8 @@ describe('AppLayout', () => {
     render(<AppLayout><div data-testid="child" /></AppLayout>);
     expect(screen.getByRole('navigation')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /홈/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /너랑나랑/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /내 사주맵/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /케미피드/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /내 프로필/ })).toBeInTheDocument();
   });
 
   it('children을 렌더한다', async () => {

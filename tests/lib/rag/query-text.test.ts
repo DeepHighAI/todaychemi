@@ -37,7 +37,7 @@ const BASE_INPUT: BuildHapcardInput = {
   target_date: '2026-05-21',
 };
 
-describe('buildRagQueryText — 오늘 우리는 RAG 쿼리 텍스트 빌더', () => {
+describe('buildRagQueryText — 오늘 케미 RAG 쿼리 텍스트 빌더', () => {
   it('mode 한글 토큰을 포함한다', () => {
     const text = buildRagQueryText(BASE_INPUT);
     expect(text).toContain('일합');
