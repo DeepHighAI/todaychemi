@@ -231,9 +231,9 @@ UPDATE public.prompt_versions
 
 | 용도 | 모델 | 이유 |
 |---|---|---|
-| 핵심 합카드 해석 (관계 해석 8p) | `gpt-5` | 가장 높은 품질, 정확한 명리 반영 |
+| 핵심 케미카드 해석 (관계 해석 8p) | `gpt-5` | 가장 높은 품질, 정확한 명리 반영 |
 | 딥합 (깊이 리포트) | `gpt-5` | 장문 심층 분석 |
-| 오늘합 (Daily Card) | `gpt-5-mini` | 짧고 반복적 출력, 비용 최소화 |
+| 오늘 케미 (Daily Card) | `gpt-5-mini` | 짧고 반복적 출력, 비용 최소화 |
 | LLM-as-Judge (CI) | `gpt-5-mini` | 심사 비용 최소화 |
 | 장애 fallback | `ANTHROPIC_FALLBACK_MODEL` (기본 `claude-sonnet-4-5`) | OpenAI 전체 장애 시에만 |
 

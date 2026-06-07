@@ -29,10 +29,10 @@
 
 ## 3. 유저 경험 영향
 
-- 새 합카드 생성: 불가 (`LLM_ALL_PROVIDERS_DOWN` 에러)
-- 기존 합카드 조회: 정상
+- 새 케미카드 생성: 불가 (`LLM_ALL_PROVIDERS_DOWN` 에러)
+- 기존 케미카드 조회: 정상
 - Daily Hap: 전날 카드 재사용 (`reused_from_yesterday: true`)
-- 다시합(replay): 불가
+- 케미 다시 맞추기(replay): 불가
 
 ---
 

@@ -23,8 +23,8 @@
 | `POST /api/onboarding` | Route Handler | required | `OnboardingRequest` | `{ok:true}` | 서버 `legal_consents` 레코드가 없으면 `LEGAL_CONSENT_REQUIRED` |
 | `GET /api/og/share/[token]` | Route Handler (next/og) | public token | — | `image/png` | 공개 공유 카드 이미지 |
 | `POST /actions/archiveRelation` | Server Action | required | `{relationId}` | `{ok: true}` | soft delete (archived_at 설정) |
-| `GET /api/me` | Route Handler | required | — | `{ok,profile}` | 내 사주맵 수정 drawer 사전 채움 |
-| `PATCH /api/me` | Route Handler | required | `OnboardingRequest` | `{ok,chart_hash}` | 내 사주맵 수정. legal consent 필드는 변경하지 않음 |
+| `GET /api/me` | Route Handler | required | — | `{ok,profile}` | 내 프로필 수정 drawer 사전 채움 |
+| `PATCH /api/me` | Route Handler | required | `OnboardingRequest` | `{ok,chart_hash}` | 내 프로필 수정. legal consent 필드는 변경하지 않음 |
 | `GET /api/me/export` | Route Handler | required | — | JSON attachment | 개인정보 열람·전송 요구용 JSON export |
 | `POST /api/me/delete-request` | Route Handler | required | — | `{ok,deletion_requested_at}` | 회원 탈퇴 요청. `users.deletion_requested_at` 기록, 30일 grace period |
 | `GET /api/me/wallet` | Route Handler | required | — | `WalletResponse` | 보유 부적, 최근 원장, 이번 달 사용량 + 최근 14일 사용량 |
@@ -244,7 +244,7 @@ PII 주의: LLM 페이로드에 `birth_date`, `nickname`, `email` 포함 금지 
 2. `award_free_talisman_session_rewards` RPC가 `public.users` 프로필 존재 여부를 먼저 확인한다. 온보딩 전이면 `PROFILE_REQUIRED`를 반환하고 원장을 쓰지 않는다.
 3. KST 기준 당일 `daily_login:<YYYY-MM-DD>` reference가 없으면 `reason='bonus'`, `delta=+1`을 기록한다.
 4. Auth 생성일이 정책 기준일(`2026-05-25T00:00:00+09:00`) 이후이고 `signup:<user_id>` reference가 없으면 `reason='bonus'`, `delta=+5`를 기록한다.
-5. 공유 보상은 Kakao webhook callback에서만 `share:<share_id>` reference를 사용해 지급한다. 같은 **오늘 우리는** 카드당 1회, KST 하루 최대 5회다.
+5. 공유 보상은 Kakao webhook callback에서만 `share:<share_id>` reference를 사용해 지급한다. 같은 **오늘 케미** 카드당 1회, KST 하루 최대 5회다.
 
 ### POST /api/payments/webhook 상세
 

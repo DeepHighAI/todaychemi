@@ -3,13 +3,14 @@
 **Date:** 2026-06-03
 **Status:** Accepted (비협상 — 변경 시 CLAUDE.md §1.1 승인 필수)
 **Deciders:** batisututu
+**Amended:** 2026-06-07 — 가격 800/500/400 → **1,000/800/600원**, 부적 차감 8/5/4 → **10/8/6p** (§1.1 D6 확정. 사유: 앱인토스 인앱결제 수수료 약 20% 반영 + 웹·미니앱 가격 통일. 1부적=100원 등가 유지)
 
 ## Context
 
 기존 모델은 부적(토큰) 번들을 미리 충전한 뒤 유료 기능 사용 시 부적을 차감했다. 충전
 UX 마찰(별도 충전 화면·번들 선택), 미사용 잔액 누적, 결제 흐름 복잡도가 문제였다.
 
-유료 기능은 **합카드(hapcard)·만약합(whatif)·다시합(replay)** 3종이다. 이들을 사용
+유료 기능은 **케미카드(hapcard)·만약에 우리(whatif)·케미 다시 맞추기(replay)** 3종이다. 이들을 사용
 시점에 즉시 결제하는 모델로 전환한다(`feature/pay-per-use-billing`, 2026-06-01 §1.1
 설계 승인, `/plan-eng-review`).
 
@@ -19,11 +20,11 @@ UX 마찰(별도 충전 화면·번들 선택), 미사용 잔액 누적, 결제 
 ## Decision
 
 ### 1. 하이브리드 과금 (무료 부적 우선 → 부족 시 현금)
-무료 부적 잔액이 충분하면 `token_ledger`에서 차감(합카드 8p·만약합 5p·다시합 4p).
-잔액 부족 시 **1회성 현금 결제**(Toss Payment Widget V2)로 전환한다. 구독·번들 없음.
+무료 부적 잔액이 충분하면 `token_ledger`에서 차감(케미카드 10p·만약에 우리 8p·케미 다시 맞추기 6p).
+잔액 부족 시 **1회성 현금 결제**(웹: Toss Payment Widget V2 / 앱인토스 미니앱: 인앱결제 IAP — 2026-06-07 D3)로 전환한다. 구독·번들 없음.
 
 ### 2. 가격 단일 출처
-합카드 800원 / 만약합 500원 / 다시합 400원. 유일 출처는
+케미카드 1,000원 / 만약에 우리 800원 / 케미 다시 맞추기 600원 (2026-06-07 개정, 웹·미니앱 통일). 유일 출처는
 `src/lib/payments/feature-prices.ts`의 `FEATURE_PRICES_KRW`. DB·문서·클라이언트는 이 값을
 참조하며 별도 상품 카탈로그 테이블을 두지 않는다.
 
@@ -40,7 +41,7 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
 - **현금 경로** — `payments`에 `charge_type='feature_use'`, `feature_id`/`feature_ref` 일치, `status='confirmed'` row.
 
 별도 entitlement 테이블 없이 `token_ledger`·`payments`가 곧 잠금해제 레코드다.
-`feature_ref` 포맷: 합카드/만약합 = `cache_key`, 다시합 = `replay:{hapcard_id}:{jinjin_date}`.
+`feature_ref` 포맷: 케미카드/만약에 우리 = `cache_key`, 케미 다시 맞추기 = `replay:{hapcard_id}:{jinjin_date}`.
 
 ### 5. Read-path 게이트 (Phase 7)
 본문을 반환하는 GET 라우트도 쓰기 경로와 동일하게 게이트를 통과해야 한다. 본문 섹션을
@@ -58,7 +59,7 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
 
 ### 8. 수용된 메타데이터 노출 (Phase 7 §1.1, 2026-06-03)
 `snapshots`(점수 타임라인)·`OG /api/og/hapcard/[id]`(점수+오행 이미지, auth 401)·`share`(공유
-토큰 생성, nickname+점수)는 **본문이 아닌 점수·메타데이터만** 노출한다. 합점수는 이미 합피드에서
+토큰 생성, nickname+점수)는 **본문이 아닌 점수·메타데이터만** 노출한다. 합점수는 이미 케미피드에서
 무료로 보이므로 이 3경로는 게이트하지 않는다(본문 유출 아님). 게이트 범위는 본문 2경로(§5)로 한정.
 
 ## Alternatives Considered
@@ -81,13 +82,13 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
 **Negative / 알려진 한계 (codex challenge 2026-06-02, disposition free-token backlog):**
 - **#1** 환불 후 무료 재잠금해제 — `token_ledger` 차감 기록이 환불로 0이 되어도 unlock 판정이 유지될 수 있음(free-token 경로). backlog.
 - **#2** `deduct_tokens_once` 무락 동시성 overspend — pre-existing RPC 한계, 동시 요청 시 잔액 초과 차감 가능. backlog.
-- **#3** KST 자정 cash 고아 — 모델 C에서 자정 경계에 선생성/결제가 분리되면 미결제 선생성 row가 고아가 될 수 있음(다시합 dated-ref). 본 ADR이 수용하는 모델 C 엣지로 문서화.
+- **#3** KST 자정 cash 고아 — 모델 C에서 자정 경계에 선생성/결제가 분리되면 미결제 선생성 row가 고아가 될 수 있음(케미 다시 맞추기 dated-ref). 본 ADR이 수용하는 모델 C 엣지로 문서화.
 - **#5** cash-gen 한도 raceable — `checkCashGenLimit`가 트랜잭션 락 없이 카운트해 동시 요청 시 한도 초과 선생성 가능. backlog.
 - (**#4** 임의 ref 결제·**#6** RPC error→pay_required·**#7** init 더블탭 500 은 Phase 5에서 수정 — `verify-feature-ref-ownership`·게이트 2중 판별·23505 pending 재사용.)
 
 ## Implementation
 
-- `src/lib/payments/feature-prices.ts` — `FEATURE_PRICES_KRW` 단일 출처(800/500/400 · 8/5/4p).
+- `src/lib/payments/feature-prices.ts` — `FEATURE_PRICES_KRW` 단일 출처(1,000/800/600 · 10/8/6p).
 - `src/lib/payments/feature-unlock.ts` — `isFeatureUnlocked` 잠금 단일 진실.
 - `src/lib/payments/feature-gate.ts` — `resolveFeatureCharge`(free|unlocked|pay_required, charged). 게이트 2중 판별(P0001+INSUFFICIENT_TOKENS만 pay_required).
 - `src/lib/payments/feature-complete.ts` — `confirmFeaturePaymentForUser`(토큰 적립 X·멱등).

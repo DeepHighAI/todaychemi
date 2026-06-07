@@ -1,6 +1,6 @@
 # RAG Classics Human Review Packet
 
-> Scope: 고전 20건은 **오늘 우리는**과 **그럴리 없어! 다시**의 근거 인용에 쓰인다. 이 문서는 검수 운영용이며, 실제 명리 검수 결과가 들어오기 전까지 YAML `review_status`는 `approved_ai_pending_human`으로 유지한다.
+> Scope: 고전 20건은 **오늘 케미**과 **그럴리 없어! 다시**의 근거 인용에 쓰인다. 이 문서는 검수 운영용이며, 실제 명리 검수 결과가 들어오기 전까지 YAML `review_status`는 `approved_ai_pending_human`으로 유지한다.
 
 ## Review Rule
 
@@ -10,7 +10,7 @@
 |---|---|
 | `source_accuracy` | 원문·출전·장 번호가 맞는가 |
 | `translation_accuracy` | 현대어 풀이가 원문 의미를 왜곡하지 않는가 |
-| `mingli_fit` | 오늘 우리는/그럴리 없어! 다시의 관계 해석 근거로 쓰기에 적합한가 |
+| `mingli_fit` | 오늘 케미/그럴리 없어! 다시의 관계 해석 근거로 쓰기에 적합한가 |
 | `beginner_clarity` | 한자·전문 용어를 모르는 사용자에게도 설명 가능한가 |
 | `risk_note` | 과장, 단정, 성별 고정관념, 운명론적 표현 위험이 있는가 |
 

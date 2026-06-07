@@ -157,6 +157,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **pay-per-use Phase 6 코드 제거 완료 ✅ (2026-06-03)** — 레거시 토큰충전 경로 1 원자 커밋 `98fcc61`. **1991/1991 PASS, tsc 0, lint 0, `pnpm verify:billing-policy-readiness` PASS(8/8).** 삭제: `products.ts`·`token-costs.ts`·`payments/charge/*`·`payments/success/page.tsx`·단수 `payment/*`(checkout/fail/success, §1.1 전부 삭제 확정)·`charge-sheet.tsx`·old `api/payments/{init,order,confirm}/route.ts` + 6 테스트. 슬림: `complete.ts`(`confirmPaymentForUser`+`getTossProduct` import 제거, `markPayment*`/`confirmOrQueryTossPayment`/`PaymentFlowError` 유지·export — feature-complete 의존) · `wallet.ts`(`WalletProduct`/`PaymentInit*`/`Order*` 제거, ledger 타입 유지). 편집: `payments/fail/page.tsx` CTA `/payments/charge`→`/feed`(유일 dangling) + 테스트 동기화 · `verify-billing-policy-readiness.ts` 재작성(feature-prices 800/500/400 + products/token-costs 부재 + feature routes + 20260601000000 + refund 안전망 코드 단언, PRD/doc 단언 제거=Phase 8). stale `.next/types` validator 가 삭제 라우트 참조 → `rm -rf .next` 후 tsc 0(소스 clean). **`migrations.manifest.ts` 미수정**(standalone `feature-pay-per-use.migration.test.ts` 가 커버). **db:push 적용 완료 ✅ (2026-06-03)**: `20260601000000` 라이브 반영(payments charge_type/feature_id/feature_ref + shape check + partial-unique index + `confirm_feature_payment` RPC + **drop `confirm_token_purchase`**). `db:push:dry`→"up to date", `tests/db/` 58/58 PASS. 링크 `jamhkucluhiibqpjsiov`. **재개**: Phase 7(read-path 감사 — GET hapcard/OG/feed/snapshots 가 `isFeatureUnlocked` 통과 검증). 핸드오프: `session_pay_per_use_phase6_complete_2026_06_03.md`.
 - **pay-per-use Phase 7 완료 ✅ (2026-06-03)** — read-path 미결제 본문 유출 감사 + 차단. 커밋 `97a1b21`. 감사 결론: 과제 명시 4경로(hapcard page·OG·feed·replay)는 안전(page/replay 기게이트, feed/OG=메타데이터)이나 **미명시 2 GET 서브라우트**(`ohaeng-interpretation`·`role-analysis`)가 게이트 없이 hapcard 본문 섹션을 반환 = 유출. replay 게이트 패턴 이식: hapcard fetch 직후 `isFeatureUnlocked('hapcard', cache_key)` 미통과 시 402(stored/rules 분기 이전), `cache_key` SELECT 추가, DB 마이그레이션 없음. TDD 미결제→402+본문 미포함 단언 2건. **1994/1994 PASS, tsc 0, lint 0.** §1.1 범위 확정: 본문 2경로만 게이트, snapshots/OG/share(점수·메타)=Phase 8 ADR-039 수용 노출.
 - **pay-per-use Phase 8 완료 ✅ (2026-06-03)** — ADR-039 신규(`docs/adr/ADR-039-pay-per-use-billing.md`, §1.1 **비협상**) + 문서 동기화. payments.md/db_schema.md 이전 WIP 마감(charge_type default `token_charge` 정정 · 인덱스명 `payments_feature_open_uidx` 정정 · `payments_feature_use_shape` check 추가 · 모델 C/read-path 게이트/수용 메타데이터 문단) + FGI §17 ADR-039 행 + CLAUDE.md §3 비협상 등록. `pnpm verify:billing-policy-readiness` PASS(8/8). **재개: Phase 9(/qa + /cso 통합 검증).**
+- **앱인토스 검토 + P0 가격 개정 (2026-06-07, Cowork 세션)** — 앱인토스 연동 검토 보고서 `docs/research/apps_in_toss_integration_review_2026-06-07.md` 작성 + §1.1 D1~D6 확정(Vite SPA 신규·user_key만·IAP+웹 병행·8플로우·TDS 채널톡 후·**가격 1,000/800/600 웹·미니앱 통일 + 부적 10/8/6p**). 적용: `feature-prices.ts` + ADR-039 Amended + payments.md + FGI(§3.2/3.3/3.4/3.5/ADR표 등 16곳) + PRD(§13 stale 충전 모델 → pay-per-use 재작성 포함 12곳) + 본 파일 §3. ⚠️ **가격 단언 테스트 ~12파일 + `verify-billing-policy-readiness.ts`(53-57·126행) + verify-payment-* 스크립트 미동기화 — Claude Code 후속 필수(pnpm test RED 예상). 커밋 전 테스트 동기화 의무.**
 
 ---
 
@@ -166,8 +167,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 | 핵심 | 위치 | ADR |
 |---|---|---|
-| §4.2 관계 사주 해석 (합카드 8p) | `fluttering-gathering-island.md` §4.2 / `PRD.md` §6 | ADR-010, ADR-016, ADR-026 |
-| §4.3 관계 진화 타임라인 재해석 (4p) | 같은 문서 §4.3 (Phase 1.5) | ADR-033 |
+| §4.2 관계 사주 해석 (합카드 ₩1,000/10부적) | `fluttering-gathering-island.md` §4.2 / `PRD.md` §6 | ADR-010, ADR-016, ADR-026 |
+| §4.3 관계 진화 타임라인 재해석 (₩600/6부적) | 같은 문서 §4.3 (Phase 1.5) | ADR-033 |
 
 ### 비협상 ADR (변경 시 §1.1 승인 필수)
 
@@ -180,7 +181,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **ADR-035** 점수 결정형 — LLM은 점수 산출에 개입 금지 (`compatibility_scoring_spec.md` 참조)
 - **ADR-037** 기술 스택 잠금 (`tech_stack.md` 참조)
 - **ADR-038** Hanja 노출 금지 — UI display layer에서 한자 제거. RAG/DB verbatim 유지. `convertHanja()` safety-net 의무.
-- **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 800/500/400 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). (`docs/adr/ADR-039-pay-per-use-billing.md`)
+- **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). (`docs/adr/ADR-039-pay-per-use-billing.md`)
 
 ---
 

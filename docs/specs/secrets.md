@@ -39,7 +39,7 @@
 | `LLM_DAILY_BUDGET_USD` | LLM 일일 예산 상한 (초과 시 fallback 차단) | Low | 직접 설정 (예: `20`) |
 | `BUBBLEWRAP_KEYSTORE_PATH` | TWA APK 서명용 keystore 파일 경로 | **Critical** | `keytool -genkey` 로 생성 (Phase 0 G5+) |
 | `BUBBLEWRAP_KEYSTORE_PASSWORD` | Bubblewrap keystore 패스워드 | **Critical** | keystore 생성 시 설정 |
-| `NEXT_PUBLIC_TODAY_WITH_RELATION` | 오늘합 relation-aware mode feature flag | Low (public) | 기본값 `true`, 장애 시 `false` |
+| `NEXT_PUBLIC_TODAY_WITH_RELATION` | 오늘 케미 relation-aware mode feature flag | Low (public) | 기본값 `true`, 장애 시 `false` |
 
 ---
 

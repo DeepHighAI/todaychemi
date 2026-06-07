@@ -370,7 +370,7 @@ https://<vercel-production-url>/payments/fail
 
 오픈 전 live smoke:
 
-1. 무료 부적이 부족한 계정으로 합카드/만약합/다시합 중 하나를 열어 feature pay sheet를 띄운다.
+1. 무료 부적이 부족한 계정으로 케미카드/만약에 우리/케미 다시 맞추기 중 하나를 열어 feature pay sheet를 띄운다.
 2. 실제 저액 결제 1건을 진행하고 원래 기능 화면으로 `paid=<ref>`가 붙어 복귀하는지 확인한다.
 3. `payments.status='confirmed'`, `charge_type='feature_use'`, `feature_id`, `feature_ref`를 확인한다.
 4. 유료 결제로 `token_ledger.reason='purchase'` 또는 잔액 증가가 생기지 않는지 확인한다.

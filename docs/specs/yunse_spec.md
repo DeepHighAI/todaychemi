@@ -9,9 +9,9 @@
 | 적용 범위 | 상태 |
 |---|---|
 | `/me` 윤세 카드 (4 레이어 시각화) | Phase Y0+Y1 — 이번 구현 |
-| 합카드 LLM 컨텍스트 yunse 포함 | Phase Y2 — 별도 PR |
+| 케미카드 LLM 컨텍스트 yunse 포함 | Phase Y2 — 별도 PR |
 | 점수 결정형 yunse 가중치 | Phase Y3 — 별도 PR |
-| ADR-033 change_score + 합피드 자동 정렬 | Phase Y4 — 별도 PR |
+| ADR-033 change_score + 케미피드 자동 정렬 | Phase Y4 — 별도 PR |
 | 푸시 트리거 (영향 큰 인연 1명 하이라이트) | Phase Y5 — 별도 PR |
 
 ## 2. 명리 이론

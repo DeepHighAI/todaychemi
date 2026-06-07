@@ -61,27 +61,27 @@ No application-layer rate limiting (Supabase-only, per §1.1 Q2.A decision 2026-
 - Guest consent nonce cookie TTL은 24시간이다. Email/OAuth consent TTL은 기존처럼 30분이다.
 - Supabase anonymous auth는 사용하지 않는다. 게스트 온보딩 입력과 오늘 결과는 현재 탭 `sessionStorage`에만 저장한다.
 - `/api/guest/today`는 guest legal cookie와 `OnboardingRequest`를 검증한 뒤 차트 계산과 **오늘 나의 흐름** 생성을 수행한다. `users`, `user_charts`, `daily_haps`에는 쓰지 않는다.
-- `/today/me`의 `친구와의 오늘 우리는 보기` CTA는 `/signup?intent=guest`로 이동한다.
+- `/today/me`의 `친구와의 오늘 케미 보기` CTA는 `/signup?intent=guest`로 이동한다.
 - 게스트 전환 가입은 email, Google, Kakao를 모두 지원한다. 가입 후 `/guest/complete`가 `sessionStorage`의 게스트 온보딩 입력을 인증된 `/api/onboarding`에 저장하고 `/relations/new`로 이동한다.
 - 게스트 입력이 없거나 server consent가 만료되면 `/start`에서 다시 시작한다.
 
 ## Google OAuth Flow
 
-- **오늘사이 로그인**: `/login` → `Google로 시작하기`
+- **오늘케미 로그인**: `/login` → `Google로 시작하기`
 - OAuth start is blocked until Terms, Privacy Policy, and age 14+ are checked.
 - OAuth start: `src/lib/auth/google.ts`
 - Callback: `/auth/callback` exchanges the Supabase code and claims the HttpOnly legal consent nonce for the authenticated user. Unsigned callback query params are ignored.
-- Success redirect: `/` 홈의 **오늘의 사이**
+- Success redirect: `/` 홈의 **오늘의 케미**
 - 게스트 전환 시 OAuth callback은 `next=/guest/complete`를 보존한다.
 - Remote setup and smoke test: `docs/runbooks/google_oauth.md`
 
 ## Kakao OAuth Flow
 
-- **오늘사이 로그인**: `/login` → `카카오로 시작하기`
+- **오늘케미 로그인**: `/login` → `카카오로 시작하기`
 - OAuth start is blocked until Terms, Privacy Policy, and age 14+ are checked.
 - OAuth start: `src/lib/auth/kakao.ts`
 - Callback: `/auth/callback` (Google과 같은 Supabase PKCE exchange route) claims the server-owned legal consent record.
-- Success redirect: `/` 홈의 **오늘의 사이**
+- Success redirect: `/` 홈의 **오늘의 케미**
 - 게스트 전환 시 OAuth callback은 `next=/guest/complete`를 보존한다.
 - Kakao `account_email`은 기본 요구하지 않는다. Supabase Kakao provider에서 "Allow users without an email"을 켠다.
 - Kakao profile/email/provider token은 로그인 식별에만 사용하며 LLM payload, share payload, public share page, OG image에는 직렬화하지 않는다.

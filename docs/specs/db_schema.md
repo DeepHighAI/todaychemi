@@ -205,7 +205,7 @@ create policy "relation_charts_own" on public.relation_charts for all
 
 ### 5. hapcards
 
-합카드 (관계 사주 해석 결과). 6모드 분류. ADR-016: 결과 카드 6 컴포넌트.
+케미카드 (관계 사주 해석 결과). 6모드 분류. ADR-016: 결과 카드 6 컴포넌트.
 
 ```sql
 -- supabase/migrations/0006_hapcards.sql
@@ -244,7 +244,7 @@ create policy "hapcards_own" on public.hapcards for all
 
 ### 6. hapcard_replays
 
-다시합 (재해석) 이력. ADR-015: 재해석 시 명리 근거 항상 표시.
+케미 다시 맞추기 (재해석) 이력. ADR-015: 재해석 시 명리 근거 항상 표시.
 
 ```sql
 -- supabase/migrations/0007_hapcard_replays.sql
@@ -271,7 +271,7 @@ create policy "replays_own" on public.hapcard_replays for all
 
 ### 7. daily_haps
 
-오늘합 (Daily Card). Lazy-first 생성. GPT-5 mini 모델.
+오늘 케미 (Daily Card). Lazy-first 생성. GPT-5 mini 모델.
 
 ```sql
 -- supabase/migrations/0008_daily_haps.sql

@@ -133,7 +133,7 @@ export type HapcardComponent =
   | 'glossary'
   | 'mini_radar';
 
-// 합카드 결과 — DB hapcard_results 테이블과 1:1 대응
+// 케미카드 결과 — DB hapcard_results 테이블과 1:1 대응
 export interface HapcardResult {
   id: string;
   user_id: string;
@@ -165,7 +165,7 @@ export interface HapcardResult {
   };
   viewport_priority: HapcardComponent[]; // 뷰포트 순서 힌트
   computed_at: string;
-  expires_at: string;                  // 오늘합은 자정, 합카드는 28일
+  expires_at: string;                  // 오늘 케미는 자정, 케미카드는 28일
 }
 ```
 
@@ -183,7 +183,7 @@ export interface ScoringInput {
   relation_chart_hash: ChartHash;
   mode: Mode;
   scoring_version: number;
-  ilji_date: string;    // 오늘합 날짜 (YYYY-MM-DD)
+  ilji_date: string;    // 오늘 케미 날짜 (YYYY-MM-DD)
 }
 
 // 점수 컴포넌트

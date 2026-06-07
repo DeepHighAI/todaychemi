@@ -14,10 +14,10 @@
 | 모드/경로 | 모델 | 이유 |
 |---|---|---|
 | hapcard | `gpt-5` | 9~13섹션 핵심 결과물 |
-| replay | `gpt-5` | 다시합 재해석 (사용자 비용 지불) |
+| replay | `gpt-5` | 케미 다시 맞추기 재해석 (사용자 비용 지불) |
 | deep (딥합, Phase 1.5) | `gpt-5` | 4페이지 심층 리포트 |
-| daily (오늘합) | `gpt-5-mini` | 빈도 높음, 비용 민감 |
-| whatif (만약합) | `gpt-5` | 시나리오 추정, hapcard 다음 품질 등급 |
+| daily (오늘 케미) | `gpt-5-mini` | 빈도 높음, 비용 민감 |
+| whatif (만약에 우리) | `gpt-5` | 시나리오 추정, hapcard 다음 품질 등급 |
 | fallback | `claude-sonnet-4-6` | OpenAI 5xx/장애 시 |
 
 `tech_stack.md` §3 갱신 의무 (§12 변경 매트릭스).

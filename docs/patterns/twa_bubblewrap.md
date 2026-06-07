@@ -31,8 +31,8 @@ bubblewrap init --manifest https://<domain>/manifest.json
 {
   "packageId": "com.saju.lens",
   "host": "<domain>",
-  "name": "합플 — 관계 사주",
-  "launcherName": "합플",
+  "name": "오늘케미 — 관계 사주",
+  "launcherName": "오늘케미",
   "display": "standalone",
   "themeColor": "#1A0A00",
   "navigationColor": "#1A0A00",
@@ -57,8 +57,8 @@ bubblewrap init --manifest https://<domain>/manifest.json
 ```json
 // public/manifest.json
 {
-  "name": "합플 — 관계 사주",
-  "short_name": "합플",
+  "name": "오늘케미 — 관계 사주",
+  "short_name": "오늘케미",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAF5F0",

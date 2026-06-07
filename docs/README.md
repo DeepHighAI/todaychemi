@@ -1,4 +1,4 @@
-# docs/ — TWODAY 보조 스펙 인덱스
+# docs/ — 오늘케미 보조 스펙 인덱스
 
 > 루트 7개 MD(권위 문서)는 변경하지 않는다. 본 디렉토리는 (a) 권위 문서가 약속만 하고 미생성한 보조 스펙, (b) 폐기된 fortune_architecture.md(v3.3)의 유효 추출분, (c) PR-0~G0 게이트 차단 spec을 담는다.
 
@@ -45,13 +45,13 @@
 - [api_key_rotation.md](runbooks/api_key_rotation.md)
 - [prompt_rollback.md](runbooks/prompt_rollback.md)
 - [incident_template.md](runbooks/incident_template.md)
-- [google_oauth.md](runbooks/google_oauth.md) — 오늘사이 Google OAuth 원격 설정
+- [google_oauth.md](runbooks/google_oauth.md) — 오늘케미 Google OAuth 원격 설정
 - [kakao_oauth_share.md](runbooks/kakao_oauth_share.md) — Kakao OAuth + KakaoTalk Share callback 설정
 
 ### legal/
 - [privacy_runbook.md](legal/privacy_runbook.md) — PIPA Art 35-37
-- [terms_of_service.md](legal/terms_of_service.md) — 오늘사이 이용약관 원문
-- [privacy_policy.md](legal/privacy_policy.md) — 오늘사이 개인정보 처리방침 원문
+- [terms_of_service.md](legal/terms_of_service.md) — 오늘케미 이용약관 원문
+- [privacy_policy.md](legal/privacy_policy.md) — 오늘케미 개인정보 처리방침 원문
 - [refund_policy.md](legal/refund_policy.md) — 유료 부적 환불 정책
 - [data_safety_form.md](legal/data_safety_form.md) — Google Play
 - [pii_minimization.md](legal/pii_minimization.md) — 5필드 + gender 단일 정의
@@ -65,7 +65,7 @@
 - [supabase_callback.md](patterns/supabase_callback.md)
 
 ### qa/
-- [rag_classics_review_packet.md](qa/rag_classics_review_packet.md) — 오늘 우리는/그럴리 없어! 다시 고전 20건 명리 검수팩
+- [rag_classics_review_packet.md](qa/rag_classics_review_packet.md) — 오늘 케미/그럴리 없어! 다시 고전 20건 명리 검수팩
 - [launch_readiness_2026-05-30.md](qa/launch_readiness_2026-05-30.md) — Vercel/Supabase/Auth/OpenAI/Toss 유료화 런칭 감사와 P0/P1/P2 백로그
 - [launch_p0_approval_packet.md](qa/launch_p0_approval_packet.md) — 런칭 P0 승인 의사결정 패킷과 승인 후 검증 순서
 - [launch_evidence_template.md](qa/launch_evidence_template.md) — Preview/Production smoke와 Go/No-Go 증거 기록 템플릿

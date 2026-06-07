@@ -109,7 +109,7 @@
 - 한자 Option C(경고+통과) 정책 + UI `convertHanja()` 최종 후처리.
 
 ### 4.2 **❗ 즉시 조치 필요 - 4단 모델 매핑 명세-구현 갭**
-- **명세**: GPT-5(핵심 hapcard) / GPT-5(딥합) / GPT-5 mini(오늘합) / Claude(fallback) 4단 라우팅 (`tech_stack.md`).
+- **명세**: GPT-5(핵심 hapcard) / GPT-5(딥합) / GPT-5 mini(오늘 케미) / Claude(fallback) 4단 라우팅 (`tech_stack.md`).
 - **실제**: `openai.ts:79` `DEFAULT_LLM_MODEL = 'gpt-5-mini'` 단일 운영. mode → model 라우팅 로직 미존재.
 - **영향**: hapcard 9~13섹션이 mini로 생성되어 품질·길이 부족 가능. 딥합 미출시지만 출시 시 결정 필요.
 
@@ -173,7 +173,7 @@
 | | |
 |---|---|
 | **목적** | hapcard/whatif/today builder 변경 시 9~13섹션 composition lock 회귀 + cause_factors convertHanja 호출 여부 + grounding 재시도 정책 일관성 검사. |
-| **트리거** | hapcard/* 또는 whatif/* 또는 today/* 변경 PR, "합카드 QA", "섹션 lock 검증" |
+| **트리거** | hapcard/* 또는 whatif/* 또는 today/* 변경 PR, "케미카드 QA", "섹션 lock 검증" |
 | **도구 권한** | Read, Grep, Bash (builder.test.ts 전체 실행) |
 | **출력** | 섹션 카운트 + Hanja regex 매칭 + 재시도 횟수 + 실패 케이스 |
 | **모델** | Sonnet |

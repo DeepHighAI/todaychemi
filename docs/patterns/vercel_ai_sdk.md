@@ -96,7 +96,7 @@ export function HapcardGenerator({ relationId, mode }: Props) {
       {isLoading && <SkeletonLoader />}
       {content && <HapcardContent content={content} />}
       <button onClick={generate} disabled={isLoading}>
-        합카드 생성
+        케미카드 생성
       </button>
     </div>
   );
@@ -115,7 +115,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 const MODELS = {
   hapcard: openai('gpt-5'),         // 핵심 관계 해석
   deep_hap: openai('gpt-5'),         // 딥합 (장문 심층)
-  daily_hap: openai('gpt-5-mini'),   // 오늘합 (짧고 반복적)
+  daily_hap: openai('gpt-5-mini'),   // 오늘 케미 (짧고 반복적)
   judge: openai('gpt-5-mini'),       // LLM-as-judge (CI)
   fallback: anthropic(process.env.ANTHROPIC_FALLBACK_MODEL ?? 'claude-sonnet-4-5'),  // 장애 시에만
 } as const;

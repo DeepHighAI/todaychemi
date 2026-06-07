@@ -1,6 +1,6 @@
 # 로컬 E2E Manual Smoke 가이드
 
-오늘사이 프로젝트의 핵심 사용자 flow를 브라우저에서 직접 점검하는 절차서다.
+오늘케미 프로젝트의 핵심 사용자 flow를 브라우저에서 직접 점검하는 절차서다.
 
 ---
 
@@ -75,13 +75,13 @@ pnpm seed:test-user
 
 ## ⚠ LLM 비용 경고
 
-F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
+F5(케미카드)·F6(오늘 홈)·F8(만약에 우리)는 LLM API 호출이 발생한다.
 
 | Flow | 예상 비용/회 | 캐시 조건 |
 |---|---|---|
-| F5 합카드 | ~$0.05 (GPT-5) | 같은 user+relation 의 `chart_hash` 가 동일하면 DB 캐시 hit → 재호출 무료 |
+| F5 케미카드 | ~$0.05 (GPT-5) | 같은 user+relation 의 `chart_hash` 가 동일하면 DB 캐시 hit → 재호출 무료 |
 | F6 오늘 홈 | ~$0.05 (GPT-5 mini) | 오늘 날짜(`jinjin_date`) 기준 DB 캐시. 같은 날 재접속 = 무료 |
-| F8 만약합 | ~$0.05/모드 (GPT-5) | `cache_key`(chart_hash + type) 기준 캐시. 같은 날 같은 모드 재호출 = 무료 |
+| F8 만약에 우리 | ~$0.05/모드 (GPT-5) | `cache_key`(chart_hash + type) 기준 캐시. 같은 날 같은 모드 재호출 = 무료 |
 
 한도: `LLM_DAILY_BUDGET_USD=20` (`.env.local` 설정값). 초과 시 503 응답.
 
@@ -101,7 +101,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 4. 이용약관, 개인정보처리방침, 만 14세 이상 동의 체크 후 `동의하고 시작하기`
 5. 자기 사주 온보딩 입력 후 review에서 `시작하기`
 6. `/today/me`에서 **오늘 나의 흐름** 결과 확인
-7. `친구와의 오늘 우리는 보기` 클릭
+7. `친구와의 오늘 케미 보기` 클릭
 8. `/signup?intent=guest`에서 이메일 또는 Google/Kakao 가입 진행
 9. 가입 완료 후 `/guest/complete`를 거쳐 `/relations/new` 이동 확인
 
@@ -130,7 +130,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 ### Expected
 
 - 가입 성공 시: `/onboarding` 리다이렉트
-- 로그인 성공 시: `/` (오늘 홈) 리다이렉트, TabBar(홈·피드·내사주) 노출
+- 로그인 성공 시: `/` (오늘 홈) 리다이렉트, TabBar(홈·피드·내 프로필) 노출
 - 인증 앱 첫 진입 시 `POST /api/rewards/session`이 호출된다. KST 기준 당일 첫 진입이면 `bonus +1`, 신규 계정이 온보딩을 완료한 뒤 첫 앱 화면에 들어오면 가입 보상 `bonus +5`도 함께 기록된다.
 
 ### Failure check
@@ -214,7 +214,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 
 ---
 
-## 5. F4 — 합피드 정렬 + 변화 배지
+## 5. F4 — 케미피드 정렬 + 변화 배지
 
 **URL**: `/feed`  
 **LLM**: 없음  
@@ -237,11 +237,11 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 | 증상 | 확인 |
 |---|---|
 | 카드 미표시 | Network 탭 `GET /api/relations` 응답 확인 |
-| 점수 0 | 합카드 아직 미생성 상태. F5 실행 후 다시 확인 |
+| 점수 0 | 케미카드 아직 미생성 상태. F5 실행 후 다시 확인 |
 
 ---
 
-## 6. F5 — 합카드 9섹션 생성
+## 6. F5 — 케미카드 9섹션 생성
 
 **URL**: `/hapcard/[id]` (`id` = 인연의 `hapcard_id`)  
 **LLM**: 있음 (~$0.05, GPT-5). DB 캐시 hit 시 무료.  
@@ -302,7 +302,7 @@ F5(합카드)·F6(오늘 홈)·F8(만약합)는 LLM API 호출이 발생한다.
 | DateLine | 오늘 날짜 (YYYY.MM.DD 형식) |
 | TodayHero | LLM 생성 오늘 운세 카드 (한 줄 결론 + 조언) |
 | AvoidActionCards | 오늘 피할 말 + 오늘 좋은 행동 |
-| WhatifTrigger | `이런건 어때 ✨` 버튼 (만약합 진입) |
+| WhatifTrigger | `이런건 어때 ✨` 버튼 (만약에 우리 진입) |
 | RecentFeedRows | 최근 인연 최대 5명 (합점수 표시) |
 
 ### Failure check
@@ -349,7 +349,7 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 ### Steps
 
-1. TabBar `내사주` 탭 클릭 또는 직접 `/me` 접속
+1. TabBar `내 프로필` 탭 클릭 또는 직접 `/me` 접속
 
 ### Expected
 
@@ -371,7 +371,7 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 ---
 
-## 9. F8 — 만약합 6모드
+## 9. F8 — 만약에 우리 6모드
 
 **URL**: `/` 에서 WhatifSheet 진입 (또는 직접 `/whatif/[type]`)  
 **LLM**: 있음 (~$0.05/모드, GPT-5). 당일 same 모드 캐시 hit 시 무료.  
@@ -411,20 +411,20 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 ## 부록 A: 보조 flow (선택)
 
-### F9 — 다시합 (Replay)
+### F9 — 케미 다시 맞추기 (Replay)
 
-합카드 하단 `다시 해석하기` 버튼 클릭. 토큰 4 차감. 당일 1회만 가능(idempotency).  
-Expected: 새 LLM 결과로 합카드 갱신.
+케미카드 하단 `다시 해석하기` 버튼 클릭. 토큰 4 차감. 당일 1회만 가능(idempotency).  
+Expected: 새 LLM 결과로 케미카드 갱신.
 
 ### F10 — 공유 시트 (Share)
 
-합카드 `공유하기` 버튼 → ShareSheet 드로어. 범위 선택(별명만/오행포함/성별포함) → `카카오톡` / `인스타그램/카드` / `링크 복사`.
-Expected: `/h/<token>` 공개 링크가 생성되고 OG 카드가 표시된다. Kakao callback으로 서버가 성공을 검증한 경우에만 `bonus +1`이 1회 지급된다. 같은 오늘 우리는 카드는 1회만 보상되며 KST 기준 하루 최대 5회다.
+케미카드 `공유하기` 버튼 → ShareSheet 드로어. 범위 선택(별명만/오행포함/성별포함) → `카카오톡` / `인스타그램/카드` / `링크 복사`.
+Expected: `/h/<token>` 공개 링크가 생성되고 OG 카드가 표시된다. Kakao callback으로 서버가 성공을 검증한 경우에만 `bonus +1`이 1회 지급된다. 같은 오늘 케미 카드는 1회만 보상되며 KST 기준 하루 최대 5회다.
 (PC 브라우저에서는 카드 이미지 다운로드 또는 링크 복사 경로 동작. 복사/다운로드만으로는 보상 지급 없음)
 
 ### F11 — Glossary 툴팁·바텀시트
 
-합카드 본문에서 파란 밑줄 용어(끌림·긴장·부딪힘·소모 등) 클릭.  
+케미카드 본문에서 파란 밑줄 용어(끌림·긴장·부딪힘·소모 등) 클릭.  
 Expected: 툴팁 팝오버 → `더 알아보기` → GlossarySheet(바텀시트) 열림 + 관련 용어 목록.
 
 ### F12 — 로그아웃 → 재로그인
@@ -492,10 +492,10 @@ pnpm seed:prompts
 | F1/F2 무료 부적 | `/api/rewards/session`, `/api/me/wallet` |
 | F2 온보딩 | `/api/onboarding` |
 | F3 인연 등록 | `/api/relations` |
-| F5 합카드 | `/api/hapcards` (POST, 최초 생성) |
+| F5 케미카드 | `/api/hapcards` (POST, 최초 생성) |
 | F6 오늘 홈 | `/api/today` |
 | F7 /me | `/api/me/chart` |
-| F8 만약합 | `/api/whatif/[type]` |
+| F8 만약에 우리 | `/api/whatif/[type]` |
 
 ---
 

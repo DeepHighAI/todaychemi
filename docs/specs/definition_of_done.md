@@ -58,7 +58,7 @@ Next.js 스캐폴드 생성 직후 PR-0 머지 전 충족 조건:
 - [ ] LLM-as-judge 점수 **≥ 3.5 / 5.0** (샘플 50개 이상)
 - [ ] GPT-5 → Claude fallback 비율 **< 20%** (정상 OpenAI 상태 기준)
 - [ ] 응답 시간 p95 **< 8초** (streaming 첫 청크 기준)
-- [ ] 6모드 × 3개 샘플 = 18개 합카드 수동 품질 검수 통과
+- [ ] 6모드 × 3개 샘플 = 18개 케미카드 수동 품질 검수 통과
 - [ ] banned_phrases 코퍼스 버전 문서화 (prompt_versions 테이블 연결)
 - [ ] `/codex challenge` 프롬프트 2차 의견 PASS
 
@@ -78,7 +78,7 @@ Next.js 스캐폴드 생성 직후 PR-0 머지 전 충족 조건:
 
 **출처**: ADR-004 고전 RAG
 
-- [ ] 생성된 합카드 `evidence.classics_quotes` 배열 **100%** 비율로 1개 이상 포함
+- [ ] 생성된 케미카드 `evidence.classics_quotes` 배열 **100%** 비율로 1개 이상 포함
 - [ ] 인용 출처(source) 목록 확정 및 문서화
 - [ ] `original` (원문) + `modern` (현대어 해석) 양식 준수 확인
 - [ ] 고전 RAG 데이터셋 최종 버전 태그
@@ -130,7 +130,7 @@ Next.js 스캐폴드 생성 직후 PR-0 머지 전 충족 조건:
 | 다중 검증 기록 | ssaju + manseryeok-js 불일치 케이스 분류 | G0 |
 | 고전 RAG 데이터셋 | 출처 목록 확정 + 초안 데이터셋 태그 | G0 |
 | 이론 프로필 버전 | `profile_version` 태그 + ADR 기록 | G3 |
-| 고전 인용 100% | 합카드 evidence 필수 포함 | G4 |
+| 고전 인용 100% | 케미카드 evidence 필수 포함 | G4 |
 
 ---
 

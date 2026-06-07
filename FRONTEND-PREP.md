@@ -1,4 +1,4 @@
-# 합플 — Frontend Implementation Handbook
+# 오늘케미 — Frontend Implementation Handbook
 
 > Single-source reference for porting the `UIDesign/` prototype to the
 > production stack. Read top to bottom on day 1; bookmark sections for
@@ -13,7 +13,7 @@
 
 ## 0. Snapshot
 
-합플 is a Korean relationship-astrology CRM PWA. The prototype (`UIDesign/`)
+오늘케미 is a Korean relationship-astrology CRM PWA. The prototype (`UIDesign/`)
 validated visual language and interaction flows using React 18 + Babel CDN with
 no bundler. Production uses Next.js 15 (App Router) + TypeScript strict +
 Tailwind CSS + shadcn/ui + Radix + TanStack Query + Zustand + Recharts +
@@ -38,7 +38,7 @@ locked in `tech_stack.md` (ADR-037), `PRD.md`, or the ADRs cited inline.
 | Server state | TanStack Query v5 | Supabase reads + invalidation |
 | i18n | next-intl | KO primary; EN/VI/TH/MS/ID via locale segments |
 | DB / Auth | Supabase (Postgres + RLS + Auth + Storage) | Free tier Phase 1-2 |
-| LLM | OpenAI GPT-5 (핵심), GPT-5 (딥합), GPT-5 mini (오늘합) | Fallback: Claude Sonnet 4.6 / Haiku 4.5 |
+| LLM | OpenAI GPT-5 (핵심), GPT-5 (딥합), GPT-5 mini (오늘 케미) | Fallback: Claude Sonnet 4.6 / Haiku 4.5 |
 | Hosting | Vercel Hobby | Phase 3 SEA: re-evaluate Cloudflare |
 | Charts | Recharts | Secondary; custom SVG preferred for `Ohaeng`, `Radar` |
 | PWA | next-pwa or custom Service Worker | TWA via Bubblewrap (ADR-031) |
@@ -66,7 +66,7 @@ saju-app/
 │  │  │  ├─ page.tsx                # S-04 인연 그리드
 │  │  │  └─ [relationId]/
 │  │  │     ├─ page.tsx             # S-09 인연 디테일 + 타임라인
-│  │  │     └─ result/page.tsx      # S-07 합카드
+│  │  │     └─ result/page.tsx      # S-07 케미카드
 │  │  ├─ relation/
 │  │  │  └─ new/
 │  │  │     ├─ page.tsx             # S-01-A 진입 / S-05 등록 폼 (multi-step)
@@ -76,7 +76,7 @@ saju-app/
 │  │  └─ explore/page.tsx           # S-08 이런건어때 시트
 │  ├─ api/
 │  │  ├─ hapcard/route.ts           # streaming Server Action → OpenAI
-│  │  └─ today/route.ts             # 오늘합 Route Handler
+│  │  └─ today/route.ts             # 오늘 케미 Route Handler
 │  ├─ layout.tsx                    # root layout: fonts, meta, providers
 │  └─ globals.css                   # token vars, dark-mode overrides
 ├─ components/
@@ -281,7 +281,7 @@ On first paint, `next-themes` injects an inline script to avoid flash
 | `Chip` (일주 chip) | Extended `shadcn Badge` | `components/primitives/Chip.tsx` | Add `element` prop (`'wood' | 'fire' | 'earth' | 'metal' | 'water'`) driving 60갑자 color token. `on` prop → selected state. |
 | `Seg` | `Radix ToggleGroup` | `components/primitives/SegControl.tsx` | Single-select. Tailwind styling only. |
 | `Icon` (14 SVGs) | `lucide-react` | — | `import { Home, Sparkles, User, Plus, MoreHorizontal, X, ChevronLeft, ChevronRight, Check, Lock, Trash2, Pencil, ArrowUpRight, Zap } from 'lucide-react'` — drop inline SVGs. |
-| `TabBar` | Custom `<TabBar>` | `components/primitives/TabBar.tsx` | Bottom-fixed, `pb-safe` (safe-area-inset-bottom), 3 tabs: 오늘 / 합피드 / 내사주. Active state via `usePathname()`. |
+| `TabBar` | Custom `<TabBar>` | `components/primitives/TabBar.tsx` | Bottom-fixed, `pb-safe` (safe-area-inset-bottom), 3 tabs: 오늘 / 케미피드 / 내 프로필. Active state via `usePathname()`. |
 | `Row` | Utility composition | — | No dedicated component. Use `<div className="flex items-center gap-3">` inline. |
 | `LiquidHero` | Custom `<LiquidHero>` | `components/primitives/LiquidHero.tsx` | CSS gradient from `--lg-1..--lg-4` + `backdrop-filter: blur`. Eyebrow / score / meta / bar slots. |
 | `Ohaeng` | Custom `<OhaengMap>` | `components/primitives/OhaengMap.tsx` | Custom SVG — 5 vertical bars. Uses `colors.element.*` tokens. PRD §6 shows **pentagon** (레이더) style for 오행맵 [3]; the bar chart is a secondary viz. Confirm with designer which to use as the primary hapcard [3]. |
@@ -312,13 +312,13 @@ S-99 → S-96 → S-08.
 | 2 | S-01-A | 인연 등록 입구 | `ScreenHome` (partial) | `/(app)/relation/new` | — | 1 |
 | 3 | S-02 | 본인 본명식 입력 | `IBirthDob`, `IBirthTime`, `IBirthCal`, `IBirthReview` in `screens-interactive.jsx` | Inline step in `/(app)/relation/new` (not standalone screen) | fortune-core 일주 calc | 1 |
 | 4 | S-03 | 오늘 홈 | `ScreenHome` (`screens-relation.jsx`) | `/(app)/today` | `daily_hap` table, GPT-5 mini | 1 |
-| 5 | S-04 | 인연 그리드 (합피드) | `ScreenFeed` (`screens-feed.jsx`) | `/(app)/feed` | `relations` table | 1 |
+| 5 | S-04 | 인연 그리드 (케미피드) | `ScreenFeed` (`screens-feed.jsx`) | `/(app)/feed` | `relations` table | 1 |
 | 6 | S-05 | 인연 등록 / 편집 | `IRelName`, `IRelDob`, `IRelMode` | `/(app)/relation/new` steps 2-4 | `relations` table, fortune-core | 1 |
-| 7 | S-06 | 합플레이 진입 + 6모드 | `IRelMode` | `/(app)/relation/new/mode` | — | 1 |
-| 8 | **S-07** | **합보기 합카드** ⭐ | `IHapcard`, `IHapcardExpand` (sheet) | `/(app)/feed/[relationId]/result` | fortune-core compat + GPT-5 stream | 1 |
+| 7 | S-06 | 관계 선택 진입 + 6모드 | `IRelMode` | `/(app)/relation/new/mode` | — | 1 |
+| 8 | **S-07** | **합보기 케미카드** ⭐ | `IHapcard`, `IHapcardExpand` (sheet) | `/(app)/feed/[relationId]/result` | fortune-core compat + GPT-5 stream | 1 |
 | 9 | S-08 | 이런건어때 시트 | Drawer overlay | Sheet on `/(app)/today` or `/(app)/feed` | — | 1 |
 | 10 | S-08-T | 명리 용어 툴팁 시스템 | — (not in prototype) | Global component | — | 1 |
-| 11 | S-96 | 공유합카드 (1-2종 MVP) | `ScreenShareCard` (`screens-result.jsx`) | `next/og` API route | hapcard data | 1 |
+| 11 | S-96 | 공유케미카드 (1-2종 MVP) | `ScreenShareCard` (`screens-result.jsx`) | `next/og` API route | hapcard data | 1 |
 | 12 | S-97 | 푸시 알림 카드 + 옵트인 토글 (D+1) | `ScreenNotif` (`screens-feed.jsx`) | Push notification payload | Web Push API | 1 |
 | 13 | S-98 | 결제 / 충전 / 구독 | `IPaywall` | `/(app)/paywall` | 토스페이먼츠 SDK | 1 |
 | 14 | S-99 | 에러 / 로딩 / 오프라인 / 빈 상태 | — (not in prototype) | `components/feedback/` global | — | 1 |
@@ -329,14 +329,14 @@ S-99 → S-96 → S-08.
 |---|---|---|---|
 | S-09 | 인연 디테일 + 타임라인 뷰 | `/(app)/feed/[relationId]` | 1.5 |
 | S-10 | 합흐름 그래프 (라인 차트) | Tab inside S-09 | 1.5 |
-| S-10-A | 영역별 미니 레이더 (합카드 [8]) | Hapcard expand tab | 1.5 |
+| S-10-A | 영역별 미니 레이더 (케미카드 [8]) | Hapcard expand tab | 1.5 |
 | S-11 | 합메모 입력 모듈 (80자) | Sheet on S-07 footer | 1.5 |
 | S-97 D+7/D+30 | 푸시 알림 D+7/D+30 추가 | Push notification | 1.5 |
-| 다시합 변형 | 합카드 배지 + 다이프 인디케이터 | S-07 variant | 1.5 |
-| S-96 5종 | 공유합카드 5종 완성 | `next/og` variants | 1.5 |
-| S-04-A | 합피드 자동 정렬 + 흐름 배지 | S-04 variant | 1.5 |
+| 케미 다시 맞추기 변형 | 케미카드 배지 + 다이프 인디케이터 | S-07 variant | 1.5 |
+| S-96 5종 | 공유케미카드 5종 완성 | `next/og` variants | 1.5 |
+| S-04-A | 케미피드 자동 정렬 + 흐름 배지 | S-04 variant | 1.5 |
 | S-97-B | 본인 운기 변화 → 인연 영향 푸시 | Push notification | 1.5 |
-| S-07-A | 합카드 [5] 변화 폭 인디케이터 | S-07 sub-component | 1.5 |
+| S-07-A | 케미카드 [5] 변화 폭 인디케이터 | S-07 sub-component | 1.5 |
 
 ### 5.3 Phase 2
 
@@ -349,7 +349,7 @@ S-99 → S-96 → S-08.
 | S-16 | iOS/Android 홈스크린 위젯 | PWA manifest + widget API |
 | S-17 | 합맵 + 찰떡합 | `/(app)/feed?view=map` |
 | S-17-A | 네트워크 뷰 인연 간 유사성·반대성 | S-17 sub-view |
-| S-18 | 상황별 공유합카드 변형 | `next/og` variants |
+| S-18 | 상황별 공유케미카드 변형 | `next/og` variants |
 | S-19 | 명리 학습 카드 시리즈 | S-08 section |
 | — | 카카오 OAuth 진입 | `/(auth)/kakao/callback` |
 
@@ -419,8 +419,8 @@ active state reads from `usePathname()`:
 
 ```
 /today       → 홈 tab active
-/feed/**     → 합피드 tab active
-/profile     → 내사주 tab active
+/feed/**     → 케미피드 tab active
+/profile     → 내 프로필 tab active
 ```
 
 이런건어때 sheet: triggered from within the tab bar (fourth slot or
@@ -437,8 +437,8 @@ FAB-style button above the bar), opens as vaul `Drawer`.
 | `birth_cal` | 양/음력 선택 | Same step |
 | `birth_review` | 본명식 미리보기 | Same step |
 | `home` | 오늘의 합 | `/(app)/today` |
-| `hapcard` | 합카드 Liquid Glass hero | `/(app)/feed/[relationId]/result` |
-| `hapcard_expand` (sheet) | 합카드 5탭 펼침 | Drawer on same page |
+| `hapcard` | 케미카드 Liquid Glass hero | `/(app)/feed/[relationId]/result` |
+| `hapcard_expand` (sheet) | 케미카드 5탭 펼침 | Drawer on same page |
 | `rel_name` | 인연 별명 입력 | Step 1 in `/(app)/relation/new` |
 | `rel_dob` | 인연 생일 입력 | Step 2 |
 | `rel_mode` | 6모드 선택 | `/(app)/relation/new/mode` |
@@ -698,7 +698,7 @@ Hapcard shows:
 - Score [2] with inline confidence interval (e.g., "73 ±9")
 - Body copy avoids "정확히/확실히/반드시" (auto-filter in prompt)
 
-### 10.6 합카드 route composition
+### 10.6 케미카드 route composition
 
 ```
 app/(app)/feed/[relationId]/result/
@@ -728,7 +728,7 @@ Client form submit
   → router.push('/feed/[id]/result')
 ```
 
-**S-07 합카드 생성 (`createHapcard`)**
+**S-07 케미카드 생성 (`createHapcard`)**
 ```
 Page load for /feed/[relationId]/result
   → TanStack Query: check ['hapcard', relationId, mode]
@@ -740,7 +740,7 @@ Page load for /feed/[relationId]/result
   → Cache result 30 days (tech_stack §7.2)
 ```
 
-**S-03 오늘합 (`getTodayHap`)**
+**S-03 오늘 케미 (`getTodayHap`)**
 ```
 Daily cron (GitHub Actions 08:00 KST)
   → For each user: fortune-core dailyScore(userChart, today)
@@ -801,7 +801,7 @@ const pretendard = localFont({
 // app/api/og/hapcard/route.tsx
 import { ImageResponse } from 'next/og';
 // Renders OG image with: score, nickname chips, 5-element summary
-// PRD §8: S-96 공유합카드 — 표시 범위 사용자 선택 (별명만 / 별명+오행 / 별명+성별)
+// PRD §8: S-96 공유케미카드 — 표시 범위 사용자 선택 (별명만 / 별명+오행 / 별명+성별)
 ```
 
 ### 12.5 TWA (Android)
@@ -824,7 +824,7 @@ Additional requirements:
 | Dynamic type 100-200% | All font sizes in `rem` — no `px` after token migration |
 | Color contrast | Verify `--p-40` (#6750A4) on `--surface-1` (#F7F2FA) at 14px → must pass AA (4.5:1). Use Figma contrast checker or `colorjs`. |
 | Touch targets | 44×44px minimum (PRD AppBar ic-btn, TabBar items) |
-| 합카드 [7] 명리 용어 | First appearance: auto-announce via `aria-live="polite"`. Re-call via ⓘ button with `aria-expanded`. |
+| 케미카드 [7] 명리 용어 | First appearance: auto-announce via `aria-live="polite"`. Re-call via ⓘ button with `aria-expanded`. |
 
 ---
 
@@ -877,7 +877,7 @@ Skeleton heights must match real content exactly (CLS < 0.1).
 S-04 (인연 그리드) first visit (PRD §8.4):
 - Illustration (gradient mesh blob — Notion/Linear tone, no 별·달·타로)
 - Copy: `t('feed.empty.title')` = "첫 인연을 기록해보세요"
-- Sub-copy: "첫 합보기 1회 + 내일 다시합 1회가 무료로 준비되어 있어요"
+- Sub-copy: "첫 합보기 1회 + 내일 케미 다시 맞추기 1회가 무료로 준비되어 있어요"
 - CTA: `<Button className="w-full">` → `router.push('/relation/new')`
 
 ---
@@ -897,12 +897,12 @@ Three critical flows from PRD §4:
 **Flow A — 신규 가입자 첫 5분** (happy path + CALC_FAIL error)
 ```
 / → /onboard → /relation/new (별명 입력) → (별명+생일 입력) →
-/relation/new/mode → /feed/[id]/result (합카드 로드) → hapcard body visible
+/relation/new/mode → /feed/[id]/result (케미카드 로드) → hapcard body visible
 ```
 
-**Flow B — 일상 리텐션** (오늘합 → D+1 알림)
+**Flow B — 일상 리텐션** (오늘 케미 → D+1 알림)
 ```
-/today (오늘합 score visible) → click notification card → /feed/[id]/result
+/today (오늘 케미 score visible) → click notification card → /feed/[id]/result
 ```
 
 **Flow C — 결정 지원** (이런건어때 → 합보기)
@@ -946,7 +946,7 @@ Three critical flows from PRD §4:
 
 9. **PWA + TWA** — manifest, service worker, Bubblewrap.
 
-10. **Phase 1.5** — timeline, graph, mini radar, memo, opt-in push, 다시합 변형.
+10. **Phase 1.5** — timeline, graph, mini radar, memo, opt-in push, 케미 다시 맞추기 변형.
 
 11. **Phase 2** — Pair Quiz, 딥합, 합맵, widgets.
 
@@ -967,11 +967,11 @@ developer: build new or get a design reference from the designer.
 | Hapcard [5] 근거 보기 with 고전 원문 + 현대어 번역 병기 (0-2건) | §6.2 | Medium |
 | Hapcard [7] 명리 용어 ⓘ 툴팁 + 쉽게 보기 토글 (ADR-023) | §6.2, S-08-T | High — global, shared across hapcard/진단/리포트 |
 | 시나리오 추정 모드 배지 + 신뢰 구간 (±점수) | §6.5 | Medium |
-| S-96 공유합카드 표시 범위 사용자 선택 모듈 | §5.1 | Medium |
+| S-96 공유케미카드 표시 범위 사용자 선택 모듈 | §5.1 | Medium |
 | S-99 에러 카드 8종 시각 | §8.1 | Low |
 | S-97 D+1 푸시 카드 Web Push integration | §5.1 | Medium |
 | S-98 토스페이먼츠 결제 시트 (ADR-005) | §5.1 | High |
-| 합피드 그리드 자동 정렬 + 흐름 배지 (S-04-A, ADR-033) | §5.2 | Medium — Phase 1.5 |
+| 케미피드 그리드 자동 정렬 + 흐름 배지 (S-04-A, ADR-033) | §5.2 | Medium — Phase 1.5 |
 | S-12 친구합 (Pair Quiz) — deep link share flow | §5.3 | High — Phase 2 |
 
 ### Open questions from MEMORY.md (R1-R7)

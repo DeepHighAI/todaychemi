@@ -44,7 +44,7 @@ kakao_origin=production origin, callback=supabase auth callback, share_callback=
 ## Smoke Test
 
 1. `/login`에서 `카카오로 시작하기` 클릭 → Kakao OAuth → `/auth/callback` → `/`.
-2. 합카드 `공유` → 범위 선택 → `카카오톡`.
+2. 케미카드 `공유` → 범위 선택 → `카카오톡`.
 3. KakaoTalk share dialog opens and sends a card with `/h/<token>`.
 4. Kakao callback receives `share_id` and returns `{ ok: true }`.
 5. `/me` wallet ledger shows `보너스 +1`, same hapcard repeat does not add another bonus.

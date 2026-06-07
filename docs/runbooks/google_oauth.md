@@ -1,14 +1,14 @@
 # Google OAuth Runbook
 
-> Product names in this runbook follow the current UI copy: **오늘사이**, **오늘 우리는**, **오늘의 사이**, **그럴리 없어! 다시**, **또 다른 나**.
+> Product names in this runbook follow the current UI copy: **오늘케미**, **오늘 케미**, **오늘의 케미**, **그럴리 없어! 다시**, **또 다른 나**.
 
 ## Current App Flow
 
-1. User opens **오늘사이 로그인** at `/login`.
+1. User opens **오늘케미 로그인** at `/login`.
 2. User selects `Google로 시작하기`.
 3. `src/lib/auth/google.ts` calls Supabase OAuth with `redirectTo = <origin>/auth/callback`.
 4. `src/app/auth/callback/route.ts` exchanges the code and redirects to `/`.
-5. Authenticated users land on 홈의 **오늘의 사이**.
+5. Authenticated users land on 홈의 **오늘의 케미**.
 
 ## Supabase Remote Setup
 
@@ -77,7 +77,7 @@ SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
 3. Select `Google로 시작하기`.
 4. Confirm Google consent completes.
 5. Confirm `/auth/callback` redirects to `/`.
-6. Confirm 홈의 **오늘의 사이** renders and TabBar shows `홈`, `너랑나랑`, `내 사주맵`.
+6. Confirm 홈의 **오늘의 케미** renders and TabBar shows `홈`, `케미피드`, `내 프로필`.
 
 Failure triage:
 

@@ -1,4 +1,4 @@
-# Replay (다시합) Spec
+# Replay (케미 다시 맞추기) Spec
 
 > **Status: LOCKED — 2026-05-06 사용자 결정 완료**
 >
@@ -10,7 +10,7 @@
 
 `hapcard_replays` 테이블(`supabase/migrations/0007_hapcard_replays.sql`)과 `fluttering-gathering-island.md §4.3`(관계 진화 타임라인 재해석, Phase 1.5)에 근거한 기능.
 
-원본 합카드(8p)와 동일한 `(user, relation, mode)` 조합을 *다른 시간 변수*(일진/주운/월운)로 재해석. 결과는 `hapcard_replays` INSERT.
+원본 케미카드(8p)와 동일한 `(user, relation, mode)` 조합을 *다른 시간 변수*(일진/주운/월운)로 재해석. 결과는 `hapcard_replays` INSERT.
 
 ---
 
@@ -19,7 +19,7 @@
 | # | 결정 항목 | **확정값** | 영향 파일 |
 |---|---|---|---|
 | **D1** ✅ | **라우트 형태** | **Route Handler** `POST /api/hapcards/[id]/replay` | `api_routes.md:15` 정정 완료(§12), `src/app/api/hapcards/[id]/replay/route.ts` 신규 |
-| **D2** ✅ | **요금** | **4p 차감** (원본 8p 의 50%) | `token_ledger` INSERT delta = `-4`, UI 안내 "다시합 4토큰" |
+| **D2** ✅ | **요금** | **4p 차감** (원본 8p 의 50%) | `token_ledger` INSERT delta = `-4`, UI 안내 "케미 다시 맞추기 4토큰" |
 | **D3** ✅ | **레이트리미트** | **무제한** — 4p 부담 자체가 자연 게이트. Idempotency(`jinjin_date` UNIQUE)만 적용 | `REPLAY_RATE_LIMITED` 에러 코드 미사용. `0023_replay_idempotency.sql` 신규 |
 | **D4** ✅ | **`token_ledger.reason` 네이밍** | **`'replay_use'`** (`db_schema.md:319` canonical) / 환불 `'replay_refund'` | `payments.md:271` 정정 완료(§12) |
 
@@ -106,7 +106,7 @@ replay_cache_key = sha256(chart_hash | scoring_version | prompt_version | jinjin
 
 `docs/runbooks/anthropic_outage.md:35` 참조:
 - Anthropic/OpenAI SLA 장애 감지 시 → `REPLAY_DURING_OUTAGE(503)` 응답
-- UI: "현재 다시합 서비스가 잠시 중단되었어요" 인라인 메시지
+- UI: "현재 케미 다시 맞추기 서비스가 잠시 중단되었어요" 인라인 메시지
 
 ---
 

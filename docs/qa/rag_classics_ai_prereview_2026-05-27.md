@@ -17,7 +17,7 @@ first-4-dimension average ≥ 3.5 AND no P0/P1 risk.
 - 삼명통회 (三命通會) × 5 — classic_smth_001..005
 - 연해자평 (淵海子平) × 5 — classic_yhzp_001..005
 
-These assets are used as citation grounding for relationship-compatibility readings (합카드, 오늘 우리는)
+These assets are used as citation grounding for relationship-compatibility readings (케미카드, 오늘 케미)
 and re-interpretations (그럴리 없어! 다시).
 
 **Research method:** All 20 YAML files read. 4 targeted WebSearch citation checks performed on the
@@ -369,7 +369,7 @@ relationship grounding.
 bureau. The chapter match is solid (合化論 is exactly where 三合化局 belongs). Source accuracy: **4**.
 **translation_accuracy 4:** "각각의 기운이 하나로 합쳐져 힘이 크게 증폭된다" faithfully renders 力量倍增.
 **mingli_fit 5:** This is the **best relationship-grounding asset in the entire set.** 三合化局 maps
-directly to the 합(合) concept at the core of the product (오늘사이 / 합카드). Synergy amplification
+directly to the 합(合) concept at the core of the product (오늘케미 / 케미카드). Synergy amplification
 through combining energies is an ideal citation anchor for compatibility readings.
 **beginner_clarity 4:** "세 지지가 삼합으로 합을 이루면" is clear enough with minor glossing.
 **risk None.** Positive, constructive, directly relevant.

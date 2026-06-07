@@ -1,4 +1,4 @@
-# today_hap.md — 오늘합 (Daily Card) 파이프라인 명세
+# today_hap.md — 오늘 케미 (Daily Card) 파이프라인 명세
 
 > **Phase**: 1.0 (MVP 출시 시 포함)
 > **모델**: GPT-5 mini (gpt-5-mini)
