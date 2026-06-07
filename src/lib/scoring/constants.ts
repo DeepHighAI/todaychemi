@@ -2,7 +2,7 @@ import type { Mode } from '@/types/mode';
 
 export const SCORING_VERSION = 1;
 
-// ADR-036: |change_score| ≥ 이 값이면 '오늘 변화 큼' badge + 너랑나랑 상단 정렬
+// ADR-036: |change_score| ≥ 이 값이면 '오늘 변화 큼' badge + 케미피드 상단 정렬
 export const CHANGE_SCORE_THRESHOLD = 10;
 
 // §2.1 천간합 — 일간 순서 기준 정규화 키 → 점수

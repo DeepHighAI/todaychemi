@@ -12,13 +12,13 @@ vi.mock('@/lib/llm/prompt-loader', () => ({
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { resetLlmCircuitBreakersForTest } from '@/lib/llm/circuit-breaker';
 
-const TODAY_WITH_RELATION_PROMPT = `# System Prompt — 오늘합 + 인연 종합 (today_with_relation)
-> Mode: 오늘합 (today_with_relation)
+const TODAY_WITH_RELATION_PROMPT = `# System Prompt — 오늘 케미 + 인연 종합 (today_with_relation)
+> Mode: 오늘 케미 (today_with_relation)
 > Version: v0.1
 본문 placeholder.`;
 
-const DAILY_HAP_PROMPT = `# System Prompt — 오늘합 (daily_hap)
-> Mode: 오늘합 (todayHap)
+const DAILY_HAP_PROMPT = `# System Prompt — 오늘 케미 (daily_hap)
+> Mode: 오늘 케미 (todayHap)
 > Version: v0.3
 본문 placeholder.`;
 
@@ -86,7 +86,7 @@ function beforeEachReset() {
   mockCreate.mockReset();
   // 기본 응답: 정상 JSON 카드
   mockCreate.mockResolvedValue(makeOpenAiResponse(JSON.stringify({
-    headline: '오늘의 사이',
+    headline: '오늘의 케미',
     headline_reason: '이유',
     avoid_phrase: '비난',
     avoid_phrase_reason: '갈등',
@@ -274,6 +274,24 @@ describe('callDailyHapLlm — model + params (gpt-5)', () => {
       }),
     ).rejects.toThrow('LLM_TIMEOUT');
   });
+
+  it('전체 Today LLM 호출이 25초를 넘기면 LLM_TIMEOUT 으로 종료한다', async () => {
+    vi.useFakeTimers();
+    try {
+      mockCreate.mockImplementation(() => new Promise(() => {}));
+      const { callDailyHapLlm, TODAY_LLM_TIMEOUT_MS } = await import('@/lib/today/openai');
+
+      const pending = callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID, {
+        bannedPhraseCatalog: [],
+      });
+      const assertion = expect(pending).rejects.toThrow('LLM_TIMEOUT');
+
+      await vi.advanceTimersByTimeAsync(TODAY_LLM_TIMEOUT_MS);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // G2 / Phase 3 C5 — 3축 페이로드 + 프롬프트 분기 + PII 0건
@@ -326,6 +344,80 @@ describe('callDailyHapLlm — 3축 인연 종합 (G2)', () => {
     );
   });
 
+  it('runtime chart_core 에 섞인 PII/원본 gender extra key 를 LLM 페이로드에서 제거한다', async () => {
+    mockCreate.mockClear();
+    const dirtySelf = {
+      ...SELF_CHART,
+      birth_date: '1990-01-01',
+      nickname: '본인별명',
+      email: 'self@example.com',
+      birth_place: 'Seoul',
+      gender: 'female',
+      compat_score: 99,
+    } as ChartCore;
+    const dirtyRelation = {
+      ...REL_CHART,
+      birth_date: '1991-02-03',
+      nickname: '인연별명',
+      relation_id: 'rel-pii',
+      email: 'relation@example.com',
+      birth_place: 'Busan',
+      gender: 'male',
+      today_compat_score: 12,
+    } as ChartCore;
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+
+    await callDailyHapLlm(
+      {
+        self_chart: dirtySelf,
+        relation_chart: dirtyRelation,
+        today_date: '2026-05-28',
+      },
+      mockOpenai,
+      mockSupabase,
+      TEST_USER_ID,
+    );
+
+    const userMsg = mockCreate.mock.calls[0][0].messages.find(
+      (m: { role: string }) => m.role === 'user',
+    );
+    const userText = userMsg.content as string;
+    expect(userText).not.toContain('1990-01-01');
+    expect(userText).not.toContain('본인별명');
+    expect(userText).not.toContain('self@example.com');
+    expect(userText).not.toContain('Seoul');
+    expect(userText).not.toContain('female');
+    expect(userText).not.toContain('1991-02-03');
+    expect(userText).not.toContain('인연별명');
+    expect(userText).not.toContain('rel-pii');
+    expect(userText).not.toContain('relation@example.com');
+    expect(userText).not.toContain('Busan');
+    expect(userText).not.toContain('male');
+    expect(userText).not.toMatch(/compat_score|today_compat_score/);
+  });
+
+  it('ADR-035 — LLM 응답의 today_compat_score 키는 점수 누설로 거부한다', async () => {
+    const scoreLeakJson = JSON.stringify({
+      headline: '오늘의 케미',
+      headline_reason: '이유',
+      avoid_phrase: '비난',
+      avoid_phrase_reason: '갈등',
+      favorable_action: '먼저 인사',
+      favorable_action_reason: '관계',
+      today_compat_score: 96,
+    });
+    mockCreate.mockResolvedValue(makeOpenAiResponse(scoreLeakJson));
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+
+    await expect(
+      callDailyHapLlm(makeInput(REL_CHART), mockOpenai, mockSupabase, TEST_USER_ID, {
+        bannedPhraseCatalog: [],
+      }),
+    ).rejects.toThrow('BANNED_PHRASE_DETECTED');
+
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+
   it('relation_chart 존재 시 system prompt 는 today_with_relation 사용', async () => {
     mockCreate.mockClear();
     const { callDailyHapLlm } = await import('@/lib/today/openai');
@@ -334,7 +426,7 @@ describe('callDailyHapLlm — 3축 인연 종합 (G2)', () => {
       (m: { role: string }) => m.role === 'system',
     );
     // today_with_relation 프롬프트 식별 헤더 포함
-    expect(sys.content).toMatch(/today.with.relation|오늘.*인연|Mode:\s*오늘합 \(today_with_relation\)/i);
+    expect(sys.content).toMatch(/today.with.relation|오늘.*인연|Mode:\s*오늘 케미 \(today_with_relation\)/i);
   });
 
   it('relation_chart=null 시 system prompt 는 기존 daily_hap 사용', async () => {
@@ -344,7 +436,7 @@ describe('callDailyHapLlm — 3축 인연 종합 (G2)', () => {
     const sys = mockCreate.mock.calls[0][0].messages.find(
       (m: { role: string }) => m.role === 'system',
     );
-    expect(sys.content).toMatch(/daily_hap|Mode:\s*오늘합 \(todayHap\)/i);
+    expect(sys.content).toMatch(/daily_hap|Mode:\s*오늘 케미 \(todayHap\)/i);
   });
 });
 

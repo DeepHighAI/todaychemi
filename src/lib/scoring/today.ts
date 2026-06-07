@@ -8,7 +8,7 @@ import { computeSipsinScore } from '@/lib/scoring/sipsin';
 import { computeOhaengScore } from '@/lib/scoring/ohaeng';
 import { STEM_HAP, BRANCH_HAP, CHUNG } from '@/lib/scoring/constants';
 
-// G2 / Phase 3 — 오늘 합온도 결정형 점수식
+// G2 / Phase 3 — 케미온도 결정형 점수식
 // 합점수(SCORING_VERSION)와 독립. ADR-035: LLM 미개입, 100% 결정형.
 
 export const TODAY_SCORING_VERSION = '1.0.0' as const;

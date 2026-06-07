@@ -132,6 +132,61 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     expect(createMock).not.toHaveBeenCalled();
   });
 
+  it('PII 가드 — 허용 top-level 내부 nested birth_date 포함 → PII_GUARD_VIOLATION throw, OpenAI 호출 0회', async () => {
+    const createMock = vi.fn();
+    const { client: supabase } = makeMockServiceClient();
+    const validPayload = makeValidPayload();
+    const nestedIllegalPayload = {
+      ...validPayload,
+      self_chart_core: {
+        ...validPayload.self_chart_core,
+        birth_date: '1990-01-01',
+      },
+    };
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: nestedIllegalPayload },
+        {
+          openaiClient: { chat: { completions: { create: createMock } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+        },
+      ),
+    ).rejects.toThrow('PII_GUARD_VIOLATION');
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('PII 가드 — nested prefixed/camelCase PII 키 포함 → PII_GUARD_VIOLATION throw, OpenAI 호출 0회', async () => {
+    const createMock = vi.fn();
+    const { client: supabase } = makeMockServiceClient();
+    const validPayload = makeValidPayload();
+    const nestedIllegalPayload = {
+      ...validPayload,
+      self_chart_core: {
+        ...validPayload.self_chart_core,
+        relation_nickname: '민감한별명',
+        userEmail: 'secret@example.com',
+        displayName: '실명',
+        rawGender: 'F',
+      },
+    };
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: nestedIllegalPayload },
+        {
+          openaiClient: { chat: { completions: { create: createMock } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+        },
+      ),
+    ).rejects.toThrow('PII_GUARD_VIOLATION');
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it('정상 응답 → HapcardLlmOutput parse 성공, result 반환', async () => {
     const validJson = makeValidOutputJson();
     const create = vi.fn().mockResolvedValue(makeOpenAiResponse(validJson, 120, 250));

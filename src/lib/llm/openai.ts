@@ -23,7 +23,7 @@ import { estimateLlmCostUsd } from '@/lib/llm/cost';
 import type { LlmModel } from '@/types/hapcard';
 
 // AGENTS.md §5 — hapcard 기본 PII 화이트리스트. callOpenAi에 payloadWhitelist 미제공 시 사용.
-// time_context: 오늘 우리는 target_date / replay 일진 날짜 (공개 정보, PII 아님)
+// time_context: 오늘 케미 target_date / replay 일진 날짜 (공개 정보, PII 아님)
 export const HAPCARD_PAYLOAD_WHITELIST = new Set([
   'self_chart_core',
   'relation_chart_core',
@@ -32,6 +32,36 @@ export const HAPCARD_PAYLOAD_WHITELIST = new Set([
   'question_slot',
   'time_context',
 ]);
+
+const FORBIDDEN_LLM_PAYLOAD_KEYS = new Set([
+  'birth_date',
+  'birth_time',
+  'name',
+  'nickname',
+  'email',
+  'birth_place',
+  'gender',
+]);
+
+function normalizePayloadKeyForPiiGuard(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[-\s]+/g, '_')
+    .toLowerCase();
+}
+
+function isForbiddenLlmPayloadKey(key: string): boolean {
+  const normalized = normalizePayloadKeyForPiiGuard(key);
+  if (normalized === 'gender_normalized' || normalized.endsWith('_gender_normalized')) {
+    return false;
+  }
+
+  if (FORBIDDEN_LLM_PAYLOAD_KEYS.has(normalized)) return true;
+
+  return /(^|_)(birth_date|birth_time|name|nickname|email|birth_place|gender)($|_)/.test(
+    normalized,
+  );
+}
 
 interface OpenAiChatResponse {
   choices: Array<{ message: { content: string | null } }>;
@@ -110,6 +140,32 @@ function validateLlmText<TOutput>(
   return validated;
 }
 
+function findForbiddenLlmPayloadKey(
+  value: unknown,
+  path = 'userPayload',
+  seen = new WeakSet<object>(),
+): string | null {
+  if (value === null || typeof value !== 'object') return null;
+  if (seen.has(value)) return null;
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    for (const [index, item] of value.entries()) {
+      const nested = findForbiddenLlmPayloadKey(item, `${path}[${index}]`, seen);
+      if (nested) return nested;
+    }
+    return null;
+  }
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    const nextPath = `${path}.${key}`;
+    if (isForbiddenLlmPayloadKey(key)) return nextPath;
+    const nested = findForbiddenLlmPayloadKey(nestedValue, nextPath, seen);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 export async function callOpenAi<TOutput = HapcardLlmOutput>(
   input: CallOpenAiInput<TOutput>,
   deps: CallOpenAiDeps,
@@ -123,6 +179,10 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
     if (!whitelist.has(key)) {
       throw new Error(`PII_GUARD_VIOLATION: ${key}`);
     }
+  }
+  const forbiddenKeyPath = findForbiddenLlmPayloadKey(input.userPayload);
+  if (forbiddenKeyPath) {
+    throw new Error(`PII_GUARD_VIOLATION: ${forbiddenKeyPath}`);
   }
 
   const catalog = deps.bannedPhraseCatalog ?? loadBannedPhrases();

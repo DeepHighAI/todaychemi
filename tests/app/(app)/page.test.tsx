@@ -1,16 +1,26 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { NextIntlClientProvider } from 'next-intl';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { renderWithProviders } from '../../utils/render-with-providers';
+import messages from '../../../messages/ko.json';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 
+const { mockTodayKST } = vi.hoisted(() => ({
+  mockTodayKST: vi.fn(() => '2026-05-07'),
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
+  useSearchParams: vi.fn(),
 }));
+vi.mock('@/lib/today/kst-date', () => ({ todayKST: mockTodayKST }));
 
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
@@ -19,7 +29,19 @@ const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockTodayKST.mockReturnValue('2026-05-07');
   vi.stubGlobal('fetch', mockFetch);
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })));
+  vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as ReturnType<typeof useSearchParams>);
   vi.mocked(useRouter).mockReturnValue({
     push: mockPush,
     replace: mockReplace,
@@ -63,7 +85,7 @@ function setupRoutes(routes: {
   relations?: RouteResponse;
 }) {
   mockFetch.mockImplementation((url: string) => {
-    if (url === '/api/today') {
+    if (url === '/api/today' || url.startsWith('/api/today?')) {
       const r = routes.today ?? { ok: true, body: { ok: true, card: CARD } };
       return Promise.resolve({ ok: r.ok, status: r.status ?? 200, json: async () => r.body });
     }
@@ -84,11 +106,31 @@ async function renderTodayPage() {
   return renderWithProviders(<TodayPage />);
 }
 
+async function renderTodayPageWithQueryClient(queryClient: QueryClient) {
+  const { default: TodayPage } = await import('@/app/(app)/today-page-client');
+  function tree() {
+    return (
+      <NextIntlClientProvider locale="ko" messages={messages}>
+        <QueryClientProvider client={queryClient}>
+          <GlossaryProvider>
+            <TodayPage />
+          </GlossaryProvider>
+        </QueryClientProvider>
+      </NextIntlClientProvider>
+    );
+  }
+  const view = render(tree());
+  return {
+    ...view,
+    rerenderToday: () => view.rerender(tree()),
+  };
+}
+
 describe('TodayPage (composition)', () => {
-  it('TodayAppBar 제목 "오늘의 사이" 렌더', async () => {
+  it('TodayAppBar 제목 "오늘의 케미" 렌더', async () => {
     setupRoutes({});
     await renderTodayPage();
-    expect(await screen.findByRole('heading', { level: 1, name: '오늘의 사이' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '오늘의 케미' })).toBeInTheDocument();
   });
 
   it('TodayHero headline을 card.headline에서 가져와 렌더', async () => {
@@ -102,6 +144,55 @@ describe('TodayPage (composition)', () => {
     await renderTodayPage();
     const dateLine = await screen.findByTestId('date-line');
     expect(dateLine.textContent).toContain('갑술일');
+  });
+
+  it('KST 날짜가 바뀌면 같은 relation 이어도 /api/today 를 다시 조회한다', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: 60_000 },
+      },
+    });
+    const todayFetchCount = () =>
+      mockFetch.mock.calls.filter(([url]) => String(url) === '/api/today').length;
+    const cards = [
+      { ...CARD, headline: '2026-05-07 카드 본문' },
+      { ...CARD, headline: '2026-05-08 카드 본문' },
+    ];
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/today') {
+        const card = cards.shift() ?? cards[0] ?? CARD;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, card }),
+        });
+      }
+      if (url === '/api/me/chart') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, chart: CHART }),
+        });
+      }
+      if (url === '/api/relations') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ items: [] }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const view = await renderTodayPageWithQueryClient(queryClient);
+    expect(await screen.findByText('2026-05-07 카드 본문')).toBeInTheDocument();
+    expect(todayFetchCount()).toBe(1);
+
+    mockTodayKST.mockReturnValue('2026-05-08');
+    view.rerenderToday();
+
+    await waitFor(() => expect(todayFetchCount()).toBe(2));
+    expect(await screen.findByText('2026-05-08 카드 본문')).toBeInTheDocument();
   });
 
   it('chart=null이면 DateLine을 렌더하지 않는다', async () => {
@@ -145,6 +236,7 @@ describe('TodayPage (composition)', () => {
       today: { ok: false, status: 500, body: { ok: false, code: 'INTERNAL_ERROR' } },
     });
     await renderTodayPage();
+    expect(await screen.findByText('기본 안내')).toBeInTheDocument();
     expect(await screen.findByText('오늘은 천천히 확인해요')).toBeInTheDocument();
     expect(screen.getByText('가벼운 정리부터 하기')).toBeInTheDocument();
     expect(screen.queryByTestId('error-card')).toBeNull();
@@ -163,7 +255,7 @@ describe('TodayPage (composition)', () => {
     expect(screen.queryByRole('button', { name: '또 다른 나' })).toBeNull();
   });
 
-  it('chart=null 이면 최근 인연 클릭 시 합카드 대신 온보딩으로 안내한다', async () => {
+  it('chart=null 이면 최근 인연 클릭 시 케미카드 대신 온보딩으로 안내한다', async () => {
     const user = userEvent.setup();
     setupRoutes({
       meChart: { ok: true, body: { ok: true, chart: null } },
@@ -197,7 +289,7 @@ describe('TodayPage (composition)', () => {
     expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
   });
 
-  it('today 로딩 중에도 최근 인연 클릭으로 합카드 진입 가능', async () => {
+  it('today 로딩 중에도 최근 인연 클릭으로 케미카드 진입 가능', async () => {
     const user = userEvent.setup();
     mockFetch.mockImplementation((url: string) => {
       if (url === '/api/today') return new Promise(() => {});
@@ -281,9 +373,46 @@ describe('TodayPage (composition)', () => {
       await renderTodayPage();
       // chip 의 aria-label 로 hero RelationChip 만 정확히 찾음 (recent feed 내 별명과 분리)
       const chipButton = await screen.findByRole('button', {
-        name: /오늘 민지과의 사이/,
+        name: /오늘 민지과의 케미/,
       });
       expect(chipButton).toBeInTheDocument();
+    });
+
+    it('URL relation_id 가 있으면 /api/today query param 으로 전달', async () => {
+      vi.mocked(useSearchParams).mockReturnValue(
+        new URLSearchParams({ relation_id: 'rel-other' }) as ReturnType<typeof useSearchParams>,
+      );
+      setupRoutes({
+        today: {
+          ok: true,
+          body: {
+            ok: true,
+            card: { ...CARD_WITH_RELATION, relation_id: 'rel-other', relation_nickname: '지수' },
+          },
+        },
+        relations: { ok: true, body: { items: RELATIONS } },
+      });
+      await renderTodayPage();
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/today?relation_id=rel-other');
+      });
+    });
+
+    it('인연 선택 시 URL relation_id 를 교체한다', async () => {
+      const user = userEvent.setup();
+      setupRoutes({
+        today: { ok: true, body: { ok: true, card: CARD_WITH_RELATION } },
+        relations: { ok: true, body: { items: RELATIONS } },
+      });
+      await renderTodayPage();
+
+      const chipButton = await screen.findByRole('button', {
+        name: /오늘 민지과의 케미/,
+      });
+      await user.click(chipButton);
+      await user.click(await screen.findByRole('button', { name: /지수/ }));
+
+      expect(mockReplace).toHaveBeenCalledWith('/?relation_id=rel-other');
     });
 
     it('card 에 relation_id 없을 때 RelationChip 미마운트', async () => {
@@ -293,8 +422,65 @@ describe('TodayPage (composition)', () => {
       });
       await renderTodayPage();
       await screen.findByText('좋은 에너지가 흐르는 날');
-      // chip 텍스트는 hero 의 별명 chip 패턴(`오늘 ... 과의 사이`)
-      expect(screen.queryByText(/과의 사이/)).toBeNull();
+      // chip 텍스트는 hero 의 별명 chip 패턴(`오늘 ... 과의 케미`)
+      expect(screen.queryByText(/과의 케미/)).toBeNull();
+    });
+
+    it('현재 URL relation_id 인연을 삭제하면 URL을 기본 홈으로 정리하고 today를 재조회한다', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useSearchParams).mockReturnValue(
+        new URLSearchParams({ relation_id: 'rel-current' }) as ReturnType<typeof useSearchParams>,
+      );
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url === '/api/today?relation_id=rel-current') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, card: CARD_WITH_RELATION }),
+          });
+        }
+        if (url === '/api/me/chart') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, chart: CHART }),
+          });
+        }
+        if (url === '/api/relations') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ items: RELATIONS }),
+          });
+        }
+        if (url === '/api/relations/rel-current' && init?.method === 'DELETE') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true }),
+          });
+        }
+        return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+      });
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, staleTime: 60_000 },
+        },
+      });
+      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      await renderTodayPageWithQueryClient(queryClient);
+
+      const deleteButtons = await screen.findAllByRole('button', { name: '삭제' });
+      await user.click(deleteButtons[0]);
+      expect(await screen.findByText('민지 인연을 삭제할까요?')).toBeInTheDocument();
+      const confirmButtons = screen.getAllByRole('button', { name: '삭제' });
+      await user.click(confirmButtons[confirmButtons.length - 1]);
+
+      await waitFor(() => {
+        expect(mockReplace).toHaveBeenCalledWith('/');
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
     });
   });
 });

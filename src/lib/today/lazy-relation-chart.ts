@@ -3,6 +3,7 @@ import type { Database } from '@/types/database.types';
 import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 import { fetchLatestRelationChartForVersion } from '@/lib/chart/queries';
 import { computeChart } from '@/lib/chart/compute';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 export interface EnsuredRelationChart {
   chart_core: ChartCore;
@@ -34,11 +35,12 @@ export async function ensureRelationChartRow(
   theoryProfileVersion = DEFAULT_THEORY_PROFILE_VERSION,
 ): Promise<EnsuredRelationChart | null> {
   // Step 1: 기존 chart 확인
-  const { data: existing } = await fetchLatestRelationChartForVersion(
+  const { data: existing, error: existingError } = await fetchLatestRelationChartForVersion(
     supabase,
     relationId,
     theoryProfileVersion,
   );
+  if (existingError) throw existingError;
   if (existing) {
     return {
       chart_core: existing.chart_core as unknown as ChartCore,
@@ -47,13 +49,14 @@ export async function ensureRelationChartRow(
   }
 
   // Step 2: relations row fetch (chart 미생성 인연의 birth 필드)
-  const { data: relRow } = await supabase
+  const { data: relRow, error: relError } = await supabase
     .from('relations')
     .select('birth_date, birth_date_calendar, is_lunar_leap, birth_time_knowledge, birth_time, gender')
     .eq('relation_id', relationId)
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (relError) throw relError;
   if (!relRow) {
     console.error('[ensureRelationChart] relation row not found', { relationId });
     return null;
@@ -69,8 +72,9 @@ export async function ensureRelationChartRow(
     gender: 'M' | 'F';
   };
   const r = relRow as unknown as RelRow;
+  let computeResult: Awaited<ReturnType<typeof computeChart>>;
   try {
-    const computeResult = await computeChart(
+    computeResult = await computeChart(
       {
         entity_id: relationId,
         birth_date: r.birth_date,
@@ -83,26 +87,9 @@ export async function ensureRelationChartRow(
       },
       kasiServiceKey,
     );
-
-    // ChartCore → Json 캐스트 (relations/route.ts:81 동일 패턴)
-    const untypedDb = supabase as unknown as SupabaseClient;
-    await untypedDb.from('relation_charts').upsert(
-      {
-        relation_id: relationId,
-        user_id: userId,
-        chart_hash: computeResult.chart_hash,
-        chart_core: computeResult.chart_core,
-        theory_profile_version: theoryProfileVersion,
-      },
-      { onConflict: 'chart_hash' },
-    );
-
-    return {
-      chart_core: computeResult.chart_core,
-      chart_hash: computeResult.chart_hash,
-    };
   } catch (err) {
-    console.error('[ensureRelationChart] computeChart failed', { relationId, err });
+    const safeError = sanitizeErrorForLog(err);
+    console.error('[ensureRelationChart] computeChart failed', { relationId, error: safeError });
     // F3.3: error_events 테이블에 영구 기록 (운영 디버깅용)
     try {
       const untypedDb = supabase as unknown as SupabaseClient;
@@ -110,11 +97,32 @@ export async function ensureRelationChartRow(
         error_code: 'KASI_COMPUTE_FAIL',
         user_id: userId,
         context: { relation_id: relationId, source: 'ensureRelationChart' },
-        stack: err instanceof Error ? err.stack ?? err.message : String(err),
+        stack: safeError,
       });
     } catch (loggingErr) {
-      console.error('[ensureRelationChart] error_events insert failed', loggingErr);
+      console.error('[ensureRelationChart] error_events insert failed', {
+        error: sanitizeErrorForLog(loggingErr),
+      });
     }
     return null;
   }
+
+  // ChartCore → Json 캐스트 (relations/route.ts:81 동일 패턴)
+  const untypedDb = supabase as unknown as SupabaseClient;
+  const { error: upsertError } = await untypedDb.from('relation_charts').upsert(
+    {
+      relation_id: relationId,
+      user_id: userId,
+      chart_hash: computeResult.chart_hash,
+      chart_core: computeResult.chart_core,
+      theory_profile_version: theoryProfileVersion,
+    },
+    { onConflict: 'chart_hash' },
+  );
+  if (upsertError) throw upsertError;
+
+  return {
+    chart_core: computeResult.chart_core,
+    chart_hash: computeResult.chart_hash,
+  };
 }

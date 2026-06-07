@@ -52,6 +52,7 @@ const TEMPLATE: DailyHapCard = {
   favorable_action: '가벼운 정리부터 하기',
   favorable_action_reason: '새로운 해석이 없을 때는 일정과 마음을 먼저 정돈하면 하루 흐름을 안정적으로 가져갈 수 있어요.',
   reused_from_yesterday: false,
+  is_fallback: true,
 };
 
 function applyRelationMeta(
@@ -72,7 +73,7 @@ function applyRelationMeta(
     ...card,
     relation_id: relation.id,
     relation_nickname: relation.nickname,
-    today_compat_score: todayCompatScore,
+    today_compat_score: card.is_fallback ? null : todayCompatScore,
   };
 }
 
@@ -130,7 +131,7 @@ export async function buildDailyHap(deps: BuildDailyHapDeps): Promise<DailyHapRe
   const selfChart = await measure('userChart', deps.fetchUserChart);
   if (!selfChart) {
     await flushTrace({ failedPhase: 'userChart', errorMessage: 'chart_null' });
-    return TEMPLATE;
+    return { ...TEMPLATE };
   }
 
   // 인연 메타 + 인연 chart fetch (인연 0건 사용자면 모두 null)
@@ -138,6 +139,17 @@ export async function buildDailyHap(deps: BuildDailyHapDeps): Promise<DailyHapRe
   const relationChart = relation
     ? await measure('relationChart', () => deps.fetchRelationChart(relation.id))
     : null;
+  if (relation && !relationChart) {
+    const fallback = applyRelationMeta(
+      TEMPLATE,
+      relation,
+      null,
+      selfChart,
+      deps.today_date,
+    );
+    await flushTrace({ failedPhase: 'relationChart', errorMessage: 'chart_null' });
+    return fallback;
+  }
 
   try {
     const baseCard = await measure('llm', () =>
@@ -156,6 +168,6 @@ export async function buildDailyHap(deps: BuildDailyHapDeps): Promise<DailyHapRe
     const yesterday = await measurePhaseOnly('yesterdayCache', deps.fetchYesterdayCache);
     await flushTrace();
     if (yesterday) return { ...yesterday, reused_from_yesterday: true };
-    return TEMPLATE;
+    return { ...TEMPLATE };
   }
 }

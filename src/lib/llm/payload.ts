@@ -56,8 +56,29 @@ function projectYunseForLlm(yunse: YunseCore): LlmYunse {
   };
 }
 
-function projectChartForLlm(chart: ChartCore): LlmChartCore {
-  return { ...chart, yunse: projectYunseForLlm(chart.yunse) };
+function projectFiveElementsForLlm(
+  counts: ChartCore['five_elements_counts'],
+): ChartCore['five_elements_counts'] {
+  return {
+    목: counts.목,
+    화: counts.화,
+    토: counts.토,
+    금: counts.금,
+    수: counts.수,
+  };
+}
+
+export function projectChartForLlm(chart: ChartCore): LlmChartCore {
+  return {
+    year_pillar: chart.year_pillar,
+    month_pillar: chart.month_pillar,
+    day_pillar: chart.day_pillar,
+    hour_pillar: chart.hour_pillar,
+    day_master_element: chart.day_master_element,
+    five_elements_counts: projectFiveElementsForLlm(chart.five_elements_counts),
+    gender_normalized: chart.gender_normalized,
+    yunse: projectYunseForLlm(chart.yunse),
+  };
 }
 
 export function buildLlmPayload(input: BuildLlmPayloadInput): LlmPayload {

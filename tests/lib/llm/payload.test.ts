@@ -97,6 +97,41 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       expect(json).not.toMatch(/birth_place/i);
     });
 
+    it('DB chart_core에 런타임 extra PII 키가 섞여도 제거한다', () => {
+      const selfWithPii = {
+        ...SELF_CHART,
+        birth_date: '1990-01-01',
+        nickname: '민감한별명',
+        email: 'secret@example.com',
+        birth_place: 'Seoul',
+        gender: 'M',
+      } as unknown as ChartCore;
+      const relationWithPii = {
+        ...RELATION_CHART,
+        birth_date: '1991-02-03',
+        nickname: '상대별명',
+        email: 'relation@example.com',
+        birth_place: 'Busan',
+        gender: 'F',
+      } as unknown as ChartCore;
+
+      const payload = buildLlmPayload({
+        self: selfWithPii,
+        relation: relationWithPii,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      const json = JSON.stringify(payload);
+
+      expect(json).not.toMatch(/birth_date/i);
+      expect(json).not.toMatch(/nickname/i);
+      expect(json).not.toMatch(/email/i);
+      expect(json).not.toMatch(/birth_place/i);
+      expect(json).not.toMatch(/"gender"/);
+      expect(json).not.toContain('secret@example.com');
+      expect(json).not.toContain('민감한별명');
+    });
+
     it('name 부재 (gender_normalized 의 normalized 는 허용)', () => {
       expect(json).not.toMatch(/"name"/);
     });

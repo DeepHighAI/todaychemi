@@ -17,7 +17,10 @@ import {
   fetchLatestUserChartForVersion,
 } from '@/lib/chart/queries';
 import { createOpenAiClient } from '@/lib/llm/clients';
+import { selectLlmModel } from '@/lib/llm/model-router';
 import { callDailyHapLlm } from '@/lib/today/openai';
+import { buildSourcePacketHash } from '@/lib/today/cache-key';
+import { withYunseAtDate } from '@/lib/chart/yunse-at-date';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { GET } from '@/app/api/today/route';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -57,8 +60,53 @@ const REL_CHART: ChartCore = {
   day_master_element: '금',
 };
 
+const TODAY_RELATION_PROMPT_VERSION = 'today_with_relation:v0.1';
+const TODAY_TARGET_DATE = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+
+const USER_BIRTH_ROW = {
+  birth_date: '1990-01-01',
+  birth_date_calendar: 'solar',
+  is_lunar_leap: false,
+  birth_time_knowledge: 'unknown',
+  birth_time: null,
+  gender: 'M',
+} as const;
+
+const RELATION_BIRTH_ROW = {
+  ...USER_BIRTH_ROW,
+  birth_date: '1992-02-03',
+  gender: 'F',
+} as const;
+
 // F1.2: 캡처 가능한 단일 upsert mock — 여러 from() 호출에서도 동일 인스턴스
 const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
+function makeBirthQuery(row: unknown) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
+      }),
+    }),
+  };
+}
+
+function makeDailyHapQuery(
+  row: unknown | null,
+  error: { message: string } | null = null,
+) {
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: row, error }),
+    upsert: upsertMock,
+  };
+}
 
 function makeClient(userId: string | null = 'user-001') {
   return {
@@ -69,12 +117,59 @@ function makeClient(userId: string | null = 'user-001') {
       }),
     },
     // route 내부에서 직접 daily_haps select 호출(builder 의 fetch*Cache 클로저 안에서)을 위한 가벼운 stub
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-      upsert: upsertMock,
-    })),
+    from: vi.fn((table: string) => {
+      if (table === 'users') return makeBirthQuery(USER_BIRTH_ROW);
+      if (table === 'relations') return makeBirthQuery(RELATION_BIRTH_ROW);
+      return makeDailyHapQuery(null);
+    }),
+  };
+}
+
+function makeClientWithDailyHapRow(row: unknown, userId = 'user-001') {
+  return {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: userId } },
+        error: null,
+      }),
+    },
+    from: vi.fn((table: string) => {
+      if (table === 'users') return makeBirthQuery(USER_BIRTH_ROW);
+      if (table === 'relations') return makeBirthQuery(RELATION_BIRTH_ROW);
+      return makeDailyHapQuery(row);
+    }),
+  };
+}
+
+function makeClientWithDailyHapError(error: { message: string }, userId = 'user-001') {
+  return {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: userId } },
+        error: null,
+      }),
+    },
+    from: vi.fn((table: string) => {
+      if (table === 'users') return makeBirthQuery(USER_BIRTH_ROW);
+      if (table === 'relations') return makeBirthQuery(RELATION_BIRTH_ROW);
+      return makeDailyHapQuery(null, error);
+    }),
+  };
+}
+
+function makeClientWithBirthRows(userId = 'user-001') {
+  return {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: userId } },
+        error: null,
+      }),
+    },
+    from: vi.fn((table: string) => {
+      if (table === 'users') return makeBirthQuery(USER_BIRTH_ROW);
+      if (table === 'relations') return makeBirthQuery(RELATION_BIRTH_ROW);
+      return makeDailyHapQuery(null);
+    }),
   };
 }
 
@@ -115,9 +210,7 @@ describe('GET /api/today (기본 회귀)', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    // C7: card=null 인 경우에도 applyRelationMetaToResponse 가 빈 객체 반환
-    // (실제로는 buildDailyHap 가 null 반환 케이스 자체가 매우 드뭄)
-    expect(body.card).toBeDefined();
+    expect(body.card).toBeNull();
   });
 
   it('401 → UNAUTHORIZED (미인증)', async () => {
@@ -136,6 +229,25 @@ describe('GET /api/today (기본 회귀)', () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('buildDailyHap throw 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(buildDailyHap).mockRejectedValue(
+      new Error('DB down birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET(makeRequest());
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1995-06-15');
+    expect(calls).not.toContain('10:30:00');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 
   it('OpenAI client 생성은 builder LLM 단계까지 지연한다', async () => {
@@ -215,6 +327,142 @@ describe('GET /api/today (G2 인연 종합)', () => {
     );
   });
 
+  it('어제 fallback 캐시는 현재 relation_id 와 다르면 무시한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(
+      makeClientWithDailyHapRow({
+        headline: '이전 인연용 어제 문장',
+        headline_reason: '이 문장이 새 인연에 섞이면 안 돼요.',
+        avoid_phrase: 'old',
+        avoid_phrase_reason: 'old reason',
+        favorable_action: 'old action',
+        favorable_action_reason: 'old action reason',
+        reused_from_yesterday: false,
+        primary_relation_id: 'rel-old',
+        relation_nickname: '이전인연',
+        today_compat_score: 44,
+      }) as never,
+    );
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-new',
+      nickname: '새인연',
+      mode: '오래합',
+    });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      const yesterday = await deps.fetchYesterdayCache();
+      return yesterday ?? CARD;
+    });
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-new'));
+    const body = await res.json();
+
+    expect(body.card.headline).toBe(CARD.headline);
+    expect(body.card.headline).not.toBe('이전 인연용 어제 문장');
+    expect(body.card.relation_id).toBe('rel-new');
+    expect(body.card.relation_nickname).toBe('새인연');
+  });
+
+  it('오늘 캐시는 relation_id가 같아도 source_packet_hash가 다르면 무시한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(
+      makeClientWithDailyHapRow({
+        headline: '구형 source packet 본문',
+        headline_reason: '모델이나 프롬프트가 바뀐 본문이 섞이면 안 돼요.',
+        avoid_phrase: 'stale',
+        avoid_phrase_reason: 'stale reason',
+        favorable_action: 'stale action',
+        favorable_action_reason: 'stale action reason',
+        reused_from_yesterday: false,
+        primary_relation_id: 'rel-current',
+        relation_nickname: '현재인연',
+        today_compat_score: 44,
+        source_packet_hash: 'stale-source-packet-hash',
+        llm_model: selectLlmModel('today'),
+      }) as never,
+    );
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-current',
+      nickname: '현재인연',
+      mode: '오래합',
+    });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      const cached = await deps.fetchTodayCache();
+      return cached ?? CARD;
+    });
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-current'));
+    const body = await res.json();
+
+    expect(body.card.headline).toBe(CARD.headline);
+    expect(body.card.headline).not.toBe('구형 source packet 본문');
+    expect(body.card.relation_id).toBe('rel-current');
+    expect(body.card.relation_nickname).toBe('현재인연');
+  });
+
+  it('오늘 캐시 조회 오류는 cache miss 로 위장해 생성 경로로 진행하지 않는다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(
+      makeClientWithDailyHapError({ message: 'daily_haps lookup failed' }) as never,
+    );
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.fetchTodayCache();
+      return CARD;
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-current'));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    consoleSpy.mockRestore();
+  });
+
+  it('오늘 캐시는 relation_id와 source_packet_hash가 모두 같으면 재사용한다', async () => {
+    const datedSelfChart = withYunseAtDate(SELF_CHART, USER_BIRTH_ROW, TODAY_TARGET_DATE);
+    const datedRelationChart = withYunseAtDate(
+      REL_CHART,
+      RELATION_BIRTH_ROW,
+      TODAY_TARGET_DATE,
+    );
+    const sourcePacketHash = buildSourcePacketHash({
+      self_chart: datedSelfChart,
+      relation_chart: datedRelationChart,
+      target_date: TODAY_TARGET_DATE,
+      prompt_version: TODAY_RELATION_PROMPT_VERSION,
+      model_id: selectLlmModel('today'),
+    });
+    vi.mocked(createServerClient).mockResolvedValue(
+      makeClientWithDailyHapRow({
+        headline: '검증된 현재 source packet 본문',
+        headline_reason: '같은 relation, 날짜, 모델, 프롬프트, 차트 해시만 재사용해요.',
+        avoid_phrase: 'stale 금지',
+        avoid_phrase_reason: 'source packet이 같아서 정상 캐시입니다.',
+        favorable_action: '짧게 확인하기',
+        favorable_action_reason: '캐시가 과도하게 버려지지 않아야 해요.',
+        reused_from_yesterday: false,
+        primary_relation_id: 'rel-current',
+        relation_nickname: '현재인연',
+        today_compat_score: 58,
+        source_packet_hash: sourcePacketHash,
+        llm_model: selectLlmModel('today'),
+      }) as never,
+    );
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-current',
+      nickname: '현재인연',
+      mode: '오래합',
+    });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      const cached = await deps.fetchTodayCache();
+      return cached ?? CARD;
+    });
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-current'));
+    const body = await res.json();
+
+    expect(body.card.headline).toBe('검증된 현재 source packet 본문');
+    expect(body.card.relation_id).toBe('rel-current');
+    expect(body.card.relation_nickname).toBe('현재인연');
+  });
+
   it('relation 있지만 chart 없음 → relation_id/nickname 채워지고 today_compat_score=null', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
     vi.mocked(pickTodayRelation).mockResolvedValue({
@@ -227,6 +475,108 @@ describe('GET /api/today (G2 인연 종합)', () => {
     const body = await res.json();
     expect(body.card.relation_id).toBe('rel-no-chart');
     expect(body.card.relation_nickname).toBe('지수');
+    expect(body.card.today_compat_score ?? null).toBeNull();
+  });
+
+  it('relation chart 조회 오류는 fallback card 로 위장하지 않고 500 으로 반환한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-db-error',
+      nickname: '민지',
+      mode: '일합',
+    });
+    vi.mocked(ensureRelationChart).mockRejectedValueOnce(
+      new Error('relation_charts failed birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-db-error'));
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(JSON.stringify(body)).not.toContain('1995-06-15');
+    expect(JSON.stringify(body)).not.toContain('10:30:00');
+    expect(JSON.stringify(body)).not.toContain('gender=F');
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1995-06-15');
+    expect(logged).not.toContain('10:30:00');
+    expect(logged).not.toContain('gender=F');
+    expect(logged).toContain('birth_date=[redacted]');
+    expect(logged).toContain('birth_time=[redacted]');
+    expect(logged).toContain('gender=[redacted]');
+    consoleSpy.mockRestore();
+  });
+
+  it('저장된 chart yunse가 과거여도 target_date 기준 yunse로 재투영해 builder에 전달한다', async () => {
+    const staleDate = '2020-01-01';
+    const staleSelf = {
+      ...SELF_CHART,
+      yunse: {
+        ...SELF_CHART.yunse,
+        iliun: { today_pillar: '갑자', today_date: staleDate },
+      },
+    };
+    const staleRelation = {
+      ...REL_CHART,
+      yunse: {
+        ...REL_CHART.yunse,
+        iliun: { today_pillar: '갑자', today_date: staleDate },
+      },
+    };
+    const capturedCharts: {
+      self: ChartCore | null;
+      relation: ChartCore | null;
+    } = {
+      self: null,
+      relation: null,
+    };
+    vi.mocked(createServerClient).mockResolvedValue(makeClientWithBirthRows() as never);
+    vi.mocked(fetchLatestUserChartForVersion).mockResolvedValue({
+      data: { chart_core: staleSelf, chart_hash: 'stale-self' },
+      error: null,
+    } as never);
+    vi.mocked(ensureRelationChart).mockResolvedValue(staleRelation);
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-date',
+      nickname: '날짜인연',
+      mode: '일합',
+    });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      capturedCharts.self = await deps.fetchUserChart();
+      const relation = await deps.fetchRelation();
+      capturedCharts.relation = relation
+        ? await deps.fetchRelationChart(relation.id)
+        : null;
+      return CARD;
+    });
+
+    const res = await GET(makeRequest('http://localhost/api/today?relation_id=rel-date'));
+
+    expect(res.status).toBe(200);
+    expect(capturedCharts.self?.yunse.iliun.today_date).toBe(TODAY_TARGET_DATE);
+    expect(capturedCharts.relation?.yunse.iliun.today_date).toBe(TODAY_TARGET_DATE);
+  });
+
+  it('fallback card 는 relation 메타를 유지하되 today_compat_score 를 붙이지 않는다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue({
+      id: 'rel-fallback',
+      nickname: '민지',
+      mode: '일합',
+    });
+    vi.mocked(buildDailyHap).mockResolvedValue({
+      ...CARD,
+      headline: '오늘 메시지를 준비하지 못했어요.',
+      is_fallback: true,
+    } as DailyHapCard & { is_fallback: true });
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.card.is_fallback).toBe(true);
+    expect(body.card.relation_id).toBe('rel-fallback');
+    expect(body.card.relation_nickname).toBe('민지');
     expect(body.card.today_compat_score ?? null).toBeNull();
   });
 });
@@ -378,6 +728,26 @@ describe('GET /api/today (F1.2 saveCard 신규 컬럼 영속화)', () => {
     expect(payload.relation_nickname).toBe('지수');
     expect(payload.today_compat_score).toBeNull();
   });
+
+  it('daily_haps upsert 오류는 정상 카드로 위장하지 않고 save 실패로 throw 한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    upsertMock.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'daily_haps upsert failed' },
+    });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await expect(deps.saveCard(CARD)).rejects.toThrow(
+        'TODAY_CACHE_SAVE_FAILED: daily_haps upsert failed',
+      );
+      return { ...CARD, is_fallback: true };
+    });
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.card.is_fallback).toBe(true);
+  });
 });
 
 // Task 1 (Phase 3 후속) — instrumentation trace → error_events 적재
@@ -517,5 +887,55 @@ describe('GET /api/today (Task 1 instrumentation trace)', () => {
     await GET(makeRequest());
     expect(errorEventsInsert).toHaveBeenCalledTimes(1);
     expect(errorEventsInsert.mock.calls[0][0].error_code).toBe('TODAY_BUILD_FAIL');
+  });
+
+  it('error_events.stack 에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [{ name: 'llm', durationMs: 8000 }],
+        totalMs: 8500,
+        failedPhase: 'llm',
+        errorMessage: 'LLM failed birth_date=1995-06-15 birth_time=10:30:00 gender=F',
+      });
+      return CARD;
+    });
+
+    await GET(makeRequest());
+
+    const stack = errorEventsInsert.mock.calls[0][0].stack;
+    expect(stack).not.toContain('1995-06-15');
+    expect(stack).not.toContain('10:30:00');
+    expect(stack).not.toContain('gender=F');
+    expect(stack).toContain('birth_date=[redacted]');
+    expect(stack).toContain('birth_time=[redacted]');
+    expect(stack).toContain('gender=[redacted]');
+  });
+
+  it('error_events insert 실패 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    errorEventsInsert.mockRejectedValueOnce(
+      new Error('insert failed birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+    vi.mocked(createServerClient).mockResolvedValue(makeTracingClient() as never);
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      await deps.recordTrace?.({
+        phases: [{ name: 'llm', durationMs: 8000 }],
+        totalMs: 8500,
+        failedPhase: 'llm',
+        errorMessage: 'LLM_TIMEOUT: Request was aborted',
+      });
+      return CARD;
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await GET(makeRequest());
+
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1995-06-15');
+    expect(calls).not.toContain('10:30:00');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 });

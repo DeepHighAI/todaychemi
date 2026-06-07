@@ -6,6 +6,7 @@ import type { TodayLlmInput } from '@/lib/today/builder';
 import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
+import { projectChartForLlm } from '@/lib/llm/payload';
 import type { AnthropicMessagesClient } from '@/lib/llm/anthropic';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 
@@ -52,6 +53,22 @@ function textOrFallback(value: string | undefined, fallback: string): string {
   return value?.trim() || fallback;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error(`LLM_TIMEOUT: Today LLM exceeded ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+  return Promise.race([
+    promise.finally(() => {
+      if (timeout) clearTimeout(timeout);
+    }),
+    timeoutPromise,
+  ]);
+}
+
 // G2 / Phase 3 C5 — 3축 (self + relation + today_date) 인터페이스 + GPT-5 격상.
 // relation_chart 가 null 이면 daily_hap 프롬프트 + 단일축 페이로드 (인연 미등록 사용자).
 // relation_chart 존재 시 today_with_relation 프롬프트 + relation_chart_core 포함 페이로드.
@@ -67,7 +84,8 @@ export async function callDailyHapLlm(
   userId: string,
   options: DailyHapLlmOptions = {},
 ): Promise<DailyHapCard> {
-  const relationPresent = input.relation_chart !== null;
+  const relationChart = input.relation_chart;
+  const relationPresent = relationChart !== null;
   const promptName = relationPresent ? PROMPT_NAME_RELATION : PROMPT_NAME_SINGLE;
 
   // ADR-008 canary 분기 (active 또는 canary). 콘텐츠는 prompt_versions.content 그대로.
@@ -77,40 +95,46 @@ export async function callDailyHapLlm(
   // PII 0건 페이로드 (chart_core 만 + today_date)
   const userPayload = relationPresent
     ? {
-        chart_core: input.self_chart,
-        relation_chart_core: input.relation_chart,
+        chart_core: projectChartForLlm(input.self_chart),
+        relation_chart_core: projectChartForLlm(relationChart),
         today_date: input.today_date,
       }
     : {
-        chart_core: input.self_chart,
+        chart_core: projectChartForLlm(input.self_chart),
         today_date: input.today_date,
       };
 
   let raw: DailyHapLlmOutput;
   try {
-    const result = await callOpenAi<DailyHapLlmOutput>(
-      {
-        systemPrompt,
-        userPayload,
-        schema: DAILY_HAP_LLM_OUTPUT_SCHEMA,
-        payloadWhitelist: TODAY_PAYLOAD_WHITELIST,
-        model: selectLlmModel('today'),
-        // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 -> LLM_PARSE_FAIL.
-        // 2000 으로 상향하여 'Unexpected end of JSON input' 회귀 차단. 비용 +10-20% 예상.
-        maxCompletionTokens: 2000,
-        timeoutMs: TODAY_LLM_TIMEOUT_MS,
-      },
-      {
-        openaiClient: openai as unknown as CallOpenAiDeps['openaiClient'],
-        supabaseServiceRole: options.costClient ?? supabase,
-        now: options.now,
-        anthropicClient: options.anthropicClient,
-        bannedPhraseCatalog: options.bannedPhraseCatalog,
-      },
+    const result = await withTimeout(
+      callOpenAi<DailyHapLlmOutput>(
+        {
+          systemPrompt,
+          userPayload,
+          schema: DAILY_HAP_LLM_OUTPUT_SCHEMA,
+          payloadWhitelist: TODAY_PAYLOAD_WHITELIST,
+          model: selectLlmModel('today'),
+          // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 -> LLM_PARSE_FAIL.
+          // 2000 으로 상향하여 'Unexpected end of JSON input' 회귀 차단. 비용 +10-20% 예상.
+          maxCompletionTokens: 2000,
+          timeoutMs: TODAY_LLM_TIMEOUT_MS,
+        },
+        {
+          openaiClient: openai as unknown as CallOpenAiDeps['openaiClient'],
+          supabaseServiceRole: options.costClient ?? supabase,
+          now: options.now,
+          anthropicClient: options.anthropicClient,
+          bannedPhraseCatalog: options.bannedPhraseCatalog,
+        },
+      ),
+      TODAY_LLM_TIMEOUT_MS,
     );
     raw = result.output;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith('LLM_TIMEOUT:')) {
+      throw err instanceof Error ? err : new Error(msg);
+    }
     if (/timeout|aborted|timed out/i.test(msg)) {
       throw new Error(`LLM_TIMEOUT: ${msg}`);
     }

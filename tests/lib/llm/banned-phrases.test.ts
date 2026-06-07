@@ -123,6 +123,16 @@ describe('findScoreLeak — ADR-035 점수 누설 탐지', () => {
     expect(hit.found).toBe(true);
   });
 
+  it('"score": 85 JSON 키도 score_leak', () => {
+    const hit = findScoreLeak('{"score":85}');
+    expect(hit.found).toBe(true);
+  });
+
+  it('"today_compat_score": 85 JSON 키도 score_leak', () => {
+    const hit = findScoreLeak('{"today_compat_score":85}');
+    expect(hit.found).toBe(true);
+  });
+
   it('"합점수 85" — score_leak (regex 3)', () => {
     const hit = findScoreLeak('합점수 85로 나타났습니다');
     expect(hit.found).toBe(true);

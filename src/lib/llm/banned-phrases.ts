@@ -49,7 +49,8 @@ const CLASSICAL_HANJA_RE = /[一-鿿]/;
 // ADR-035 §8 점수 누설 회귀 차단
 const SCORE_LEAK_PATTERNS = [
   /(\d{1,3})\s*점/,
-  /score\s*[:：]?\s*\d/i,
+  /\bscore\b["']?\s*[:：]?\s*\d/i,
+  /["']?(?:today_)?(?:compat|compatibility)_score["']?\s*[:：]?\s*\d/i,
   /합점수\s*\d/,
 ];
 

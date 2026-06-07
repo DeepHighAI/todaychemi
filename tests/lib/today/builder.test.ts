@@ -87,6 +87,7 @@ describe('buildDailyHap — 캐시·실패·fallback (기존 회귀)', () => {
     expect(result).not.toBeNull();
     expect(typeof result?.headline).toBe('string');
     expect(result?.avoid_phrase).toBeTruthy();
+    expect((result as DailyHapCard & { is_fallback?: boolean })?.is_fallback).toBe(true);
   });
 
   it('chart 없으면 템플릿 카드 반환 (callLlm 미호출)', async () => {
@@ -95,6 +96,7 @@ describe('buildDailyHap — 캐시·실패·fallback (기존 회귀)', () => {
     expect(deps.callLlm).not.toHaveBeenCalled();
     expect(result).not.toBeNull();
     expect(result?.avoid_phrase).toBeTruthy();
+    expect((result as DailyHapCard & { is_fallback?: boolean })?.is_fallback).toBe(true);
   });
 });
 
@@ -145,7 +147,7 @@ describe('buildDailyHap — 인연 종합 (G2)', () => {
     expect(result?.today_compat_score).toBeLessThanOrEqual(100);
   });
 
-  it('인연 메타 존재 + chart 없음 (lazy gen 실패) → relation_chart=null, today_compat_score=null', async () => {
+  it('인연 메타 존재 + chart 없음 (lazy gen 실패) → 단독축 LLM 본문을 만들지 않고 fallback 카드로 표시', async () => {
     const deps = makeDeps({
       fetchRelation: vi.fn().mockResolvedValue({
         id: 'rel-no-chart',
@@ -155,15 +157,42 @@ describe('buildDailyHap — 인연 종합 (G2)', () => {
       fetchRelationChart: vi.fn().mockResolvedValue(null),
     });
     const result = await buildDailyHap(deps);
-    const llmArg = (deps.callLlm as ReturnType<typeof vi.fn>).mock.calls[0][0] as {
-      self_chart: ChartCore;
-      relation_chart: ChartCore | null;
-    };
-    expect(llmArg.relation_chart).toBeNull();
+    expect(deps.callLlm).not.toHaveBeenCalled();
+    expect(deps.saveCard).not.toHaveBeenCalled();
     expect(result?.relation_id).toBe('rel-no-chart');
     expect(result?.relation_nickname).toBe('지수');
-    // chart 없으면 today_compat_score 계산 불가 → null
     expect(result?.today_compat_score ?? null).toBeNull();
+    expect((result as DailyHapCard & { is_fallback?: boolean })?.is_fallback).toBe(true);
+    expect(result?.headline).toBe('오늘 메시지를 준비하지 못했어요. 내일 다시 찾아주세요.');
+  });
+
+  it('인연 chart 없음 fallback trace → failedPhase=relationChart + errorMessage=chart_null', async () => {
+    const recordTrace = vi.fn();
+    const deps = makeDeps({
+      fetchRelation: vi.fn().mockResolvedValue({
+        id: 'rel-no-chart',
+        nickname: '지수',
+        mode: '친구합',
+      }),
+      fetchRelationChart: vi.fn().mockResolvedValue(null),
+      recordTrace,
+    });
+
+    await buildDailyHap(deps);
+
+    const trace = recordTrace.mock.calls[0][0] as {
+      failedPhase?: string;
+      errorMessage?: string;
+      phases: { name: string }[];
+    };
+    expect(trace.failedPhase).toBe('relationChart');
+    expect(trace.errorMessage).toBe('chart_null');
+    expect(trace.phases.map((p) => p.name)).toEqual([
+      'todayCache',
+      'userChart',
+      'relation',
+      'relationChart',
+    ]);
   });
 
   it('today_compat_score 는 결정형 — 동일 입력으로 두 번 호출하면 같은 값', async () => {
@@ -235,6 +264,26 @@ describe('buildDailyHap — instrumentation trace (Task 1)', () => {
     expect(trace.phases.map((p) => p.name)).toContain('yesterdayCache');
     // failedPhase 는 LLM 시점 캡처 후 yesterdayCache 단계가 덮어쓰지 않아야 함.
     expect(trace.failedPhase).not.toBe('yesterdayCache');
+  });
+
+  it('saveCard throw → failedPhase=save 로 기록하고 fallback 카드 반환', async () => {
+    const recordTrace = vi.fn();
+    const deps = makeDeps({
+      saveCard: vi.fn().mockRejectedValue(new Error('TODAY_CACHE_SAVE_FAILED: upsert failed')),
+      recordTrace,
+    });
+
+    const result = await buildDailyHap(deps);
+
+    expect(result?.is_fallback).toBe(true);
+    const trace = recordTrace.mock.calls[0][0] as {
+      phases: { name: string }[];
+      failedPhase?: string;
+      errorMessage?: string;
+    };
+    expect(trace.failedPhase).toBe('save');
+    expect(trace.errorMessage).toContain('TODAY_CACHE_SAVE_FAILED');
+    expect(trace.phases.map((p) => p.name)).toContain('yesterdayCache');
   });
 
   it('cache hit → phases 에 todayCache 만 + failedPhase undefined', async () => {

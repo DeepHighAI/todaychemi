@@ -58,7 +58,7 @@ export function GuestTodayMeView({ snapshot }: { snapshot: GuestTodaySnapshot })
           className={cn(buttonVariants({ variant: 'default' }), 'h-12 w-full gap-2 rounded-[var(--r-pill)] font-bold')}
         >
           <UsersRound size={18} />
-          친구와의 오늘 우리는 보기
+          친구와의 오늘 케미 보기
         </Link>
       </section>
     </main>

@@ -46,11 +46,17 @@ describe('DailyHapCard 인연 종합 필드 (G2)', () => {
     expect(withNull.relation_nickname).toBeNull();
   });
 
-  it('today_compat_score (오늘 합온도)를 number | null | undefined 로 받는다', () => {
+  it('today_compat_score (케미온도)를 number | null | undefined 로 받는다', () => {
     const withScore: DailyHapCard = { ...baseCard, today_compat_score: 78 };
     const withNull: DailyHapCard = { ...baseCard, today_compat_score: null };
     expect(withScore.today_compat_score).toBe(78);
     expect(withNull.today_compat_score).toBeNull();
+  });
+
+  it('is_fallback 은 response-only boolean marker 로 받는다', () => {
+    const fallback: DailyHapCard = { ...baseCard, is_fallback: true };
+    expect(fallback.is_fallback).toBe(true);
+    expect(baseCard.is_fallback).toBeUndefined();
   });
 
   it('인연 필드 3개 모두 동시 노출 + JSON serialize 라운드트립', () => {

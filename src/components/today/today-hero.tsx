@@ -3,7 +3,7 @@
 /* TodayHero — Liquid Glass hero with score signature
  * Canvas reference: type-d/screens-interactive.jsx::IHome (Liquid Glass hero section)
  *
- * G2 / Phase 3 C8: 인연 chip + 오늘 합온도 노출.
+ * G2 / Phase 3 C8: 인연 chip + 케미온도 노출.
  * F2.2: outer Link 제거 — chip 위치는 인터랙티브 영역으로 분리.
  *   - hero 자체는 div (탭 영역 ≠ 단일 navigate)
  *   - body 텍스트 영역(temperature/headline_reason) 만 Link 로 /feed 이동
@@ -30,7 +30,8 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
   const t = useTranslations('home');
 
   // G2: today_compat_score 가 합점수보다 우선 (매일 변동성이 본질)
-  const effectiveScore = card.today_compat_score ?? score ?? null;
+  const isFallback = card.is_fallback === true;
+  const effectiveScore = isFallback ? null : card.today_compat_score ?? score ?? null;
   const hasScore = typeof effectiveScore === 'number';
   const temperature = hasScore ? scoreToTemperature(effectiveScore) : null;
   const hasRelation = Boolean(card.relation_id && card.relation_nickname);
@@ -77,7 +78,7 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
               </p>
             )}
 
-            {typeof card.today_compat_score === 'number' && (
+            {!isFallback && typeof card.today_compat_score === 'number' && (
               <p className="text-[11px] font-semibold text-white/75 mt-1">
                 {t('with_relation.compat_label')}
               </p>
@@ -99,6 +100,12 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
       {card.reused_from_yesterday && (
         <span className="relative z-[1] inline-block bg-white/20 text-white text-xs font-medium rounded-full px-3 py-1">
           {t('reused_label')}
+        </span>
+      )}
+
+      {isFallback && (
+        <span className="relative z-[1] inline-block bg-white/20 text-white text-xs font-medium rounded-full px-3 py-1">
+          {t('fallback_label')}
         </span>
       )}
 

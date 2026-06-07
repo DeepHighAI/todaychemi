@@ -33,6 +33,7 @@ describe('createOpenAiClient', () => {
     expect(OpenAiCtor.mock.calls[0][0]).toEqual({
       apiKey: 'sk-test-key',
       project: 'proj_test',
+      maxRetries: 0,
       timeout: 60_000,
     });
   });
@@ -69,6 +70,7 @@ describe('createOpenAiClient', () => {
     expect(OpenAiCtor.mock.calls[0][0]).toEqual({
       apiKey: 'sk-test-key',
       project: undefined,
+      maxRetries: 0,
       timeout: 60_000,
     });
   });

@@ -47,6 +47,7 @@ function makeSupabase(opts: {
     birth_time: string | null;
     gender: 'M' | 'F';
   } | null;
+  relationLookupError?: unknown;
   upsertError?: unknown;
 }) {
   const upsertMock = vi.fn().mockResolvedValue({ data: null, error: opts.upsertError ?? null });
@@ -56,7 +57,10 @@ function makeSupabase(opts: {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          maybeSingle: vi.fn().mockResolvedValue({ data: opts.relationRow, error: null }),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: opts.relationRow,
+            error: opts.relationLookupError ?? null,
+          }),
         };
       }
       if (table === 'relation_charts') {
@@ -153,6 +157,70 @@ describe('ensureRelationChart', () => {
     expect(result).toBeNull();
   });
 
+  it('기존 relation_charts 조회 오류는 chart 없음으로 삼키지 않고 전파한다', async () => {
+    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
+      data: null,
+      error: { code: 'PGRST503', message: 'relation_charts lookup failed' },
+    } as never);
+
+    const { sb } = makeSupabase({
+      relationRow: {
+        birth_date: '1995-06-15',
+        birth_date_calendar: 'solar',
+        is_lunar_leap: false,
+        birth_time_knowledge: 'exact',
+        birth_time: '10:30:00',
+        gender: 'F',
+      },
+    });
+
+    await expect(ensureRelationChart(sb as never, 'rel-db-error', 'user-1', 'kasi-key')).rejects
+      .toMatchObject({ code: 'PGRST503' });
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('relations row 조회 오류는 relation 없음으로 삼키지 않고 전파한다', async () => {
+    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
+      data: null,
+      error: null,
+    } as never);
+
+    const { sb } = makeSupabase({
+      relationRow: null,
+      relationLookupError: { code: '57014', message: 'statement timeout' },
+    });
+
+    await expect(ensureRelationChart(sb as never, 'rel-row-error', 'user-1', 'kasi-key')).rejects
+      .toMatchObject({ code: '57014' });
+    expect(computeChart).not.toHaveBeenCalled();
+  });
+
+  it('relation_charts upsert 실패는 저장된 chart 처럼 반환하지 않고 전파한다', async () => {
+    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
+      data: null,
+      error: null,
+    } as never);
+    vi.mocked(computeChart).mockResolvedValueOnce({
+      chart_core: COMPUTED_CHART,
+      chart_hash: 'h-new',
+    });
+
+    const { sb } = makeSupabase({
+      relationRow: {
+        birth_date: '1995-06-15',
+        birth_date_calendar: 'solar',
+        is_lunar_leap: false,
+        birth_time_knowledge: 'exact',
+        birth_time: '10:30:00',
+        gender: 'F',
+      },
+      upsertError: { code: '23505', message: 'duplicate key' },
+    });
+
+    await expect(ensureRelationChart(sb as never, 'rel-upsert-error', 'user-1', 'kasi-key')).rejects
+      .toMatchObject({ code: '23505' });
+  });
+
   // F3.3: KASI 실패 시 error_events 테이블에 기록
   it('F3.3: KASI 실패 → error_events INSERT (error_code=KASI_COMPUTE_FAIL, context에 relationId)', async () => {
     vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
@@ -198,5 +266,52 @@ describe('ensureRelationChart', () => {
     // context.relation_id 에 식별자 포함
     const context = typeof payload.context === 'string' ? JSON.parse(payload.context) : payload.context;
     expect(context.relation_id).toBe('rel-err');
+  });
+
+  it('KASI 실패 error_events.stack 에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(fetchLatestRelationChartForVersion).mockResolvedValueOnce({
+      data: null,
+      error: null,
+    } as never);
+    vi.mocked(computeChart).mockRejectedValueOnce(
+      new Error('KASI failed birth_date=1995-06-15 birth_time=10:30:00 gender=F'),
+    );
+
+    const errorInsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const sb = {
+      from: vi.fn((table: string) => {
+        if (table === 'relations') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                birth_date: '1995-06-15',
+                birth_date_calendar: 'solar',
+                is_lunar_leap: false,
+                birth_time_knowledge: 'exact',
+                birth_time: '10:30:00',
+                gender: 'F',
+              },
+              error: null,
+            }),
+          };
+        }
+        if (table === 'error_events') {
+          return { insert: errorInsertMock };
+        }
+        return { upsert: vi.fn().mockResolvedValue({ data: null, error: null }) };
+      }),
+    };
+
+    await ensureRelationChart(sb as never, 'rel-safe-log', 'user-1', 'kasi-key');
+
+    const payload = errorInsertMock.mock.calls[0][0];
+    expect(payload.stack).not.toContain('1995-06-15');
+    expect(payload.stack).not.toContain('10:30:00');
+    expect(payload.stack).not.toContain('gender=F');
+    expect(payload.stack).toContain('birth_date=[redacted]');
+    expect(payload.stack).toContain('birth_time=[redacted]');
+    expect(payload.stack).toContain('gender=[redacted]');
   });
 });

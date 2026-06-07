@@ -14,6 +14,8 @@ export interface DailyHapCard {
   favorable_action: string;
   favorable_action_reason: string;
   reused_from_yesterday: boolean;
+  // Response-only marker: true means this is a safe generic card, not a personalized LLM result.
+  is_fallback?: boolean;
   // G2 (Phase 3) — 오늘카드 인연 종합. 인연 0건 사용자는 모두 undefined/null.
   relation_id?: string | null;
   relation_nickname?: string | null;

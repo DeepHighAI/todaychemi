@@ -4,13 +4,13 @@
  * Canvas reference: type-d/screens-interactive.jsx::IHome
  *
  * Improvements:
- *  - TodayHero에 today_compat_score 전달 → 56px 오늘온도
+ *  - TodayHero에 today_compat_score 전달 → 56px 케미온도
  *  - 인연 row를 SwipeRow로 — 좌측 스와이프 시 삭제
  *  - 빠른 인연 등록 카드 prominent하게
  */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -33,14 +33,20 @@ import type { FeedListItem } from '@/types/relation';
 
 const TOP_N_RELATIONS = 5;
 
-async function fetchToday(): Promise<DailyHapCard> {
-  const res = await fetch('/api/today');
+function buildTodayUrl(relationId: string | null): string {
+  if (!relationId) return '/api/today';
+  const params = new URLSearchParams({ relation_id: relationId });
+  return `/api/today?${params.toString()}`;
+}
+
+async function fetchToday(relationId: string | null): Promise<DailyHapCard> {
+  const res = await fetch(buildTodayUrl(relationId));
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const code = (body as { error?: { code?: string } })?.error?.code ?? 'INTERNAL_ERROR';
     throw new Error(code);
   }
-  const body = (await res.json()) as { ok: boolean; card?: DailyHapCard };
+  const body = (await res.json()) as { ok: boolean; card?: DailyHapCard | null };
   if (!body.ok || !body.card) throw new Error('INTERNAL_ERROR');
   return body.card;
 }
@@ -70,19 +76,29 @@ function formatKstDate(iso: string): string {
 
 export default function TodayPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations('home');
   const tMode = useTranslations('relations.new.mode');
   const qc = useQueryClient();
+  const selectedRelationId = searchParams.get('relation_id');
+  const todayDate = todayKST();
 
-  const todayQuery = useQuery({ queryKey: ['today'], queryFn: fetchToday });
+  const todayQuery = useQuery({
+    queryKey: ['today', todayDate, selectedRelationId ?? ''],
+    queryFn: () => fetchToday(selectedRelationId),
+  });
   const chartQuery = useQuery({ queryKey: ['me-chart'], queryFn: fetchMyChart });
   const relationsQuery = useQuery({ queryKey: ['relations'], queryFn: fetchRelations });
 
   const del = useMutation({
     mutationFn: deleteRelation,
-    onSuccess: () => {
+    onSuccess: (_data, deletedRelationId) => {
       qc.invalidateQueries({ queryKey: ['relations'] });
       qc.invalidateQueries({ queryKey: ['feed'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      if (selectedRelationId === deletedRelationId) {
+        router.replace('/');
+      }
     },
   });
 
@@ -98,6 +114,7 @@ export default function TodayPageClient() {
     favorable_action: t('fallback.favorable_action'),
     favorable_action_reason: t('fallback.favorable_action_reason'),
     reused_from_yesterday: false,
+    is_fallback: true,
   };
   const card = todayQuery.data ?? (showFallbackToday ? fallbackCard : undefined);
   const chart = chartQuery.data ?? null;
@@ -119,9 +136,9 @@ export default function TodayPageClient() {
 
       {card && (
         <>
-          {chart && <DateLine date={formatKstDate(todayKST())} dayPillar={chart.day_pillar} />}
+          {chart && <DateLine date={formatKstDate(todayDate)} dayPillar={chart.day_pillar} />}
 
-          {/* canvas hero: 큰 오늘온도 + delta pill
+          {/* canvas hero: 큰 케미온도 + delta pill
               F2.3: card.relation_id 있으면 RelationChip 주입 → chip 탭으로 인연 전환 가능 */}
           <TodayHero
             card={card}

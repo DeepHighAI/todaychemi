@@ -51,7 +51,7 @@ describe('GuestTodayMeView', () => {
     expect(screen.getByText('하늘달님의 오늘을 먼저 볼게요.')).toBeInTheDocument();
     expect(screen.getAllByText('오늘 나의 흐름').length).toBeGreaterThan(0);
     expect(screen.getByText('오늘은 정리하기 좋아요.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '친구와의 오늘 우리는 보기' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '친구와의 오늘 케미 보기' })).toHaveAttribute(
       'href',
       '/signup?intent=guest',
     );

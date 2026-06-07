@@ -16,7 +16,12 @@ export function createOpenAiClient(): OpenAI {
   if (requiresProjectRouting && !project) {
     throw new ConfigError('Missing env: OPENAI_PROJECT_ID');
   }
-  return new OpenAI({ apiKey, project: project || undefined, timeout: 60_000 });
+  return new OpenAI({
+    apiKey,
+    project: project || undefined,
+    maxRetries: 0,
+    timeout: 60_000,
+  });
 }
 
 // embeddings 만 필요한 경우 (RAG 쿼리용).
