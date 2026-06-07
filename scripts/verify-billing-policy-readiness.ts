@@ -50,11 +50,11 @@ function main() {
     results,
     'feature price catalog matches pay-per-use prices',
     hasAll(featurePrices, [
-      /hapcard:\s*\{[^}]*amount_krw:\s*800/,
-      /whatif:\s*\{[^}]*amount_krw:\s*500/,
-      /replay:\s*\{[^}]*amount_krw:\s*400/,
+      /hapcard:\s*\{[^}]*amount_krw:\s*1000/,
+      /whatif:\s*\{[^}]*amount_krw:\s*800/,
+      /replay:\s*\{[^}]*amount_krw:\s*600/,
     ]),
-    'feature-prices.ts: hapcard 800 / whatif 500 / replay 400 KRW',
+    'feature-prices.ts: hapcard 1000 / whatif 800 / replay 600 KRW',
   );
 
   addResult(
@@ -123,7 +123,7 @@ function main() {
   console.log('');
   console.log('Pay-per-use billing policy (ADR-039):');
   console.log('- Token-bundle purchase removed; paid features charge at point of use.');
-  console.log('- Prices: hapcard 800 / whatif 500 / replay 400 KRW (feature-prices.ts single source).');
+  console.log('- Prices: hapcard 1000 / whatif 800 / replay 600 KRW (feature-prices.ts single source).');
   console.log('- Free 부적 path refunds on build failure; cash path withholds body until paid.');
 
   if (failed.length > 0) {

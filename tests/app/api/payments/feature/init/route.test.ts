@@ -98,15 +98,15 @@ describe('POST /api/payments/feature/init', () => {
         charge_type: 'feature_use',
         feature_id: 'hapcard',
         feature_ref: REF,
-        amount_krw: 800,
+        amount_krw: 1000,
         token_amount: null,
         product_id: null,
         status: 'pending',
       }),
     );
     expect(body.unlocked).toBe(false);
-    expect(body.payment.amount_krw).toBe(800);
-    expect(body.payment.order_name).toBe('합카드 보기');
+    expect(body.payment.amount_krw).toBe(1000);
+    expect(body.payment.order_name).toBe('케미카드 보기');
     expect(body.payment.client_key).toBe('test_gck_abc');
     expect(body.payment.order_id).toBe('twoday_1_abcdef');
   });
@@ -119,7 +119,7 @@ describe('POST /api/payments/feature/init', () => {
     await POST(request({ feature: 'whatif', ref: REF, amount_krw: 1 }));
 
     expect(service.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ feature_id: 'whatif', amount_krw: 500 }),
+      expect.objectContaining({ feature_id: 'whatif', amount_krw: 800 }),
     );
   });
 

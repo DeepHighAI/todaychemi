@@ -9,6 +9,7 @@ import {
   markPaymentInvalidForUser,
   markPaymentTamperedForUser,
 } from './complete';
+import { verifyFeatureRefOwnership } from './feature-ref-ownership';
 import { FEATURE_PRICES_KRW, type FeatureId } from './feature-prices';
 
 export interface FeaturePaymentConfirmResult {
@@ -96,6 +97,18 @@ export async function confirmFeaturePaymentForUser(input: {
       serviceClient: service,
     });
     throw new PaymentFlowError('PAYMENT_AMOUNT_MISMATCH', '결제 금액이 주문과 다릅니다.', 400);
+  }
+
+  const ownsRef = await verifyFeatureRefOwnership(service, input.userId, input.feature, input.ref);
+  if (!ownsRef) {
+    await markPaymentInvalidForUser({
+      userId: input.userId,
+      orderId: input.orderId,
+      code: 'PAYMENT_REF_NOT_FOUND',
+      message: '결제할 결과를 찾을 수 없습니다.',
+      serviceClient: service,
+    });
+    throw new PaymentFlowError('PAYMENT_REF_NOT_FOUND', '결제할 결과를 찾을 수 없습니다.', 404);
   }
 
   const toss = await confirmOrQueryTossPayment({

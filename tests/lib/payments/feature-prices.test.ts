@@ -7,16 +7,16 @@ import {
 } from '@/lib/payments/feature-prices';
 
 describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
-  it('확정 1회 가격: 합카드 800 / 만약합 500 / 다시합 400', () => {
-    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(800);
-    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(500);
-    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(400);
+  it('확정 1회 가격: 케미카드 1000 / 만약에 우리 800 / 케미 다시 맞추기 600', () => {
+    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(1000);
+    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(800);
+    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(600);
   });
 
-  it('token_cost 는 레거시 FEATURE_TOKEN_COSTS 와 동일 (8 / 5 / 4)', () => {
-    expect(FEATURE_PRICES_KRW.hapcard.token_cost).toBe(8);
-    expect(FEATURE_PRICES_KRW.whatif.token_cost).toBe(5);
-    expect(FEATURE_PRICES_KRW.replay.token_cost).toBe(4);
+  it('token_cost 는 레거시 FEATURE_TOKEN_COSTS 와 동일 (10 / 8 / 6)', () => {
+    expect(FEATURE_PRICES_KRW.hapcard.token_cost).toBe(10);
+    expect(FEATURE_PRICES_KRW.whatif.token_cost).toBe(8);
+    expect(FEATURE_PRICES_KRW.replay.token_cost).toBe(6);
   });
 
   it('각 항목은 자기 feature_id 와 비어있지 않은 order_name 을 가진다', () => {

@@ -32,4 +32,28 @@ describe('markPaymentFailedForUser', () => {
     );
     expect(service.updateIn).toHaveBeenCalledWith('status', ['pending']);
   });
+
+  it('DB update 실패 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const service = makeService();
+    service.updateIn.mockResolvedValueOnce({
+      error: { message: 'payment update failed birth_date=1991-03-15 birth_time=14:30 gender=F' },
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await markPaymentFailedForUser({
+      userId: 'user-001',
+      orderId: 'osa_1_abcdef',
+      code: 'PAYMENT_FAILED',
+      message: '결제를 완료하지 못했습니다.',
+      serviceClient: service as never,
+    });
+
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+  });
 });

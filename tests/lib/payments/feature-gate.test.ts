@@ -29,7 +29,7 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
 
     expect(res.mode).toBe('unlocked');
     expect(res.charged).toBe(false);
-    expect(res.price.amount_krw).toBe(800);
+    expect(res.price.amount_krw).toBe(1000);
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -43,7 +43,7 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
     expect(res.charged).toBe(true);
     expect(rpc).toHaveBeenCalledWith('deduct_tokens_once', {
       uid: USER_ID,
-      delta: -8,
+      delta: -10,
       reason: 'hapcard_use',
       ref: REF,
     });
@@ -67,8 +67,8 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
 
     expect(res.mode).toBe('pay_required');
     expect(res.charged).toBe(false);
-    expect(res.price.amount_krw).toBe(400);
-    expect(res.price.token_cost).toBe(4);
+    expect(res.price.amount_krw).toBe(600);
+    expect(res.price.token_cost).toBe(6);
   });
 
   it('P0001 + DEDUCT_DELTA_MUST_BE_NEGATIVE → 던짐 (잔액 부족 아님 — pay_required 금지)', async () => {

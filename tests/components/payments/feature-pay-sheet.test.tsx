@@ -23,8 +23,8 @@ const PAYMENT = {
   order_id: 'twoday_feat_1',
   customer_key: 'cust_feat_1',
   client_key: 'test_gck_feat',
-  amount_krw: 800,
-  order_name: '합카드 보기',
+  amount_krw: 1000,
+  order_name: '케미카드 보기',
   feature: 'hapcard',
   ref: 'cache-abc',
 };
@@ -91,7 +91,7 @@ describe('FeaturePaySheet', () => {
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
     await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('test_gck_feat'));
-    expect(toss.setAmount).toHaveBeenCalledWith({ value: 800, currency: 'KRW' });
+    expect(toss.setAmount).toHaveBeenCalledWith({ value: 1000, currency: 'KRW' });
     expect(toss.renderPaymentMethods).toHaveBeenCalledWith({
       selector: '#feature-payment-methods',
       variantKey: 'DEFAULT',
@@ -112,7 +112,7 @@ describe('FeaturePaySheet', () => {
     await waitFor(() => expect(toss.requestPayment).toHaveBeenCalledOnce());
     const arg = toss.requestPayment.mock.calls[0][0];
     expect(arg.orderId).toBe('twoday_feat_1');
-    expect(arg.orderName).toBe('합카드 보기');
+    expect(arg.orderName).toBe('케미카드 보기');
     const origin = window.location.origin;
     expect(arg.successUrl).toBe(
       `${origin}/api/payments/feature/confirm?feature=hapcard&ref=${encodeURIComponent(
@@ -129,8 +129,8 @@ describe('FeaturePaySheet', () => {
       payment: {
         ...PAYMENT,
         feature: 'replay',
-        order_name: '다시합',
-        amount_krw: 400,
+        order_name: '케미 다시 맞추기',
+        amount_krw: 600,
         ref: 'replay:hap-1:2026-06-02',
       },
     });

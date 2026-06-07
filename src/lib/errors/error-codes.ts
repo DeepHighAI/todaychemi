@@ -41,8 +41,8 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   RATE_LIMITED: '오늘 미리보기 생성 한도에 도달했어요. 잠시 후 다시 시도해주세요.',
   GROUNDING_FAILED: '고전 문헌 검증에 실패했어요. 잠시 후 다시 시도해주세요.',
   INTERNAL_ERROR: '잠시 문제가 생겼어요. 다시 시도해주세요.',
-  HAPCARD_NOT_FOUND: '오늘 우리는을 찾을 수 없어요.',
-  USER_CHART_NOT_FOUND: '내 사주맵이 없어요. 먼저 내 사주맵을 등록해주세요.',
+  HAPCARD_NOT_FOUND: '오늘 케미를 찾을 수 없어요.',
+  USER_CHART_NOT_FOUND: '내 프로필이 없어요. 먼저 내 프로필을 등록해주세요.',
   REPLAY_DURING_OUTAGE: 'AI 서비스 점검 중이에요. 잠시 후 다시 시도해주세요.',
   TODAY_BUILD_FAIL: '오늘카드를 만들지 못했어요. 잠시 후 다시 시도해주세요.',
 };

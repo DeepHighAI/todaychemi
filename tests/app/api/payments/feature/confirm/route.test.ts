@@ -9,6 +9,7 @@ import { GET } from '@/app/api/payments/feature/confirm/route';
 import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 import { PaymentFlowError } from '@/lib/payments/complete';
 import { createClient } from '@/lib/supabase/server';
+import * as Sentry from '@sentry/nextjs';
 
 const USER_ID = 'user-feat-001';
 const REF = 'cache-key-abc';
@@ -32,7 +33,7 @@ function url(params: Record<string, string>) {
 const OK_PARAMS = {
   paymentKey: 'pay-key',
   orderId: 'twoday_1_abcd12',
-  amount: '800',
+  amount: '1000',
   feature: 'hapcard',
   ref: REF,
   next: '/hapcard/abc',
@@ -56,7 +57,7 @@ describe('GET /api/payments/feature/confirm', () => {
       userId: USER_ID,
       orderId: 'twoday_1_abcd12',
       paymentKey: 'pay-key',
-      amount: 800,
+      amount: 1000,
       feature: 'hapcard',
       ref: REF,
     });
@@ -91,6 +92,16 @@ describe('GET /api/payments/feature/confirm', () => {
     expect(res.headers.get('location')).toContain('PAYMENT_CONFIRM_INVALID');
   });
 
+  it('amount 파라미터 누락 → confirm 미호출, 주문 tampered 오염 없이 실패 페이지', async () => {
+    const { amount: _amount, ...paramsWithoutAmount } = OK_PARAMS;
+
+    const res = await GET(url(paramsWithoutAmount));
+
+    expect(confirmFeaturePaymentForUser).not.toHaveBeenCalled();
+    expect(res.headers.get('location')).toContain('/payments/fail');
+    expect(res.headers.get('location')).toContain('PAYMENT_CONFIRM_INVALID');
+  });
+
   it('알 수 없는 feature → confirm 미호출, 실패 페이지', async () => {
     const res = await GET(url({ ...OK_PARAMS, feature: 'tokens_10' }));
 
@@ -107,6 +118,35 @@ describe('GET /api/payments/feature/confirm', () => {
 
     expect(res.headers.get('location')).toContain('/payments/fail');
     expect(res.headers.get('location')).toContain('PAYMENT_AMOUNT_MISMATCH');
+  });
+
+  it('확정 실패 로그와 실패 redirect message에 raw PII를 남기지 않는다', async () => {
+    vi.mocked(confirmFeaturePaymentForUser).mockRejectedValue(
+      new Error(
+        'gateway failed birth_date=1991-03-15 user_email=minji@example.com relation_nickname="민지"',
+      ),
+    );
+
+    const res = await GET(url(OK_PARAMS));
+
+    const location = decodeURIComponent(res.headers.get('location') ?? '');
+    const sentryError = vi.mocked(Sentry.captureException).mock.calls[0]?.[0] as Error;
+
+    expect(location).toContain('/payments/fail');
+    expect(location).toContain('PAYMENT_CONFIRM_FAILED');
+    expect(location).not.toContain('1991-03-15');
+    expect(location).not.toContain('minji@example.com');
+    expect(location).not.toContain('민지');
+    expect(location).toContain('birth_date=[redacted]');
+    expect(location).toContain('user_email=[redacted]');
+    expect(location).toContain('relation_nickname=[redacted]');
+
+    expect(sentryError.message).not.toContain('1991-03-15');
+    expect(sentryError.message).not.toContain('minji@example.com');
+    expect(sentryError.message).not.toContain('민지');
+    expect(sentryError.message).toContain('birth_date=[redacted]');
+    expect(sentryError.message).toContain('user_email=[redacted]');
+    expect(sentryError.message).toContain('relation_nickname=[redacted]');
   });
 
   it('미인증 → confirm 미호출, 실패 페이지 UNAUTHORIZED', async () => {

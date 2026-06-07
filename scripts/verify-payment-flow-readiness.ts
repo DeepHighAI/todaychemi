@@ -20,9 +20,9 @@ const SOURCE_CHECKS: SourceCheck[] = [
     label: 'Feature price catalog matches pay-per-use launch prices',
     file: 'src/lib/payments/feature-prices.ts',
     patterns: [
-      /hapcard:\s*\{[^}]*amount_krw:\s*800[\s\S]*token_cost:\s*8/,
-      /whatif:\s*\{[^}]*amount_krw:\s*500[\s\S]*token_cost:\s*5/,
-      /replay:\s*\{[^}]*amount_krw:\s*400[\s\S]*token_cost:\s*4/,
+      /hapcard:\s*\{[^}]*amount_krw:\s*1000[\s\S]*token_cost:\s*10/,
+      /whatif:\s*\{[^}]*amount_krw:\s*800[\s\S]*token_cost:\s*8/,
+      /replay:\s*\{[^}]*amount_krw:\s*600[\s\S]*token_cost:\s*6/,
     ],
   },
   {

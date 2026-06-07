@@ -26,6 +26,7 @@ export async function isFeatureUnlocked(
     .eq('reference_id', ref)
     .limit(1)
     .maybeSingle();
+  if (ledgerRes.error) throw ledgerRes.error;
   if (ledgerRes.data) return true;
 
   // 2. 현금 경로 — 확정된 피처 결제.
@@ -38,5 +39,6 @@ export async function isFeatureUnlocked(
     .eq('status', 'confirmed')
     .limit(1)
     .maybeSingle();
+  if (paymentRes.error) throw paymentRes.error;
   return Boolean(paymentRes.data);
 }

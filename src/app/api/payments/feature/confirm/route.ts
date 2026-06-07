@@ -6,6 +6,7 @@ import { PaymentFlowError } from '@/lib/payments/complete';
 import { TossPaymentError } from '@/lib/payments/toss-server';
 import { getFeaturePrice } from '@/lib/payments/feature-prices';
 import { createClient } from '@/lib/supabase/server';
+import { redactSensitiveLogText, sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
 
 // pay-per-use 피처 결제 확정 콜백 (ADR-039, 모델 C). Toss 위젯 successUrl 이 여기로 복귀.
 const FAILURE_REDIRECT_BASE = '/payments/fail';
@@ -16,7 +17,8 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const paymentKey = sp.get('paymentKey');
   const orderId = sp.get('orderId');
-  const amount = Number(sp.get('amount'));
+  const amountParam = sp.get('amount');
+  const amount = Number(amountParam);
   const ref = sp.get('ref');
   const next = sp.get('next');
   const isReplay = sp.get('replay') === '1';
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
   // feature 는 클라이언트 문자열을 서버 신뢰 카탈로그로 재검증.
   const price = sp.get('feature') ? getFeaturePrice(sp.get('feature') as string) : null;
 
-  if (!paymentKey || !orderId || !Number.isInteger(amount) || !price || !ref) {
+  if (!paymentKey || !orderId || !amountParam || !Number.isInteger(amount) || !price || !ref) {
     return redirectToFail(request, {
       orderId,
       code: 'PAYMENT_CONFIRM_INVALID',
@@ -59,8 +61,13 @@ export async function GET(request: NextRequest) {
       err instanceof TossPaymentError || err instanceof PaymentFlowError
         ? err.code
         : 'PAYMENT_CONFIRM_FAILED';
-    const message = err instanceof Error ? err.message : '결제 승인에 실패했습니다.';
-    Sentry.captureException(err, {
+    const message =
+      err instanceof Error
+        ? redactSensitiveLogText(err.message).slice(0, 500)
+        : '결제 승인에 실패했습니다.';
+    const reportableError =
+      err instanceof Error ? sanitizeErrorForReporting(err) : new Error(message);
+    Sentry.captureException(reportableError, {
       tags: { area: 'payments', payment_step: 'feature_confirm' },
       extra: { order_id: orderId, code, feature },
     });

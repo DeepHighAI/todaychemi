@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import type { Database } from '@/types/database.types';
 
@@ -104,7 +105,7 @@ async function markPaymentProblemForUser(input: {
       user_id: input.userId,
       order_id: input.orderId,
       status: input.status,
-      error: error.message,
+      error: sanitizeErrorForLog(error.message),
     });
   }
 }

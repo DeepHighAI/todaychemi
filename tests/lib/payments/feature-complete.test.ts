@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/payments/toss-server');
+vi.mock('@/lib/payments/feature-ref-ownership');
 
 import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 import { PaymentFlowError } from '@/lib/payments/complete';
 import { confirmTossPayment } from '@/lib/payments/toss-server';
+import { verifyFeatureRefOwnership } from '@/lib/payments/feature-ref-ownership';
 import type { Database } from '@/types/database.types';
 
 const USER_ID = 'user-001';
@@ -21,7 +23,7 @@ const FEATURE_PAYMENT: Database['public']['Tables']['payments']['Row'] = {
   charge_type: 'feature_use',
   feature_id: 'hapcard',
   feature_ref: REF,
-  amount_krw: 800,
+  amount_krw: 1000,
   token_amount: null,
   toss_customer_key: 'customer_x',
   status: 'pending',
@@ -55,7 +57,7 @@ function tossDone(overrides: Record<string, unknown> = {}) {
     paymentKey: PAYMENT_KEY,
     orderId: ORDER_ID,
     status: 'DONE',
-    totalAmount: 800,
+    totalAmount: 1000,
     approvedAt: '2026-06-01T01:00:00Z',
     receipt: { url: 'https://receipt' },
     ...overrides,
@@ -64,6 +66,7 @@ function tossDone(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(verifyFeatureRefOwnership).mockResolvedValue(true);
 });
 
 describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 없음)', () => {
@@ -75,7 +78,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
       userId: USER_ID,
       orderId: ORDER_ID,
       paymentKey: PAYMENT_KEY,
-      amount: 800,
+      amount: 1000,
       feature: 'hapcard',
       ref: REF,
       serviceClient: service.client,
@@ -91,7 +94,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
         p_toss_order_id: ORDER_ID,
         p_feature_id: 'hapcard',
         p_feature_ref: REF,
-        p_amount_krw: 800,
+        p_amount_krw: 1000,
       }),
     );
   });
@@ -105,7 +108,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
       userId: USER_ID,
       orderId: ORDER_ID,
       paymentKey: PAYMENT_KEY,
-      amount: 800,
+      amount: 1000,
       feature: 'hapcard',
       ref: REF,
       serviceClient: service.client,
@@ -124,7 +127,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
       userId: USER_ID,
       orderId: ORDER_ID,
       paymentKey: PAYMENT_KEY,
-      amount: 800,
+      amount: 1000,
       feature: 'hapcard',
       ref: REF,
       serviceClient: service.client,
@@ -162,13 +165,41 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
         userId: USER_ID,
         orderId: ORDER_ID,
         paymentKey: PAYMENT_KEY,
-        amount: 800,
+        amount: 1000,
         feature: 'whatif', // 주문은 hapcard
         ref: REF,
         serviceClient: service.client,
       }),
     ).rejects.toMatchObject({ code: 'PAYMENT_FEATURE_MISMATCH' });
 
+    expect(service.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'invalid' }),
+    );
+  });
+
+  it('결제 승인 직전 feature_ref 소유권이 사라지면 Toss confirm 없이 invalid 처리한다', async () => {
+    const service = makeService();
+    vi.mocked(verifyFeatureRefOwnership).mockResolvedValue(false);
+
+    await expect(
+      confirmFeaturePaymentForUser({
+        userId: USER_ID,
+        orderId: ORDER_ID,
+        paymentKey: PAYMENT_KEY,
+        amount: 1000,
+        feature: 'hapcard',
+        ref: REF,
+        serviceClient: service.client,
+      }),
+    ).rejects.toMatchObject({ code: 'PAYMENT_REF_NOT_FOUND' });
+
+    expect(verifyFeatureRefOwnership).toHaveBeenCalledWith(
+      service.client,
+      USER_ID,
+      'hapcard',
+      REF,
+    );
+    expect(confirmTossPayment).not.toHaveBeenCalled();
     expect(service.update).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'invalid' }),
     );
@@ -183,7 +214,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
         userId: USER_ID,
         orderId: ORDER_ID,
         paymentKey: PAYMENT_KEY,
-        amount: 800,
+        amount: 1000,
         feature: 'hapcard',
         ref: REF,
         serviceClient: service.client,
@@ -214,7 +245,7 @@ describe('confirmFeaturePaymentForUser (피처 결제 확정 — 토큰 적립 �
         userId: USER_ID,
         orderId: ORDER_ID,
         paymentKey: PAYMENT_KEY,
-        amount: 800,
+        amount: 1000,
         feature: 'hapcard',
         ref: REF,
         serviceClient: nullService.client,

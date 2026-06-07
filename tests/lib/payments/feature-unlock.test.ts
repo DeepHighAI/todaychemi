@@ -6,7 +6,7 @@ const USER_ID = 'user-uuid-001';
 const REF = 'cache-key-abc';
 
 // token_ledger / payments 쿼리는 모두 .select().eq()*.limit(1).maybeSingle() 형태.
-function makeChain(maybeData: unknown) {
+function makeChain(maybeData: unknown, maybeError: unknown = null) {
   const eqCalls: Array<[string, unknown]> = [];
   const builder: Record<string, unknown> = {};
   for (const m of ['select', 'limit', 'order', 'in', 'gte']) {
@@ -16,13 +16,18 @@ function makeChain(maybeData: unknown) {
     eqCalls.push([col, val]);
     return builder;
   });
-  builder.maybeSingle = vi.fn().mockResolvedValue({ data: maybeData, error: null });
+  builder.maybeSingle = vi.fn().mockResolvedValue({ data: maybeData, error: maybeError });
   return { builder, eqCalls };
 }
 
-function makeService(opts: { ledger?: unknown; payment?: unknown } = {}) {
-  const ledger = makeChain(opts.ledger ?? null);
-  const payment = makeChain(opts.payment ?? null);
+function makeService(opts: {
+  ledger?: unknown;
+  ledgerError?: unknown;
+  payment?: unknown;
+  paymentError?: unknown;
+} = {}) {
+  const ledger = makeChain(opts.ledger ?? null, opts.ledgerError ?? null);
+  const payment = makeChain(opts.payment ?? null, opts.paymentError ?? null);
   const from = vi.fn((table: string) => {
     if (table === 'token_ledger') return ledger.builder;
     if (table === 'payments') return payment.builder;
@@ -63,5 +68,26 @@ describe('isFeatureUnlocked (pay-per-use 단일 잠금 게이트)', () => {
     const result = await isFeatureUnlocked(service, USER_ID, 'replay', REF);
 
     expect(result).toBe(false);
+  });
+
+  it('token_ledger 조회 오류는 locked 로 삼키지 않고 전파한다', async () => {
+    const { service } = makeService({
+      ledgerError: { code: '08006', message: 'connection failure' },
+    });
+
+    await expect(isFeatureUnlocked(service, USER_ID, 'hapcard', REF)).rejects.toMatchObject({
+      code: '08006',
+    });
+  });
+
+  it('payments 조회 오류는 locked 로 삼키지 않고 전파한다', async () => {
+    const { service } = makeService({
+      ledger: null,
+      paymentError: { code: '57014', message: 'statement timeout' },
+    });
+
+    await expect(isFeatureUnlocked(service, USER_ID, 'whatif', REF)).rejects.toMatchObject({
+      code: '57014',
+    });
   });
 });
