@@ -141,7 +141,7 @@ describe('GET /api/og/hapcard/[id]', () => {
     expect(res.status).toBe(404);
   });
 
-  it('200 — ImageResponse 호출 시 PII 페이로드 미전달 (nickname/score/오늘온도/mode/range만)', async () => {
+  it('200 — ImageResponse 호출 시 PII 페이로드 미전달 (nickname/score/케미온도/mode/range만)', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
     await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
@@ -159,5 +159,24 @@ describe('GET /api/og/hapcard/[id]', () => {
 
   it('runtime = "edge" export', () => {
     expect(runtime).toBe('edge');
+  });
+
+  it('render catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServerClient).mockRejectedValue(
+      new Error('og failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
+
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 });

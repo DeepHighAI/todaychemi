@@ -25,8 +25,11 @@ function makeMemosSelectChain(rows: typeof MEMO_ROW[] | null, error: { message: 
 }
 
 // POST — 인연 pre-check 체인
-function makeRelationCheckChain(row: { relation_id: string } | null) {
-  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
+function makeRelationCheckChain(
+  row: { relation_id: string } | null,
+  error: { message: string } | null = null,
+) {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error });
   const eqChain = vi.fn().mockReturnValue({ maybeSingle });
   const select = vi.fn().mockReturnValue({ eq: eqChain });
   return { select };
@@ -45,6 +48,7 @@ function makeClient(opts: {
   memoRows?: typeof MEMO_ROW[];
   memoError?: { message: string } | null;
   relationRow?: { relation_id: string } | null;
+  relationError?: { message: string } | null;
   insertRow?: typeof MEMO_ROW | null;
   insertError?: { message: string } | null;
 } = {}) {
@@ -55,6 +59,7 @@ function makeClient(opts: {
   );
   const relCheckChain = makeRelationCheckChain(
     opts.relationRow === undefined ? { relation_id: REL_ID } : opts.relationRow,
+    opts.relationError ?? null,
   );
   const insertChain = makeInsertChain(
     opts.insertRow === undefined ? MEMO_ROW : opts.insertRow,
@@ -238,6 +243,20 @@ describe('POST /api/relations/[id]/memos — 생성', () => {
     expect(res.status).toBe(404);
     const body = await res.json();
     expect(body.error.code).toBe('RELATION_NOT_FOUND');
+  });
+
+  it('500 → 인연 pre-check 조회 오류는 404 not found 로 위장하지 않는다', async () => {
+    const { client } = makeClient({
+      relationRow: null,
+      relationError: { message: 'relation lookup failed' },
+    });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await POST(makePostRequest({ body: '안녕' }), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('200 → 메모 생성 성공 (user_id·relation_id·body 포함)', async () => {

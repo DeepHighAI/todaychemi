@@ -36,6 +36,9 @@ export async function GET(
     .select('relation_id, mode')
     .eq('hapcard_id', id)
     .maybeSingle();
+  if (hapcardRes.error) {
+    return apiErrorResponse('INTERNAL_ERROR', hapcardRes.error.message, 500);
+  }
   if (!hapcardRes.data) {
     return apiErrorResponse('HAPCARD_NOT_FOUND', `hapcard ${id} not found`, 404);
   }

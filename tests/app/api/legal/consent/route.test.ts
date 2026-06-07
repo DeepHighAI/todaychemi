@@ -125,6 +125,42 @@ describe('POST /api/legal/consent', () => {
     );
   });
 
+  it('guest fallback warning 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServiceRoleClient).mockImplementation(() => {
+      throw new Error('guest consent failed birth_date=1991-03-15 birth_time=14:30 gender=F');
+    });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const res = await POST(makeRequest({ terms: true, privacy: true, age: true, flow: 'guest' }));
+
+    expect(res.status).toBe(200);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+  });
+
+  it('outer catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServiceRoleClient).mockImplementation(() => {
+      throw new Error('email consent failed birth_date=1991-03-15 birth_time=14:30 gender=F');
+    });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await POST(makeRequest({ terms: true, privacy: true, age: true, flow: 'email' }));
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+  });
+
   it('falls back to a signed guest consent cookie in non-production when DB recording fails', async () => {
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'test-signing-secret');
     vi.mocked(createServiceRoleClient).mockReturnValue({

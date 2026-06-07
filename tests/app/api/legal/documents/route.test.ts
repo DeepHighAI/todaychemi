@@ -5,7 +5,7 @@ vi.mock('@/lib/legal/documents', () => ({
     slug: 'terms',
     title: '이용약관',
     version: '2026-06-01',
-    markdown: '# 오늘사이 서비스 이용약관',
+    markdown: '# 오늘케미 서비스 이용약관',
   }),
 }));
 
@@ -24,7 +24,7 @@ describe('GET /api/legal/documents/[slug]', () => {
       slug: 'terms',
       title: '이용약관',
       version: '2026-06-01',
-      markdown: '# 오늘사이 서비스 이용약관',
+      markdown: '# 오늘케미 서비스 이용약관',
     });
   });
 

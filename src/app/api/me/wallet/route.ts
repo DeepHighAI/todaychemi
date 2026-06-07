@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { createClient } from '@/lib/supabase/server';
 import type { LedgerEntry, WalletResponse } from '@/types/wallet';
 
@@ -65,7 +66,7 @@ export async function GET() {
 
     return NextResponse.json(body);
   } catch (err) {
-    console.error('[/api/me/wallet]', err);
+    console.error('[/api/me/wallet]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

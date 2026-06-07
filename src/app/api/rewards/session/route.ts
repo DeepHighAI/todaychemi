@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
@@ -30,7 +31,7 @@ export async function POST() {
 
     return NextResponse.json({ ok: true, reward });
   } catch (err) {
-    console.error('[/api/rewards/session]', err);
+    console.error('[/api/rewards/session]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

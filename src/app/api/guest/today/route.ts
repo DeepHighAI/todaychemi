@@ -10,6 +10,7 @@ import { resolveGuestLegalConsentFromCookie } from '@/lib/legal/server-consent';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildDailyHap } from '@/lib/today/builder';
 import { callDailyHapLlm } from '@/lib/today/openai';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 export async function POST(request: Request) {
   const parsed = OnboardingRequestSchema.safeParse(await request.json().catch(() => null));
@@ -37,7 +38,9 @@ export async function POST(request: Request) {
       process.env.KASI_SERVICE_KEY!,
     );
   } catch (err) {
-    console.error('[POST /api/guest/today] compute failed', err);
+    console.error('[POST /api/guest/today] compute failed', {
+      error: sanitizeErrorForLog(err),
+    });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
       chart: computeResult.chart_core,
     });
   } catch (err) {
-    console.error('[POST /api/guest/today]', err);
+    console.error('[POST /api/guest/today]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

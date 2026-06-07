@@ -128,4 +128,20 @@ describe('POST /api/guest/today', () => {
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
   });
+
+  it('computeChart 실패 로그에 guest birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(computeChart).mockRejectedValue(
+      new Error('KASI failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1991-03-15');
+    expect(logged).not.toContain('14:30');
+    expect(logged).not.toContain('gender=F');
+    consoleSpy.mockRestore();
+  });
 });

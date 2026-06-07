@@ -25,8 +25,8 @@ const PUBLIC_SHARE = {
   hapcard_id: '550e8400-e29b-41d4-a716-446655440000',
   relation_id: '550e8400-e29b-41d4-a716-446655440088',
   range: 'nickname-only',
-  title: '봄달님과의 친구 사이',
-  text: '봄달님과의 오늘온도: 38.4°C · 오늘사이에서 확인해봐',
+  title: '봄달님과의 친구 관계',
+  text: '봄달님과의 케미온도: 38.4°C · 오늘케미에서 확인해봐',
   url: 'https://hap.plae/h/share-token',
   og_image_url: 'https://hap.plae/api/og/share/share-token',
   mode: '친구합',
@@ -84,5 +84,25 @@ describe('GET /api/og/share/[token]', () => {
     expect(Object.keys(shareArg)).not.toContain('email');
     expect(Object.keys(shareArg)).not.toContain('birth_place');
     expect(Object.keys(shareArg)).not.toContain('gender');
+  });
+
+  it('render catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(getPublicShareByToken).mockRejectedValue(
+      new Error('public share failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET(new Request('https://hap.plae/api/og/share/share-token'), {
+      params: Promise.resolve({ token: 'share-token' }),
+    });
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 });

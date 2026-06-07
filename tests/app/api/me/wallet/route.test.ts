@@ -133,4 +133,22 @@ describe('GET /api/me/wallet', () => {
     expect(client.monthlyUsageQuery.lt).toHaveBeenCalledWith('delta', 0);
     expect(client.monthlyUsageQuery.gte).toHaveBeenCalledWith('created_at', expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
   });
+
+  it('outer catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createClient).mockRejectedValue(
+      new Error('wallet failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+  });
 });

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
+import { redactSensitiveLogText, sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { markPaymentFailedForUser } from '@/lib/payments/complete';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,9 @@ export default async function PaymentsFailPage({ searchParams }: Props) {
   const params = await searchParams;
   const orderId = readParam(params.orderId);
   const code = readParam(params.code) ?? 'PAYMENT_FAILED';
-  const message = readParam(params.message) ?? '결제를 완료하지 못했습니다.';
+  const message = redactSensitiveLogText(
+    readParam(params.message) ?? '결제를 완료하지 못했습니다.',
+  ).slice(0, 500);
 
   if (orderId && shouldMarkPaymentFailed(code)) {
     const supabase = await createClient();
@@ -21,7 +24,15 @@ export default async function PaymentsFailPage({ searchParams }: Props) {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await markPaymentFailedForUser({ userId: user.id, orderId, code, message });
+      try {
+        await markPaymentFailedForUser({ userId: user.id, orderId, code, message });
+      } catch (error) {
+        console.error('payment_fail_mark_failed', {
+          order_id: orderId,
+          code,
+          error: sanitizeErrorForLog(error),
+        });
+      }
     }
   }
 
@@ -38,10 +49,10 @@ export default async function PaymentsFailPage({ searchParams }: Props) {
         )}
         <div className="mt-5 flex gap-2">
           <Link href="/me" className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
-            내 사주맵
+            내 프로필
           </Link>
           <Link href="/feed" className={cn(buttonVariants(), 'flex-1')}>
-            합피드로
+            케미피드로
           </Link>
         </div>
       </section>

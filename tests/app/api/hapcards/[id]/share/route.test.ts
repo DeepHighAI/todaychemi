@@ -129,7 +129,7 @@ describe('POST /api/hapcards/[id]/share', () => {
       token_hash: 'hashed-token-digest',
       range: 'nickname-only',
       channel: 'kakao',
-      title: '봄달님과의 친구 사이',
+      title: '봄달님과의 친구 관계',
     }));
     expect(JSON.stringify(insertedRows[0])).not.toContain('test-share-token');
   });
@@ -150,5 +150,25 @@ describe('POST /api/hapcards/[id]/share', () => {
     });
 
     expect(res.status).toBe(400);
+  });
+
+  it('outer catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createClient).mockRejectedValue(
+      new Error('share failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await POST(makeRequest({ range: 'nickname-only', channel: 'kakao' }), {
+      params: Promise.resolve({ id: HAPCARD_ID }),
+    });
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
   });
 });

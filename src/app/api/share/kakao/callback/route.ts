@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 const KakaoCallbackSchema = z.object({
@@ -56,7 +57,7 @@ async function handleKakaoCallback(request: Request, method: 'GET' | 'POST') {
 
     return NextResponse.json({ ok: true, reward });
   } catch (err) {
-    console.error('[/api/share/kakao/callback]', err);
+    console.error('[/api/share/kakao/callback]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

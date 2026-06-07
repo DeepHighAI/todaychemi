@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { loadNotoSansKrRegularFont } from '@/lib/og/font';
 import { buildOgPayload } from '@/lib/og/render-payload';
 import { OgTemplate } from '@/lib/og/template';
@@ -96,7 +97,7 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       ],
     });
   } catch (err) {
-    console.error('[og/hapcard] 렌더 오류:', err);
+    console.error('[og/hapcard] 렌더 오류:', { error: sanitizeErrorForLog(err) });
     return new Response('internal error', { status: 500 });
   }
 }

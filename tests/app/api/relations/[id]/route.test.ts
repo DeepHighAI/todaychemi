@@ -31,15 +31,21 @@ const CHART_ROW = {
 type SnapRow = { target_date: string; compat_score: number; created_at: string };
 
 // 체인 빌더 헬퍼
-function makeRelationsChain(row: typeof RELATION_ROW | null) {
-  const maybySingle = vi.fn().mockResolvedValue({ data: row, error: null });
+function makeRelationsChain(
+  row: typeof RELATION_ROW | null,
+  error: { message: string } | null = null,
+) {
+  const maybySingle = vi.fn().mockResolvedValue({ data: row, error });
   const eqChain = vi.fn().mockReturnValue({ maybeSingle: maybySingle });
   const select = vi.fn().mockReturnValue({ eq: eqChain });
   return { select };
 }
 
-function makeRelationChartsChain(row: typeof CHART_ROW | null) {
-  const maybySingle = vi.fn().mockResolvedValue({ data: row, error: null });
+function makeRelationChartsChain(
+  row: typeof CHART_ROW | null,
+  error: { message: string } | null = null,
+) {
+  const maybySingle = vi.fn().mockResolvedValue({ data: row, error });
   const limitChain = vi.fn().mockReturnValue({ maybeSingle: maybySingle });
   const orderChain = vi.fn().mockReturnValue({ limit: limitChain });
   const eqChain = vi.fn().mockReturnValue({ order: orderChain });
@@ -69,13 +75,21 @@ function makeSnapshotsChain(rows: SnapRow[], error: { message: string } | null =
 function makeClient(opts: {
   userId?: string | null;
   relationRow?: typeof RELATION_ROW | null;
+  relationError?: { message: string } | null;
   chartRow?: typeof CHART_ROW | null;
+  chartError?: { message: string } | null;
   snapRows?: SnapRow[];
   snapError?: { message: string } | null;
 } = {}) {
   const userId = opts.userId === undefined ? USER_ID : opts.userId;
-  const relChain = makeRelationsChain(opts.relationRow === undefined ? RELATION_ROW : opts.relationRow);
-  const chartChain = makeRelationChartsChain(opts.chartRow === undefined ? CHART_ROW : opts.chartRow);
+  const relChain = makeRelationsChain(
+    opts.relationRow === undefined ? RELATION_ROW : opts.relationRow,
+    opts.relationError ?? null,
+  );
+  const chartChain = makeRelationChartsChain(
+    opts.chartRow === undefined ? CHART_ROW : opts.chartRow,
+    opts.chartError ?? null,
+  );
   const snapChain = makeSnapshotsChain(opts.snapRows ?? [], opts.snapError ?? null);
 
   const from = vi.fn((table: string) => {
@@ -131,6 +145,20 @@ describe('GET /api/relations/[id] — relation 조회', () => {
     expect(body.error.code).toBe('RELATION_NOT_FOUND');
   });
 
+  it('500 → relations 조회 오류는 404 not found 로 위장하지 않는다', async () => {
+    const { client } = makeClient({
+      relationRow: null,
+      relationError: { message: 'relation lookup failed' },
+    });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
   it('200 → relation 필드 반환 (relation_id·nickname·mode·created_at)', async () => {
     const { client } = makeClient();
     vi.mocked(createClient).mockResolvedValue(client as never);
@@ -168,6 +196,17 @@ describe('GET /api/relations/[id] — chart', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.chart).toBeNull();
+  });
+
+  it('500 → relation_charts 조회 오류는 chart:null 로 위장하지 않는다', async () => {
+    const { client } = makeClient({ chartError: { message: 'chart lookup failed' } });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });
 
@@ -226,6 +265,37 @@ describe('GET /api/relations/[id] — flow', () => {
     const body = await res.json();
 
     expect(body.flow).toHaveLength(30);
+  });
+
+  it('flow: 30개 상한 초과 행 → 최신 30개를 asc 로 반환해 현재 점수를 보존한다', async () => {
+    const rows: SnapRow[] = Array.from({ length: 35 }, (_, i) => ({
+      target_date: `2026-04-${String(i + 1).padStart(2, '0')}`,
+      compat_score: 50 + i,
+      created_at: `2026-04-${String(i + 1).padStart(2, '0')}T10:00:00Z`,
+    }));
+    const { client } = makeClient({ snapRows: rows });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(body.flow).toHaveLength(30);
+    expect(body.flow[0]).toEqual({ date: '2026-04-06', score: 55 });
+    expect(body.flow.at(-1)).toEqual({ date: '2026-04-35', score: 84 });
+  });
+
+  it('flow: 같은 날짜 행 순서가 섞여도 created_at 최신 score 를 선택한다', async () => {
+    const rows: SnapRow[] = [
+      { target_date: '2026-05-01', compat_score: 60, created_at: '2026-05-01T08:00:00Z' },
+      { target_date: '2026-05-01', compat_score: 75, created_at: '2026-05-01T12:00:00Z' },
+    ];
+    const { client } = makeClient({ snapRows: rows });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(body.flow).toEqual([{ date: '2026-05-01', score: 75 }]);
   });
 
   it('500 → hapcard_score_snapshots 조회 오류', async () => {

@@ -61,6 +61,7 @@ export async function POST(
     .select('relation_id')
     .eq('relation_id', id)
     .maybeSingle();
+  if (relRes.error) return apiErrorResponse('INTERNAL_ERROR', relRes.error.message, 500);
   if (!relRes.data) return apiErrorResponse('RELATION_NOT_FOUND', '', 404);
 
   const { data: memo, error } = await db

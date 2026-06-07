@@ -28,6 +28,9 @@ export async function GET(
     .select('relation_id, nickname, mode, created_at')
     .eq('relation_id', id)
     .maybeSingle();
+  if (relRes.error) {
+    return apiErrorResponse('INTERNAL_ERROR', relRes.error.message, 500);
+  }
   if (!relRes.data) {
     return apiErrorResponse('RELATION_NOT_FOUND', `relation ${id} not found`, 404);
   }
@@ -41,6 +44,9 @@ export async function GET(
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (chartRes.error) {
+    return apiErrorResponse('INTERNAL_ERROR', chartRes.error.message, 500);
+  }
   const chart = (chartRes.data?.chart_core as RelationDetailResponse['chart']) ?? null;
 
   // 3. 합점수 흐름 조회 — 날짜별 dedup(created_at desc 첫 행), asc, FLOW_MAX 상한
@@ -56,20 +62,22 @@ export async function GET(
     return apiErrorResponse('INTERNAL_ERROR', snapRes.error.message, 500);
   }
 
-  // 같은 날짜 여러 행 → 이미 target_date asc + created_at desc 이므로 같은 날 첫 행이 최신
-  // 그러나 asc 정렬이라 같은 날 안에서 created_at 순서가 섞일 수 있어 Map 으로 dedup
-  const scoreMap = new Map<string, number>();
+  // 같은 날짜 여러 행은 created_at 최신 행만 선택한 뒤, 최근 FLOW_MAX일만 asc로 반환한다.
+  const scoreMap = new Map<string, { score: number; createdAt: string }>();
   for (const row of (snapRes.data ?? []) as Array<{ target_date: string; compat_score: number; created_at: string }>) {
-    // 이미 target_date asc + created_at desc 정렬 — created_at 가 더 최신인 행이 먼저 등장하지 않을 수 있어
-    // 안전하게 전체 순회 후 각 날짜별 최대 created_at 행을 선택
-    if (!scoreMap.has(row.target_date)) {
-      scoreMap.set(row.target_date, Number(row.compat_score));
+    const current = scoreMap.get(row.target_date);
+    if (!current || row.created_at > current.createdAt) {
+      scoreMap.set(row.target_date, {
+        score: Number(row.compat_score),
+        createdAt: row.created_at,
+      });
     }
   }
 
   const flow: FlowPoint[] = Array.from(scoreMap.entries())
-    .slice(0, FLOW_MAX)
-    .map(([date, score]) => ({ date, score }));
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .slice(-FLOW_MAX)
+    .map(([date, { score }]) => ({ date, score }));
 
   return NextResponse.json(
     { relation, chart, flow } satisfies RelationDetailResponse,

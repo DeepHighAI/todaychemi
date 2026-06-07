@@ -137,6 +137,24 @@ describe('GET /api/me', () => {
     const body = await res.json();
     expect(body.error.code).toBe('NOT_ONBOARDED');
   });
+
+  it('outer catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {
+    vi.mocked(createServerClient).mockRejectedValue(
+      new Error('profile failed birth_date=1991-03-15 birth_time=14:30 gender=F'),
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await GET();
+
+    expect(res.status).toBe(500);
+    const calls = JSON.stringify(consoleSpy.mock.calls);
+    expect(calls).not.toContain('1991-03-15');
+    expect(calls).not.toContain('14:30');
+    expect(calls).not.toContain('gender=F');
+    expect(calls).toContain('birth_date=[redacted]');
+    expect(calls).toContain('birth_time=[redacted]');
+    expect(calls).toContain('gender=[redacted]');
+  });
 });
 
 // ─── PATCH /api/me ─────────────────────────────────────────────────────────

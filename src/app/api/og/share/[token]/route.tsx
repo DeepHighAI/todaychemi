@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { buildPublicShareOgPayload, getPublicShareByToken } from '@/lib/share/public-share';
 import { loadNotoSansKrRegularFont } from '@/lib/og/font';
 import { OgTemplate } from '@/lib/og/template';
@@ -32,7 +33,7 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       ],
     });
   } catch (err) {
-    console.error('[og/share] 렌더 오류:', err);
+    console.error('[og/share] 렌더 오류:', { error: sanitizeErrorForLog(err) });
     return new Response('internal error', { status: 500 });
   }
 }

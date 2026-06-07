@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { fetchLatestUserChart } from '@/lib/chart/queries';
 import { createClient } from '@/lib/supabase/server';
 import type { ChartCore } from '@/types/chart';
@@ -24,7 +25,7 @@ export async function GET() {
     const chart = data ? ((data as unknown as { chart_core: ChartCore }).chart_core) : null;
     return NextResponse.json({ ok: true, chart });
   } catch (err) {
-    console.error('[/api/me/chart]', err);
+    console.error('[/api/me/chart]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

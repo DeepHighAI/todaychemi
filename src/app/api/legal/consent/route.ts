@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import {
   LEGAL_CONSENT_FLOWS,
   LEGAL_CONSENT_PROVIDERS,
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, expires_at: expiresAt });
   } catch (err) {
-    console.error('[/api/legal/consent]', err);
+    console.error('[/api/legal/consent]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }
@@ -84,7 +85,9 @@ async function createConsentToken({
     });
   } catch (err) {
     if (flow === 'guest' && process.env.NODE_ENV !== 'production') {
-      console.warn('[/api/legal/consent] using signed guest consent fallback', err);
+      console.warn('[/api/legal/consent] using signed guest consent fallback', {
+        error: sanitizeErrorForLog(err),
+      });
       return createSignedGuestLegalConsentToken({ ttlSeconds });
     }
     throw err;

@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { hasPublicUserProfile } from '@/lib/auth/user-profile';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { LEGAL_CONSENT_PROVIDERS } from '@/lib/legal/consent';
 import { createClaimedLegalConsentRecord } from '@/lib/legal/server-consent';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, already_onboarded: hasProfile });
   } catch (err) {
-    console.error('[/api/legal/social-consent]', err);
+    console.error('[/api/legal/social-consent]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

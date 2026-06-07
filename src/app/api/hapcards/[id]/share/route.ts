@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { buildPublicShareUrls, buildSharePayload } from '@/lib/share/build-share-payload';
 import { ShareChannelSchema, ShareRangeSchema } from '@/lib/share/schema';
 import { generateShareToken, hashShareToken } from '@/lib/share/token';
@@ -129,7 +130,7 @@ export async function POST(request: Request, ctx: RouteContext) {
       expires_at: (shareRow as { expires_at: string }).expires_at,
     });
   } catch (err) {
-    console.error('[/api/hapcards/[id]/share]', err);
+    console.error('[/api/hapcards/[id]/share]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

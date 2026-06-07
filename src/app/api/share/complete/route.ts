@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { ShareChannelSchema } from '@/lib/share/schema';
 import { createClient } from '@/lib/supabase/server';
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    console.error('[/api/share/complete]', err);
+    console.error('[/api/share/complete]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }

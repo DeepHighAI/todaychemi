@@ -41,9 +41,12 @@ function makeSnapshotsChain(opts: {
   return chain;
 }
 
-function makeHapcardsChain(opts: { row?: typeof HAPCARD_ROW | null } = {}) {
+function makeHapcardsChain(opts: {
+  row?: typeof HAPCARD_ROW | null;
+  error?: { message: string } | null;
+} = {}) {
   const row = opts.row === undefined ? HAPCARD_ROW : opts.row;
-  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
+  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: opts.error ?? null });
   const eqChain = vi.fn().mockReturnValue({ maybeSingle });
   const select = vi.fn().mockReturnValue({ eq: eqChain });
   return { select };
@@ -52,12 +55,14 @@ function makeHapcardsChain(opts: { row?: typeof HAPCARD_ROW | null } = {}) {
 function makeClient(opts: {
   userId?: string | null;
   hapcardRow?: typeof HAPCARD_ROW | null;
+  hapcardError?: { message: string } | null;
   snapshotRows?: SnapRow[];
   snapshotError?: { message: string } | null;
 } = {}) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
   const hapcardsChain = makeHapcardsChain({
     row: opts.hapcardRow === undefined ? HAPCARD_ROW : opts.hapcardRow,
+    error: opts.hapcardError ?? null,
   });
   const snapshotsChain = makeSnapshotsChain({
     rows: opts.snapshotRows,
@@ -119,6 +124,20 @@ describe('GET /api/hapcards/[id]/snapshots — auth + RLS + range', () => {
     expect(res.status).toBe(404);
     const body = await res.json();
     expect(body.error.code).toBe('HAPCARD_NOT_FOUND');
+  });
+
+  it('500 → hapcard 조회 오류는 404 not found 로 위장하지 않는다', async () => {
+    const { client } = makeClient({
+      hapcardRow: null,
+      hapcardError: { message: 'hapcard lookup failed' },
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
   it('range: gte target_date D-3, lte D+3, 응답 7개 entries + 날짜 정확', async () => {

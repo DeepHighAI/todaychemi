@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { MeUpdateRequestSchema } from '@/types/me';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import { computeChart } from '@/lib/chart/compute';
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json({ ok: true, profile: data });
   } catch (err) {
-    console.error('[GET /api/me]', err);
+    console.error('[GET /api/me]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 }
