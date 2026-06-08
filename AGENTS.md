@@ -88,7 +88,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **Launch readiness 운영 스크립트 보강 ✅ (2026-05-31)** — `pnpm db:push:dry`가 PATH 설치된 Supabase CLI 없이도 `pnpm dlx supabase db push --dry-run --linked`로 실행되도록 수정. 검증 결과 remote database up to date.
 - **Launch readiness 문서/검증 정합성 보강 ✅ (2026-05-31)** — launch-critical specs/runbooks/source comments의 stale `CLAUDE.md`·구형 Claude fallback 참조를 현재 `AGENTS.md`/`claude-fallback`/`ANTHROPIC_FALLBACK_MODEL` 기준으로 정리. `pnpm verify:supply-chain-readiness`는 high/critical 0이면 PASS하되, non-blocking moderate 3건(`postcss`, `brace-expansion`, `ws`)을 상세 출력하도록 보강. 추가 override remediation은 §1.1 승인 필요.
 - **Launch readiness local evidence snapshot ✅ (2026-05-31)** — `pnpm verify:launch-readiness -- --summary-json docs/qa/launch_gate_2026-05-31_local.json` 실행 후 `docs/qa/launch_evidence_2026-05-31_local.md` 생성. Integrated gate는 `pnpm verify:launch-audit-readiness`, `pnpm tsc --noEmit`, `pnpm lint`, `pnpm vitest run`(238 files / 1870 tests), `pnpm build`, `pnpm db:push:dry`, `pnpm e2e` public smoke, `pnpm e2e:auth` authenticated smoke를 모두 required로 실행한다. `pnpm verify:launch-evidence-readiness` PASS로 secret/PII artifact scan 확인. Go/No-Go는 **오픈 보류**이며 required failures는 외부 설정 6개(launch env, Auth readiness, OpenAI/ZDR readiness, Toss live readiness, Vercel readiness, Operations/E2E readiness)로 유지.
-- **GitHub remote 정책 확정 ✅ (2026-06-04)** — canonical GitHub repo는 `git@github.com:DeepHighAI/twoday.git`. 기존 `batisututu/coupleUnse` remote는 사용하지 않는다.
+- **GitHub remote 정책 확정 ✅ (2026-06-04, 2026-06-08 재확인)** — canonical GitHub repo는 `git@github.com:DeepHighAI/twoday.git`. 이외의 remote는 사용하지 않는다.
 - **MVP production origin 정책 확정 ✅ (2026-06-01)** — 사용자 확인: MVP는 별도 custom domain 없이 Vercel Production `*.vercel.app` 고정 origin으로 오픈하고, 시장 반응 확인 후 custom domain 구매를 검토한다. `docs/runbooks/external_launch_settings.md`와 `docs/qa/external_settings_checklist.md`는 한국어 가이드/체크리스트로 정리됨. `pnpm verify:external-settings-checklist`는 dashboard 설정 증거의 `TBD`가 남아 있는 동안 의도적으로 FAIL한다.
 - **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
 - **PR-1 완료** — Next.js 스캐폴드 생성됨. 현재 런칭 기준 dependency는 Next.js 16.2.6이며 `pnpm dev` 정상 동작.
@@ -379,7 +379,7 @@ C:\DEV\SAJU\
 
 ## 15. Git 저장소
 
-- **Remote**: `origin` = `git@github.com:DeepHighAI/twoday.git` (canonical). `batisututu/coupleUnse`는 사용하지 않음.
+- **Remote**: `origin` = `git@github.com:DeepHighAI/twoday.git` (canonical, 유일 remote).
 - **기본 브랜치**: `main` (배포 Production 브랜치 — `docs/specs/secrets.md` §3)
 - **커밋 규칙**: `C:\DEV\CLAUDE.md` "Git Conventions" 준수 — English, imperative mood, `type: description` (feat|fix|refactor|test|docs|chore), 72자 이내
 - **시크릿 금지**: `.env.local` 등 런타임 시크릿은 `.gitignore` 등록 완료. 추적 파일에 실제 키 값 commit 절대 금지 (`docs/specs/secrets.md` 참조)

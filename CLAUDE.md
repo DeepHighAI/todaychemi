@@ -397,7 +397,7 @@ C:\DEV\SAJU\
 
 ## 15. Git 저장소
 
-- **Remote**: `origin` = `https://github.com/batisututu/coupleUnse.git`
+- **Remote**: `origin` = `git@github.com:DeepHighAI/twoday.git` (canonical, 유일 remote)
 - **기본 브랜치**: `main` (배포 Production 브랜치 — `docs/specs/secrets.md` §3)
 - **커밋 규칙**: `C:\DEV\CLAUDE.md` "Git Conventions" 준수 — English, imperative mood, `type: description` (feat|fix|refactor|test|docs|chore), 72자 이내
 - **시크릿 금지**: `.env.local` 등 런타임 시크릿은 `.gitignore` 등록 완료. 추적 파일에 실제 키 값 commit 절대 금지 (`docs/specs/secrets.md` 참조)
