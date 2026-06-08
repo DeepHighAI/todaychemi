@@ -23,6 +23,7 @@ import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
 import { HapcardRoleAnalysis } from '@/components/hapcard/role-analysis';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
+import { HapcardCauseFactors } from '@/components/hapcard/cause-factors';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardTimeline } from '@/components/hapcard/timeline';
@@ -440,6 +441,7 @@ function ExpandPanel({
         )}
         {tab === 'evidence' && (
           <>
+            <HapcardCauseFactors factors={data.content.cause_factors ?? []} />
             <HapcardEvidence cards={data.content.why_cards} />
             <HapcardClassic citations={data.content.classic_citation} />
           </>

@@ -390,6 +390,7 @@
       "error": "관계 유지를 불러오지 못했어요."
     },
     "evidence": { "title": "왜 이런 사이?", "empty": "근거가 아직 준비되지 않았어요." },
+    "causeFactors": { "title": "이런 흐름인 이유", "empty": "근거가 아직 준비되지 않았어요." },
     "actionsList": { "title": "오늘의 조언", "empty": "조언이 아직 준비되지 않았어요." },
     "classicList": { "title": "왜 이런 사이?", "empty": "관련 풀이 근거가 아직 준비되지 않았어요." },
     "footer": {
