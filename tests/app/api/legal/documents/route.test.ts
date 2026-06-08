@@ -28,6 +28,15 @@ describe('GET /api/legal/documents/[slug]', () => {
     });
   });
 
+  it('privacy 슬러그도 허용해 문서를 반환한다', async () => {
+    const res = await GET(new Request('https://hap.plae/api/legal/documents/privacy') as never, {
+      params: Promise.resolve({ slug: 'privacy' }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(getLegalDocument).toHaveBeenCalledWith('privacy');
+  });
+
   it('404 for unsupported legal document slugs', async () => {
     const res = await GET(new Request('https://hap.plae/api/legal/documents/refund') as never, {
       params: Promise.resolve({ slug: 'refund' }),
