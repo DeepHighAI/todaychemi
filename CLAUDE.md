@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> 본 문서는 오늘사이(TWODAY) 프로젝트 전용 규칙이다. 보편 규칙은 `C:\DEV\CLAUDE.md`(상위 디렉토리)를 참조하며 중복 작성하지 않는다.
+> 본 문서는 오늘케미(TWODAY) 프로젝트 전용 규칙이다. 보편 규칙은 `C:\DEV\CLAUDE.md`(상위 디렉토리)를 참조하며 중복 작성하지 않는다.
 
 ---
 
@@ -81,7 +81,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-05-10 기준)
+## 2. 프로젝트 상태 (2026-06-08 기준)
 
 - **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
 - **PR-1 완료** — Next.js 16.2.4 스캐폴드 생성됨. `pnpm dev` 정상 동작.
@@ -157,7 +157,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **pay-per-use Phase 6 코드 제거 완료 ✅ (2026-06-03)** — 레거시 토큰충전 경로 1 원자 커밋 `98fcc61`. **1991/1991 PASS, tsc 0, lint 0, `pnpm verify:billing-policy-readiness` PASS(8/8).** 삭제: `products.ts`·`token-costs.ts`·`payments/charge/*`·`payments/success/page.tsx`·단수 `payment/*`(checkout/fail/success, §1.1 전부 삭제 확정)·`charge-sheet.tsx`·old `api/payments/{init,order,confirm}/route.ts` + 6 테스트. 슬림: `complete.ts`(`confirmPaymentForUser`+`getTossProduct` import 제거, `markPayment*`/`confirmOrQueryTossPayment`/`PaymentFlowError` 유지·export — feature-complete 의존) · `wallet.ts`(`WalletProduct`/`PaymentInit*`/`Order*` 제거, ledger 타입 유지). 편집: `payments/fail/page.tsx` CTA `/payments/charge`→`/feed`(유일 dangling) + 테스트 동기화 · `verify-billing-policy-readiness.ts` 재작성(feature-prices 800/500/400 + products/token-costs 부재 + feature routes + 20260601000000 + refund 안전망 코드 단언, PRD/doc 단언 제거=Phase 8). stale `.next/types` validator 가 삭제 라우트 참조 → `rm -rf .next` 후 tsc 0(소스 clean). **`migrations.manifest.ts` 미수정**(standalone `feature-pay-per-use.migration.test.ts` 가 커버). **db:push 적용 완료 ✅ (2026-06-03)**: `20260601000000` 라이브 반영(payments charge_type/feature_id/feature_ref + shape check + partial-unique index + `confirm_feature_payment` RPC + **drop `confirm_token_purchase`**). `db:push:dry`→"up to date", `tests/db/` 58/58 PASS. 링크 `jamhkucluhiibqpjsiov`. **재개**: Phase 7(read-path 감사 — GET hapcard/OG/feed/snapshots 가 `isFeatureUnlocked` 통과 검증). 핸드오프: `session_pay_per_use_phase6_complete_2026_06_03.md`.
 - **pay-per-use Phase 7 완료 ✅ (2026-06-03)** — read-path 미결제 본문 유출 감사 + 차단. 커밋 `97a1b21`. 감사 결론: 과제 명시 4경로(hapcard page·OG·feed·replay)는 안전(page/replay 기게이트, feed/OG=메타데이터)이나 **미명시 2 GET 서브라우트**(`ohaeng-interpretation`·`role-analysis`)가 게이트 없이 hapcard 본문 섹션을 반환 = 유출. replay 게이트 패턴 이식: hapcard fetch 직후 `isFeatureUnlocked('hapcard', cache_key)` 미통과 시 402(stored/rules 분기 이전), `cache_key` SELECT 추가, DB 마이그레이션 없음. TDD 미결제→402+본문 미포함 단언 2건. **1994/1994 PASS, tsc 0, lint 0.** §1.1 범위 확정: 본문 2경로만 게이트, snapshots/OG/share(점수·메타)=Phase 8 ADR-039 수용 노출.
 - **pay-per-use Phase 8 완료 ✅ (2026-06-03)** — ADR-039 신규(`docs/adr/ADR-039-pay-per-use-billing.md`, §1.1 **비협상**) + 문서 동기화. payments.md/db_schema.md 이전 WIP 마감(charge_type default `token_charge` 정정 · 인덱스명 `payments_feature_open_uidx` 정정 · `payments_feature_use_shape` check 추가 · 모델 C/read-path 게이트/수용 메타데이터 문단) + FGI §17 ADR-039 행 + CLAUDE.md §3 비협상 등록. `pnpm verify:billing-policy-readiness` PASS(8/8). **재개: Phase 9(/qa + /cso 통합 검증).**
-- **앱인토스 검토 + P0 가격 개정 (2026-06-07, Cowork 세션)** — 앱인토스 연동 검토 보고서 `docs/research/apps_in_toss_integration_review_2026-06-07.md` 작성 + §1.1 D1~D6 확정(Vite SPA 신규·user_key만·IAP+웹 병행·8플로우·TDS 채널톡 후·**가격 1,000/800/600 웹·미니앱 통일 + 부적 10/8/6p**). 적용: `feature-prices.ts` + ADR-039 Amended + payments.md + FGI(§3.2/3.3/3.4/3.5/ADR표 등 16곳) + PRD(§13 stale 충전 모델 → pay-per-use 재작성 포함 12곳) + 본 파일 §3. ⚠️ **가격 단언 테스트 ~12파일 + `verify-billing-policy-readiness.ts`(53-57·126행) + verify-payment-* 스크립트 미동기화 — Claude Code 후속 필수(pnpm test RED 예상). 커밋 전 테스트 동기화 의무.**
+- **앱인토스 검토 + P0 가격 개정 (2026-06-07, Cowork 세션)** — 앱인토스 연동 검토 보고서 `docs/research/apps_in_toss_integration_review_2026-06-07.md` 작성 + §1.1 D1~D6 확정(Vite SPA 신규·user_key만·IAP+웹 병행·8플로우·TDS 채널톡 후·**가격 1,000/800/600 웹·미니앱 통일 + 부적 10/8/6p**). 적용: `feature-prices.ts` + ADR-039 Amended + payments.md + FGI(§3.2/3.3/3.4/3.5/ADR표 등 16곳) + PRD(§13 stale 충전 모델 → pay-per-use 재작성 포함 12곳) + 본 파일 §3. ✅ **가격 테스트 동기화 완료** (2026-06-08 검증): `feature-prices.ts`·`feature-prices.test.ts`·`verify-billing-policy-readiness.ts` 모두 1,000/800/600 정합 — 이전 "RED 예상" 경고 해소.
+- **컨텍스트 동기화 + main 정렬 완료 ✅ (2026-06-08, Claude Code)** — Claude Works(Cowork)·Claude Code 히스토리 desync 해소. ① 검증 베이스라인: **2153/2153 PASS**(264 files) · tsc 0 · lint 0 — 문서 stale "1997 PASS" 대체. ② `chore/twoday-rebrand-cycle` 26커밋(리브랜드 오늘사이→오늘케미 · D6 가격 1,000/800/600 · 앱인토스 리서치) `origin/main` ff-push 완료(`b414e23..4f2a0fc`, Vercel auto-deploy). ③ 본 §2 stale 경고 제거 + 브랜드 문서 통일. **다음**: Phase 1(기능 완성 + 풀 커버리지 QA) — 1A 커버리지 갭 분석부터. 플랜: `~/.claude/plans/claude-works-partitioned-turing.md`.
 
 ---
 
