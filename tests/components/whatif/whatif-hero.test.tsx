@@ -26,4 +26,9 @@ describe('WhatifHero', () => {
     expect(screen.getByText('무신 일간으로서 토의 안정감이 강해요.')).toBeInTheDocument();
     expect(screen.queryByText(/戊申|土/)).not.toBeInTheDocument();
   });
+
+  it('AI 생성 배지를 노출한다 (1G)', () => {
+    renderWithProviders(<WhatifHero type="work" body="테스트 본문입니다." />);
+    expect(screen.getByTestId('ai-disclosure-badge')).toBeInTheDocument();
+  });
 });

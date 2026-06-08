@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { AiDisclosureNotice } from '@/components/ai-disclosure/ai-disclosure-notice';
 import {
   hasGuestLegalConsentReady,
   saveGuestOnboarding,
@@ -98,6 +99,7 @@ export default function OnboardingReviewPage() {
           </div>
         ))}
       </div>
+      <AiDisclosureNotice />
       <p className="text-center text-[11px] text-muted-foreground">{t('privacy')}</p>
       {error && <p className="font-sub text-destructive text-center">{error}</p>}
       <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">

@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { convertHanja } from '@/lib/glossary/post-process';
 import { formatTemperatureDelta, scoreToTemperature } from '@/lib/scoring/temperature';
+import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import type { DailyHapCard } from '@/types/dailyHap';
 
 interface TodayHeroProps {
@@ -50,9 +51,12 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
 
       <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
-            {t('greeting')}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
+              {t('greeting')}
+            </p>
+            <AiDisclosureBadge tone="dark" />
+          </div>
 
           {/* F2.2/F2.3: chipNode (RelationChip) 우선, 없으면 정적 chip 폴백.
               chipNode 자체가 인터랙티브 button — Link 자손이 아니므로 chip 클릭은

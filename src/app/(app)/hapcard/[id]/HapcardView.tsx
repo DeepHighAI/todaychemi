@@ -33,6 +33,7 @@ import { HapcardShare } from '@/components/hapcard/share';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
+import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { convertHanja } from '@/lib/glossary/post-process';
 import { formatDetailSummaryLines, formatHapcardActionItems, formatHeroCoachLines } from '@/lib/hapcard/hero-main-text';
 import { scoreToTemperature } from '@/lib/scoring/temperature';
@@ -253,9 +254,12 @@ export default function HapcardView() {
           <span aria-hidden className="absolute inset-0 pointer-events-none"
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
           <div className="relative z-[1]">
-            <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
-              {t(`mode.${mode}` as never)} · {data.relation_nickname}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
+                {t(`mode.${mode}` as never)} · {data.relation_nickname}
+              </p>
+              <AiDisclosureBadge tone="dark" />
+            </div>
             <div className="flex items-baseline gap-2 mt-2">
               <span className="font-display font-black text-[72px] leading-[0.95] tracking-[-0.04em] text-white tabular-nums">
                 {todayTemperature.toFixed(1)}

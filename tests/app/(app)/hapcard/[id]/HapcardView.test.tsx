@@ -151,3 +151,17 @@ describe('HapcardView 인연 삭제 캐시 무효화', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
   });
 });
+
+describe('HapcardView AI 생성 고지 (1G)', () => {
+  it('정상 렌더 시 케미카드 hero 에 AI 생성 배지를 노출한다', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => withVisuals({ relation_nickname: '민지' }),
+    });
+
+    renderWithProviders(<HapcardView />);
+
+    expect(await screen.findByTestId('ai-disclosure-badge')).toBeInTheDocument();
+  });
+});

@@ -32,6 +32,11 @@ describe('TodayHero', () => {
     expect(container.querySelector('.bg-liquid-hero')).toBeInTheDocument();
   });
 
+  it('AI 생성 배지를 노출한다 (1G)', () => {
+    renderWithProviders(<TodayHero card={card} />);
+    expect(screen.getByTestId('ai-disclosure-badge')).toBeInTheDocument();
+  });
+
   it('reused_from_yesterday=true면 "어제 이어감" 칩을 렌더한다', () => {
     renderWithProviders(<TodayHero card={{ ...card, reused_from_yesterday: true }} />);
     expect(screen.getByText('어제 이어감')).toBeInTheDocument();
