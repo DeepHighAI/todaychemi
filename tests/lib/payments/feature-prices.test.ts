@@ -7,7 +7,7 @@ import {
 } from '@/lib/payments/feature-prices';
 
 describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
-  it('확정 1회 가격: 케미카드 1000 / 만약에 우리 800 / 케미 다시 맞추기 600', () => {
+  it('확정 1회 가격: 케미카드 1000 / 또 다른 나 800 / 케미 다시 맞추기 600', () => {
     expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(1000);
     expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(800);
     expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(600);

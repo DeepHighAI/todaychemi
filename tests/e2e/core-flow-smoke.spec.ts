@@ -315,8 +315,8 @@ test.describe('launch core flow smoke', () => {
 
     await page.goto('/hapcard/relation-launch-smoke?mode=%EC%8D%B8%ED%95%A9');
     await expect(page.getByTestId('hapcard-hero-main-text')).toBeVisible();
-    await expect(page.getByRole('button', { name: /그럴리 없어! 다시/ })).toBeVisible();
-    await page.getByRole('button', { name: /그럴리 없어! 다시/ }).click();
+    await expect(page.getByRole('button', { name: /케미 다시 맞추기/ })).toBeVisible();
+    await page.getByRole('button', { name: /케미 다시 맞추기/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     // Replay paid-use UX smoke: server code owns refund_tokens_once/idempotency and pay-per-use unlocks.
     await page.getByRole('button', { name: '케미 다시 맞추기' }).click();

@@ -325,7 +325,7 @@ describe('POST /api/whatif/[type]', () => {
   });
 });
 
-describe('만약에 우리 유료 이용 (pay-per-use 모델 C)', () => {
+describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
   function makeAuthedForPaidUse(opts?: Parameters<typeof makeAuthedClient>[0]) {
     const supabase = makeAuthedClient({});
     const client = opts ? makeAuthedClient(opts) : supabase;

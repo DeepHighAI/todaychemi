@@ -301,7 +301,7 @@ C:\DEV\SAJU\
 | 사용자 | `user` | `member`, `account` |
 | 인연 (CRM 대상) | `relation` | `contact`, `friend`, `partner`, `target` |
 | 인연 별명 | `nickname` | `name`, `displayName` (UI 라벨도 "별명") |
-| 합카드 (결과 카드) | `hapcard` | `result-card`, `compat-card` |
+| 케미카드 (결과 카드) | `hapcard` | `result-card`, `compat-card`, `합카드` |
 | 합점수 | `compatScore` (코드) / "합게이지" (UI) | `score`, `rating` |
 | 6모드 | `mode` — `'일합' \| '친구합' \| '돈합' \| '첫합' \| '썸합' \| '오래합'` | `category`, `type` |
 | 본명식 | `chart` — `chart_core`, `userChart` | `birthChart`, `natal` |
@@ -311,10 +311,11 @@ C:\DEV\SAJU\
 | 만세력 | `manseryeok` | `lunarCalendar` |
 | 합·형·충·해 | `hapChungHyungHae` (코드 키) | 영문 분리 식별자 |
 | UI 소프트 alias | `끌림/긴장/부딪힘/소모` (display_label) — 합→끌림, 형→긴장, 충→부딪힘, 해→소모. GlossaryKey는 classical(`합\|형\|충\|해`) 유지, UI 표면만 소프트 용어 | — |
-| 오늘합 | `todayHap` | `dailyFortune` |
+| 오늘 케미 | `todayHap` | `dailyFortune`, `오늘합` |
 | 딥합 (깊이 리포트) | `deepHap` | `report`, `deepReport` |
-| 합피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키) |
-| 다시합 (재해석) | `replay` | `reInterpret` |
+| 케미피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키), `합피드` |
+| 케미 다시 맞추기 (재해석) | `replay` | `reInterpret`, `다시합`, `그럴리 없어! 다시` |
+| 또 다른 나 (자기진단 6모드) | `whatif` (DiagnosticType) | `만약에 우리`, `마이플레이`, `만약합` |
 
 새로운 도메인 용어 추가 시 본 표를 갱신하며 §1.1 승인 절차 적용.
 

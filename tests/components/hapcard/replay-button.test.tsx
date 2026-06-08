@@ -55,7 +55,7 @@ afterEach(() => {
 describe('HapcardReplayButton — trigger + dialog', () => {
   it('트리거 버튼이 i18n label로 렌더된다', () => {
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    expect(screen.getByRole('button', { name: /그럴리 없어! 다시/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /케미 다시 맞추기/ })).toBeInTheDocument();
   });
 
   it('버튼 클릭 시 confirm dialog 4개 텍스트 노출, fetch 미호출', async () => {
@@ -65,9 +65,9 @@ describe('HapcardReplayButton — trigger + dialog', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
 
-    expect(await screen.findByText('그럴리 없어! 다시 볼까요?')).toBeInTheDocument();
+    expect(await screen.findByText('케미 다시 맞춰 볼까요?')).toBeInTheDocument();
     expect(screen.getByText(/토큰 1개가 차감되며/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '케미 다시 맞추기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '취소' })).toBeInTheDocument();
@@ -81,13 +81,13 @@ describe('HapcardReplayButton — trigger + dialog', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
 
     await userEvent.click(screen.getByRole('button', { name: '취소' }));
 
     await waitFor(() =>
-      expect(screen.queryByText('그럴리 없어! 다시 볼까요?')).toBeNull(),
+      expect(screen.queryByText('케미 다시 맞춰 볼까요?')).toBeNull(),
     );
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -102,8 +102,8 @@ describe('HapcardReplayButton — mutation success', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
 
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
@@ -125,8 +125,8 @@ describe('HapcardReplayButton — mutation success', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
 
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
@@ -157,8 +157,8 @@ describe('HapcardReplayButton — error paths', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
     expect(await screen.findByTestId('feature-pay-sheet')).toBeInTheDocument();
@@ -195,8 +195,8 @@ describe('HapcardReplayButton — error paths', () => {
       } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
     const payButton = await screen.findByRole('button', { name: /결제하기/ });
@@ -222,8 +222,8 @@ describe('HapcardReplayButton — error paths', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
     expect(await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeInTheDocument();
@@ -239,8 +239,8 @@ describe('HapcardReplayButton — error paths', () => {
     } as Response);
 
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
-    await userEvent.click(screen.getByRole('button', { name: /그럴리 없어! 다시/ }));
-    await screen.findByText('그럴리 없어! 다시 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
     expect(await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeInTheDocument();

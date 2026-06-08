@@ -7,7 +7,7 @@ import { z } from 'zod';
 // token_cost = 1부적 = 100원 등가 유지 (8/5/4 → 10/8/6).
 export const FEATURE_PRICES_KRW = {
   hapcard: { feature_id: 'hapcard', amount_krw: 1000, order_name: '케미카드 보기', token_cost: 10 },
-  whatif: { feature_id: 'whatif', amount_krw: 800, order_name: '만약에 우리 보기', token_cost: 8 },
+  whatif: { feature_id: 'whatif', amount_krw: 800, order_name: '또 다른 나 보기', token_cost: 8 },
   replay: { feature_id: 'replay', amount_krw: 600, order_name: '케미 다시 맞추기', token_cost: 6 },
 } as const;
 

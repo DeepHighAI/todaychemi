@@ -336,7 +336,7 @@
       "sending": "준비 중...",
       "cancel": "취소"
     },
-    "replay": "그럴리 없어! 다시",
+    "replay": "케미 다시 맞추기",
     "placeholder": "오늘 케미 본문은 곧 준비됩니다.",
     "header": { "vs": "↔" },
     "gauge": {
@@ -359,8 +359,8 @@
     },
     "sharePreview": { "ariaLabel": "공유 미리보기" },
     "replayButton": {
-      "label": "그럴리 없어! 다시",
-      "confirmTitle": "그럴리 없어! 다시 볼까요?",
+      "label": "케미 다시 맞추기",
+      "confirmTitle": "케미 다시 맞춰 볼까요?",
       "confirmBody": "토큰 1개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
       "confirmCta": "케미 다시 맞추기",
       "cancel": "취소",
@@ -565,7 +565,7 @@
         "seyun": { "label": "올해 운(세운)" },
         "wolun": { "label": "이번 달 운(월운)" },
         "iliun": { "label": "오늘 운(일운)" },
-        "interpretationFooter": "더 자세한 해석은 오늘 케미와 그럴리 없어! 다시에서 풀어요."
+        "interpretationFooter": "더 자세한 해석은 오늘 케미와 케미 다시 맞추기에서 풀어요."
       }
     },
     "settings": {

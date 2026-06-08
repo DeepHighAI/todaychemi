@@ -329,7 +329,7 @@ export default function HapcardView() {
         {/* ── 메인 CTA — "일단 이거 해봐" ── */}
         <HapcardActions actions={actionItems} />
 
-        {/* ── 그럴리 없어! 다시 ── */}
+        {/* ── 케미 다시 맞추기 ── */}
         <HapcardReplayButton
           hapcardId={data.hapcard_id}
           relationId={data.relation_id}

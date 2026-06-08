@@ -165,7 +165,7 @@ export const HAPCARD_ERROR_CODES = [
 
 export type HapcardErrorCode = (typeof HAPCARD_ERROR_CODES)[number];
 
-// 그럴리 없어! 다시 결과 — hapcard_replays 테이블 1:1 매핑 + 원본 HapcardResult 구조 재사용
+// 케미 다시 맞추기 결과 — hapcard_replays 테이블 1:1 매핑 + 원본 HapcardResult 구조 재사용
 export interface HapcardReplayResult extends HapcardResult {
   replay_id: string;
   jinjin_date: string; // YYYY-MM-DD (UTC+9)

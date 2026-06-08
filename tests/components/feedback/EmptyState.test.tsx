@@ -20,11 +20,11 @@ describe('EmptyState', () => {
     renderWithProviders(
       <EmptyState
         title="첫 인연을 기록해보세요"
-        body="첫 오늘 케미 1회 + 내일 그럴리 없어! 다시 1회가 무료로 준비되어 있어요"
+        body="첫 오늘 케미 1회 + 내일 케미 다시 맞추기 1회가 무료로 준비되어 있어요"
       />,
     );
     expect(
-      screen.getByText('첫 오늘 케미 1회 + 내일 그럴리 없어! 다시 1회가 무료로 준비되어 있어요'),
+      screen.getByText('첫 오늘 케미 1회 + 내일 케미 다시 맞추기 1회가 무료로 준비되어 있어요'),
     ).toBeInTheDocument();
   });
 
