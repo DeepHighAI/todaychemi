@@ -89,11 +89,13 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
   현금 confirm 은 전면 리다이렉트라 mode 페이지 `draft.reset()` 이 실행되지 않음 →
   `/feed?paid=relation_slot:*` 복귀 시 draft 리셋(프리필 재제출 이중결제 차단).
 
-**수용 리스크(문서화)**: ① **count 게이트 TOCTOU(미해결, §1.1 결정 대기)** — 무료 슬롯
+**수용 리스크(문서화)**: ① **count 게이트 TOCTOU(§1.1 수용 확정 2026-06-10)** — 무료 슬롯
 판정이 `count(relations)` 읽기 후 INSERT 의 2-스텝이라 동시 제출 시 무료 1건 초과 가능.
 relations 에 유저당 행 수 DB 캡이 없어 막을 하드 가드 부재 = 이론상 무료 슬롯 우회.
-/review·/codex 양쪽 CRITICAL/BLOCK 지적. 완전 차단하려면 advisory-lock RPC(count+insert
-원자화) 또는 BEFORE INSERT 트리거 필요(별도 §1.1 결정). ② 무료경로 더블탭 = 2 pending·2
+/review·/codex 양쪽 CRITICAL/BLOCK 지적했으나 **사용자가 수용 결정**: 우회하려면 한 유저가
+자기 계정에서 동시 요청을 정밀 송신해야 하고 피해는 본인이 무료 인연 몇 개 더 만드는
+자해성(타인·매출 직접 손실 작음). launch 후 모니터링 트리거로 재검토. 완전 차단이 필요하면
+advisory-lock RPC(count+insert 원자화) 또는 BEFORE INSERT 트리거를 후속 §1.1 로 도입. ② 무료경로 더블탭 = 2 pending·2
 차감·2 인연(진짜 2등록 — 클라이언트 버튼 비활성으로 방어). ③ **open 결제 row 누적은 무제한** —
 `payments_feature_open_uidx` 는 `(user_id, feature_id, feature_ref)` 라 ref 가 다른 미결제
 pending 마다 open row 가 쌓일 수 있다(머니 리스크 아님, row 비대). 미머티리얼라이즈 pending
