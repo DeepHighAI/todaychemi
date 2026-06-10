@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 import { PaymentFlowError } from '@/lib/payments/complete';
 import { TossPaymentError } from '@/lib/payments/toss-server';
 import { getFeaturePrice } from '@/lib/payments/feature-prices';
+import { materializeRelationSlot } from '@/lib/relations/materialize';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { redactSensitiveLogText, sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
 
 // pay-per-use 피처 결제 확정 콜백 (ADR-039, 모델 C). Toss 위젯 successUrl 이 여기로 복귀.
@@ -74,6 +77,26 @@ export async function GET(request: NextRequest) {
     return redirectToFail(request, { orderId, code, message });
   }
 
+  // relation_slot — 결제 확정 직후 스테이징된 인연을 머티리얼라이즈 (ADR-039 Amended).
+  // 돈이 이미 확정됐으므로 어떤 실패도 fail 리다이렉트로 보내지 않는다 — 로깅 후 진행.
+  // 머티리얼라이즈 고아는 POST /api/relations 의 lazy recovery 가 다음 시도에서 전달한다.
+  if (feature === 'relation_slot') {
+    try {
+      const pendingId = ref.split(':')[1] ?? '';
+      const serviceDb = createServiceRoleClient() as unknown as SupabaseClient;
+      await materializeRelationSlot(serviceDb, user.id, pendingId);
+    } catch (err) {
+      const reportableError =
+        err instanceof Error
+          ? sanitizeErrorForReporting(err)
+          : new Error('relation_slot materialize failed');
+      Sentry.captureException(reportableError, {
+        tags: { area: 'payments', payment_step: 'relation_slot_materialize' },
+        extra: { order_id: orderId, ref },
+      });
+    }
+  }
+
   // 성공 — allowlist 된 피처 내부 경로로만 복귀(open-redirect 방지). paid=ref 로 재요청 트리거.
   const target = resolveNext(next, request.nextUrl.origin);
   target.searchParams.set('paid', ref);
@@ -90,7 +113,7 @@ function resolveNext(next: string | null, origin: string): URL {
     return fallback;
   }
   const path = next.split('?')[0].split('#')[0];
-  if (!/^\/(hapcard|whatif)(\/|$)/.test(path)) {
+  if (!/^\/(hapcard|whatif|feed)(\/|$)/.test(path)) {
     return fallback;
   }
   try {

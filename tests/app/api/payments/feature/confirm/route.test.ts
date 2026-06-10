@@ -2,13 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/supabase/server');
+vi.mock('@/lib/supabase/service-role');
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 vi.mock('@/lib/payments/feature-complete');
+vi.mock('@/lib/relations/materialize');
 
 import { GET } from '@/app/api/payments/feature/confirm/route';
 import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 import { PaymentFlowError } from '@/lib/payments/complete';
+import { materializeRelationSlot } from '@/lib/relations/materialize';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import * as Sentry from '@sentry/nextjs';
 
 const USER_ID = 'user-feat-001';
@@ -42,11 +46,13 @@ const OK_PARAMS = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(createClient).mockResolvedValue(makeClient() as never);
+  vi.mocked(createServiceRoleClient).mockReturnValue({ from: vi.fn(), rpc: vi.fn() } as never);
   vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
     status: 'confirmed',
     feature: 'hapcard',
     ref: REF,
   });
+  vi.mocked(materializeRelationSlot).mockResolvedValue('rel-uuid-1');
 });
 
 describe('GET /api/payments/feature/confirm', () => {
@@ -156,5 +162,73 @@ describe('GET /api/payments/feature/confirm', () => {
 
     expect(confirmFeaturePaymentForUser).not.toHaveBeenCalled();
     expect(res.headers.get('location')).toContain('UNAUTHORIZED');
+  });
+});
+
+describe('GET /api/payments/feature/confirm — relation_slot 머티리얼라이즈 훅', () => {
+  const SLOT_REF = 'relation_slot:pend-uuid-7';
+  const SLOT_PARAMS = {
+    paymentKey: 'pay-key',
+    orderId: 'twoday_1_slot001',
+    amount: '1000',
+    feature: 'relation_slot',
+    ref: SLOT_REF,
+    next: '/feed',
+  };
+
+  beforeEach(() => {
+    vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
+      status: 'confirmed',
+      feature: 'relation_slot',
+      ref: SLOT_REF,
+    });
+  });
+
+  it('확정 성공 → pending_id 파싱해 머티리얼라이즈 + /feed?paid=ref 303', async () => {
+    const res = await GET(url(SLOT_PARAMS));
+
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      USER_ID,
+      'pend-uuid-7',
+    );
+    expect(res.status).toBe(303);
+    const loc = decodeURIComponent(res.headers.get('location') ?? '');
+    expect(loc).toContain('/feed');
+    expect(loc).toContain(`paid=${SLOT_REF}`);
+    expect(loc).not.toContain('/payments/fail');
+  });
+
+  it('머티리얼라이즈 실패 → 결제 확정 후엔 절대 실패 리다이렉트 금지 (Sentry 로깅 + paid 진행)', async () => {
+    vi.mocked(materializeRelationSlot).mockRejectedValue(new Error('insert blew up'));
+
+    const res = await GET(url(SLOT_PARAMS));
+
+    expect(res.status).toBe(303);
+    const loc = decodeURIComponent(res.headers.get('location') ?? '');
+    expect(loc).not.toContain('/payments/fail');
+    expect(loc).toContain(`paid=${SLOT_REF}`);
+    expect(Sentry.captureException).toHaveBeenCalled();
+  });
+
+  it('비 relation_slot 피처(hapcard)는 머티리얼라이즈 미호출', async () => {
+    vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
+      status: 'confirmed',
+      feature: 'hapcard',
+      ref: REF,
+    });
+
+    await GET(url(OK_PARAMS));
+
+    expect(materializeRelationSlot).not.toHaveBeenCalled();
+  });
+
+  it("resolveNext allowlist 에 '/feed' 명시 허용 (쿼리 보존)", async () => {
+    const res = await GET(url({ ...SLOT_PARAMS, next: '/feed?focus=abc' }));
+
+    const loc = decodeURIComponent(res.headers.get('location') ?? '');
+    expect(loc).toContain('/feed');
+    expect(loc).toContain('focus=abc');
+    expect(loc).toContain(`paid=${SLOT_REF}`);
   });
 });
