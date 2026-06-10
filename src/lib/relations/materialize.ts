@@ -9,14 +9,18 @@ import {
 
 type ServiceClient = SupabaseClient<Database>;
 
-// 유료 슬롯 인연 머티리얼라이즈 (ADR-039 Amended — 모델 C: 선생성 후 결제).
+// 유료 슬롯 인연 머티리얼라이즈 (ADR-039 Amended §9 — 모델 C: 선생성 후 결제).
 //
-// 클레임-퍼스트 + 클레임 시점 relation_id(클라이언트 uuid) 기록:
-//   1) materialized_at + relation_id 를 한 UPDATE 로 원자 기록 (materialized_at IS NULL 가드)
-//   2) 승자만 기록된 uuid 로 pk 고정 INSERT — 클레임↔INSERT 사이 크래시도 재진입 시
-//      "기록 id 가 relations 에 없음" 으로 판별되어 멱등 재INSERT 로 복구된다.
-//   3) FK on delete set null 덕분에 relation_id NULL + materialized_at 有 =
-//      "머티리얼라이즈 후 유저가 삭제" 로 유일하게 해석 — 재생성 금지(슬롯 소비 완료).
+// 상태 분리 (delivered_at 도입, /qa 2026-06-10 FK 충돌 P0 수정):
+//   materialized_at — 클레임됨(전달 시도 진입). relation_id 는 건드리지 않는다.
+//   delivered_at    — relations INSERT 완료. 이때 relation_id 를 기록(FK 충족).
+//   relation_id     = pending_id (deterministic). 멱등 재INSERT 가 같은 pk 로 충돌(23505)해 안전.
+//
+// 클레임 시 relation_id 를 기록하면 FK(relation_id → relations) 위반(23503)이므로,
+// relation_id 는 반드시 INSERT 후에만 쓴다. 상태 판별:
+//   delivered_at 有 + relation_id 有  = 전달 완료 → 기존 id 반환.
+//   delivered_at 有 + relation_id NULL = 삭제 소비(FK on delete set null) → null(재생성 금지).
+//   delivered_at NULL                  = 미전달(첫 진입 또는 크래시) → deterministic 재INSERT.
 //
 // service-role 클라이언트 전제 — RLS 우회되므로 모든 조회·갱신에 user_id 를 명시 핀.
 // 반환: relation_id. 삭제로 소비 완료된 슬롯은 null.
@@ -27,65 +31,48 @@ export async function materializeRelationSlot(
 ): Promise<string | null> {
   const pending = await fetchPending(service, userId, pendingId);
 
-  if (pending.materialized_at) {
-    return resolveMaterialized(service, userId, pending);
+  // 전달 이력 있음 → 소비 여부로 분기 (INSERT 불필요)
+  if (pending.delivered_at) {
+    return pending.relation_id; // 有=relationId, NULL=삭제 소비
   }
 
-  // 클레임 — relation_id 를 지금 확정해 기록한다 (크래시 복구의 열쇠)
-  const newId = crypto.randomUUID();
-  const { data: claimed, error: claimError } = await service
-    .from('pending_relation_registrations')
-    .update({ materialized_at: new Date().toISOString(), relation_id: newId })
-    .eq('pending_id', pendingId)
-    .eq('user_id', userId)
-    .is('materialized_at', null)
-    .select('pending_id');
+  // relation_id = pending_id (deterministic) — 멱등 재INSERT 의 열쇠.
+  const relationId = pendingId;
 
-  if (claimError) {
-    throw new Error(`pending claim failed: ${claimError.code}`);
-  }
-
-  if (!claimed || claimed.length === 0) {
-    // 동시 race 패배 — 승자의 기록으로 수렴
-    const winner = await fetchPending(service, userId, pendingId);
-    if (!winner.materialized_at) {
-      // 승자가 INSERT 실패로 un-claim — 보상은 그쪽 시도가 처리, 여기선 중복 과금 방지 위해 중단
-      throw new Error('MATERIALIZE_RACE_UNRESOLVED');
-    }
-    return resolveMaterialized(service, userId, winner);
-  }
-
-  try {
-    await insertRelationAndComputeChart(service, userId, parseDraft(pending.draft), newId);
-  } catch (err) {
-    if (err instanceof RelationInsertError && err.code === '23505') {
-      // 크래시 복구 중복 INSERT — 행이 이미 존재하므로 성공 취급
-      return newId;
-    }
-    // un-claim 전 가드: 동시 수렴 시도(race 패자)가 같은 newId 로 이미 INSERT 를
-    // 성공시킨 뒤 이쪽 INSERT 만 일시 오류로 실패했을 수 있다. 행이 존재하면
-    // un-claim 하지 않는다 — 클레임을 되돌리면 다음 시도가 새 id 로 이중 생성한다.
-    const { data: delivered } = await service
-      .from('relations')
-      .select('relation_id')
-      .eq('relation_id', newId)
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (delivered) return newId;
-
-    // un-claim — 자기 클레임(relation_id=newId)만 되돌려 재시도 가능 상태로 복원.
-    // service-role 은 RLS 우회라 user_id 도 명시 핀(머니패스 일관 규율).
-    await service
+  // 클레임 — materialized_at 만 설정 (FK 컬럼 relation_id 는 전달 마킹에서 기록).
+  // 이미 클레임된(race 패배·크래시 재진입) 경우 0행이지만, 아래 deterministic INSERT 가
+  // 멱등이라 그대로 진행해 수렴한다.
+  if (!pending.materialized_at) {
+    const { error: claimError } = await service
       .from('pending_relation_registrations')
-      .update({ materialized_at: null, relation_id: null })
+      .update({ materialized_at: new Date().toISOString() })
       .eq('pending_id', pendingId)
       .eq('user_id', userId)
-      .eq('relation_id', newId)
+      .is('materialized_at', null)
       .select('pending_id');
-    throw err;
+    if (claimError) {
+      throw new Error(`pending claim failed: ${claimError.code}`);
+    }
   }
 
-  return newId;
+  // 전달 — INSERT(relation_id=pending_id). 23505(동시/재시도 중복)는 멱등 성공으로 본다.
+  try {
+    await insertRelationAndComputeChart(service, userId, parseDraft(pending.draft), relationId);
+  } catch (err) {
+    if (!(err instanceof RelationInsertError && err.code === '23505')) {
+      throw err; // 진짜 실패 → 호출부가 환불(charged 플래그)
+    }
+  }
+
+  // 전달 마킹 — relation_id(방금 INSERT 됐으므로 FK 충족) + delivered_at.
+  await service
+    .from('pending_relation_registrations')
+    .update({ relation_id: relationId, delivered_at: new Date().toISOString() })
+    .eq('pending_id', pendingId)
+    .eq('user_id', userId)
+    .select('pending_id');
+
+  return relationId;
 }
 
 type PendingRow = {
@@ -94,6 +81,7 @@ type PendingRow = {
   draft: unknown;
   relation_id: string | null;
   materialized_at: string | null;
+  delivered_at: string | null;
 };
 
 async function fetchPending(
@@ -103,7 +91,7 @@ async function fetchPending(
 ): Promise<PendingRow> {
   const { data, error } = await service
     .from('pending_relation_registrations')
-    .select('pending_id, user_id, draft, relation_id, materialized_at')
+    .select('pending_id, user_id, draft, relation_id, materialized_at, delivered_at')
     .eq('pending_id', pendingId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -115,43 +103,6 @@ async function fetchPending(
     throw new Error('PENDING_NOT_FOUND');
   }
   return data as PendingRow;
-}
-
-// 머티리얼라이즈 기록이 있는 pending 의 수렴 처리:
-// relation_id NULL = 삭제로 소비 완료 → null. 행 부재 = 크래시 복구 재INSERT.
-async function resolveMaterialized(
-  service: ServiceClient,
-  userId: string,
-  pending: PendingRow,
-): Promise<string | null> {
-  if (!pending.relation_id) return null;
-
-  const { data: existing, error } = await service
-    .from('relations')
-    .select('relation_id')
-    .eq('relation_id', pending.relation_id)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`relations select failed: ${error.code}`);
-  }
-  if (existing) return pending.relation_id;
-
-  try {
-    await insertRelationAndComputeChart(
-      service,
-      userId,
-      parseDraft(pending.draft),
-      pending.relation_id,
-    );
-  } catch (err) {
-    if (err instanceof RelationInsertError && err.code === '23505') {
-      return pending.relation_id;
-    }
-    throw err;
-  }
-  return pending.relation_id;
 }
 
 function parseDraft(draft: unknown) {

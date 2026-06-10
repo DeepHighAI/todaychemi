@@ -77,10 +77,13 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
   리다이렉트이므로, 검증된 draft 를 `pending_relation_registrations`(JSONB)에 **스테이징**한 뒤
   부적 경로는 즉시, 현금 경로는 confirm 직후 **머티리얼라이즈**(relations INSERT)한다.
   `relations` 테이블은 깨끗하게 유지 — feed/today 등 읽기 사이트 변경 0.
-- **머티리얼라이즈 멱등(claim-first)**: 클레임 UPDATE 가 `materialized_at`+`relation_id`
-  (클라이언트 uuid)를 원자 기록 → 승자만 pk 고정 INSERT. 클레임↔INSERT 사이 크래시는
-  재진입 시 pk-멱등 재INSERT 로 복구. FK `on delete set null` 덕분에 `relation_id NULL` +
-  `materialized_at 有` = "머티리얼라이즈 후 삭제(슬롯 소비 완료)"로 유일 해석 — 재생성 금지.
+- **머티리얼라이즈 멱등(delivered_at 상태머신, /qa 2026-06-10 FK 수정)**: 클레임은
+  `materialized_at` 만 설정하고 `relation_id` 는 건드리지 않는다(클레임 시 relation_id 기록은
+  FK `relation_id → relations` 위반 23503). relations INSERT 는 `relation_id = pending_id`
+  (deterministic) 로 수행 → 동시·재시도 중복은 같은 pk 충돌(23505)로 멱등. INSERT 성공 후에만
+  `relation_id`+`delivered_at` 을 기록(FK 충족). 상태 판별: `delivered_at 有`+`relation_id 有`
+  =전달 완료 / `delivered_at 有`+`relation_id NULL`(FK on delete set null)=삭제 소비(재생성 금지)
+  / `delivered_at NULL`=미전달(크래시 포함)이라 deterministic 재INSERT 로 복구.
 - **lazy recovery**: confirm 후 머티리얼라이즈가 실패한 고아(돈 받고 인연 미생성)는 다음
   유료 등록 시도(POST /api/relations ≥2 경로)에서 **confirmed 결제 row 기준**으로 먼저
   전달한다(재과금 방지). ledger 기준(`isFeatureUnlocked`)은 환불 후에도 true 라 부적합.

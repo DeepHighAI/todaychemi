@@ -701,4 +701,11 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     functionName: 'purge_pending_relation_drafts',
     cronJobs: ['purge-pending-relation-drafts'],
   },
+  // relation_slot materialize FK 충돌 수정 — delivered_at 도입 + purge 재작성 (/qa 2026-06-10)
+  {
+    index: 20260610130000,
+    file: '20260610130000_pending_delivered_at.sql',
+    kind: 'function',
+    functionName: 'purge_pending_relation_drafts',
+  },
 ];

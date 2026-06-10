@@ -82,6 +82,7 @@ function pendingRow(overrides: Partial<Record<string, unknown>> = {}) {
     draft: DRAFT,
     relation_id: null,
     materialized_at: null,
+    delivered_at: null,
     ...overrides,
   };
 }
@@ -93,87 +94,60 @@ beforeEach(() => {
   );
 });
 
-describe('materializeRelationSlot', () => {
-  it('미머티리얼라이즈 pending → 클레임(materialized_at+relation_id 기록) 후 고정 id 로 INSERT', async () => {
+
+describe('materializeRelationSlot (delivered_at 상태머신)', () => {
+  it('미클레임 pending → 클레임(materialized_at만) 후 relation_id=pending_id 로 INSERT, delivered_at 마킹', async () => {
     const { service, ops } = makeService({
       'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
-      'pending_relation_registrations:update': [{ data: [{ pending_id: PENDING }], error: null }],
+      // 클레임 UPDATE + 전달 마킹 UPDATE 2회
+      'pending_relation_registrations:update': [
+        { data: [{ pending_id: PENDING }], error: null },
+        { data: [{ pending_id: PENDING }], error: null },
+      ],
     });
 
     const relationId = await materializeRelationSlot(service, USER, PENDING);
 
-    // 클레임 UPDATE: materialized_at + relation_id 동시 기록, materialized_at IS NULL 가드
-    const claim = ops.find((o) => o.op === 'update');
-    expect(claim).toBeDefined();
-    const payload = claim!.payload as Record<string, unknown>;
-    expect(payload.materialized_at).toEqual(expect.any(String));
-    expect(payload.relation_id).toEqual(expect.any(String));
-    expect(claim!.filters).toEqual(
+    // deterministic — relation_id 는 pending_id 와 동일
+    expect(relationId).toBe(PENDING);
+    expect(insertRelationAndComputeChart).toHaveBeenCalledWith(service, USER, DRAFT, PENDING);
+
+    const updates = ops.filter((o) => o.op === 'update');
+    expect(updates).toHaveLength(2);
+    // 클레임: materialized_at 만, relation_id 는 건드리지 않음(FK 위반 방지)
+    const claim = updates[0].payload as Record<string, unknown>;
+    expect(claim.materialized_at).toEqual(expect.any(String));
+    expect('relation_id' in claim).toBe(false);
+    expect(updates[0].filters).toEqual(
       expect.arrayContaining([
         ['pending_id', PENDING],
         ['user_id', USER],
         ['is:materialized_at', null],
       ]),
     );
-
-    // INSERT 는 클레임에 기록된 uuid 로 고정
-    expect(insertRelationAndComputeChart).toHaveBeenCalledWith(
-      service,
-      USER,
-      DRAFT,
-      payload.relation_id,
-    );
-    expect(relationId).toBe(payload.relation_id);
+    // 전달 마킹: relation_id(=pending_id, INSERT 후라 FK 충족) + delivered_at
+    const mark = updates[1].payload as Record<string, unknown>;
+    expect(mark.relation_id).toBe(PENDING);
+    expect(mark.delivered_at).toEqual(expect.any(String));
   });
 
-  it('멱등: 이미 머티리얼라이즈 + relations 행 존재 → INSERT 없이 기존 id 반환', async () => {
+  it('전달 완료(delivered_at 有 + relation_id 有) → INSERT 없이 기존 id 반환', async () => {
     const { service } = makeService({
       'pending_relation_registrations:select': [
-        { data: pendingRow({ relation_id: 'rel-uuid-9', materialized_at: '2026-06-10T00:00:00Z' }), error: null },
+        { data: pendingRow({ relation_id: PENDING, materialized_at: '2026-06-10T00:00:00Z', delivered_at: '2026-06-10T00:00:01Z' }), error: null },
       ],
-      'relations:select': [{ data: { relation_id: 'rel-uuid-9' }, error: null }],
     });
 
     const relationId = await materializeRelationSlot(service, USER, PENDING);
 
-    expect(relationId).toBe('rel-uuid-9');
+    expect(relationId).toBe(PENDING);
     expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
   });
 
-  it('크래시 복구: 머티리얼라이즈 기록은 있으나 relations 행 없음 → 기록된 id 로 재INSERT', async () => {
+  it('삭제 소비(delivered_at 有 + relation_id NULL via FK set null) → null 반환, 재생성 금지', async () => {
     const { service } = makeService({
       'pending_relation_registrations:select': [
-        { data: pendingRow({ relation_id: 'rel-uuid-9', materialized_at: '2026-06-10T00:00:00Z' }), error: null },
-      ],
-      'relations:select': [{ data: null, error: null }],
-    });
-
-    const relationId = await materializeRelationSlot(service, USER, PENDING);
-
-    expect(relationId).toBe('rel-uuid-9');
-    expect(insertRelationAndComputeChart).toHaveBeenCalledWith(service, USER, DRAFT, 'rel-uuid-9');
-  });
-
-  it('크래시 복구 재INSERT 가 23505(pk 중복) → 성공 취급', async () => {
-    vi.mocked(insertRelationAndComputeChart).mockRejectedValue(
-      new RelationInsertError('relations insert failed: 23505', '23505'),
-    );
-    const { service } = makeService({
-      'pending_relation_registrations:select': [
-        { data: pendingRow({ relation_id: 'rel-uuid-9', materialized_at: '2026-06-10T00:00:00Z' }), error: null },
-      ],
-      'relations:select': [{ data: null, error: null }],
-    });
-
-    const relationId = await materializeRelationSlot(service, USER, PENDING);
-
-    expect(relationId).toBe('rel-uuid-9');
-  });
-
-  it('삭제로 소비된 슬롯(materialized_at 有 + relation_id NULL) → null 반환, 재생성 금지', async () => {
-    const { service } = makeService({
-      'pending_relation_registrations:select': [
-        { data: pendingRow({ relation_id: null, materialized_at: '2026-06-10T00:00:00Z' }), error: null },
+        { data: pendingRow({ relation_id: null, materialized_at: '2026-06-10T00:00:00Z', delivered_at: '2026-06-10T00:00:01Z' }), error: null },
       ],
     });
 
@@ -183,112 +157,77 @@ describe('materializeRelationSlot', () => {
     expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
   });
 
-  it('클레임 race 패배(0행) → 재조회로 승자 id 에 수렴', async () => {
-    const { service } = makeService({
+  it('크래시 복구(materialized_at 有 + delivered_at NULL) → 클레임 0행이어도 deterministic 재INSERT 후 전달', async () => {
+    const { service, ops } = makeService({
       'pending_relation_registrations:select': [
-        { data: pendingRow(), error: null },
-        // 재조회: 승자가 이미 클레임 완료
-        { data: pendingRow({ relation_id: 'winner-id', materialized_at: '2026-06-10T00:00:01Z' }), error: null },
+        { data: pendingRow({ materialized_at: '2026-06-10T00:00:00Z', delivered_at: null }), error: null },
       ],
-      'pending_relation_registrations:update': [{ data: [], error: null }],
-      'relations:select': [{ data: { relation_id: 'winner-id' }, error: null }],
+      // 클레임 시도(이미 클레임됨 → 0행) + 전달 마킹
+      'pending_relation_registrations:update': [
+        { data: [], error: null },
+        { data: [{ pending_id: PENDING }], error: null },
+      ],
     });
 
     const relationId = await materializeRelationSlot(service, USER, PENDING);
 
-    expect(relationId).toBe('winner-id');
-    expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
+    expect(relationId).toBe(PENDING);
+    expect(insertRelationAndComputeChart).toHaveBeenCalledWith(service, USER, DRAFT, PENDING);
+    const mark = (ops.filter((o) => o.op === 'update').at(-1)!.payload) as Record<string, unknown>;
+    expect(mark.delivered_at).toEqual(expect.any(String));
   });
 
-  it('INSERT 실패(비 23505) → un-claim(자기 relation_id 가드) 후 rethrow', async () => {
+  it('동시 재진입: INSERT 23505(이미 생성) → 멱등 성공, 전달 마킹 후 id 반환', async () => {
     vi.mocked(insertRelationAndComputeChart).mockRejectedValue(
-      new RelationInsertError('relations insert failed: PGRST000', 'PGRST000'),
+      new RelationInsertError('relations insert failed: 23505', '23505'),
     );
-    const { service, ops } = makeService({
+    const { service } = makeService({
       'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
       'pending_relation_registrations:update': [
-        { data: [{ pending_id: PENDING }], error: null }, // 클레임 성공
-        { data: [{ pending_id: PENDING }], error: null }, // un-claim
+        { data: [{ pending_id: PENDING }], error: null },
+        { data: [{ pending_id: PENDING }], error: null },
       ],
     });
 
-    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow();
+    const relationId = await materializeRelationSlot(service, USER, PENDING);
 
-    const updates = ops.filter((o) => o.op === 'update');
-    expect(updates).toHaveLength(2);
-    const unclaim = updates[1];
-    const unclaimPayload = unclaim.payload as Record<string, unknown>;
-    expect(unclaimPayload.materialized_at).toBeNull();
-    expect(unclaimPayload.relation_id).toBeNull();
-    // 다른 시도의 성공 클레임을 지우지 않도록 자기 relation_id 로 가드
-    const claimedId = (updates[0].payload as Record<string, unknown>).relation_id;
-    expect(unclaim.filters).toEqual(
-      expect.arrayContaining([
-        ['pending_id', PENDING],
-        ['relation_id', claimedId],
-      ]),
-    );
+    expect(relationId).toBe(PENDING);
   });
 
-  it('INSERT 실패 but 동시 시도가 같은 id 로 이미 전달 → un-claim 금지, 성공 수렴', async () => {
+  it('INSERT 진짜 실패(비 23505) → delivered 마킹 없이 rethrow(호출부 환불)', async () => {
     vi.mocked(insertRelationAndComputeChart).mockRejectedValue(
       new RelationInsertError('relations insert failed: PGRST000', 'PGRST000'),
     );
     const { service, ops } = makeService({
       'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
       'pending_relation_registrations:update': [{ data: [{ pending_id: PENDING }], error: null }],
-      // un-claim 가드 조회: 행이 이미 존재 (동시 race 패자가 전달 완료)
-      'relations:select': [{ data: { relation_id: 'any' }, error: null }],
     });
 
-    const relationId = await materializeRelationSlot(service, USER, PENDING);
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow();
 
-    expect(relationId).toEqual(expect.any(String));
-    // un-claim UPDATE 가 실행되지 않아야 한다 (클레임 1회만)
+    // 클레임 UPDATE 1회만 — 전달 마킹은 실행 안 됨
     const updates = ops.filter((o) => o.op === 'update');
     expect(updates).toHaveLength(1);
+    expect((updates[0].payload as Record<string, unknown>).delivered_at).toBeUndefined();
   });
 
-  it('클레임 race 패배 후 재조회도 미머티리얼라이즈(승자 un-claim) → 중복 과금 방지 throw', async () => {
+  it('클레임 UPDATE DB 에러 → throw, INSERT 미진행', async () => {
     const { service } = makeService({
-      'pending_relation_registrations:select': [
-        { data: pendingRow(), error: null },
-        { data: pendingRow(), error: null }, // 재조회: 여전히 unclaimed
-      ],
-      'pending_relation_registrations:update': [{ data: [], error: null }],
+      'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
+      'pending_relation_registrations:update': [{ data: null, error: { code: '23505' } }],
     });
 
-    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
-      'MATERIALIZE_RACE_UNRESOLVED',
-    );
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow('pending claim failed');
     expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
   });
 
   it('pending 조회 DB 에러 → throw, 클레임/INSERT 미진행', async () => {
     const { service, ops } = makeService({
-      'pending_relation_registrations:select': [
-        { data: null, error: { code: 'PGRST000' } },
-      ],
+      'pending_relation_registrations:select': [{ data: null, error: { code: 'PGRST000' } }],
     });
 
-    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
-      'pending select failed',
-    );
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow('pending select failed');
     expect(ops.filter((o) => o.op === 'update')).toHaveLength(0);
-    expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
-  });
-
-  it('수렴 경로 relations 조회 DB 에러 → throw (멱등 판단 불가 시 진행 금지)', async () => {
-    const { service } = makeService({
-      'pending_relation_registrations:select': [
-        { data: pendingRow({ relation_id: 'rel-uuid-9', materialized_at: '2026-06-10T00:00:00Z' }), error: null },
-      ],
-      'relations:select': [{ data: null, error: { code: 'PGRST000' } }],
-    });
-
-    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
-      'relations select failed',
-    );
     expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
   });
 

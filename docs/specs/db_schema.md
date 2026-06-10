@@ -426,8 +426,11 @@ create policy "pending_relation_registrations_own" on public.pending_relation_re
 
 -- 20260610120000_pending_draft_purge.sql — draft PII 자동 정리 (§1.1 2026-06-10):
 -- purge_pending_relation_drafts() 일 1회 cron('purge-pending-relation-drafts').
--- 미결제·미머티리얼라이즈 30일 행 삭제(pending/confirmed 결제 보유 행 보호),
--- 전달 완료/삭제 소비 행은 7일 후 draft='{}' 스크럽(멱등 마커 유지).
+-- 20260610130000_pending_delivered_at.sql — relation_slot FK 충돌 수정(/qa):
+-- delivered_at 컬럼 추가(materialized_at=클레임 / delivered_at=전달완료, relation_id 는
+-- INSERT 후에만 기록해 FK 충족, relation_id=pending_id deterministic). purge 재작성:
+-- 미결제·미전달(delivered_at IS NULL) 30일 삭제(결제 보유 행 보호), 전달완료/소비
+-- (delivered_at IS NOT NULL) 7일 후 draft='{}' 스크럽.
 ```
 
 ---

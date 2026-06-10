@@ -819,6 +819,7 @@ export type Database = {
       pending_relation_registrations: {
         Row: {
           created_at: string
+          delivered_at: string | null
           draft: Json
           materialized_at: string | null
           pending_id: string
@@ -827,6 +828,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivered_at?: string | null
           draft: Json
           materialized_at?: string | null
           pending_id?: string
@@ -835,6 +837,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivered_at?: string | null
           draft?: Json
           materialized_at?: string | null
           pending_id?: string
