@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/chart/compute');
 
 import { computeChart } from '@/lib/chart/compute';
-import { insertRelationAndComputeChart } from '@/lib/relations/insert';
+import { insertRelationAndComputeChart, RelationInsertError } from '@/lib/relations/insert';
 import type { RelationCreate } from '@/types/relation';
 import type { ChartCore } from '@/types/chart';
 
@@ -124,6 +124,36 @@ describe('insertRelationAndComputeChart', () => {
     expect(logged).not.toContain('09:00');
     expect(logged).not.toContain('gender=F');
     consoleSpy.mockRestore();
+  });
+
+  it('명시적 relationId 전달 시 INSERT 페이로드에 relation_id 고정 (pk 멱등 재시도용)', async () => {
+    const { db, _insert } = makeDb({ insertedRows: [{ relation_id: 'fixed-uuid-9' }] });
+
+    const relationId = await insertRelationAndComputeChart(db, USER, DRAFT, 'fixed-uuid-9');
+
+    expect(relationId).toBe('fixed-uuid-9');
+    const inserted = _insert.mock.calls[0][0];
+    expect(inserted.relation_id).toBe('fixed-uuid-9');
+  });
+
+  it('명시적 relationId 미전달 시 INSERT 페이로드에 relation_id 없음 (DB default)', async () => {
+    const { db, _insert } = makeDb({});
+
+    await insertRelationAndComputeChart(db, USER, DRAFT);
+
+    const inserted = _insert.mock.calls[0][0];
+    expect('relation_id' in inserted).toBe(false);
+  });
+
+  it('INSERT 실패 시 RelationInsertError 로 DB 에러 코드를 노출한다', async () => {
+    const { db } = makeDb({ insertError: { code: '23505', message: 'duplicate key' } });
+
+    await expect(insertRelationAndComputeChart(db, USER, DRAFT, 'fixed-uuid-9')).rejects.toThrow(
+      RelationInsertError,
+    );
+    await expect(
+      insertRelationAndComputeChart(db, USER, DRAFT, 'fixed-uuid-9'),
+    ).rejects.toMatchObject({ code: '23505' });
   });
 
   it('relation_charts upsert 실패 → relation_id 반환 + 에러 로깅', async () => {
