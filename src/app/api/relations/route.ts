@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { apiErrorResponse } from '@/lib/errors/route-response';
+import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   RelationCreateSchema,
+  type RelationCreate,
   type FeedListItem,
-  type RelationErrorCode,
 } from '@/types/relation';
 import { insertRelationAndComputeChart } from '@/lib/relations/insert';
+import { materializeRelationSlot } from '@/lib/relations/materialize';
+import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
+import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,15 +46,131 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 INSERT
-  // (INSERT throw / 차트 best-effort 는 헬퍼 책임 — 무료 경로와 슬롯 머티리얼라이즈 공유)
   const db = supabase as unknown as SupabaseClient;
-  let relationId: string;
-  try {
-    relationId = await insertRelationAndComputeChart(db, user.id, parsed.data);
-  } catch {
-    return apiErrorResponse('INTERNAL_ERROR', '', 500);
+
+  // 슬롯 게이트 (ADR-039 Amended, 모델 B) — 현재 보유 행 수 기준. 판정 불가 시 등록 금지.
+  const { count, error: countError } = await db
+    .from('relations')
+    .select('relation_id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+  if (countError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+
+  if ((count ?? 0) < FREE_RELATION_SLOTS) {
+    // 무료 경로 — 기존 동작 불변 (INSERT throw / 차트 best-effort 는 헬퍼 책임)
+    let relationId: string;
+    try {
+      relationId = await insertRelationAndComputeChart(db, user.id, parsed.data);
+    } catch {
+      return apiErrorResponse('INTERNAL_ERROR', '', 500);
+    }
+    return NextResponse.json({ ok: true, relation_id: relationId });
   }
 
-  return NextResponse.json({ ok: true, relation_id: relationId });
+  return handlePaidSlot(user.id, parsed.data);
+}
+
+// 유료 슬롯 경로 (3번째 인연부터) — draft 스테이징 후 하이브리드 과금.
+// LLM 선생성 비용이 없으므로 checkCashGenLimit 은 적용하지 않는다 (ADR-039 Amended).
+async function handlePaidSlot(userId: string, draft: RelationCreate) {
+  const service = createServiceRoleClient();
+  const serviceDb = service as unknown as SupabaseClient;
+
+  // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
+  await recoverPaidPendings(service, serviceDb, userId);
+
+  // 초안 스테이징 — 현금 결제(비동기 토스 리다이렉트) 동안 draft 를 서버에 보존
+  const { data: stagedRows, error: stageError } = await serviceDb
+    .from('pending_relation_registrations')
+    .insert({ user_id: userId, draft })
+    .select('pending_id');
+  if (stageError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+
+  const pendingId = (stagedRows as Array<{ pending_id: string }>)?.[0]?.pending_id ?? '';
+  if (!pendingId) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+  const ref = `relation_slot:${pendingId}`;
+
+  let charged = false;
+  try {
+    const resolution = await resolveFeatureCharge(service, userId, 'relation_slot', ref);
+    charged = resolution.charged;
+
+    if (resolution.mode === 'pay_required') {
+      // 잔액 부족 — pending 은 유지(현금 흐름이 사용), 본문 없이 402 로 결제 요구
+      return paymentRequiredResponse(
+        resolution.price.feature_id,
+        ref,
+        resolution.price.amount_krw,
+      );
+    }
+
+    // free | unlocked — 즉시 머티리얼라이즈. 신규 pending 이므로 null(삭제 소비) 도달 불가.
+    const relationId = await materializeRelationSlot(serviceDb, userId, pendingId);
+    if (!relationId) return apiErrorResponse('INTERNAL_ERROR', '', 500);
+    return NextResponse.json({ ok: true, relation_id: relationId });
+  } catch (err) {
+    const safe = sanitizeErrorForLog(err);
+    console.error('[POST /api/relations] paid slot failed', { error: safe });
+    if (charged) {
+      const { error: refundErr } = await service.rpc('refund_tokens_once', {
+        uid: userId,
+        delta: FEATURE_PRICES_KRW.relation_slot.token_cost,
+        reason: 'relation_slot_refund',
+        ref,
+      });
+      if (refundErr) {
+        console.error('relation_slot_refund_failed', {
+          user_id: userId,
+          pending_id: pendingId,
+          original_error: safe,
+          refund_error: sanitizeErrorForLog(refundErr.message),
+        });
+      }
+    }
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
+  }
+}
+
+// A1 lazy recovery — confirm 후 머티리얼라이즈가 실패한 고아(돈은 받고 인연 미생성)를
+// 다음 유료 등록 시도 때 전달한다. 판정 기준은 결제 row confirmed 만 사용:
+// 환불된 토큰경로 pending 은 ledger 기준(isFeatureUnlocked)으로는 true 라 무료 슬롯이 돼버린다.
+async function recoverPaidPendings(
+  service: ReturnType<typeof createServiceRoleClient>,
+  serviceDb: SupabaseClient,
+  userId: string,
+) {
+  try {
+    const { data: paid, error: paidError } = await service
+      .from('payments')
+      .select('feature_ref')
+      .eq('user_id', userId)
+      .eq('charge_type', 'feature_use')
+      .eq('feature_id', 'relation_slot')
+      .eq('status', 'confirmed');
+    if (paidError) throw paidError;
+
+    const paidRefs = new Set(
+      (paid ?? [])
+        .map((row: { feature_ref: string | null }) => row.feature_ref)
+        .filter(Boolean),
+    );
+    if (paidRefs.size === 0) return;
+
+    const { data: pendings, error: pendingsError } = await serviceDb
+      .from('pending_relation_registrations')
+      .select('pending_id')
+      .eq('user_id', userId)
+      .is('materialized_at', null);
+    if (pendingsError) throw pendingsError;
+
+    for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {
+      if (!paidRefs.has(`relation_slot:${row.pending_id}`)) continue;
+      await materializeRelationSlot(serviceDb, userId, row.pending_id);
+    }
+  } catch (err) {
+    // 복구 실패가 신규 등록을 막으면 안 된다 — 로깅 후 계속 (다음 시도에서 재복구)
+    console.error('relation_slot_recovery_failed', {
+      user_id: userId,
+      error: sanitizeErrorForLog(err),
+    });
+  }
 }

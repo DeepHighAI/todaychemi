@@ -23,6 +23,10 @@ export type FeaturePrice = (typeof FEATURE_PRICES_KRW)[FeatureId];
 
 export const FeatureIdSchema = z.enum(['hapcard', 'whatif', 'replay', 'relation_slot']);
 
+// 인연 무료 슬롯 수 — 이 수 미만 보유 시 등록 무료, 이상이면 relation_slot 과금 (모델 B).
+// 서버 게이트(/api/relations)와 클라이언트 사전 고지가 공유하는 단일 출처.
+export const FREE_RELATION_SLOTS = 2;
+
 // 서버 신뢰 단일 출처. 클라이언트가 보낸 feature 문자열은 반드시 이 함수로 검증한다.
 export function getFeaturePrice(id: string): FeaturePrice | null {
   const parsed = FeatureIdSchema.safeParse(id);

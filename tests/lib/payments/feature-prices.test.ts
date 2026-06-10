@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FEATURE_PRICES_KRW,
   FeatureIdSchema,
+  FREE_RELATION_SLOTS,
   getFeaturePrice,
 } from '@/lib/payments/feature-prices';
 
@@ -38,6 +39,10 @@ describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
     expect(getFeaturePrice('tokens_10')).toBeNull();
     expect(getFeaturePrice('')).toBeNull();
     expect(getFeaturePrice('deephap')).toBeNull();
+  });
+
+  it('인연 무료 슬롯은 2개 (모델 B — 3번째부터 과금)', () => {
+    expect(FREE_RELATION_SLOTS).toBe(2);
   });
 
   it('FeatureIdSchema 는 4개 피처만 허용한다', () => {
