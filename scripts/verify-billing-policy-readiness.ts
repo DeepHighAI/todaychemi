@@ -53,7 +53,7 @@ function main() {
       /hapcard:\s*\{[^}]*amount_krw:\s*1000/,
       /whatif:\s*\{[^}]*amount_krw:\s*800/,
       /replay:\s*\{[^}]*amount_krw:\s*600/,
-      /relation_slot:\s*\{[^}]*amount_krw:\s*1000/s,
+      /relation_slot:\s*\{[^}]*amount_krw:\s*1000/,
       /FREE_RELATION_SLOTS\s*=\s*2/,
     ]),
     'feature-prices.ts: hapcard 1000 / whatif 800 / replay 600 / relation_slot 1000 KRW, free slots 2',
