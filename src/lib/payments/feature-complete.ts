@@ -139,7 +139,8 @@ export async function confirmFeaturePaymentForUser(input: {
     p_feature_id: input.feature,
     p_feature_ref: input.ref,
     p_amount_krw: price.amount_krw,
-    p_receipt_url: toss.receipt?.url ?? null,
+    // 생략 시 SQL default null — gen types 는 default 인자를 optional(undefined)로만 출력
+    p_receipt_url: toss.receipt?.url ?? undefined,
     p_confirmed_at: toss.approvedAt ?? new Date().toISOString(),
   });
   if (rpcError) {

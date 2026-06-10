@@ -49,12 +49,11 @@ export async function POST(request: Request) {
 
   const db = supabase as unknown as SupabaseClient;
   const service = createServiceRoleClient();
-  const serviceDb = service as unknown as SupabaseClient;
 
   // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
   // count 게이트보다 먼저: 유저가 인연을 지워 무료 구간(<2)으로 내려가도 paid 고아는
   // 반드시 전달돼야 한다(돈 받은 건 반드시 제공). 복구된 인연은 이어지는 count 에 반영된다.
-  await recoverPaidPendings(service, serviceDb, user.id);
+  await recoverPaidPendings(service, user.id);
 
   // 슬롯 게이트 (ADR-039 Amended, 모델 B) — 현재 보유 행 수 기준. 판정 불가 시 등록 금지.
   const { count, error: countError } = await db
@@ -74,19 +73,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, relation_id: relationId });
   }
 
-  return handlePaidSlot(service, serviceDb, user.id, parsed.data);
+  return handlePaidSlot(service, user.id, parsed.data);
 }
 
 // 유료 슬롯 경로 (3번째 인연부터) — draft 스테이징 후 하이브리드 과금.
 // LLM 선생성 비용이 없으므로 checkCashGenLimit 은 적용하지 않는다 (ADR-039 Amended).
 async function handlePaidSlot(
   service: ReturnType<typeof createServiceRoleClient>,
-  serviceDb: SupabaseClient,
   userId: string,
   draft: RelationCreate,
 ) {
   // 초안 스테이징 — 현금 결제(비동기 토스 리다이렉트) 동안 draft 를 서버에 보존
-  const { data: stagedRows, error: stageError } = await serviceDb
+  const { data: stagedRows, error: stageError } = await service
     .from('pending_relation_registrations')
     .insert({ user_id: userId, draft })
     .select('pending_id');
@@ -111,7 +109,7 @@ async function handlePaidSlot(
     }
 
     // free | unlocked — 즉시 머티리얼라이즈. 신규 pending 이므로 null(삭제 소비) 도달 불가.
-    const relationId = await materializeRelationSlot(serviceDb, userId, pendingId);
+    const relationId = await materializeRelationSlot(service, userId, pendingId);
     if (!relationId) return apiErrorResponse('INTERNAL_ERROR', '', 500);
     return NextResponse.json({ ok: true, relation_id: relationId });
   } catch (err) {
@@ -142,7 +140,6 @@ async function handlePaidSlot(
 // 환불된 토큰경로 pending 은 ledger 기준(isFeatureUnlocked)으로는 true 라 무료 슬롯이 돼버린다.
 async function recoverPaidPendings(
   service: ReturnType<typeof createServiceRoleClient>,
-  serviceDb: SupabaseClient,
   userId: string,
 ) {
   try {
@@ -165,7 +162,7 @@ async function recoverPaidPendings(
     if (paidPendingIds.length === 0) return;
 
     // 결제된 것 중 아직 머티리얼라이즈 안 된 것만 조회 (대부분 이미 처리 → 빈 결과).
-    const { data: pendings, error: pendingsError } = await serviceDb
+    const { data: pendings, error: pendingsError } = await service
       .from('pending_relation_registrations')
       .select('pending_id')
       .eq('user_id', userId)
@@ -175,7 +172,7 @@ async function recoverPaidPendings(
 
     for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {
       try {
-        await materializeRelationSlot(serviceDb, userId, row.pending_id);
+        await materializeRelationSlot(service, userId, row.pending_id);
       } catch (itemErr) {
         // 한 고아의 실패가 나머지 paid 고아 복구를 막지 않게 격리한다.
         console.error('relation_slot_recovery_item_failed', {

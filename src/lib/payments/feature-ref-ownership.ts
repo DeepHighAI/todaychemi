@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { Database } from '@/types/database.types';
+
 import type { FeatureId } from './feature-prices';
 
-// whatif_results 가 아직 생성 타입(database.types.ts)에 없어 untyped SupabaseClient 사용
-// (src/lib/whatif/builder.ts 와 동일 우회). 여기서는 존재 검증만 하므로 행 타입 손실 무방.
-type ServiceClient = SupabaseClient;
+type ServiceClient = SupabaseClient<Database>;
 
 const REPLAY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

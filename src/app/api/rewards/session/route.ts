@@ -21,7 +21,8 @@ export async function POST() {
     const service = createServiceRoleClient();
     const { data: reward, error } = await service.rpc('award_free_talisman_session_rewards', {
       uid: user.id,
-      p_auth_created_at: user.created_at ?? null,
+      // 생략 시 SQL default null — gen types 는 default 인자를 optional(undefined)로만 출력
+      p_auth_created_at: user.created_at ?? undefined,
       p_policy_effective_at: FREE_TALISMAN_POLICY_EFFECTIVE_AT,
     });
 

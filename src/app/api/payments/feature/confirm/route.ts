@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { confirmFeaturePaymentForUser } from '@/lib/payments/feature-complete';
 import { PaymentFlowError } from '@/lib/payments/complete';
@@ -83,8 +82,7 @@ export async function GET(request: NextRequest) {
   if (feature === 'relation_slot') {
     try {
       const pendingId = ref.split(':')[1] ?? '';
-      const serviceDb = createServiceRoleClient() as unknown as SupabaseClient;
-      await materializeRelationSlot(serviceDb, user.id, pendingId);
+      await materializeRelationSlot(createServiceRoleClient(), user.id, pendingId);
     } catch (err) {
       const reportableError =
         err instanceof Error

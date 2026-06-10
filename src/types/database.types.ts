@@ -291,54 +291,6 @@ export type Database = {
           },
         ]
       }
-      legal_consents: {
-        Row: {
-          age_confirmed: boolean
-          auth_user_id: string | null
-          claimed_at: string | null
-          consent_id: string
-          consented_at: string
-          created_at: string
-          expires_at: string
-          flow: string
-          privacy_version: string
-          provider: string | null
-          terms_version: string
-          token_hash: string
-          updated_at: string
-        }
-        Insert: {
-          age_confirmed?: boolean
-          auth_user_id?: string | null
-          claimed_at?: string | null
-          consent_id?: string
-          consented_at?: string
-          created_at?: string
-          expires_at: string
-          flow: string
-          privacy_version: string
-          provider?: string | null
-          terms_version: string
-          token_hash: string
-          updated_at?: string
-        }
-        Update: {
-          age_confirmed?: boolean
-          auth_user_id?: string | null
-          claimed_at?: string | null
-          consent_id?: string
-          consented_at?: string
-          created_at?: string
-          expires_at?: string
-          flow?: string
-          privacy_version?: string
-          provider?: string | null
-          terms_version?: string
-          token_hash?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       hapcard_replays: {
         Row: {
           content: Json
@@ -387,6 +339,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      hapcard_score_snapshots: {
+        Row: {
+          compat_score: number
+          created_at: string
+          mode: string
+          prompt_version: string
+          relation_id: string
+          score_breakdown: Json
+          scoring_version: string
+          target_date: string
+          user_id: string
+        }
+        Insert: {
+          compat_score: number
+          created_at?: string
+          mode: string
+          prompt_version: string
+          relation_id: string
+          score_breakdown: Json
+          scoring_version: string
+          target_date: string
+          user_id: string
+        }
+        Update: {
+          compat_score?: number
+          created_at?: string
+          mode?: string
+          prompt_version?: string
+          relation_id?: string
+          score_breakdown?: Json
+          scoring_version?: string
+          target_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hapcard_score_snapshots_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
           },
         ]
       }
@@ -639,6 +635,54 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_consents: {
+        Row: {
+          age_confirmed: boolean
+          auth_user_id: string | null
+          claimed_at: string | null
+          consent_id: string
+          consented_at: string
+          created_at: string
+          expires_at: string
+          flow: string
+          privacy_version: string
+          provider: string | null
+          terms_version: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          age_confirmed?: boolean
+          auth_user_id?: string | null
+          claimed_at?: string | null
+          consent_id?: string
+          consented_at?: string
+          created_at?: string
+          expires_at: string
+          flow: string
+          privacy_version: string
+          provider?: string | null
+          terms_version: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          age_confirmed?: boolean
+          auth_user_id?: string | null
+          claimed_at?: string | null
+          consent_id?: string
+          consented_at?: string
+          created_at?: string
+          expires_at?: string
+          flow?: string
+          privacy_version?: string
+          provider?: string | null
+          terms_version?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       llm_cost_tracking: {
         Row: {
           call_count: number
@@ -772,6 +816,48 @@ export type Database = {
           },
         ]
       }
+      pending_relation_registrations: {
+        Row: {
+          created_at: string
+          draft: Json
+          materialized_at: string | null
+          pending_id: string
+          relation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          draft: Json
+          materialized_at?: string | null
+          pending_id?: string
+          relation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          draft?: Json
+          materialized_at?: string | null
+          pending_id?: string
+          relation_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_relation_registrations_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "pending_relation_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       prompt_versions: {
         Row: {
           canary_ratio: number | null
@@ -878,6 +964,48 @@ export type Database = {
           },
           {
             foreignKeyName: "relation_charts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      relation_memos: {
+        Row: {
+          body: string
+          created_at: string
+          memo_id: string
+          relation_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          memo_id?: string
+          relation_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          memo_id?: string
+          relation_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relation_memos_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "relations"
+            referencedColumns: ["relation_id"]
+          },
+          {
+            foreignKeyName: "relation_memos_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1083,39 +1211,83 @@ export type Database = {
         }
         Relationships: []
       }
+      whatif_results: {
+        Row: {
+          cache_key: string
+          chart_hash: string
+          content: Json
+          created_at: string
+          llm_model: string
+          prompt_version: string
+          type: string
+          user_id: string
+          whatif_id: string
+        }
+        Insert: {
+          cache_key: string
+          chart_hash: string
+          content: Json
+          created_at?: string
+          llm_model: string
+          prompt_version: string
+          type: string
+          user_id: string
+          whatif_id?: string
+        }
+        Update: {
+          cache_key?: string
+          chart_hash?: string
+          content?: Json
+          created_at?: string
+          llm_model?: string
+          prompt_version?: string
+          type?: string
+          user_id?: string
+          whatif_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatif_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      confirm_feature_payment: {
+      award_free_talisman_session_rewards: {
         Args: {
-          p_amount_krw: number
-          p_confirmed_at?: string | null
-          p_feature_id: string
-          p_feature_ref: string
-          p_receipt_url?: string | null
-          p_toss_order_id: string
-          p_toss_payment_key: string
+          p_auth_created_at?: string
+          p_policy_effective_at?: string
           uid: string
         }
-        Returns: string
+        Returns: Json
       }
       award_hapcard_share_reward: {
         Args: {
           p_channel: string
           p_share_id: string
-          p_webhook_resource_id?: string | null
+          p_webhook_resource_id?: string
         }
         Returns: Json
       }
-      award_free_talisman_session_rewards: {
+      confirm_feature_payment: {
         Args: {
-          p_auth_created_at?: string | null
-          p_policy_effective_at?: string
+          p_amount_krw: number
+          p_confirmed_at?: string
+          p_feature_id: string
+          p_feature_ref: string
+          p_receipt_url?: string
+          p_toss_order_id: string
+          p_toss_payment_key: string
           uid: string
         }
-        Returns: Json
+        Returns: string
       }
       deduct_tokens: {
         Args: { delta: number; reason: string; ref?: string; uid: string }
@@ -1124,6 +1296,23 @@ export type Database = {
       deduct_tokens_once: {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: Json
+      }
+      match_classics: {
+        Args: {
+          filter_statuses: string[]
+          match_count: number
+          query_embedding: string
+        }
+        Returns: {
+          asset_id: string
+          modern_translation: string
+          original_reading: string
+          original_text: string
+          similarity: number
+          source_chapter: string
+          source_title: string
+          topic_tags: string[]
+        }[]
       }
       purge_deleted_users: { Args: never; Returns: undefined }
       refund_tokens: {

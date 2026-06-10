@@ -1,10 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { Database } from '@/types/database.types';
 import { RelationCreateSchema } from '@/types/relation';
 import {
   insertRelationAndComputeChart,
   RelationInsertError,
 } from '@/lib/relations/insert';
+
+type ServiceClient = SupabaseClient<Database>;
 
 // 유료 슬롯 인연 머티리얼라이즈 (ADR-039 Amended — 모델 C: 선생성 후 결제).
 //
@@ -18,7 +21,7 @@ import {
 // service-role 클라이언트 전제 — RLS 우회되므로 모든 조회·갱신에 user_id 를 명시 핀.
 // 반환: relation_id. 삭제로 소비 완료된 슬롯은 null.
 export async function materializeRelationSlot(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   pendingId: string,
 ): Promise<string | null> {
@@ -94,7 +97,7 @@ type PendingRow = {
 };
 
 async function fetchPending(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   pendingId: string,
 ): Promise<PendingRow> {
@@ -117,7 +120,7 @@ async function fetchPending(
 // 머티리얼라이즈 기록이 있는 pending 의 수렴 처리:
 // relation_id NULL = 삭제로 소비 완료 → null. 행 부재 = 크래시 복구 재INSERT.
 async function resolveMaterialized(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   pending: PendingRow,
 ): Promise<string | null> {

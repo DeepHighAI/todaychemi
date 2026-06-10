@@ -62,8 +62,9 @@ describe('Database types', () => {
 
   it('free talisman session reward RPC exposes expected args', () => {
     type Args = Database['public']['Functions']['award_free_talisman_session_rewards']['Args'];
+    // gen types 는 SQL default 인자를 optional(undefined)로만 출력 — null 은 생략으로 표현
     expectTypeOf<Args>().toEqualTypeOf<{
-      p_auth_created_at?: string | null;
+      p_auth_created_at?: string;
       p_policy_effective_at?: string;
       uid: string;
     }>();
@@ -73,5 +74,20 @@ describe('Database types', () => {
     type Row = Database['public']['Tables']['legal_consents']['Row'];
     expectTypeOf<Row>().toHaveProperty('token_hash');
     expectTypeOf<Row>().not.toHaveProperty('token');
+  });
+
+  it('pending_relation_registrations Row 가 생성 타입에 존재 (ADR-039 §9)', () => {
+    type Row = Database['public']['Tables']['pending_relation_registrations']['Row'];
+    expectTypeOf<Row>().toHaveProperty('pending_id');
+    expectTypeOf<Row['materialized_at']>().toEqualTypeOf<string | null>();
+    expectTypeOf<Row['relation_id']>().toEqualTypeOf<string | null>();
+  });
+
+  it('토큰 멱등 RPC(deduct/refund_tokens_once)가 생성 타입에 존재', () => {
+    type DeductArgs = Database['public']['Functions']['deduct_tokens_once']['Args'];
+    type RefundArgs = Database['public']['Functions']['refund_tokens_once']['Args'];
+    expectTypeOf<DeductArgs>().toHaveProperty('uid');
+    expectTypeOf<DeductArgs>().toHaveProperty('reason');
+    expectTypeOf<RefundArgs>().toHaveProperty('ref');
   });
 });

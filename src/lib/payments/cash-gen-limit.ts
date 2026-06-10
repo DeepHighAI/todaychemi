@@ -5,9 +5,6 @@ import { todayKST } from '@/lib/today/kst-date';
 
 type ServiceClient = SupabaseClient<Database>;
 
-// whatif_results 는 stale 한 database.types.ts 에 아직 없음 — whatif 라우트(route.ts:82)와 동일하게
-// 느슨한 SupabaseClient 로 캐스트해 카운트 쿼리한다. Phase 6 regen 시 정식 타입 복원.
-
 // 모델 C 의 대가(선생성 LLM 비용) 완충. 잔액 부족(pay_required) 경로에서만 호출한다.
 // 미결제 선생성 = 오늘 생성된 결과 행 중 부적 차감도 현금 확정도 없는 것.
 //   unpaid = generatedToday − freeUseToday − confirmedToday  (정산된 생성은 한도에서 제외)
@@ -49,7 +46,7 @@ export async function checkCashGenLimit(
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gte('created_at', dayStart),
-    (service as unknown as SupabaseClient)
+    service
       .from('whatif_results')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
