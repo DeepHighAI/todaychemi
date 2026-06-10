@@ -36,6 +36,7 @@
 ### runbooks/
 - [launch_opening.md](runbooks/launch_opening.md) — 서비스 오픈 당일 Vercel/Supabase/Toss/OpenAI/Sentry 게이트와 롤백 절차
 - [external_launch_settings.md](runbooks/external_launch_settings.md) — Vercel/Supabase/OpenAI/Toss/Sentry 외부 설정값 가이드
+- [manual_migration_apply.md](runbooks/manual_migration_apply.md) — Dashboard SQL 직접 적용 + migration repair 절차
 - [release_canary.md](runbooks/release_canary.md)
 - [sre_routine.md](runbooks/sre_routine.md)
 - [openai_outage.md](runbooks/openai_outage.md)
