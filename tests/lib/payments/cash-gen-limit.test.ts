@@ -10,14 +10,19 @@ const USER_ID = 'user-uuid-001';
 // 각 count 쿼리는 .select('*',{count,head}).eq()*.[in()].gte('created_at',start) 형태 — gte 가 종단.
 function makeService(counts: Record<string, number>) {
   const fromCalls: string[] = [];
+  const inCalls: Array<{ table: string; col: string; vals: unknown }> = [];
   const from = vi.fn((table: string) => {
     fromCalls.push(table);
     const builder: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'in']) builder[m] = vi.fn(() => builder);
+    for (const m of ['select', 'eq']) builder[m] = vi.fn(() => builder);
+    builder.in = vi.fn((col: string, vals: unknown) => {
+      inCalls.push({ table, col, vals });
+      return builder;
+    });
     builder.gte = vi.fn(() => Promise.resolve({ count: counts[table] ?? 0, error: null }));
     return builder;
   });
-  return { service: { from } as never, from, fromCalls };
+  return { service: { from } as never, from, fromCalls, inCalls };
 }
 
 beforeEach(() => {
@@ -79,6 +84,17 @@ describe('checkCashGenLimit (일일 미결제 선생성 한도)', () => {
         'payments',
       ]),
     );
+  });
+
+  it('확정결제 차감은 LLM 3피처만 집계 — relation_slot 현금결제가 한도를 부풀리지 않는다', async () => {
+    const { service, inCalls } = makeService({});
+
+    await checkCashGenLimit(service, USER_ID);
+
+    // relation_slot 결제는 생성(hapcards/whatif/replays) 행이 없으므로
+    // confirmed 차감에 포함되면 unpaid 가 과소 계산되어 선생성 한도가 느슨해진다.
+    const paymentsFilter = inCalls.find((c) => c.table === 'payments' && c.col === 'feature_id');
+    expect(paymentsFilter?.vals).toEqual(['hapcard', 'whatif', 'replay']);
   });
 
   it('opts.limit 로 한도를 덮어쓸 수 있다', async () => {

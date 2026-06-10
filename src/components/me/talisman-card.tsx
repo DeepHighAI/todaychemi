@@ -19,6 +19,8 @@ const REASON_LABEL: Record<string, string> = {
   replay_refund: '케미 다시 맞추기 환불',
   whatif_use: '또 다른 나',
   whatif_refund: '또 다른 나 환불',
+  relation_slot_use: '인연 등록',
+  relation_slot_refund: '인연 등록 환불',
   refund: '환불',
   bonus: '보너스',
 };

@@ -14,6 +14,9 @@ type ServiceClient = SupabaseClient<Database>;
 export const DEFAULT_CASH_GEN_DAILY_LIMIT = 5;
 
 const FREE_USE_REASONS = ['hapcard_use', 'whatif_use', 'replay_use'];
+// LLM 선생성이 있는 피처만 — relation_slot(인연 등록) 결제는 생성 행이 없어
+// confirmed 차감에 포함되면 unpaid 가 과소 계산된다 (한도 느슨해짐).
+const LLM_GEN_FEATURES = ['hapcard', 'whatif', 'replay'];
 
 export interface CashGenLimitResult {
   allowed: boolean;
@@ -69,13 +72,14 @@ export async function checkCashGenLimit(
     .gte('created_at', dayStart);
   const freeUse = freeUseCount ?? 0;
 
-  // 오늘 확정된 피처 현금결제.
+  // 오늘 확정된 피처 현금결제 (LLM 생성 피처만).
   const { count: confirmedCount } = await service
     .from('payments')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('charge_type', 'feature_use')
     .eq('status', 'confirmed')
+    .in('feature_id', LLM_GEN_FEATURES)
     .gte('created_at', dayStart);
   const confirmed = confirmedCount ?? 0;
 
