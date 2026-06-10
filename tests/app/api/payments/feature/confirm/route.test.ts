@@ -229,6 +229,27 @@ describe('GET /api/payments/feature/confirm — relation_slot 머티리얼라이
     expect(decodeURIComponent(res.headers.get('location') ?? '')).toContain(`paid=${SLOT_REF}`);
   });
 
+  it('shape 위반 ref(relation_slot:비정형) → 머티리얼라이즈 스킵 + Sentry, fail redirect 없이 진행', async () => {
+    const badRefs = ['relation_slot:', 'relation_slot:a:b', 'garbage'];
+    for (const badRef of badRefs) {
+      vi.clearAllMocks();
+      vi.mocked(createClient).mockResolvedValue(makeClient() as never);
+      vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
+        status: 'confirmed',
+        feature: 'relation_slot',
+        ref: badRef,
+      });
+
+      const res = await GET(url({ ...SLOT_PARAMS, ref: badRef }));
+
+      // 돈은 이미 확정 — 절대 fail redirect 금지, 다만 비정형 ref 로 materialize 시도 금지
+      expect(materializeRelationSlot).not.toHaveBeenCalled();
+      expect(Sentry.captureException).toHaveBeenCalled();
+      expect(res.status).toBe(303);
+      expect(res.headers.get('location') ?? '').not.toContain('/payments/fail');
+    }
+  });
+
   it('비 relation_slot 피처(hapcard)는 머티리얼라이즈 미호출', async () => {
     vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
       status: 'confirmed',

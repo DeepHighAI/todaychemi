@@ -81,8 +81,13 @@ export async function GET(request: NextRequest) {
   // 머티리얼라이즈 고아는 POST /api/relations 의 lazy recovery 가 다음 시도에서 전달한다.
   if (feature === 'relation_slot') {
     try {
-      const pendingId = ref.split(':')[1] ?? '';
-      await materializeRelationSlot(createServiceRoleClient(), user.id, pendingId);
+      // shape 방어: ref 는 relation_slot:{pending_id} 2-part 여야 한다. confirm RPC 가
+      // 결제 row 의 feature_ref 일치를 검증하므로 정상 흐름에선 위반 불가 — 위반 = 이상 신호.
+      const slotParts = ref.split(':');
+      if (slotParts.length !== 2 || slotParts[0] !== 'relation_slot' || !slotParts[1]) {
+        throw new Error('relation_slot ref shape invalid at confirm');
+      }
+      await materializeRelationSlot(createServiceRoleClient(), user.id, slotParts[1]);
     } catch (err) {
       const reportableError =
         err instanceof Error
