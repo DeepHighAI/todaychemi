@@ -113,16 +113,18 @@ export async function GET(request: NextRequest) {
 | 라우트 | 역할 |
 |---|---|
 | `GET /api/me/wallet` | 보유 부적, 최근 원장, 이번 달 사용량 + 최근 14일 사용량 조회 |
-| `POST /api/payments/feature/init` | 기능(`hapcard`/`whatif`/`replay`)과 `feature_ref` 소유권을 확인하고 pending feature payment를 생성 또는 재사용 |
+| `POST /api/payments/feature/init` | 기능(`hapcard`/`whatif`/`replay`/`relation_slot`)과 `feature_ref` 소유권을 확인하고 pending feature payment를 생성 또는 재사용 |
 | `GET /api/payments/feature/confirm?paymentKey=&orderId=&amount=` | 서버 저장 금액 검증 후 Toss confirm + `confirm_feature_payment` RPC로 기능 결제 확정 |
 | `FeaturePaySheet` | 기능 화면 안에서 V2 Payment Widget 렌더링 및 `requestPayment` |
 | `GET /payments/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
 
-기능 가격 카탈로그: 케미카드 1,000원, 만약에 우리 800원, 케미 다시 맞추기 600원 (2026-06-07 §1.1 D6 개정 — 앱인토스 IAP 수수료 반영, 웹·미니앱 통일). 단일 출처는 `src/lib/payments/feature-prices.ts`.
+기능 가격 카탈로그: 케미카드 1,000원, 만약에 우리 800원, 케미 다시 맞추기 600원, 인연 등록(3번째+) 1,000원 (2026-06-07 §1.1 D6 + 2026-06-10 relation_slot 개정 — 앱인토스 IAP 수수료 반영, 웹·미니앱 통일). 단일 출처는 `src/lib/payments/feature-prices.ts` (`FEATURE_PRICES_KRW` + `FREE_RELATION_SLOTS`).
 
-무료 부적 잔액이 충분하면 케미카드 `10p`, 케미 다시 맞추기 `6p`, 만약에 우리 `8p`를 서버에서 `token_ledger` 차감/환불/idempotency로 처리한다(1부적 = 100원 등가). 잔액이 부족하면 현금 결제 후 기능 잠금 해제만 확정하며, 유료 결제로 `token_ledger.reason='purchase'` 적립을 만들지 않는다. 캐시 적중 또는 이미 결제 완료된 `feature_ref`는 신규 차감/결제하지 않는다.
+무료 부적 잔액이 충분하면 케미카드 `10p`, 케미 다시 맞추기 `6p`, 만약에 우리 `8p`, 인연 등록 `10p`를 서버에서 `token_ledger` 차감/환불/idempotency로 처리한다(1부적 = 100원 등가). 잔액이 부족하면 현금 결제 후 기능 잠금 해제만 확정하며, 유료 결제로 `token_ledger.reason='purchase'` 적립을 만들지 않는다. 캐시 적중 또는 이미 결제 완료된 `feature_ref`는 신규 차감/결제하지 않는다.
 
 원자성은 **모델 C**(선생성 → 성공 시 결제): 본문을 먼저 생성·보류한 뒤 무료 차감 불가 시 402로 결제를 요구하고, confirm 후 동일 요청 재호출로 잠금이 해제된다(빌드 실패 시 `charged` 플래그로 환불). 미결제 선생성 누적은 일일 `CASH_GEN_DAILY_LIMIT`(기본 5, 초과 시 429)로 제한한다. **잠금 단일 진실은 `isFeatureUnlocked`** — 본문을 반환하는 GET 라우트(`ohaeng-interpretation`·`role-analysis`)도 hapcard `cache_key`로 게이트를 통과해야 한다(미결제 본문 유출 차단). `snapshots`·OG·share는 점수·메타데이터만 노출하므로 게이트하지 않는다. 상세 결정: `docs/adr/ADR-039-pay-per-use-billing.md`.
+
+**인연 등록 슬롯(`relation_slot`, ADR-039 §9)** 은 모델 C의 draft-stage 변형이다: 인연 2명까지 무료, 3번째부터 검증된 draft 를 `pending_relation_registrations` 에 스테이징(`feature_ref = relation_slot:{pending_id}`)한 뒤 부적 경로는 즉시, 현금 경로는 confirm 직후 머티리얼라이즈(relations INSERT)한다. LLM 선생성 비용이 없어 `CASH_GEN_DAILY_LIMIT` 은 적용하지 않으며, confirm 후 머티리얼라이즈 실패 고아는 다음 유료 등록 시도에서 confirmed 결제 기준으로 lazy recovery 된다.
 
 ---
 

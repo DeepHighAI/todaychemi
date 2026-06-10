@@ -365,8 +365,8 @@ create table public.payments (
   amount_krw       int     not null,
   token_amount     int,                      -- legacy token-pack only; feature_use에서는 NULL
   charge_type      text    not null default 'token_charge',  -- 'token_charge'(legacy) | 'feature_use'
-  feature_id       text    check (feature_id is null or feature_id in ('hapcard', 'whatif', 'replay')),
-  feature_ref      text,                     -- feature_use: cache_key | replay:{id}:{jinjin_date}
+  feature_id       text    check (feature_id is null or feature_id in ('hapcard', 'whatif', 'replay', 'relation_slot')),  -- relation_slot: 20260610000000
+  feature_ref      text,                     -- feature_use: cache_key | replay:{id}:{jinjin_date} | relation_slot:{pending_id}
   status           text    not null check (status in ('pending', 'confirmed', 'failed', 'refunded', 'tampered', 'invalid')),
   failure_code     text,
   failure_message  text,
@@ -395,6 +395,34 @@ create policy "payments_own_read" on public.payments for select using (auth.uid(
 -- supabase/migrations/20260601000000_feature_pay_per_use.sql
 create or replace function public.confirm_feature_payment(...)
 returns text;
+```
+
+### pending_relation_registrations — 인연 등록 슬롯 스테이징 (ADR-039 §9)
+
+인연 등록 슬롯 과금(모델 B)의 draft 스테이징 테이블. `POST /api/relations` 는 보유 인연이
+`FREE_RELATION_SLOTS`(=2) 이상이면 검증된 draft 를 여기 스테이징한 뒤 과금하고
+(`feature_ref = relation_slot:{pending_id}`), 부적/현금 결제 성공 시 머티리얼라이즈
+(relations INSERT)한다. 행은 머티리얼라이즈 후에도 삭제하지 않고 `materialized_at` 으로
+마킹만 한다(confirm 재진입 ref 소유 검증 + 멱등). `relations` 읽기 사이트는 변경 없음.
+
+```sql
+-- supabase/migrations/20260610000000_relation_slot_registration.sql
+create table public.pending_relation_registrations (
+  pending_id      uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references public.users(user_id) on delete cascade,
+  draft           jsonb not null,            -- 검증된 RelationCreate 페이로드
+  relation_id     uuid references public.relations(relation_id) on delete set null,
+  materialized_at timestamptz,               -- 멱등 마커. NULL+confirmed 결제 = lazy recovery 대상
+  created_at      timestamptz not null default now()
+);
+create index pending_relation_registrations_user_created_idx
+  on public.pending_relation_registrations (user_id, created_at desc);
+alter table public.pending_relation_registrations enable row level security;
+create policy "pending_relation_registrations_own" on public.pending_relation_registrations
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- 같은 마이그레이션에서 token_ledger 멱등 부분 유니크 인덱스 2개와
+-- deduct_tokens_once/refund_tokens_once IN-list 에 'relation_slot_use'/'relation_slot_refund' 추가.
 ```
 
 ---

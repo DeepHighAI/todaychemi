@@ -185,7 +185,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **ADR-035** 점수 결정형 — LLM은 점수 산출에 개입 금지 (`compatibility_scoring_spec.md` 참조)
 - **ADR-037** 기술 스택 잠금 (`tech_stack.md` 참조)
 - **ADR-038** Hanja 노출 금지 — UI display layer에서 한자 제거. RAG/DB verbatim 유지. `convertHanja()` safety-net 의무.
-- **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). (`docs/adr/ADR-039-pay-per-use-billing.md`)
+- **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). **Amended 2026-06-10 §9**: 인연 등록 슬롯(모델 B) — 2명까지 무료, 3번째부터 `relation_slot` 1,000원/10부적, 현재 보유 수 게이트(삭제 시 회복), draft 스테이징→머티리얼라이즈(claim-first 멱등+lazy recovery), cash-gen 한도 미적용. (`docs/adr/ADR-039-pay-per-use-billing.md`)
 
 ---
 
@@ -319,6 +319,7 @@ C:\DEV\SAJU\
 | 케미피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키), `합피드` |
 | 케미 다시 맞추기 (재해석) | `replay` | `reInterpret`, `다시합`, `그럴리 없어! 다시` |
 | 또 다른 나 (자기진단 6모드) | `whatif` (DiagnosticType) | `만약에 우리`, `마이플레이`, `만약합` |
+| 인연 슬롯 / 등록비 (3번째+ 1,000원) | `relation_slot` (feature_id) | `사람칸`, `person-slot`, `seat`, `quota` |
 
 새로운 도메인 용어 추가 시 본 표를 갱신하며 §1.1 승인 절차 적용.
 

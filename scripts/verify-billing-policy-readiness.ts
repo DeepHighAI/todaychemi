@@ -53,8 +53,10 @@ function main() {
       /hapcard:\s*\{[^}]*amount_krw:\s*1000/,
       /whatif:\s*\{[^}]*amount_krw:\s*800/,
       /replay:\s*\{[^}]*amount_krw:\s*600/,
+      /relation_slot:\s*\{[^}]*amount_krw:\s*1000/s,
+      /FREE_RELATION_SLOTS\s*=\s*2/,
     ]),
-    'feature-prices.ts: hapcard 1000 / whatif 800 / replay 600 KRW',
+    'feature-prices.ts: hapcard 1000 / whatif 800 / replay 600 / relation_slot 1000 KRW, free slots 2',
   );
 
   addResult(
@@ -107,8 +109,35 @@ function main() {
     'paid routes refund free-token spend on build failure',
     routeRefundsTokens('src/app/api/hapcards/route.ts', 'hapcard_refund')
       && routeRefundsTokens('src/app/api/whatif/[type]/route.ts', 'whatif_refund')
-      && routeRefundsTokens('src/app/api/hapcards/[id]/replay/route.ts', 'replay_refund'),
-    'hapcard/whatif/replay refund their free-token spend when generation fails after charge',
+      && routeRefundsTokens('src/app/api/hapcards/[id]/replay/route.ts', 'replay_refund')
+      && routeRefundsTokens('src/app/api/relations/route.ts', 'relation_slot_refund'),
+    'hapcard/whatif/replay/relation_slot refund their free-token spend when creation fails after charge',
+  );
+
+  const relationSlotMigration = 'supabase/migrations/20260610000000_relation_slot_registration.sql';
+  addResult(
+    results,
+    'relation_slot registration migration present (ADR-039 Amended)',
+    exists(relationSlotMigration)
+      && hasAll(readRequired(relationSlotMigration), [
+        'pending_relation_registrations',
+        "'relation_slot'",
+        "'relation_slot_use'",
+        "'relation_slot_refund'",
+      ]),
+    'migration stages drafts and whitelists relation_slot in payments CHECK + token_ledger idempotency',
+  );
+
+  addResult(
+    results,
+    'relations route gates 3rd+ registration behind relation_slot',
+    hasAll(readRequired('src/app/api/relations/route.ts'), [
+      'resolveFeatureCharge',
+      "'relation_slot'",
+      'FREE_RELATION_SLOTS',
+      'materializeRelationSlot',
+    ]),
+    'POST /api/relations counts owned relations and charges relation_slot from the 3rd one',
   );
 
   addResult(
@@ -123,8 +152,9 @@ function main() {
   console.log('');
   console.log('Pay-per-use billing policy (ADR-039):');
   console.log('- Token-bundle purchase removed; paid features charge at point of use.');
-  console.log('- Prices: hapcard 1000 / whatif 800 / replay 600 KRW (feature-prices.ts single source).');
+  console.log('- Prices: hapcard 1000 / whatif 800 / replay 600 / relation_slot 1000 KRW (feature-prices.ts single source).');
   console.log('- Free 부적 path refunds on build failure; cash path withholds body until paid.');
+  console.log('- Relations: first 2 free, 3rd+ charges relation_slot via staged pending drafts.');
 
   if (failed.length > 0) {
     console.error('\nBilling policy readiness FAIL');
