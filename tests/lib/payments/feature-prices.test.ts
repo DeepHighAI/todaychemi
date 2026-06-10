@@ -45,6 +45,14 @@ describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
     expect(FREE_RELATION_SLOTS).toBe(2);
   });
 
+  it('llm_generated 플래그 — LLM 선생성 피처(3종)만 true, relation_slot 은 false', () => {
+    // cash-gen 한도의 피처/reason 리스트가 이 플래그에서 파생된다 (3-list 드리프트 차단)
+    expect(FEATURE_PRICES_KRW.hapcard.llm_generated).toBe(true);
+    expect(FEATURE_PRICES_KRW.whatif.llm_generated).toBe(true);
+    expect(FEATURE_PRICES_KRW.replay.llm_generated).toBe(true);
+    expect(FEATURE_PRICES_KRW.relation_slot.llm_generated).toBe(false);
+  });
+
   it('FeatureIdSchema 는 4개 피처만 허용한다', () => {
     expect(FeatureIdSchema.safeParse('hapcard').success).toBe(true);
     expect(FeatureIdSchema.safeParse('whatif').success).toBe(true);

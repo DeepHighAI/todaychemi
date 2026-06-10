@@ -2,6 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database.types';
 import { todayKST } from '@/lib/today/kst-date';
+// 피처/reason 리스트는 가격 카탈로그의 llm_generated 플래그에서 파생 — relation_slot(인연 등록)
+// 결제는 생성 행이 없어 confirmed 차감에 포함되면 unpaid 가 과소 계산된다(한도 느슨해짐).
+import { LLM_FREE_USE_REASONS, LLM_GENERATED_FEATURES } from './feature-prices';
 
 type ServiceClient = SupabaseClient<Database>;
 
@@ -9,11 +12,6 @@ type ServiceClient = SupabaseClient<Database>;
 // 미결제 선생성 = 오늘 생성된 결과 행 중 부적 차감도 현금 확정도 없는 것.
 //   unpaid = generatedToday − freeUseToday − confirmedToday  (정산된 생성은 한도에서 제외)
 export const DEFAULT_CASH_GEN_DAILY_LIMIT = 5;
-
-const FREE_USE_REASONS = ['hapcard_use', 'whatif_use', 'replay_use'];
-// LLM 선생성이 있는 피처만 — relation_slot(인연 등록) 결제는 생성 행이 없어
-// confirmed 차감에 포함되면 unpaid 가 과소 계산된다 (한도 느슨해짐).
-const LLM_GEN_FEATURES = ['hapcard', 'whatif', 'replay'];
 
 export interface CashGenLimitResult {
   allowed: boolean;
@@ -65,7 +63,7 @@ export async function checkCashGenLimit(
     .from('token_ledger')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .in('reason', FREE_USE_REASONS)
+    .in('reason', LLM_FREE_USE_REASONS as string[])
     .gte('created_at', dayStart);
   const freeUse = freeUseCount ?? 0;
 
@@ -76,7 +74,7 @@ export async function checkCashGenLimit(
     .eq('user_id', userId)
     .eq('charge_type', 'feature_use')
     .eq('status', 'confirmed')
-    .in('feature_id', LLM_GEN_FEATURES)
+    .in('feature_id', LLM_GENERATED_FEATURES as string[])
     .gte('created_at', dayStart);
   const confirmed = confirmedCount ?? 0;
 

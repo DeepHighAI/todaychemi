@@ -97,6 +97,15 @@ describe('checkCashGenLimit (일일 미결제 선생성 한도)', () => {
     expect(paymentsFilter?.vals).toEqual(['hapcard', 'whatif', 'replay']);
   });
 
+  it('무료차감 reason 리스트도 카탈로그 llm_generated 에서 파생 ({feature}_use)', async () => {
+    const { service, inCalls } = makeService({});
+
+    await checkCashGenLimit(service, USER_ID);
+
+    const ledgerFilter = inCalls.find((c) => c.table === 'token_ledger' && c.col === 'reason');
+    expect(ledgerFilter?.vals).toEqual(['hapcard_use', 'whatif_use', 'replay_use']);
+  });
+
   it('opts.limit 로 한도를 덮어쓸 수 있다', async () => {
     const { service } = makeService({ hapcards: 3 });
 
