@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Json } from '@/types/database.types';
 
 import { createClient } from '@/lib/supabase/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
@@ -18,7 +18,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-    const db = supabase as unknown as SupabaseClient;
+    const db = supabase;
     const { data, error } = await db
       .from('users')
       .select('nickname, birth_date, birth_date_calendar, is_lunar_leap, birth_time_knowledge, birth_time, gender')
@@ -49,7 +49,7 @@ export async function PATCH(request: Request) {
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
   // 온보딩 여부 확인 — users row 없으면 404
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { data: existing, error: existingError } = await db
     .from('users')
     .select('user_id')
@@ -99,7 +99,7 @@ export async function PATCH(request: Request) {
     {
       user_id: user.id,
       chart_hash: computeResult.chart_hash,
-      chart_core: computeResult.chart_core,
+      chart_core: computeResult.chart_core as unknown as Json,
       theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
     },
     { onConflict: 'chart_hash' },

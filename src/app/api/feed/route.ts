@@ -20,7 +20,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
 
   // 1. 인연 목록 (created_at desc)
   const { data: relations, error: relErr } = await db

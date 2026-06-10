@@ -20,7 +20,7 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
 
   // 1. 인연 조회 (RLS가 타 소유자 차단 — null 반환)
   const relRes = await db
@@ -101,7 +101,7 @@ export async function DELETE(
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { error } = await db.from('relations').delete().eq('relation_id', id);
   if (error) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 

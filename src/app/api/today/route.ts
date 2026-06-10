@@ -206,7 +206,7 @@ export async function GET(request: Request) {
 
     async function resolveSelfBirth(): Promise<ChartBirthForYunse> {
       if (cachedSelfBirthResolved && cachedSelfBirth) return cachedSelfBirth;
-      cachedSelfBirth = await fetchUserBirthForYunse(supabase as unknown as SupabaseClient, userId);
+      cachedSelfBirth = await fetchUserBirthForYunse(supabase, userId);
       cachedSelfBirthResolved = true;
       return cachedSelfBirth;
     }
@@ -240,7 +240,7 @@ export async function GET(request: Request) {
       const cached = relationBirths.get(relationId);
       if (cached) return cached;
       const birth = await fetchRelationBirthForYunse(
-        supabase as unknown as SupabaseClient,
+        supabase,
         relationId,
       );
       relationBirths.set(relationId, birth);
@@ -342,7 +342,7 @@ export async function GET(request: Request) {
         if (!trace.failedPhase) return;
         const code = classifyTraceFailure(trace.failedPhase, trace.errorMessage);
         try {
-          const untypedDb = supabase as unknown as SupabaseClient;
+          const untypedDb = supabase;
           await untypedDb.from('error_events').insert({
             error_code: code,
             user_id: userId,

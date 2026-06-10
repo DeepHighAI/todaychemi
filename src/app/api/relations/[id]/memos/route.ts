@@ -21,7 +21,7 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
 
   const { data, error } = await db
     .from('relation_memos')
@@ -53,7 +53,7 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
 
   // 인연 소유권 pre-check (RLS가 타 소유자를 차단해 null 반환)
   const relRes = await db

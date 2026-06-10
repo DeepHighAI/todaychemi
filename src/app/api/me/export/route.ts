@@ -81,7 +81,7 @@ export async function GET() {
       email: user.email ?? null,
     },
   };
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const fromTable = db.from.bind(db) as unknown as (table: string) => ExportQuery;
 
   for (const config of EXPORT_TABLES) {

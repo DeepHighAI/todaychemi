@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database.types';
+import type { Database, Json } from '@/types/database.types';
 import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 import { fetchLatestRelationChartForVersion } from '@/lib/chart/queries';
 import { computeChart } from '@/lib/chart/compute';
@@ -92,7 +92,7 @@ export async function ensureRelationChartRow(
     console.error('[ensureRelationChart] computeChart failed', { relationId, error: safeError });
     // F3.3: error_events 테이블에 영구 기록 (운영 디버깅용)
     try {
-      const untypedDb = supabase as unknown as SupabaseClient;
+      const untypedDb = supabase;
       await untypedDb.from('error_events').insert({
         error_code: 'KASI_COMPUTE_FAIL',
         user_id: userId,
@@ -107,14 +107,13 @@ export async function ensureRelationChartRow(
     return null;
   }
 
-  // ChartCore → Json 캐스트 (relations/route.ts:81 동일 패턴)
-  const untypedDb = supabase as unknown as SupabaseClient;
-  const { error: upsertError } = await untypedDb.from('relation_charts').upsert(
+  // chart_core 는 ChartCore — 타입드 컬럼(Json)에 맞춰 캐스트.
+  const { error: upsertError } = await supabase.from('relation_charts').upsert(
     {
       relation_id: relationId,
       user_id: userId,
       chart_hash: computeResult.chart_hash,
-      chart_core: computeResult.chart_core,
+      chart_core: computeResult.chart_core as unknown as Json,
       theory_profile_version: theoryProfileVersion,
     },
     { onConflict: 'chart_hash' },

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Json } from '@/types/database.types';
 
 import { createClient } from '@/lib/supabase/server';
 import { OnboardingRequestSchema } from '@/types/onboarding';
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 INSERT (users 테이블 타입 해소 우회)
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { error } = await db.from('users').insert({
     user_id: user.id,
     nickname: parsed.data.nickname,
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     {
       user_id: user.id,
       chart_hash: computeResult.chart_hash,
-      chart_core: computeResult.chart_core,
+      chart_core: computeResult.chart_core as unknown as Json,
       theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
     },
     { onConflict: 'chart_hash' },

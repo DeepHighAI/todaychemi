@@ -23,7 +23,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { data, error } = await db
     .from('relations')
     .select('relation_id, nickname, mode, created_at')
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const service = createServiceRoleClient();
 
   // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).

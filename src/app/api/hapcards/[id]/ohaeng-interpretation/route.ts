@@ -41,7 +41,7 @@ export async function GET(
     return apiErrorResponse('UNAUTHORIZED', 'sign-in required', 401);
   }
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const hapcardRes = await db
     .from('hapcards')
     .select('hapcard_id,user_id,relation_id,mode,user_chart_hash,relation_chart_hash,cache_key,content')
@@ -102,8 +102,8 @@ export async function GET(
   }
 
   const interpretation = buildOhaengInterpretation({
-    self: (userChartRes.data as ChartRow).chart_core,
-    relation: (relationChartRes.data as ChartRow).chart_core,
+    self: (userChartRes.data as unknown as ChartRow).chart_core,
+    relation: (relationChartRes.data as unknown as ChartRow).chart_core,
     mode: hapcard.mode,
   });
 

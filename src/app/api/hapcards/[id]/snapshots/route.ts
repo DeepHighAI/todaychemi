@@ -49,7 +49,7 @@ export async function GET(
   const start = addDays(today, -3);
   const end = addDays(today, 3);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { data: rows, error: snapErr } = await db
     .from('hapcard_score_snapshots')
     .select('target_date, compat_score, created_at')

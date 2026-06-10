@@ -26,7 +26,7 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
 
   const { data: memo, error } = await db
     .from('relation_memos')
@@ -56,7 +56,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase as unknown as SupabaseClient;
+  const db = supabase;
   const { error } = await db.from('relation_memos').delete().eq('memo_id', memoId);
   if (error) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
