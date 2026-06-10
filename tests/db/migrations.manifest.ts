@@ -672,4 +672,25 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     kind: 'dml',
     description: 'legal_consents guest flow + provider constraint update',
   },
+  // ADR-039 Amended: 인연 등록 슬롯 과금 — 현금 결제(비동기) 동안 인연 초안을 스테이징
+  {
+    index: 20260610000000,
+    file: '20260610000000_relation_slot_registration.sql',
+    kind: 'table',
+    tableName: 'pending_relation_registrations',
+    columns: [
+      'pending_id',
+      'user_id',
+      'draft',
+      'relation_id',
+      'materialized_at',
+      'created_at',
+    ],
+    checkEnums: [],
+    foreignKeys: [
+      { col: 'user_id', refs: 'public.users' },
+      { col: 'relation_id', refs: 'public.relations' },
+    ],
+    rls: { enabled: true, policies: ['pending_relation_registrations_own'] },
+  },
 ];
