@@ -9,12 +9,19 @@ export const FEATURE_PRICES_KRW = {
   hapcard: { feature_id: 'hapcard', amount_krw: 1000, order_name: '케미카드 보기', token_cost: 10 },
   whatif: { feature_id: 'whatif', amount_krw: 800, order_name: '또 다른 나 보기', token_cost: 8 },
   replay: { feature_id: 'replay', amount_krw: 600, order_name: '케미 다시 맞추기', token_cost: 6 },
+  // ADR-039 Amended 2026-06-10: 인연 등록 슬롯 — 2명까지 무료, 3번째부터 과금 (모델 B)
+  relation_slot: {
+    feature_id: 'relation_slot',
+    amount_krw: 1000,
+    order_name: '인연 등록',
+    token_cost: 10,
+  },
 } as const;
 
 export type FeatureId = keyof typeof FEATURE_PRICES_KRW;
 export type FeaturePrice = (typeof FEATURE_PRICES_KRW)[FeatureId];
 
-export const FeatureIdSchema = z.enum(['hapcard', 'whatif', 'replay']);
+export const FeatureIdSchema = z.enum(['hapcard', 'whatif', 'replay', 'relation_slot']);
 
 // 서버 신뢰 단일 출처. 클라이언트가 보낸 feature 문자열은 반드시 이 함수로 검증한다.
 export function getFeaturePrice(id: string): FeaturePrice | null {
