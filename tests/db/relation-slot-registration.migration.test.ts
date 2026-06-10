@@ -26,6 +26,15 @@ describe('relation slot registration migration (ADR-039 Amended)', () => {
     }
     expect(LOWER).toContain('enable row level security');
     expect(SQL).toContain('"pending_relation_registrations_own"');
+    // 쓰기는 service-role 전용 — 클라이언트가 멱등 마커(materialized_at)를 변조 못 하게 SELECT 전용
+    expect(LOWER).toContain('for select');
+    expect(LOWER).not.toContain('for all');
+    // relations 삭제 시 FK set-null 스캔용 인덱스
+    expect(SQL).toContain('pending_relation_registrations_relation_id_idx');
+  });
+
+  it('구 feature_id CHECK 이름 드리프트를 적용 시점에 터뜨리는 가드를 포함한다', () => {
+    expect(LOWER).toContain('stale narrow payments feature_id check');
   });
 
   it('payments.feature_id CHECK 를 relation_slot 포함으로 재생성한다', () => {

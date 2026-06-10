@@ -230,6 +230,68 @@ describe('materializeRelationSlot', () => {
     );
   });
 
+  it('INSERT 실패 but 동시 시도가 같은 id 로 이미 전달 → un-claim 금지, 성공 수렴', async () => {
+    vi.mocked(insertRelationAndComputeChart).mockRejectedValue(
+      new RelationInsertError('relations insert failed: PGRST000', 'PGRST000'),
+    );
+    const { service, ops } = makeService({
+      'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
+      'pending_relation_registrations:update': [{ data: [{ pending_id: PENDING }], error: null }],
+      // un-claim 가드 조회: 행이 이미 존재 (동시 race 패자가 전달 완료)
+      'relations:select': [{ data: { relation_id: 'any' }, error: null }],
+    });
+
+    const relationId = await materializeRelationSlot(service, USER, PENDING);
+
+    expect(relationId).toEqual(expect.any(String));
+    // un-claim UPDATE 가 실행되지 않아야 한다 (클레임 1회만)
+    const updates = ops.filter((o) => o.op === 'update');
+    expect(updates).toHaveLength(1);
+  });
+
+  it('클레임 race 패배 후 재조회도 미머티리얼라이즈(승자 un-claim) → 중복 과금 방지 throw', async () => {
+    const { service } = makeService({
+      'pending_relation_registrations:select': [
+        { data: pendingRow(), error: null },
+        { data: pendingRow(), error: null }, // 재조회: 여전히 unclaimed
+      ],
+      'pending_relation_registrations:update': [{ data: [], error: null }],
+    });
+
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
+      'MATERIALIZE_RACE_UNRESOLVED',
+    );
+    expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
+  });
+
+  it('pending 조회 DB 에러 → throw, 클레임/INSERT 미진행', async () => {
+    const { service, ops } = makeService({
+      'pending_relation_registrations:select': [
+        { data: null, error: { code: 'PGRST000' } },
+      ],
+    });
+
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
+      'pending select failed',
+    );
+    expect(ops.filter((o) => o.op === 'update')).toHaveLength(0);
+    expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
+  });
+
+  it('수렴 경로 relations 조회 DB 에러 → throw (멱등 판단 불가 시 진행 금지)', async () => {
+    const { service } = makeService({
+      'pending_relation_registrations:select': [
+        { data: pendingRow({ relation_id: 'rel-uuid-9', materialized_at: '2026-06-10T00:00:00Z' }), error: null },
+      ],
+      'relations:select': [{ data: null, error: { code: 'PGRST000' } }],
+    });
+
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
+      'relations select failed',
+    );
+    expect(insertRelationAndComputeChart).not.toHaveBeenCalled();
+  });
+
   it('pending 없음(타인 소유 포함) → throw, 조회는 user_id 로 핀', async () => {
     const { service, ops } = makeService({
       'pending_relation_registrations:select': [{ data: null, error: null }],

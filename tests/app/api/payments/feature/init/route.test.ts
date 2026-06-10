@@ -111,6 +111,28 @@ describe('POST /api/payments/feature/init', () => {
     expect(body.payment.order_id).toBe('twoday_1_abcdef');
   });
 
+  it('relation_slot 신규 주문 — 인연 등록 1,000원 pending 주문 생성(201)', async () => {
+    const service = makeServiceClient();
+    vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(service.client);
+
+    const res = await POST(request({ feature: 'relation_slot', ref: 'relation_slot:pend-1' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(service.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        charge_type: 'feature_use',
+        feature_id: 'relation_slot',
+        feature_ref: 'relation_slot:pend-1',
+        amount_krw: 1000,
+        token_amount: null,
+        status: 'pending',
+      }),
+    );
+    expect(body.payment.order_name).toBe('인연 등록');
+  });
+
   it('클라이언트가 보낸 가격 필드는 무시(서버 신뢰)', async () => {
     const service = makeServiceClient();
     vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);

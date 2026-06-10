@@ -30,7 +30,8 @@ export default function RelationsModePage() {
   const [consent, setConsent] = useState(draft.consent);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pay, setPay] = useState<{ ref: string; amountKrw: number } | null>(null);
+  // amount 는 시트가 init 에서 권위값을 다시 받으므로 ref 만 보존한다.
+  const [pay, setPay] = useState<{ ref: string } | null>(null);
 
   const canSubmit = !!mode && consent;
 
@@ -74,10 +75,9 @@ export default function RelationsModePage() {
         const payBody = (await res.json().catch(() => null)) as {
           error?: { code?: string };
           ref?: string;
-          amount_krw?: number;
         } | null;
         if (payBody?.error?.code === 'PAYMENT_REQUIRED' && payBody.ref) {
-          setPay({ ref: payBody.ref, amountKrw: payBody.amount_krw ?? 0 });
+          setPay({ ref: payBody.ref });
           setSubmitting(false);
           return;
         }
@@ -164,7 +164,8 @@ export default function RelationsModePage() {
           }}
           // 정상 결제는 confirm 303 전면 리다이렉트로 떠난다 — onPaid 는 init 이
           // unlocked(이미 결제된 더블서브밋)를 반환한 경우의 전진용.
-          onPaid={() => router.push('/feed')}
+          // ?paid 를 붙여 feed 의 draft 리셋 효과(A2)가 이 경로에서도 동작하게 한다.
+          onPaid={() => router.push(`/feed?paid=${encodeURIComponent(pay.ref)}`)}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ create table public.token_ledger (
   ledger_id    uuid    primary key default gen_random_uuid(),
   user_id      uuid    not null references public.users(user_id) on delete cascade,
   delta        int     not null,            -- ?�수=충전, ?�수=차감
-  reason       text    not null,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'refund' | 'bonus'
+  reason       text    not null,            -- 'purchase' | 'hapcard_use' | 'replay_use' | 'replay_refund' | 'whatif_use' | 'whatif_refund' | 'relation_slot_use' | 'relation_slot_refund' | 'refund' | 'bonus'
   reference_id text,                        -- payment_id ?�는 hapcard_id
   balance_after int    not null,
   created_at   timestamptz not null default now()

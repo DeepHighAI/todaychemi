@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/supabase/service-role');
 vi.mock('@/lib/chart/compute');
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 // 슬롯 게이트는 라우트 단에서 mock — 게이트 내부는 feature-gate 자체 테스트가 커버.
 vi.mock('@/lib/payments/feature-gate');
 vi.mock('@/lib/relations/materialize');
@@ -123,6 +124,7 @@ function makeService(opts: {
   const pendingSelChain: Record<string, unknown> = {};
   pendingSelChain.eq = vi.fn(() => pendingSelChain);
   pendingSelChain.is = vi.fn(() => pendingSelChain);
+  pendingSelChain.limit = vi.fn(() => pendingSelChain);
   pendingSelChain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
     Promise.resolve(pendingsResult).then(res, rej);
   const pendingFrom = {
@@ -571,6 +573,27 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     );
     // 복구 후 신규 draft 는 자기 흐름대로 402
     expect(res.status).toBe(402);
+  });
+
+  it('A1 복구는 무료 구간(count<2)에서도 실행 — 인연 삭제로 내려가도 paid 고아 전달', async () => {
+    const client = makeClient({ relationCount: 0 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({
+      paidRefs: ['relation_slot:pend-orphan-7'],
+      pendings: [{ pending_id: 'pend-orphan-7' }],
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-001',
+      'pend-orphan-7',
+    );
+    // 현재 draft 는 무료 경로로 정상 등록
+    expect(res.status).toBe(200);
+    expect(client._insert).toHaveBeenCalledOnce();
   });
 
   it('A1 복구 실패 → relation_slot_recovery_failed 로깅 후 신규 등록 흐름 계속', async () => {

@@ -211,6 +211,24 @@ describe('GET /api/payments/feature/confirm — relation_slot 머티리얼라이
     expect(Sentry.captureException).toHaveBeenCalled();
   });
 
+  it('already_confirmed 재진입(브라우저 뒤로가기/새로고침)도 머티리얼라이즈 멱등 수렴', async () => {
+    vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
+      status: 'already_confirmed',
+      feature: 'relation_slot',
+      ref: SLOT_REF,
+    });
+
+    const res = await GET(url(SLOT_PARAMS));
+
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      USER_ID,
+      'pend-uuid-7',
+    );
+    expect(res.status).toBe(303);
+    expect(decodeURIComponent(res.headers.get('location') ?? '')).toContain(`paid=${SLOT_REF}`);
+  });
+
   it('비 relation_slot 피처(hapcard)는 머티리얼라이즈 미호출', async () => {
     vi.mocked(confirmFeaturePaymentForUser).mockResolvedValue({
       status: 'confirmed',

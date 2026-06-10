@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -13,7 +14,10 @@ import { insertRelationAndComputeChart } from '@/lib/relations/insert';
 import { materializeRelationSlot } from '@/lib/relations/materialize';
 import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
-import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+import { sanitizeErrorForLog, sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
+
+// 복구 스캔 상한 — pending 누적(ADR-039 §9 수용 리스크 ③)이 요청 경로를 무한히 키우지 않게 한다.
+const RECOVERY_SCAN_LIMIT = 20;
 
 export async function GET() {
   const supabase = await createClient();
@@ -47,6 +51,13 @@ export async function POST(request: Request) {
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
   const db = supabase as unknown as SupabaseClient;
+  const service = createServiceRoleClient();
+  const serviceDb = service as unknown as SupabaseClient;
+
+  // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
+  // count 게이트보다 먼저: 유저가 인연을 지워 무료 구간(<2)으로 내려가도 paid 고아는
+  // 반드시 전달돼야 한다(돈 받은 건 반드시 제공). 복구된 인연은 이어지는 count 에 반영된다.
+  await recoverPaidPendings(service, serviceDb, user.id);
 
   // 슬롯 게이트 (ADR-039 Amended, 모델 B) — 현재 보유 행 수 기준. 판정 불가 시 등록 금지.
   const { count, error: countError } = await db
@@ -66,18 +77,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, relation_id: relationId });
   }
 
-  return handlePaidSlot(user.id, parsed.data);
+  return handlePaidSlot(service, serviceDb, user.id, parsed.data);
 }
 
 // 유료 슬롯 경로 (3번째 인연부터) — draft 스테이징 후 하이브리드 과금.
 // LLM 선생성 비용이 없으므로 checkCashGenLimit 은 적용하지 않는다 (ADR-039 Amended).
-async function handlePaidSlot(userId: string, draft: RelationCreate) {
-  const service = createServiceRoleClient();
-  const serviceDb = service as unknown as SupabaseClient;
-
-  // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
-  await recoverPaidPendings(service, serviceDb, userId);
-
+async function handlePaidSlot(
+  service: ReturnType<typeof createServiceRoleClient>,
+  serviceDb: SupabaseClient,
+  userId: string,
+  draft: RelationCreate,
+) {
   // 초안 스테이징 — 현금 결제(비동기 토스 리다이렉트) 동안 draft 를 서버에 보존
   const { data: stagedRows, error: stageError } = await serviceDb
     .from('pending_relation_registrations')
@@ -159,7 +169,8 @@ async function recoverPaidPendings(
       .from('pending_relation_registrations')
       .select('pending_id')
       .eq('user_id', userId)
-      .is('materialized_at', null);
+      .is('materialized_at', null)
+      .limit(RECOVERY_SCAN_LIMIT);
     if (pendingsError) throw pendingsError;
 
     for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {
@@ -167,10 +178,15 @@ async function recoverPaidPendings(
       await materializeRelationSlot(serviceDb, userId, row.pending_id);
     }
   } catch (err) {
-    // 복구 실패가 신규 등록을 막으면 안 된다 — 로깅 후 계속 (다음 시도에서 재복구)
+    // 복구 실패가 신규 등록을 막으면 안 된다 — 로깅 후 계속 (다음 시도에서 재복구).
+    // 돈 받고 미전달 상태이므로 console 외에 Sentry 로도 알린다.
     console.error('relation_slot_recovery_failed', {
       user_id: userId,
       error: sanitizeErrorForLog(err),
     });
+    Sentry.captureException(
+      err instanceof Error ? sanitizeErrorForReporting(err) : new Error('relation_slot recovery failed'),
+      { tags: { area: 'payments', payment_step: 'relation_slot_recovery' } },
+    );
   }
 }

@@ -59,6 +59,17 @@ export async function materializeRelationSlot(
       // 크래시 복구 중복 INSERT — 행이 이미 존재하므로 성공 취급
       return newId;
     }
+    // un-claim 전 가드: 동시 수렴 시도(race 패자)가 같은 newId 로 이미 INSERT 를
+    // 성공시킨 뒤 이쪽 INSERT 만 일시 오류로 실패했을 수 있다. 행이 존재하면
+    // un-claim 하지 않는다 — 클레임을 되돌리면 다음 시도가 새 id 로 이중 생성한다.
+    const { data: delivered } = await service
+      .from('relations')
+      .select('relation_id')
+      .eq('relation_id', newId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (delivered) return newId;
+
     // un-claim — 자기 클레임(relation_id=newId)만 되돌려 재시도 가능 상태로 복원
     await service
       .from('pending_relation_registrations')
