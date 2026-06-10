@@ -16,9 +16,6 @@ import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
 import { sanitizeErrorForLog, sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
 
-// 복구 스캔 상한 — pending 누적(ADR-039 §9 수용 리스크 ③)이 요청 경로를 무한히 키우지 않게 한다.
-const RECOVERY_SCAN_LIMIT = 20;
-
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -158,24 +155,41 @@ async function recoverPaidPendings(
       .eq('status', 'confirmed');
     if (paidError) throw paidError;
 
-    const paidRefs = new Set(
-      (paid ?? [])
-        .map((row: { feature_ref: string | null }) => row.feature_ref)
-        .filter(Boolean),
-    );
-    if (paidRefs.size === 0) return;
+    // confirmed 결제 ref 에서 직접 pending_id 추출 — pending 테이블 무순서 스캔이
+    // 아니라 결제 기준이라 고아가 "스캔 범위 밖"으로 영구 누락되지 않는다.
+    const paidPendingIds = (paid ?? [])
+      .map((row: { feature_ref: string | null }) => row.feature_ref)
+      .filter((ref): ref is string => Boolean(ref?.startsWith('relation_slot:')))
+      .map((ref) => ref.slice('relation_slot:'.length))
+      .filter(Boolean);
+    if (paidPendingIds.length === 0) return;
 
+    // 결제된 것 중 아직 머티리얼라이즈 안 된 것만 조회 (대부분 이미 처리 → 빈 결과).
     const { data: pendings, error: pendingsError } = await serviceDb
       .from('pending_relation_registrations')
       .select('pending_id')
       .eq('user_id', userId)
-      .is('materialized_at', null)
-      .limit(RECOVERY_SCAN_LIMIT);
+      .in('pending_id', paidPendingIds)
+      .is('materialized_at', null);
     if (pendingsError) throw pendingsError;
 
     for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {
-      if (!paidRefs.has(`relation_slot:${row.pending_id}`)) continue;
-      await materializeRelationSlot(serviceDb, userId, row.pending_id);
+      try {
+        await materializeRelationSlot(serviceDb, userId, row.pending_id);
+      } catch (itemErr) {
+        // 한 고아의 실패가 나머지 paid 고아 복구를 막지 않게 격리한다.
+        console.error('relation_slot_recovery_item_failed', {
+          user_id: userId,
+          pending_id: row.pending_id,
+          error: sanitizeErrorForLog(itemErr),
+        });
+        Sentry.captureException(
+          itemErr instanceof Error
+            ? sanitizeErrorForReporting(itemErr)
+            : new Error('relation_slot recovery item failed'),
+          { tags: { area: 'payments', payment_step: 'relation_slot_recovery' } },
+        );
+      }
     }
   } catch (err) {
     // 복구 실패가 신규 등록을 막으면 안 된다 — 로깅 후 계속 (다음 시도에서 재복구).

@@ -70,11 +70,13 @@ export async function materializeRelationSlot(
       .maybeSingle();
     if (delivered) return newId;
 
-    // un-claim — 자기 클레임(relation_id=newId)만 되돌려 재시도 가능 상태로 복원
+    // un-claim — 자기 클레임(relation_id=newId)만 되돌려 재시도 가능 상태로 복원.
+    // service-role 은 RLS 우회라 user_id 도 명시 핀(머니패스 일관 규율).
     await service
       .from('pending_relation_registrations')
       .update({ materialized_at: null, relation_id: null })
       .eq('pending_id', pendingId)
+      .eq('user_id', userId)
       .eq('relation_id', newId)
       .select('pending_id');
     throw err;

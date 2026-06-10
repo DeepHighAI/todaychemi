@@ -89,12 +89,16 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
   현금 confirm 은 전면 리다이렉트라 mode 페이지 `draft.reset()` 이 실행되지 않음 →
   `/feed?paid=relation_slot:*` 복귀 시 draft 리셋(프리필 재제출 이중결제 차단).
 
-**수용 리스크(문서화)**: ① count 게이트 TOCTOU — 동시 제출 시 드물게 무료 1건 초과(하드 캡
-없음, launch 후 트리거 검토, codex #5 계열). ② 무료경로 더블탭 = 2 pending·2 차감·2 인연
-(진짜 2등록 — 클라이언트 버튼 비활성으로 방어). ③ **open 결제 row 누적은 무제한** —
+**수용 리스크(문서화)**: ① **count 게이트 TOCTOU(미해결, §1.1 결정 대기)** — 무료 슬롯
+판정이 `count(relations)` 읽기 후 INSERT 의 2-스텝이라 동시 제출 시 무료 1건 초과 가능.
+relations 에 유저당 행 수 DB 캡이 없어 막을 하드 가드 부재 = 이론상 무료 슬롯 우회.
+/review·/codex 양쪽 CRITICAL/BLOCK 지적. 완전 차단하려면 advisory-lock RPC(count+insert
+원자화) 또는 BEFORE INSERT 트리거 필요(별도 §1.1 결정). ② 무료경로 더블탭 = 2 pending·2
+차감·2 인연(진짜 2등록 — 클라이언트 버튼 비활성으로 방어). ③ **open 결제 row 누적은 무제한** —
 `payments_feature_open_uidx` 는 `(user_id, feature_id, feature_ref)` 라 ref 가 다른 미결제
 pending 마다 open row 가 쌓일 수 있다(머니 리스크 아님, row 비대). 미머티리얼라이즈 pending
-cleanup cron + 유저당 캡은 비차단 후속. ④ 결제 confirmed 된 pending 은 영구 머티리얼라이즈
+cleanup cron + 유저당 캡 + draft PII purge 는 비차단 후속. lazy recovery 는 confirmed 결제
+ref 에서 pending_id 를 직접 추출해(테이블 무순서 스캔 아님) 고아가 영구 누락되지 않는다. ④ 결제 confirmed 된 pending 은 영구 머티리얼라이즈
 가능 — 삭제 후 재등록 시 "결제했던 인연이 다시 나타나는" UX 는 의도된 결과(돈 받은 건 반드시 제공).
 
 ## Alternatives Considered

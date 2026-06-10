@@ -97,6 +97,7 @@ function makeClient(opts: {
 function makeService(opts: {
   paidRefs?: string[];
   pendings?: Array<{ pending_id: string }>;
+  pendingsError?: { code: string; message: string } | null;
   stagedPendingId?: string;
   stageError?: { code: string; message: string } | null;
   refundError?: { message: string } | null;
@@ -120,11 +121,11 @@ function makeService(opts: {
     error: opts.stageError ?? null,
   });
   const pendingInsert = vi.fn((_payload: unknown) => ({ select: insertSelect }));
-  const pendingsResult = { data: opts.pendings ?? [], error: null };
+  const pendingsResult = { data: opts.pendings ?? [], error: opts.pendingsError ?? null };
   const pendingSelChain: Record<string, unknown> = {};
   pendingSelChain.eq = vi.fn(() => pendingSelChain);
+  pendingSelChain.in = vi.fn(() => pendingSelChain);
   pendingSelChain.is = vi.fn(() => pendingSelChain);
-  pendingSelChain.limit = vi.fn(() => pendingSelChain);
   pendingSelChain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
     Promise.resolve(pendingsResult).then(res, rej);
   const pendingFrom = {
@@ -551,28 +552,48 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
   it('A1 lazy recovery: 결제 confirmed + 미머티리얼라이즈 pending 을 새 스테이징 전에 전달', async () => {
     const client = makeClient({ relationCount: 2 });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
+    // pending 조회는 paid ref 의 pending_id 로 IN 필터되므로 결과는 paid 고아만 — 미결제는 애초에 안 옴
     const svc = makeService({
       stagedPendingId: 'pend-new-001',
       paidRefs: ['relation_slot:pend-orphan-7'],
-      pendings: [{ pending_id: 'pend-orphan-7' }, { pending_id: 'pend-unpaid-8' }],
+      pendings: [{ pending_id: 'pend-orphan-7' }],
     });
     vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
 
     const res = await POST(makeRequest(VALID_BODY));
 
-    // 고아(confirmed 결제 보유)만 머티리얼라이즈 — 미결제 pending 은 건드리지 않는다
+    // 고아(confirmed 결제 보유)만 머티리얼라이즈
     expect(materializeRelationSlot).toHaveBeenCalledWith(
       expect.anything(),
       'user-uuid-001',
       'pend-orphan-7',
     );
-    expect(materializeRelationSlot).not.toHaveBeenCalledWith(
-      expect.anything(),
-      'user-uuid-001',
-      'pend-unpaid-8',
-    );
     // 복구 후 신규 draft 는 자기 흐름대로 402
     expect(res.status).toBe(402);
+  });
+
+  it('A1 복구: 한 고아 머티리얼라이즈 실패가 다른 고아 복구를 막지 않는다', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({
+      stagedPendingId: 'pend-new-001',
+      paidRefs: ['relation_slot:pend-a', 'relation_slot:pend-b'],
+      pendings: [{ pending_id: 'pend-a' }, { pending_id: 'pend-b' }],
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+    vi.mocked(materializeRelationSlot)
+      .mockRejectedValueOnce(new Error('pend-a boom'))
+      .mockResolvedValueOnce('rel-b');
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    // 두 고아 모두 시도 — 첫 실패가 둘째를 막지 않음
+    expect(materializeRelationSlot).toHaveBeenCalledWith(expect.anything(), 'user-uuid-001', 'pend-a');
+    expect(materializeRelationSlot).toHaveBeenCalledWith(expect.anything(), 'user-uuid-001', 'pend-b');
+    expect(consoleSpy).toHaveBeenCalledWith('relation_slot_recovery_item_failed', expect.anything());
+    expect(res.status).toBe(402);
+    consoleSpy.mockRestore();
   });
 
   it('A1 복구는 무료 구간(count<2)에서도 실행 — 인연 삭제로 내려가도 paid 고아 전달', async () => {
@@ -596,17 +617,17 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     expect(client._insert).toHaveBeenCalledOnce();
   });
 
-  it('A1 복구 실패 → relation_slot_recovery_failed 로깅 후 신규 등록 흐름 계속', async () => {
+  it('A1 복구 중 pending 조회 실패 → relation_slot_recovery_failed 로깅 후 신규 등록 흐름 계속', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const client = makeClient({ relationCount: 2 });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
+    // payments 조회는 성공하나 pending 조회가 실패 → outer catch
     const svc = makeService({
       stagedPendingId: 'pend-new-001',
       paidRefs: ['relation_slot:pend-orphan-7'],
-      pendings: [{ pending_id: 'pend-orphan-7' }],
+      pendingsError: { code: 'PGRST000', message: 'pending query down' },
     });
     vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
-    vi.mocked(materializeRelationSlot).mockRejectedValue(new Error('recovery boom'));
 
     const res = await POST(makeRequest(VALID_BODY));
 
