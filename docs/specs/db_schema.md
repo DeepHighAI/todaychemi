@@ -423,6 +423,11 @@ create policy "pending_relation_registrations_own" on public.pending_relation_re
 
 -- 같은 마이그레이션에서 token_ledger 멱등 부분 유니크 인덱스 2개와
 -- deduct_tokens_once/refund_tokens_once IN-list 에 'relation_slot_use'/'relation_slot_refund' 추가.
+
+-- 20260610120000_pending_draft_purge.sql — draft PII 자동 정리 (§1.1 2026-06-10):
+-- purge_pending_relation_drafts() 일 1회 cron('purge-pending-relation-drafts').
+-- 미결제·미머티리얼라이즈 30일 행 삭제(pending/confirmed 결제 보유 행 보호),
+-- 전달 완료/삭제 소비 행은 7일 후 draft='{}' 스크럽(멱등 마커 유지).
 ```
 
 ---

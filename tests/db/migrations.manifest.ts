@@ -693,4 +693,12 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     ],
     rls: { enabled: true, policies: ['pending_relation_registrations_own'] },
   },
+  // 결제 이탈 draft PII 자동 정리 (§1.1 확정 2026-06-10: 30일 삭제 + 7일 스크럽)
+  {
+    index: 20260610120000,
+    file: '20260610120000_pending_draft_purge.sql',
+    kind: 'function',
+    functionName: 'purge_pending_relation_drafts',
+    cronJobs: ['purge-pending-relation-drafts'],
+  },
 ];
