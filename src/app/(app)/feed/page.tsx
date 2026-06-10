@@ -9,7 +9,7 @@
  *  - 좌측 스와이프 → 삭제 (확인 모달)
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -18,6 +18,7 @@ import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/swipe-row';
+import { useRelationDraft } from '@/lib/relations/draft-store';
 import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
 import type { FeedItem } from '@/types/relation';
 
@@ -46,6 +47,17 @@ export default function FeedPage() {
 
   const [activeFilter, setActiveFilter] = useState<FilterMode>('all');
   const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
+
+  // 인연 등록 현금 결제는 confirm 303 전면 리다이렉트로 여기 복귀 — mode 페이지의
+  // draft.reset() 이 실행되지 않아 결제 완료된 인연이 localStorage 에 남는다.
+  // 그대로 두면 다음 등록 화면에 프리필 → 재제출 시 이중결제 벡터 (ADR-039 Amended A2).
+  const paidRef = searchParams.get('paid');
+  const resetDraft = useRelationDraft((s) => s.reset);
+  useEffect(() => {
+    if (paidRef?.startsWith('relation_slot:')) {
+      resetDraft();
+    }
+  }, [paidRef, resetDraft]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['feed', focusedRelationId ?? ''],

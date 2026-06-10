@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
+import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
 import { useRelationDraft } from '@/lib/relations/draft-store';
 import type { DraftMode } from '@/lib/relations/draft-store';
-import type { RelationCreate } from '@/types/relation';
+import type { FeedItem, RelationCreate } from '@/types/relation';
 
 const MODE_META: { value: Exclude<DraftMode, ''>; emoji: string }[] = [
   { value: '썸합', emoji: '💗' },
@@ -31,6 +33,17 @@ export default function RelationsModePage() {
   const [pay, setPay] = useState<{ ref: string; amountKrw: number } | null>(null);
 
   const canSubmit = !!mode && consent;
+
+  // 사전 가격 고지 (UX 보조) — 권위 게이트는 서버 402. ['feed'] 캐시가 있을 때만 노출.
+  const queryClient = useQueryClient();
+  const ownedCount = useMemo(() => {
+    const entries = queryClient.getQueriesData<FeedItem[]>({ queryKey: ['feed'] });
+    for (const [, cached] of entries) {
+      if (Array.isArray(cached)) return cached.length;
+    }
+    return null;
+  }, [queryClient]);
+  const showPaywallNotice = ownedCount !== null && ownedCount >= FREE_RELATION_SLOTS;
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -119,6 +132,13 @@ export default function RelationsModePage() {
         />
         <span className="text-[12px] text-muted-foreground">{t('consent.label')}</span>
       </label>
+      {showPaywallNotice && (
+        <p className="text-[12px] text-muted-foreground text-center px-1">
+          {t('paywall.notice', {
+            price: FEATURE_PRICES_KRW.relation_slot.amount_krw.toLocaleString(),
+          })}
+        </p>
+      )}
       {error && <p className="font-sub text-destructive text-center">{error}</p>}
       <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">
         <Button

@@ -2,9 +2,13 @@
 // Tests for Step 3: mode/page.tsx (6모드 카드 + 동의 + 제출)
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithIntl } from '../../../../utils/render-with-intl';
+import { NextIntlClientProvider } from 'next-intl';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+// mode 페이지는 ['feed'] 캐시로 사전 가격 고지를 판단 — QueryClientProvider 필요
+import { renderWithProviders } from '../../../../utils/render-with-providers';
+import messages from '../../../../../messages/ko.json';
 
 vi.mock('zustand/middleware', () => ({
   persist: (fn: (set: unknown, get: unknown, api: unknown) => unknown) => fn,
@@ -65,7 +69,7 @@ afterEach(() => { vi.unstubAllGlobals(); });
 describe('RelationsModePage (Step 3)', () => {
   it('renders 6 mode cards', async () => {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<Page />);
+    renderWithProviders(<Page />);
     expect(screen.getByText('썸 관계')).toBeTruthy();
     expect(screen.getByText('오래된 관계')).toBeTruthy();
     expect(screen.getByText('일 관계')).toBeTruthy();
@@ -76,7 +80,7 @@ describe('RelationsModePage (Step 3)', () => {
 
   it('등록하기 is disabled until mode and consent are set', async () => {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<Page />);
+    renderWithProviders(<Page />);
     const submit = screen.getByRole('button', { name: '등록하기' });
     expect(submit).toBeDisabled();
     const user = userEvent.setup();
@@ -92,7 +96,7 @@ describe('RelationsModePage (Step 3)', () => {
       json: async () => ({ relation_id: 'r-77' }),
     });
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<Page />);
+    renderWithProviders(<Page />);
     const user = userEvent.setup();
     await user.click(screen.getByText('썸 관계'));
     await user.click(screen.getByRole('checkbox'));
@@ -110,7 +114,7 @@ describe('RelationsModePage (Step 3)', () => {
   it('shows generic error on non-ok response', async () => {
     mockFetch.mockResolvedValue({ ok: false });
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<Page />);
+    renderWithProviders(<Page />);
     const user = userEvent.setup();
     await user.click(screen.getByText('썸 관계'));
     await user.click(screen.getByRole('checkbox'));
@@ -136,7 +140,7 @@ describe('RelationsModePage — 유료 슬롯 402 (ADR-039 Amended)', () => {
 
   async function submitOnce() {
     const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<Page />);
+    renderWithProviders(<Page />);
     const user = userEvent.setup();
     await user.click(screen.getByText('썸 관계'));
     await user.click(screen.getByRole('checkbox'));
@@ -185,5 +189,55 @@ describe('RelationsModePage — 유료 슬롯 402 (ADR-039 Amended)', () => {
 
     await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
     expect(screen.queryByTestId('pay-sheet')).toBeNull();
+  });
+});
+
+describe('RelationsModePage — 사전 가격 고지 (UX 보조, 권위는 서버 402)', () => {
+  function feedItem(i: number) {
+    return {
+      relation_id: `r${i}`,
+      nickname: `인연${i}`,
+      mode: '친구합',
+      compat_score: null,
+      change_score: 0,
+      has_significant_change: false,
+      created_at: '2026-06-01T00:00:00Z',
+    };
+  }
+
+  async function renderWithFeedCache(itemCount: number | null) {
+    const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    });
+    if (itemCount !== null) {
+      qc.setQueryData(
+        ['feed', ''],
+        Array.from({ length: itemCount }, (_, i) => feedItem(i)),
+      );
+    }
+    render(
+      <NextIntlClientProvider locale="ko" messages={messages}>
+        <QueryClientProvider client={qc}>
+          <Page />
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('보유 인연 2건(캐시) → 세 번째부터 결제 고지 노출', async () => {
+    await renderWithFeedCache(2);
+    expect(screen.getByText(/세 번째 인연부터/)).toBeTruthy();
+    expect(screen.getByText(/1,000원/)).toBeTruthy();
+  });
+
+  it('보유 인연 1건 → 고지 숨김', async () => {
+    await renderWithFeedCache(1);
+    expect(screen.queryByText(/세 번째 인연부터/)).toBeNull();
+  });
+
+  it('feed 캐시 없음 → 고지 숨김 (서버 402 가 권위 게이트)', async () => {
+    await renderWithFeedCache(null);
+    expect(screen.queryByText(/세 번째 인연부터/)).toBeNull();
   });
 });

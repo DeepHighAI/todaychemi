@@ -342,3 +342,30 @@ describe('FeedPage', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
   });
 });
+
+describe('FeedPage — paid=relation_slot draft reset (A2, 이중결제 차단)', () => {
+  it('?paid=relation_slot:* 복귀 시 relations draft 를 리셋한다', async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams({ paid: 'relation_slot:pend-1' }));
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    const { useRelationDraft } = await import('@/lib/relations/draft-store');
+    useRelationDraft.getState().setNickname('결제한인연');
+
+    await renderFeedPage();
+
+    // 현금 결제는 confirm 303 전면 리다이렉트로 복귀 — mode 페이지 reset 이 실행되지
+    // 않으므로 여기서 비우지 않으면 결제한 인연이 프리필 재제출(이중결제)된다.
+    await waitFor(() => expect(useRelationDraft.getState().nickname).toBe(''));
+  });
+
+  it('relation_slot 외 paid(케미카드 등) 복귀는 draft 를 건드리지 않는다', async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams({ paid: 'cache-key-abc' }));
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    const { useRelationDraft } = await import('@/lib/relations/draft-store');
+    useRelationDraft.getState().setNickname('유지되어야함');
+
+    await renderFeedPage();
+
+    expect(await screen.findByText('케미피드')).toBeInTheDocument();
+    expect(useRelationDraft.getState().nickname).toBe('유지되어야함');
+  });
+});

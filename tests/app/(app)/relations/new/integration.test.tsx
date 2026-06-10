@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithIntl } from '../../../../utils/render-with-intl';
+// mode 페이지는 ['feed'] 캐시 조회(useQueryClient)를 포함 — provider 렌더 필요
+import { renderWithProviders } from '../../../../utils/render-with-providers';
 
 vi.mock('zustand/middleware', () => ({
   persist: (fn: (set: unknown, get: unknown, api: unknown) => unknown) => fn,
@@ -62,7 +64,7 @@ describe('Relations New — full 3-step flow', () => {
 
     // Step 3: mode + submit
     const { default: ModePage } = await import('@/app/(app)/relations/new/mode/page');
-    renderWithIntl(<ModePage />);
+    renderWithProviders(<ModePage />);
     const user3 = userEvent.setup();
     await user3.click(screen.getByText('썸 관계'));
     await user3.click(screen.getByRole('checkbox'));
