@@ -56,6 +56,46 @@ export async function insertRelationAndComputeChart(
     throw new Error('relations insert returned no relation_id');
   }
 
+  await computeAndUpsertChart(db, userId, relationId, draft);
+  return relationId;
+}
+
+// 무료 인연 등록 — count 와 INSERT 를 단일 RPC(원자적 INSERT...SELECT...WHERE count<N)로.
+// TOCTOU 차단 (ADR-039 §9): 동시 요청도 row-level 직렬화로 정확히 한도까지만 통과.
+// 반환: relation_id(등록 성공) | null(슬롯 초과 → 호출부가 유료 경로로 분기).
+// chart compute 는 RPC 밖 best-effort (KASI 외부 호출, chartPending UX).
+export async function insertFreeRelationIfUnderCap(
+  db: SupabaseClient,
+  userId: string,
+  draft: RelationCreate,
+  freeSlots: number,
+): Promise<string | null> {
+  const { data, error } = await db.rpc('insert_relation_if_under_free_cap', {
+    p_user_id: userId,
+    p_draft: draft as unknown as Record<string, unknown>,
+    p_free_slots: freeSlots,
+  });
+  if (error) {
+    throw new RelationInsertError(
+      `insert_relation_if_under_free_cap failed: ${error.code}`,
+      error.code ?? null,
+    );
+  }
+  const relationId = (data as string | null) ?? null;
+  if (!relationId) return null; // 슬롯 초과
+
+  await computeAndUpsertChart(db, userId, relationId, draft);
+  return relationId;
+}
+
+// 차트 컴퓨트 + relation_charts upsert — best-effort. 실패해도 relation 등록은 유지(chartPending UX).
+// 무료 RPC 경로와 머티리얼라이즈/직접 INSERT 경로가 공유.
+async function computeAndUpsertChart(
+  db: SupabaseClient,
+  userId: string,
+  relationId: string,
+  draft: RelationCreate,
+): Promise<void> {
   try {
     const computeResult = await computeChart(
       {
@@ -91,6 +131,4 @@ export async function insertRelationAndComputeChart(
     console.error('[relations] computeChart failed', { error: sanitizeErrorForLog(err) });
     // KASI 실패 → relation 등록은 완료, hapcard에서 chartPending으로 표시
   }
-
-  return relationId;
 }

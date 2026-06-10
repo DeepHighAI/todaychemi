@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/chart/compute');
 
 import { computeChart } from '@/lib/chart/compute';
-import { insertRelationAndComputeChart, RelationInsertError } from '@/lib/relations/insert';
+import {
+  insertRelationAndComputeChart,
+  insertFreeRelationIfUnderCap,
+  RelationInsertError,
+} from '@/lib/relations/insert';
 import type { RelationCreate } from '@/types/relation';
 import type { ChartCore } from '@/types/chart';
 
@@ -62,6 +66,62 @@ beforeEach(() => {
   vi.mocked(computeChart).mockResolvedValue({
     chart_core: MOCK_CHART_CORE,
     chart_hash: MOCK_CHART_HASH,
+  });
+});
+
+describe('insertFreeRelationIfUnderCap (TOCTOU 원자 RPC)', () => {
+  function makeRpcDb(opts: { rpcData?: string | null; rpcError?: { code: string; message: string } | null }) {
+    const rpc = vi.fn().mockResolvedValue({ data: opts.rpcData ?? null, error: opts.rpcError ?? null });
+    const upsertCharts = vi.fn().mockResolvedValue({ data: null, error: null });
+    const from = vi.fn((table: string) =>
+      table === 'relation_charts' ? { upsert: upsertCharts } : { insert: vi.fn() },
+    );
+    return { db: { rpc, from } as never, _rpc: rpc, _upsertCharts: upsertCharts };
+  }
+
+  it('RPC 가 relation_id 반환 → 무료 등록 성공 + chart compute(best-effort)', async () => {
+    const { db, _rpc, _upsertCharts } = makeRpcDb({ rpcData: 'rel-free-1' });
+
+    const relationId = await insertFreeRelationIfUnderCap(db, USER, DRAFT, 2);
+
+    expect(relationId).toBe('rel-free-1');
+    // 원자적 RPC 호출 — user_id·draft·free_slots 전달
+    expect(_rpc).toHaveBeenCalledWith('insert_relation_if_under_free_cap', {
+      p_user_id: USER,
+      p_draft: DRAFT,
+      p_free_slots: 2,
+    });
+    // chart 는 RPC 밖 best-effort
+    expect(_upsertCharts).toHaveBeenCalledOnce();
+  });
+
+  it('RPC 가 null 반환(슬롯 초과) → null, chart compute 미실행', async () => {
+    const { db, _upsertCharts } = makeRpcDb({ rpcData: null });
+
+    const relationId = await insertFreeRelationIfUnderCap(db, USER, DRAFT, 2);
+
+    expect(relationId).toBeNull();
+    expect(computeChart).not.toHaveBeenCalled();
+    expect(_upsertCharts).not.toHaveBeenCalled();
+  });
+
+  it('RPC 에러 → RelationInsertError throw (호출부 500)', async () => {
+    const { db } = makeRpcDb({ rpcError: { code: 'PGRST000', message: 'rpc down' } });
+
+    await expect(insertFreeRelationIfUnderCap(db, USER, DRAFT, 2)).rejects.toThrow(RelationInsertError);
+  });
+
+  it('chart compute 실패 → relation_id 반환 (best-effort, 등록 유지)', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(computeChart).mockRejectedValue(new Error('KASI timeout birth_date=1995-07-20'));
+    const { db } = makeRpcDb({ rpcData: 'rel-free-2' });
+
+    const relationId = await insertFreeRelationIfUnderCap(db, USER, DRAFT, 2);
+
+    expect(relationId).toBe('rel-free-2');
+    const logged = JSON.stringify(consoleSpy.mock.calls);
+    expect(logged).not.toContain('1995-07-20');
+    consoleSpy.mockRestore();
   });
 });
 

@@ -7,12 +7,15 @@ vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 // 슬롯 게이트는 라우트 단에서 mock — 게이트 내부는 feature-gate 자체 테스트가 커버.
 vi.mock('@/lib/payments/feature-gate');
 vi.mock('@/lib/relations/materialize');
+// 무료 경로는 원자 RPC 헬퍼로 위임 — 내부는 insert.test 가 커버, 여기선 분기만 검증.
+vi.mock('@/lib/relations/insert');
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { computeChart } from '@/lib/chart/compute';
 import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { materializeRelationSlot } from '@/lib/relations/materialize';
+import { insertFreeRelationIfUnderCap } from '@/lib/relations/insert';
 import { FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
 import { GET, POST } from '@/app/api/relations/route';
 import type { ChartCore } from '@/types/chart';
@@ -169,10 +172,13 @@ beforeEach(() => {
     charged: false,
   });
   vi.mocked(materializeRelationSlot).mockResolvedValue('rel-paid-001');
+  // 기본: 무료 슬롯 여유 → 원자 RPC 가 relation_id 반환(무료 등록 성공).
+  // 유료 경로 테스트는 각자 mockResolvedValue(null)(슬롯 초과)로 덮어쓴다.
+  vi.mocked(insertFreeRelationIfUnderCap).mockResolvedValue('rel-free-001');
 });
 
-describe('POST /api/relations', () => {
-  it('200 → relations INSERT 성공 (정상 경로)', async () => {
+describe('POST /api/relations — 무료 경로 (원자 RPC 분기)', () => {
+  it('200 → 무료 슬롯 여유(RPC relation_id) → 등록 성공, 머티리얼라이즈 미호출', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -181,26 +187,18 @@ describe('POST /api/relations', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(client._insert).toHaveBeenCalledOnce();
+    expect(body.relation_id).toBe('rel-free-001');
+    // 원자 RPC 에 인증 user.id + draft + FREE_RELATION_SLOTS(2) 전달
+    expect(insertFreeRelationIfUnderCap).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-001',
+      expect.objectContaining({ nickname: '봄달', mode: '친구합' }),
+      2,
+    );
+    expect(materializeRelationSlot).not.toHaveBeenCalled();
   });
 
-  it('INSERT body 에 user_id, nickname, mode, birth_date, gender, consent_confirmed 전달됨', async () => {
-    const client = makeClient({});
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    await POST(makeRequest(VALID_BODY));
-
-    const inserted = client._insert.mock.calls[0][0];
-    expect(inserted.user_id).toBe('user-uuid-001');
-    expect(inserted.nickname).toBe('봄달');
-    expect(inserted.mode).toBe('친구합');
-    expect(inserted.birth_date).toBe('1995-07-20');
-    expect(inserted.gender).toBe('F');
-    expect(inserted.birth_time_knowledge).toBe('exact');
-    expect(inserted.consent_confirmed).toBe(true);
-  });
-
-  it('400 → INVALID_BODY (nickname 없음)', async () => {
+  it('400 → INVALID_BODY (nickname 없음) — RPC 미호출', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -209,9 +207,8 @@ describe('POST /api/relations', () => {
     const res = await POST(makeRequest(bad));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
+    expect(insertFreeRelationIfUnderCap).not.toHaveBeenCalled();
   });
 
   it('400 → INVALID_BODY (mode 외래값)', async () => {
@@ -221,8 +218,7 @@ describe('POST /api/relations', () => {
     const res = await POST(makeRequest({ ...VALID_BODY, mode: '사랑합' }));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
   });
 
   it('400 → INVALID_BODY (birth_place 추가 필드 — PII strict 가드)', async () => {
@@ -232,11 +228,10 @@ describe('POST /api/relations', () => {
     const res = await POST(makeRequest({ ...VALID_BODY, birth_place: '서울' }));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
   });
 
-  it('400 → INVALID_BODY (unknown 시간인데 birth_time 이 남아 있음)', async () => {
+  it('400 → INVALID_BODY (unknown 시간인데 birth_time 이 남아 있음) — RPC 미호출', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -247,13 +242,11 @@ describe('POST /api/relations', () => {
     }));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
-    expect(computeChart).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
+    expect(insertFreeRelationIfUnderCap).not.toHaveBeenCalled();
   });
 
-  it('400 → INVALID_BODY (exact 시간인데 birth_time 이 null)', async () => {
+  it('400 → INVALID_BODY (exact 시간인데 birth_time 이 null) — RPC 미호출', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -264,13 +257,11 @@ describe('POST /api/relations', () => {
     }));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
-    expect(computeChart).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
+    expect(insertFreeRelationIfUnderCap).not.toHaveBeenCalled();
   });
 
-  it('400 → INVALID_BODY (solar 날짜에 lunar leap flag true)', async () => {
+  it('400 → INVALID_BODY (solar 날짜에 lunar leap flag true) — RPC 미호출', async () => {
     const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
@@ -281,46 +272,30 @@ describe('POST /api/relations', () => {
     }));
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
-    expect(computeChart).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
+    expect(insertFreeRelationIfUnderCap).not.toHaveBeenCalled();
   });
 
-  it('401 → UNAUTHORIZED (미인증)', async () => {
+  it('401 → UNAUTHORIZED (미인증) — RPC 미호출', async () => {
     const client = makeClient({ userId: null });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.error.code).toBe('UNAUTHORIZED');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('UNAUTHORIZED');
+    expect(insertFreeRelationIfUnderCap).not.toHaveBeenCalled();
   });
 
-  it('500 → INTERNAL_ERROR (generic DB failure)', async () => {
-    const client = makeClient({ insertError: { code: 'PGRST000', message: 'DB down' } });
+  it('500 → INTERNAL_ERROR (무료 RPC throw)', async () => {
+    const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
+    vi.mocked(insertFreeRelationIfUnderCap).mockRejectedValue(new Error('rpc down'));
 
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error.code).toBe('INTERNAL_ERROR');
-  });
-
-  it('500 → INSERT 성공처럼 보이나 relation_id row가 없으면 chart compute 없이 실패', async () => {
-    const client = makeClient({ insertedRows: [] });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error.code).toBe('INTERNAL_ERROR');
-    expect(computeChart).not.toHaveBeenCalled();
-    expect(client._upsertCharts).not.toHaveBeenCalled();
+    expect((await res.json()).error.code).toBe('INTERNAL_ERROR');
   });
 
   it('400 → INVALID_BODY on non-JSON body', async () => {
@@ -336,84 +311,17 @@ describe('POST /api/relations', () => {
     );
 
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error.code).toBe('INVALID_BODY');
-  });
-
-  it('200 성공 시 relation_charts upsert 호출 (chart_hash, chart_core, user_id, relation_id)', async () => {
-    const client = makeClient({});
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(200);
-    expect(client._upsertCharts).toHaveBeenCalledOnce();
-    const upserted = client._upsertCharts.mock.calls[0][0];
-    expect(upserted.user_id).toBe('user-uuid-001');
-    expect(upserted.chart_hash).toBe(MOCK_CHART_HASH);
-    expect(upserted.chart_core).toEqual(MOCK_CHART_CORE);
-    expect(upserted.theory_profile_version).toBeDefined();
-  });
-
-  it('computeChart 실패 → 200 (relation 등록 완료, chartPending UX)', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(computeChart).mockRejectedValue(
-      new Error('KASI timeout birth_date=1995-07-20 birth_time=09:00 gender=F'),
-    );
-    const client = makeClient({});
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    // relation은 등록됨 (chartPending은 기존 UX), chart upsert는 skip
-    expect(res.status).toBe(200);
-    expect(client._insert).toHaveBeenCalledOnce();
-    expect(client._upsertCharts).not.toHaveBeenCalled();
-    const logged = JSON.stringify(consoleSpy.mock.calls);
-    expect(logged).not.toContain('1995-07-20');
-    expect(logged).not.toContain('09:00');
-    expect(logged).not.toContain('gender=F');
-    consoleSpy.mockRestore();
-  });
-
-  it('relation_charts upsert 실패 → 200 (relation 등록 완료, chartPending UX)', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const client = makeClient({ upsertChartError: { code: 'PGRST000', message: 'upsert fail' } });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.ok).toBe(true);
-    expect(body.relation_id).toBe('rel-uuid-001');
-    expect(client._insert).toHaveBeenCalledOnce();
-    expect(client._upsertCharts).toHaveBeenCalledOnce();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[relations] relation_charts upsert failed',
-      expect.objectContaining({
-        error_code: 'PGRST000',
-        error: expect.stringContaining('upsert fail'),
-      }),
-    );
-    consoleSpy.mockRestore();
+    expect((await res.json()).error.code).toBe('INVALID_BODY');
   });
 });
 
 describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
-  it('보유 1건(<2) → 무료 등록, 게이트·머티리얼라이즈 미호출', async () => {
-    const client = makeClient({ relationCount: 1 });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(200);
-    expect(client._insert).toHaveBeenCalledOnce();
-    expect(resolveFeatureCharge).not.toHaveBeenCalled();
-    expect(materializeRelationSlot).not.toHaveBeenCalled();
+  // 유료 경로 전제: 원자 RPC 가 null(무료 슬롯 초과) 반환 → handlePaidSlot 진입.
+  beforeEach(() => {
+    vi.mocked(insertFreeRelationIfUnderCap).mockResolvedValue(null);
   });
 
-  it('보유 2건(≥2) → draft 를 pending 에 스테이징하고 relation_slot ref 로 게이트 호출', async () => {
+  it('슬롯 초과(RPC null) → draft 를 pending 에 스테이징하고 relation_slot ref 로 게이트 호출', async () => {
     const client = makeClient({ relationCount: 2 });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
     const svc = makeService({ stagedPendingId: 'pend-new-001' });
@@ -605,17 +513,20 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     consoleSpy.mockRestore();
   });
 
-  it('A1 복구는 무료 구간(count<2)에서도 실행 — 인연 삭제로 내려가도 paid 고아 전달', async () => {
-    const client = makeClient({ relationCount: 0 });
+  it('A1 복구는 무료 구간에서도 실행 — 인연 삭제로 내려가도 paid 고아 전달', async () => {
+    const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
     const svc = makeService({
       paidRefs: ['relation_slot:pend-orphan-7'],
       pendings: [{ pending_id: 'pend-orphan-7' }],
     });
     vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+    // 무료 슬롯 여유 → 현재 draft 는 무료 RPC 로 등록되지만, recoverPaidPendings 는 그 전에 실행
+    vi.mocked(insertFreeRelationIfUnderCap).mockResolvedValue('rel-free-001');
 
     const res = await POST(makeRequest(VALID_BODY));
 
+    // recoverPaidPendings 가 무료/유료 분기 전에 실행 → paid 고아 전달
     expect(materializeRelationSlot).toHaveBeenCalledWith(
       expect.anything(),
       'user-uuid-001',
@@ -623,7 +534,6 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     );
     // 현재 draft 는 무료 경로로 정상 등록
     expect(res.status).toBe(200);
-    expect(client._insert).toHaveBeenCalledOnce();
   });
 
   it('A1 복구 중 pending 조회 실패 → relation_slot_recovery_failed 로깅 후 신규 등록 흐름 계속', async () => {
@@ -686,16 +596,6 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
 
     expect(res.status).toBe(500);
     expect(resolveFeatureCharge).not.toHaveBeenCalled();
-  });
-
-  it('count 조회 실패 → 500 (게이트 판정 불가 시 등록 금지)', async () => {
-    const client = makeClient({ countError: { code: 'PGRST000', message: 'count fail' } });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(500);
-    expect(client._insert).not.toHaveBeenCalled();
   });
 
   it('real-gate 통합: 미잠금 + 부적 부족 → 402 end-to-end (게이트 mock 미사용)', async () => {

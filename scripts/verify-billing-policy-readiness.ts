@@ -142,6 +142,19 @@ function main() {
 
   addResult(
     results,
+    'free-slot gate is atomic (TOCTOU blocked via conditional-insert RPC)',
+    exists('supabase/migrations/20260610140000_free_relation_cap_rpc.sql')
+      && hasAll(readRequired('supabase/migrations/20260610140000_free_relation_cap_rpc.sql'), [
+        'insert_relation_if_under_free_cap',
+        'where (select count(*) from public.relations where user_id',
+        '< p_free_slots',
+      ])
+      && readRequired('src/app/api/relations/route.ts').includes('insertFreeRelationIfUnderCap'),
+    'free registration uses an atomic INSERT...WHERE count RPC, not a 2-step count-then-insert',
+  );
+
+  addResult(
+    results,
     'refund policy page exists for paid launch',
     exists('docs/legal/refund_policy.md') && exists('src/app/legal/refund/page.tsx'),
     'refund policy documentation and legal page are present',

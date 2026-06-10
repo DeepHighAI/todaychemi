@@ -10,7 +10,7 @@ import {
   type RelationCreate,
   type FeedListItem,
 } from '@/types/relation';
-import { insertRelationAndComputeChart } from '@/lib/relations/insert';
+import { insertFreeRelationIfUnderCap } from '@/lib/relations/insert';
 import { materializeRelationSlot } from '@/lib/relations/materialize';
 import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
@@ -50,30 +50,23 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
 
-  const db = supabase;
   const service = createServiceRoleClient();
 
   // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
-  // count 게이트보다 먼저: 유저가 인연을 지워 무료 구간(<2)으로 내려가도 paid 고아는
-  // 반드시 전달돼야 한다(돈 받은 건 반드시 제공). 복구된 인연은 이어지는 count 에 반영된다.
+  // 무료 게이트보다 먼저: 유저가 인연을 지워 무료 구간(<2)으로 내려가도 paid 고아는
+  // 반드시 전달돼야 한다(돈 받은 건 반드시 제공). 복구된 인연은 이어지는 게이트에 반영된다.
   await recoverPaidPendings(service, user.id);
 
-  // 슬롯 게이트 (ADR-039 Amended, 모델 B) — 현재 보유 행 수 기준. 판정 불가 시 등록 금지.
-  const { count, error: countError } = await db
-    .from('relations')
-    .select('relation_id', { count: 'exact', head: true })
-    .eq('user_id', user.id);
-  if (countError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
-
-  if ((count ?? 0) < FREE_RELATION_SLOTS) {
-    // 무료 경로 — 기존 동작 불변 (INSERT throw / 차트 best-effort 는 헬퍼 책임)
-    let relationId: string;
-    try {
-      relationId = await insertRelationAndComputeChart(db, user.id, parsed.data);
-    } catch {
-      return apiErrorResponse('INTERNAL_ERROR', '', 500);
-    }
-    return NextResponse.json({ ok: true, relation_id: relationId });
+  // 무료 슬롯 게이트 (ADR-039 §9) — count 와 INSERT 를 단일 원자 RPC 로 묶어 TOCTOU 차단.
+  // relation_id 반환 = 무료 등록 완료. null = 슬롯 초과 → 유료 경로.
+  let freeId: string | null;
+  try {
+    freeId = await insertFreeRelationIfUnderCap(service, user.id, parsed.data, FREE_RELATION_SLOTS);
+  } catch {
+    return apiErrorResponse('INTERNAL_ERROR', '', 500);
+  }
+  if (freeId) {
+    return NextResponse.json({ ok: true, relation_id: freeId });
   }
 
   return handlePaidSlot(service, user.id, parsed.data);

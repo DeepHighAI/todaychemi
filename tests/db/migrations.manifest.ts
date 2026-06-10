@@ -708,4 +708,11 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     kind: 'function',
     functionName: 'purge_pending_relation_drafts',
   },
+  // 무료 인연 슬롯 TOCTOU 차단 — 원자적 조건부 INSERT RPC (/qa 2026-06-10)
+  {
+    index: 20260610140000,
+    file: '20260610140000_free_relation_cap_rpc.sql',
+    kind: 'function',
+    functionName: 'insert_relation_if_under_free_cap',
+  },
 ];
