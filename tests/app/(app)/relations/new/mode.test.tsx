@@ -12,6 +12,35 @@ vi.mock('zustand/middleware', () => ({
 
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn() }));
 
+// FeaturePaySheet 는 Toss SDK·vaul 의존 — 시트 자체 테스트가 커버. 여기선 prop 전달만 검증.
+vi.mock('@/components/payments/feature-pay-sheet', () => ({
+  FeaturePaySheet: ({
+    feature,
+    featureRef,
+    next,
+    open,
+    onOpenChange,
+  }: {
+    feature: string;
+    featureRef: string;
+    next: string;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => (
+    <div
+      data-testid="pay-sheet"
+      data-feature={feature}
+      data-ref={featureRef}
+      data-next={next}
+      data-open={String(open)}
+    >
+      <button type="button" onClick={() => onOpenChange(false)}>
+        mock-close
+      </button>
+    </div>
+  ),
+}));
+
 import { useRouter } from 'next/navigation';
 
 const mockPush = vi.fn();
@@ -88,5 +117,73 @@ describe('RelationsModePage (Step 3)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: '등록하기' }));
     await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
+  });
+});
+
+describe('RelationsModePage — 유료 슬롯 402 (ADR-039 Amended)', () => {
+  function mock402() {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({
+        error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
+        feature: 'relation_slot',
+        ref: 'relation_slot:pend-uuid-1',
+        amount_krw: 1000,
+      }),
+    });
+  }
+
+  async function submitOnce() {
+    const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
+    await user.click(screen.getByText('썸 관계'));
+    await user.click(screen.getByRole('checkbox'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+    return user;
+  }
+
+  it('402 PAYMENT_REQUIRED → FeaturePaySheet(relation_slot, ref, next=/feed) 오픈 + draft 보존', async () => {
+    mock402();
+    await submitOnce();
+
+    const sheet = await screen.findByTestId('pay-sheet');
+    expect(sheet.getAttribute('data-feature')).toBe('relation_slot');
+    expect(sheet.getAttribute('data-ref')).toBe('relation_slot:pend-uuid-1');
+    expect(sheet.getAttribute('data-next')).toBe('/feed');
+    expect(sheet.getAttribute('data-open')).toBe('true');
+
+    // draft.reset() 보류 — 결제 취소 시 3-step 입력이 살아 있어야 한다
+    const { useRelationDraft } = await import('@/lib/relations/draft-store');
+    expect(useRelationDraft.getState().nickname).toBe('하늘');
+    expect(mockPush).not.toHaveBeenCalled();
+    // submitting 해제 — 시트 닫은 뒤 재제출 가능
+    expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
+  });
+
+  it('시트 닫기 → 시트 제거 + 결제 필요 안내 노출, 페이지 유지', async () => {
+    mock402();
+    const user = await submitOnce();
+
+    await screen.findByTestId('pay-sheet');
+    await user.click(screen.getByRole('button', { name: 'mock-close' }));
+
+    await waitFor(() => expect(screen.queryByTestId('pay-sheet')).toBeNull());
+    expect(screen.getByText(/등록하려면 결제가 필요/)).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('402 이지만 PAYMENT_REQUIRED 코드가 아니면 generic 에러로 처리', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({ error: { code: 'SOMETHING_ELSE' } }),
+    });
+    await submitOnce();
+
+    await waitFor(() => expect(screen.getByText(/저장에 실패/)).toBeTruthy());
+    expect(screen.queryByTestId('pay-sheet')).toBeNull();
   });
 });

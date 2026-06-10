@@ -229,7 +229,8 @@
         "dobRequired": "생년월일을 입력해주세요.",
         "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
         "genderRequired": "성별을 선택해주세요.",
-        "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요."
+        "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
+        "payment": "이 인연을 등록하려면 결제가 필요해요."
       },
       "submitting": "저장 중...",
       "submit": "등록하기",

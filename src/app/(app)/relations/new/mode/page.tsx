@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
+import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { useRelationDraft } from '@/lib/relations/draft-store';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { RelationCreate } from '@/types/relation';
@@ -27,6 +28,7 @@ export default function RelationsModePage() {
   const [consent, setConsent] = useState(draft.consent);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pay, setPay] = useState<{ ref: string; amountKrw: number } | null>(null);
 
   const canSubmit = !!mode && consent;
 
@@ -52,6 +54,21 @@ export default function RelationsModePage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });
+      // 유료 슬롯(3번째 인연부터) — generic 분기보다 먼저 402 를 가로채 결제 시트를 연다.
+      // draft.reset() 은 보류: 결제 취소 시 입력이 살아 있어야 한다. 등록 자체는
+      // 서버가 pending 에 스테이징해 confirm 시 머티리얼라이즈한다.
+      if (res.status === 402) {
+        const payBody = (await res.json().catch(() => null)) as {
+          error?: { code?: string };
+          ref?: string;
+          amount_krw?: number;
+        } | null;
+        if (payBody?.error?.code === 'PAYMENT_REQUIRED' && payBody.ref) {
+          setPay({ ref: payBody.ref, amountKrw: payBody.amount_krw ?? 0 });
+          setSubmitting(false);
+          return;
+        }
+      }
       if (!res.ok) {
         setError(t('errors.generic'));
         setSubmitting(false);
@@ -113,6 +130,23 @@ export default function RelationsModePage() {
           {submitting ? t('submitting') : t('submit')}
         </Button>
       </div>
+      {pay && (
+        <FeaturePaySheet
+          feature="relation_slot"
+          featureRef={pay.ref}
+          next="/feed"
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setPay(null);
+              setError(t('errors.payment'));
+            }
+          }}
+          // 정상 결제는 confirm 303 전면 리다이렉트로 떠난다 — onPaid 는 init 이
+          // unlocked(이미 결제된 더블서브밋)를 반환한 경우의 전진용.
+          onPaid={() => router.push('/feed')}
+        />
+      )}
     </div>
   );
 }
