@@ -93,4 +93,47 @@ describe('verifyFeatureRefOwnership', () => {
     );
     expect(from).not.toHaveBeenCalled();
   });
+
+  it('relation_slot — ref 파싱(pending_id)으로 pending_relation_registrations 조회 → true', async () => {
+    const { service, from, calls } = makeService({
+      pending_relation_registrations: { pending_id: 'pend-uuid-1' },
+    });
+
+    const owned = await verifyFeatureRefOwnership(
+      service,
+      USER,
+      'relation_slot',
+      'relation_slot:pend-uuid-1',
+    );
+
+    expect(owned).toBe(true);
+    expect(from).toHaveBeenCalledWith('pending_relation_registrations');
+    // materialized_at 필터 금지 — 이미 결제·머티리얼라이즈된 ref 의 init 재오픈도 통과해야 한다.
+    expect(calls[0].eqArgs).toEqual([
+      ['pending_id', 'pend-uuid-1'],
+      ['user_id', USER],
+    ]);
+  });
+
+  it('relation_slot — 타인 소유/행 없음 → false', async () => {
+    const { service } = makeService({});
+    expect(
+      await verifyFeatureRefOwnership(service, USER, 'relation_slot', 'relation_slot:pend-uuid-1'),
+    ).toBe(false);
+  });
+
+  it('relation_slot — 형식 위반 ref → 조회 없이 false', async () => {
+    const { service, from } = makeService({
+      pending_relation_registrations: { pending_id: 'pend-uuid-1' },
+    });
+
+    expect(await verifyFeatureRefOwnership(service, USER, 'relation_slot', 'garbage')).toBe(false);
+    expect(await verifyFeatureRefOwnership(service, USER, 'relation_slot', 'relation_slot:')).toBe(
+      false,
+    );
+    expect(
+      await verifyFeatureRefOwnership(service, USER, 'relation_slot', 'replay:pend-uuid-1'),
+    ).toBe(false);
+    expect(from).not.toHaveBeenCalled();
+  });
 });

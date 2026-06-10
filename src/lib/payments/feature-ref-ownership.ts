@@ -13,6 +13,7 @@ const REPLAY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // 선생성된 결과 행을 소유할 때만 결제를 허용한다.
 //   hapcard/whatif — ref=cache_key 가 결과 테이블에 user_id 와 함께 존재.
 //   replay         — ref=replay:{hapcard_id}:{jinjin_date} 를 파싱해 hapcard_replays 조회.
+//   relation_slot  — ref=relation_slot:{pending_id} 를 파싱해 스테이징 행 소유 확인.
 export async function verifyFeatureRefOwnership(
   service: ServiceClient,
   userId: string,
@@ -34,6 +35,22 @@ export async function verifyFeatureRefOwnership(
       .from('whatif_results')
       .select('whatif_id')
       .eq('cache_key', ref)
+      .eq('user_id', userId)
+      .maybeSingle();
+    return Boolean(res.data);
+  }
+
+  if (feature === 'relation_slot') {
+    // materialized_at 필터 금지 — 이미 결제·머티리얼라이즈된 ref 의 init 재오픈
+    // (unlocked 단락 경로)도 소유 검증을 통과해야 한다.
+    const slotParts = ref.split(':');
+    if (slotParts.length !== 2 || slotParts[0] !== 'relation_slot' || !slotParts[1]) {
+      return false;
+    }
+    const res = await service
+      .from('pending_relation_registrations')
+      .select('pending_id')
+      .eq('pending_id', slotParts[1])
       .eq('user_id', userId)
       .maybeSingle();
     return Boolean(res.data);
