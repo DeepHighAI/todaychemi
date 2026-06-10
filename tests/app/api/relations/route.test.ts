@@ -101,6 +101,7 @@ function makeService(opts: {
   stagedPendingId?: string;
   stageError?: { code: string; message: string } | null;
   refundError?: { message: string } | null;
+  openPendingCount?: number;
 } = {}) {
   const rpc = vi.fn().mockResolvedValue({ data: null, error: opts.refundError ?? null });
 
@@ -128,9 +129,17 @@ function makeService(opts: {
   pendingSelChain.is = vi.fn(() => pendingSelChain);
   pendingSelChain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
     Promise.resolve(pendingsResult).then(res, rej);
+  // open-pending 캡 count 쿼리: .select(col,{head:true}).eq().is() → {count}
+  const openPendingChain: Record<string, unknown> = {};
+  openPendingChain.eq = vi.fn(() => openPendingChain);
+  openPendingChain.is = vi.fn(() => openPendingChain);
+  openPendingChain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
+    Promise.resolve({ count: opts.openPendingCount ?? 0, error: null }).then(res, rej);
   const pendingFrom = {
     insert: pendingInsert,
-    select: vi.fn(() => pendingSelChain),
+    select: vi.fn((_col: string, selOpts?: { head?: boolean }) =>
+      selOpts?.head ? openPendingChain : pendingSelChain,
+    ),
   };
 
   const from = vi.fn((table: string) => {
@@ -637,6 +646,34 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     );
     expect(res.status).toBe(402);
     consoleSpy.mockRestore();
+  });
+
+  it('open-pending 캡: 미머티리얼라이즈 pending ≥10 → 429 RATE_LIMITED, 스테이징 안 함', async () => {
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({ openPendingCount: 10 });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error.code).toBe('RATE_LIMITED');
+    expect(svc._pendingInsert).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
+  });
+
+  it('open-pending 캡 미만(9) → 정상 스테이징 진행', async () => {
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({ openPendingCount: 9, stagedPendingId: 'pend-new-001' });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    // 잔액 부족 기본 mock → 402 (캡 통과 증거)
+    expect(res.status).toBe(402);
+    expect(svc._pendingInsert).toHaveBeenCalledOnce();
   });
 
   it('pending 스테이징 실패 → 500', async () => {

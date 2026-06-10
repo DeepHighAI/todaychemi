@@ -16,6 +16,9 @@ import { resolveFeatureCharge } from '@/lib/payments/feature-gate';
 import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
 import { sanitizeErrorForLog, sanitizeErrorForReporting } from '@/lib/errors/sanitize-log';
 
+// 유저당 미전달(delivered_at NULL) pending 상한 — 결제 이탈 abuse 시 row 누적 방어 (ADR-039 §9).
+const OPEN_PENDING_CAP = 10;
+
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -83,6 +86,17 @@ async function handlePaidSlot(
   userId: string,
   draft: RelationCreate,
 ) {
+  // open-pending 캡 (ADR-039 §9) — 402 받고 결제 이탈한 미전달 pending 누적 abuse 방어.
+  // 정상 흐름은 즉시 머티리얼라이즈/현금결제로 delivered 되므로 닿지 않는다.
+  const { count: openPending } = await service
+    .from('pending_relation_registrations')
+    .select('pending_id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('delivered_at', null);
+  if ((openPending ?? 0) >= OPEN_PENDING_CAP) {
+    return apiErrorResponse('RATE_LIMITED', '', 429);
+  }
+
   // 초안 스테이징 — 현금 결제(비동기 토스 리다이렉트) 동안 draft 를 서버에 보존
   const { data: stagedRows, error: stageError } = await service
     .from('pending_relation_registrations')
