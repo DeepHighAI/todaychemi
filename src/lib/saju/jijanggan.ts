@@ -25,8 +25,20 @@ export const JIJANGGAN: Record<Branch, JijangganEntry> = {
 };
 
 // 가중치 — 정수 ×10 스케일 (부동소수 0.3+0.5 비결정성 회피, ADR-035).
-// 천간 1글자 = 10 과 동일 스케일. 비율 자체(10:5:3)는 전문가 검토 대상(잠정).
+// 천간 1글자 = 10 과 동일 스케일. 기본 서열 = 정기 > 중기 > 여기.
 export const JIJANGGAN_WEIGHTS = { 정기: 10, 중기: 5, 여기: 3 } as const;
+
+// 사계월(四庫月) — 辰戌丑未. 고전 사령 일수(三命通會 論人元司事: 여기 7일 > 중기[묘고] 5일)
+// 기준으로 중기/여기 서열이 기본과 반대다.
+export const FOUR_STORAGE_BRANCHES: ReadonlySet<Branch> = new Set(['辰', '戌', '丑', '未']);
+
+// R1 (derived_version 2, 2026-06-12 RAG 검수 — 사용자 확정): 지지별 가중.
+// 사계월만 중기/여기 교환 — 3슬롯이 항상 채워져 있어 교환이 오행 총합을 보존한다 (테스트 잠금).
+export function jijangganWeightsFor(branch: Branch): { 정기: number; 중기: number; 여기: number } {
+  return FOUR_STORAGE_BRANCHES.has(branch)
+    ? { 정기: 10, 중기: 3, 여기: 5 }
+    : JIJANGGAN_WEIGHTS;
+}
 
 // 지지의 정기(주기) 천간 — 십신 지지 판별의 기준 천간
 export function principalStem(branch: Branch): Stem {

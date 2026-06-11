@@ -73,8 +73,9 @@ export interface JijangganHidden {
 }
 
 export interface SajuDerived {
-  // 파생 알고리즘 자체 버전 (theory v3에 결박, 디버그용 표기)
-  derived_version: 1;
+  // 파생 알고리즘 자체 버전 — v2 (2026-06-12, R1): 사계월(辰戌丑未) 지장간 가중 중기/여기 교환.
+  // 저장 v1 jsonb 는 resolveDerivedForLlm 이 요청 시 자동 재계산(self-heal) — DB 재기록 불필요.
+  derived_version: 2;
   // hour_pillar !== null (시간 미상 여부)
   hour_known: boolean;
   sipsin: {
@@ -138,8 +139,9 @@ export interface TheoryProfile {
   longitude_correction: boolean;
 }
 
-// v3 (2026-06-11): 파생층(derived) embedded — normalize가 SajuDerived(derived_version 1)를
-//   항상 부착한다 ("v3 ⇒ derived 존재" 불변식).
+// v3 (2026-06-11): 파생층(derived) embedded — normalize가 SajuDerived(현행 derived_version 2)를
+//   항상 부착한다 ("v3 ⇒ derived 존재" 불변식). derived_version 범프는 theory 버전과 독립 —
+//   저장 구버전 derived 는 LLM projection 경계에서 자동 재계산된다.
 // v2 (2026-06-11, ADR-021 Amended): 시주 진태양시 보정 도입(서울 기본 −32.1분 + 균시차).
 // 엔진 동작 변경 시 반드시 범프 — chart_hash 입력에 포함되어 전 다운스트림 캐시가 분리된다.
 // v1: 보정 없음 (벽시계 시각 그대로 시지 판정).

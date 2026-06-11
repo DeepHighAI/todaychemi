@@ -71,9 +71,9 @@ const Element5CountsSchema = z.object({
 // 경량 경계 스키마 — projection이 읽는 필드만 검증 (non-strict: 미지 필드 통과).
 // DB jsonb 경유 derived 변형 방어 — 실패 시 fail-open(derived 생략, 설계 §2.4).
 export const SajuDerivedSchema = z.object({
-  // 버전 고정 — 미래 derived_version 2 가 v1 의미론으로 잘못 투영되는 것 차단
-  // (parse 실패 → resolveDerivedForLlm 의 warn-and-omit 경로, 리뷰 api-contract)
-  derived_version: z.literal(1),
+  // 버전 고정 — 다른 derived_version 이 현행 의미론으로 잘못 투영되는 것 차단.
+  // 구버전 저장 derived 는 parse 실패 → resolveDerivedForLlm 이 deriveSaju 로 자동 재계산(self-heal).
+  derived_version: z.literal(2),
   sipsin: z.object({
     counts: z.object({
       비견: z.number(),
@@ -142,28 +142,33 @@ export function projectDerivedForLlm(derived: SajuDerivedBoundary): LlmDerived {
   };
 }
 
-// derived 확보 + 경계 검증 — fail-open (설계 §2.4):
-//   ① chart.derived 부재(v2 레거시 jsonb row) → deriveSaju 순수 함수 폴백 (P1 동치 보장)
-//   ② safeParse 실패(jsonb 변형) 또는 폴백 계산 실패 → derived 생략 + warn (요청 차단 금지)
+// derived 확보 + 경계 검증 — fail-open + self-heal (설계 §2.4, derived_version 2):
+//   ① chart.derived 부재(theory v2 레거시 row) → deriveSaju 순수 함수 폴백
+//   ② 저장 derived 가 구버전(derived_version 1)·jsonb 변형으로 parse 실패 → deriveSaju 로
+//      조용히 재계산(self-heal — 버전 전환기 정상 경로라 warn 미발화, DB 재기록 불필요)
+//   ③ 재계산조차 실패(비간지 기둥 등) → derived 생략 + warn (요청 차단 금지)
 export function resolveDerivedForLlm(chart: ChartCore): LlmDerived | undefined {
   try {
-    const source =
-      chart.derived ??
+    const stored = chart.derived !== undefined ? SajuDerivedSchema.safeParse(chart.derived) : null;
+    if (stored !== null && stored.success) {
+      // parsed.data 사용 — Zod strip/transform 이 미래에 추가돼도 경계가 유지된다 (리뷰)
+      return projectDerivedForLlm(stored.data);
+    }
+    const recomputed = SajuDerivedSchema.safeParse(
       deriveSaju({
         year_pillar: chart.year_pillar,
         month_pillar: chart.month_pillar,
         day_pillar: chart.day_pillar,
         hour_pillar: chart.hour_pillar,
-      });
-    const parsed = SajuDerivedSchema.safeParse(source);
-    if (!parsed.success) {
+      }),
+    );
+    if (!recomputed.success) {
       console.warn('[DERIVED_INVALID]', {
-        issues: parsed.error.issues.map((issue) => issue.path.join('.')),
+        issues: recomputed.error.issues.map((issue) => issue.path.join('.')),
       });
       return undefined;
     }
-    // parsed.data 사용 — Zod strip/transform 이 미래에 추가돼도 경계가 유지된다 (리뷰)
-    return projectDerivedForLlm(parsed.data);
+    return projectDerivedForLlm(recomputed.data);
   } catch (err) {
     console.warn('[DERIVED_INVALID]', {
       error: err instanceof Error ? err.message : String(err),

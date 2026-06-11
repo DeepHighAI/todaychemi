@@ -157,10 +157,10 @@ describe('normalizeKasiToChartCore', () => {
   });
 
   describe('파생층 derived 부착 (theory v3 — "v3 ⇒ derived 존재" 불변식)', () => {
-    it('chart_core.derived가 존재하고 derived_version=1·hour_known 반영', () => {
+    it('chart_core.derived가 존재하고 derived_version=2·hour_known 반영', () => {
       const core = normalizeKasiToChartCore(baseItem, 'M', '14:30', baseBirthInput);
       expect(core.derived).toBeDefined();
-      expect(core.derived?.derived_version).toBe(1);
+      expect(core.derived?.derived_version).toBe(2);
       expect(core.derived?.hour_known).toBe(true);
       expect(core.derived?.ilju.pillar).toBe('壬子');
     });

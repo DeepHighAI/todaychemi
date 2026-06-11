@@ -1,4 +1,4 @@
-// deriveSaju — 4기둥 → SajuDerived 파생층 오케스트레이터 (P1, derived_version 1).
+// deriveSaju — 4기둥 → SajuDerived 파생층 오케스트레이터 (P1, derived_version 2 — R1 사계월 가중).
 // 순수 결정형(ADR-035): Date.now/Math.random/LLM 개입 0건, gender 불요.
 // null 월주/시주 graceful: 해당 슬롯 null + hour_known 플래그로 표기.
 // ⚠️ 기둥 변형(합성 차트 등) 시 derived 재계산 의무 — 이 함수를 다시 호출하지 않은
@@ -17,7 +17,7 @@ import {
   type Branch,
   type Element5,
 } from './ganji';
-import { JIJANGGAN, JIJANGGAN_WEIGHTS } from './jijanggan';
+import { JIJANGGAN, jijangganWeightsFor } from './jijanggan';
 import { sipsinOf, sipsinOfBranch, type SipsinName } from './sipsin';
 import { computeSinkang } from './sinkang';
 import { computeYongsin } from './yongsin';
@@ -30,7 +30,7 @@ export interface DeriveSajuPillars {
 }
 
 // 파생 알고리즘 버전 — 산식 변경 시 범프 (theory_profile_version과 함께 관리)
-const DERIVED_VERSION = 1;
+const DERIVED_VERSION = 2;
 
 // 천간 1글자 가중치 — 지장간 정기(10)와 동일 정수 스케일 (부동소수 금지, ADR-035)
 const STEM_WEIGHT = 10;
@@ -90,13 +90,15 @@ export function deriveSaju(pillars: DeriveSajuPillars): SajuDerived {
   }
 
   // §3.2 weighted 지장간 오행 프로필 — 전 항 양수 가산이라 -0 발생 불가 (sinkang.ts 참조)
+  // R1 (derived_version 2): 지지별 가중 — 사계월(辰戌丑未)은 중기/여기 서열 교환
   const ohaengWeighted: Record<Element5, number> = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
   for (const split of presentSplits) {
     ohaengWeighted[STEM_INFO[split.stem].element] += STEM_WEIGHT;
     const entry = JIJANGGAN[split.branch];
-    ohaengWeighted[STEM_INFO[entry.정기].element] += JIJANGGAN_WEIGHTS.정기;
-    if (entry.중기 !== null) ohaengWeighted[STEM_INFO[entry.중기].element] += JIJANGGAN_WEIGHTS.중기;
-    if (entry.여기 !== null) ohaengWeighted[STEM_INFO[entry.여기].element] += JIJANGGAN_WEIGHTS.여기;
+    const weights = jijangganWeightsFor(split.branch);
+    ohaengWeighted[STEM_INFO[entry.정기].element] += weights.정기;
+    if (entry.중기 !== null) ohaengWeighted[STEM_INFO[entry.중기].element] += weights.중기;
+    if (entry.여기 !== null) ohaengWeighted[STEM_INFO[entry.여기].element] += weights.여기;
   }
 
   // §3.3 신강약 + §3.4 용신·희신

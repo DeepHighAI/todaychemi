@@ -109,11 +109,26 @@ describe('buildRagQueryText — 파생층 토큰 (ADR-040)', () => {
     expect(text).toMatch(/십신 (비겁|식상|재성|관성|인성)/);
   });
 
-  it('변형(jsonb 손상) derived → throw 없이 레거시 텍스트 fail-open', () => {
+  it('변형/구버전 derived → throw 없이 self-heal 재계산 토큰 (v2)', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const malformed = { derived_version: 1 } as unknown as NonNullable<ChartCore['derived']>;
     const text = buildRagQueryText({ ...BASE_INPUT, self: { ...SELF, derived: malformed } });
-    expect(text).toBe('일합 일주 병인 일간 화 상대 일주 신사 상대 일간 금');
+    // 저장 derived parse 실패 → 기둥 재계산 — 정상 derived 와 동일 토큰
+    const { deriveSaju } = await import('@/lib/saju/derive');
+    const healthy = buildRagQueryText({
+      ...BASE_INPUT,
+      self: {
+        ...SELF,
+        derived: deriveSaju({
+          year_pillar: SELF.year_pillar,
+          month_pillar: SELF.month_pillar,
+          day_pillar: SELF.day_pillar,
+          hour_pillar: SELF.hour_pillar,
+        }),
+      },
+    });
+    expect(text).toBe(healthy);
+    expect(text).toMatch(/십신 |신강|신약|중화/);
     warnSpy.mockRestore();
   });
 

@@ -71,7 +71,7 @@ describe('deriveSaju — 골든 100 픽스처 sweep', () => {
   it('hour_known·yinyang·sinkang·yongsin·ilju 기본 불변식', () => {
     for (const entry of entries) {
       const derived = deriveSaju(toPillars(entry));
-      expect(derived.derived_version).toBe(1);
+      expect(derived.derived_version).toBe(2);
       expect(derived.hour_known).toBe(true);
       expect(derived.yinyang_balance.yang + derived.yinyang_balance.yin).toBe(8);
       expect(['신강', '중화', '신약']).toContain(derived.sinkang.level);
@@ -97,8 +97,9 @@ describe('deriveSaju — N001 손계산 골든 (庚午 己卯 己卯 辛未, 일
   });
 
   it('ohaeng_weighted 손계산 (수=0 포함 — 0값 허용 확인)', () => {
-    // 천간 庚금10 己토10 己토10 辛금10 / 지장간 午{己5,丁10} 卯{乙10}×2 未{丁3,乙5,己10}
-    expect(derived.ohaeng_weighted).toEqual({ 목: 25, 화: 13, 토: 35, 금: 20, 수: 0 });
+    // 천간 庚금10 己토10 己토10 辛금10 / 지장간 午{己5,丁10} 卯{乙10}×2
+    // 未는 사계월(R1, v2): {丁5(여기), 乙3(중기), 己10(정기)} — 여기>중기 교환
+    expect(derived.ohaeng_weighted).toEqual({ 목: 23, 화: 15, 토: 35, 금: 20, 수: 0 });
   });
 
   it('띠·일주', () => {

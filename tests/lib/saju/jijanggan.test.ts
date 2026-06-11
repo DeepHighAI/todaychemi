@@ -3,6 +3,8 @@ import { describe, it, expect } from 'vitest';
 import {
   JIJANGGAN,
   JIJANGGAN_WEIGHTS,
+  FOUR_STORAGE_BRANCHES,
+  jijangganWeightsFor,
   principalStem,
   type JijangganEntry,
 } from '@/lib/saju/jijanggan';
@@ -40,6 +42,31 @@ describe('JIJANGGAN_WEIGHTS', () => {
     expect(JIJANGGAN_WEIGHTS).toEqual({ 정기: 10, 중기: 5, 여기: 3 });
     for (const w of Object.values(JIJANGGAN_WEIGHTS)) {
       expect(Number.isInteger(w)).toBe(true);
+    }
+  });
+});
+
+// R1 (derived_version 2, 2026-06-12 사용자 확정): 사계월(辰戌丑未)은 고전 사령 일수
+// (三命通會 — 여기 7일 > 중기[묘고] 5일)에 맞춰 중기/여기 가중 교환
+describe('jijangganWeightsFor — 사계월 R1', () => {
+  it('사계월(辰戌丑未) → 여기 5 > 중기 3 (서열 교환)', () => {
+    for (const branch of ['辰', '戌', '丑', '未'] as const) {
+      expect(jijangganWeightsFor(branch)).toEqual({ 정기: 10, 중기: 3, 여기: 5 });
+    }
+  });
+
+  it('비사계월 8지 → 기본 가중(정기 10 / 중기 5 / 여기 3)', () => {
+    for (const branch of BRANCHES) {
+      if (FOUR_STORAGE_BRANCHES.has(branch)) continue;
+      expect(jijangganWeightsFor(branch)).toEqual({ 정기: 10, 중기: 5, 여기: 3 });
+    }
+  });
+
+  it('사계월은 항상 3슬롯 전부 보유 — 가중 교환이 총합을 보존', () => {
+    for (const branch of FOUR_STORAGE_BRANCHES) {
+      const entry = JIJANGGAN[branch];
+      expect(entry.여기).not.toBeNull();
+      expect(entry.중기).not.toBeNull();
     }
   });
 });

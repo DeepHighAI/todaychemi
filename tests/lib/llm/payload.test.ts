@@ -338,7 +338,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       expect(fallback.relation_chart_core.derived).toEqual(explicit.relation_chart_core.derived);
     });
 
-    it('derived 변형(jsonb 손상) → safeParse 실패 시 생략 + [DERIVED_INVALID] warn (fail-open)', () => {
+    it('derived 변형/구버전(jsonb) → deriveSaju 재계산 self-heal (v2, warn 미발화)', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const broken = {
         ...SELF_CHART,
@@ -346,6 +346,32 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       };
       const payload = buildLlmPayload({
         self: broken,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      // 저장 derived parse 실패 → 기둥에서 조용히 재계산 (버전 전환기 정상 경로)
+      expect(payload.self_chart_core.derived).toBeDefined();
+      const fallback = buildLlmPayload({
+        self: { ...SELF_CHART, derived: undefined },
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(payload.self_chart_core.derived).toEqual(fallback.self_chart_core.derived);
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('derived 변형 + 비간지 기둥 → 재계산도 실패 시 생략 + [DERIVED_INVALID] warn', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const doubleBroken = {
+        ...SELF_CHART,
+        day_pillar: '??',
+        derived: { derived_version: 1 } as unknown as ChartCore['derived'],
+      };
+      const payload = buildLlmPayload({
+        self: doubleBroken,
         relation: RELATION_CHART,
         mode: '일합',
         theory_profile_version: '2026-05',
