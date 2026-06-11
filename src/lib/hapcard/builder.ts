@@ -181,10 +181,15 @@ async function buildTargetDateCharts(
 }
 
 // 출생연도 추출 — band 산출 전용 (음력 연초 ±1 오차는 문서화된 단순화, 설계 §1.3).
-// 파싱 실패 시 undefined → age_gap 생략 (fail-open)
-function birthYearOf(birth: ChartBirthForYunse): number | undefined {
-  const year = Number(birth.birth_date.slice(0, 4));
-  return Number.isFinite(year) ? year : undefined;
+// 형식 검증 필수: Number(''.slice(0,4)) === 0 이라 빈 문자열이 '연도 0'으로 통과해
+// 거짓 age_gap('7+ 연상')이 LLM 에 fact 로 전달된다 (리뷰 F4). 실패 시 undefined → age_gap 생략.
+// (현 경로에서는 withYunseAtDate 의 ssaju 검증이 먼저 throw 하지만, 호출 순서 변경에 대한 방어층)
+export function birthYearOf(birth: ChartBirthForYunse): number | undefined {
+  const match = /^(\d{4})-/.exec(birth.birth_date ?? '');
+  if (match === null) return undefined;
+  const year = Number(match[1]);
+  // 타당 범위 밖(예: 0000, 9999 더미)은 밴드 신뢰 불가 — 생략
+  return year >= 1900 && year <= 2100 ? year : undefined;
 }
 
 export async function buildHapcardWithMeta(

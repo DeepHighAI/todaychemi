@@ -28,7 +28,7 @@ vi.mock('@/lib/rag/grounding-validator', () => ({
   validateClassicCitations: vi.fn(),
 }));
 
-import { buildHapcard, buildHapcardWithMeta } from '@/lib/hapcard/builder';
+import { buildHapcard, buildHapcardWithMeta, birthYearOf } from '@/lib/hapcard/builder';
 import { computeScore } from '@/lib/scoring/index';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { embedQuery } from '@/lib/rag/embeddings';
@@ -194,6 +194,7 @@ function makeMockUserClient(opts: {
   cachedRow?: HapcardResult | null;
   insertedRow?: HapcardResult;
   relationNickname?: string;
+  userBirthDate?: string;
 }) {
   const cachedRow = opts.cachedRow ?? null;
   const insertedRow = opts.insertedRow ?? makeInsertedRow(EXPECTED_CACHE_KEY);
@@ -208,7 +209,7 @@ function makeMockUserClient(opts: {
 
   // users/relations birth row 조회 — target_date 기준 yunse 재계산용
   const birthRow = {
-    birth_date: '1990-01-01',
+    birth_date: opts.userBirthDate ?? '1990-01-01',
     birth_date_calendar: 'solar',
     is_lunar_leap: false,
     birth_time_knowledge: 'unknown',
@@ -812,5 +813,34 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(citations[0].original).toBe('갑자');
     // modern은 그대로
     expect(citations[0].modern).toBe('갑자년');
+  });
+});
+
+// 리뷰 F4: birthYearOf 형식 검증 — 변형 birth_date 가 거짓 밴드로 LLM 에 전달되는 것 차단
+describe('birthYearOf — 출생연도 추출 방어', () => {
+  const baseBirth = {
+    birth_date_calendar: 'solar' as const,
+    is_lunar_leap: false,
+    birth_time_knowledge: 'unknown' as const,
+    birth_time: null,
+    gender: 'M' as const,
+  };
+
+  it('정상 날짜 → 연도 반환', () => {
+    expect(birthYearOf({ ...baseBirth, birth_date: '1990-01-01' })).toBe(1990);
+  });
+
+  it('빈 문자열 → undefined (연도 0 거짓 밴드 차단)', () => {
+    expect(birthYearOf({ ...baseBirth, birth_date: '' })).toBeUndefined();
+  });
+
+  it('형식 불일치(슬래시·연도만) → undefined', () => {
+    expect(birthYearOf({ ...baseBirth, birth_date: '1990/01/01' })).toBeUndefined();
+    expect(birthYearOf({ ...baseBirth, birth_date: '1990' })).toBeUndefined();
+  });
+
+  it('타당 범위 밖 연도(0000, 9999) → undefined', () => {
+    expect(birthYearOf({ ...baseBirth, birth_date: '0000-01-01' })).toBeUndefined();
+    expect(birthYearOf({ ...baseBirth, birth_date: '9999-01-01' })).toBeUndefined();
   });
 });
