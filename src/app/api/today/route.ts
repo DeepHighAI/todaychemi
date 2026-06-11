@@ -13,6 +13,7 @@ import {
   type TodayTrace,
 } from '@/lib/today/builder';
 import { callDailyHapLlm } from '@/lib/today/openai';
+import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { pickTodayRelation } from '@/lib/today/relation-picker';
 import { ensureRelationChart } from '@/lib/today/lazy-relation-chart';
 import { withYunseAtDate, type ChartBirthForYunse } from '@/lib/chart/yunse-at-date';
@@ -123,10 +124,9 @@ async function fetchRelationBirthForYunse(
   return toBirthForYunse(data as BirthRow);
 }
 
-// G2 / Phase 3 C7 — 프롬프트 버전 식별자 (캐시 키 차원).
-// P3 (2026-06-11): derived·cross_analysis 입력 반영 — 프롬프트 본문 범프와 동기 의무 (설계 §3).
-const PROMPT_VERSION_SINGLE = 'daily_hap:v0.4';
-const PROMPT_VERSION_RELATION = 'today_with_relation:v0.3';
+// G2 / Phase 3 C7 — 프롬프트 이름 (캐시 키 차원의 버전은 W5부터 DB 로드 행에서 동적 파생).
+const PROMPT_NAME_SINGLE = 'daily_hap';
+const PROMPT_NAME_RELATION = 'today_with_relation';
 
 // G2 / Phase 3 C9 — feature flag (false 시 기존 단독축 today 유지).
 function todayWithRelationEnabled(): boolean {
@@ -272,6 +272,23 @@ export async function GET(request: Request) {
       return datedChart;
     }
 
+    // W5: 캐시 키·저장 라벨의 프롬프트 버전을 실제 로드된 행에서 파생 —
+    // 하드코딩 상수의 시드-배포 타이밍 드리프트 + canary 5% 라벨 오기록(ADR-008) 차단.
+    // canary 샘플링은 (userId, promptName) 결정형이라 callDailyHapLlm 내부 로드와 동일 행 선택.
+    // 요청당 promptName별 1회 메모 (작은 SELECT 1회 추가가 비용 전부).
+    const promptVersionMemo = new Map<string, Promise<string>>();
+    function promptVersionFor(relationPresent: boolean): Promise<string> {
+      const promptName = relationPresent ? PROMPT_NAME_RELATION : PROMPT_NAME_SINGLE;
+      let pending = promptVersionMemo.get(promptName);
+      if (!pending) {
+        pending = loadPromptForUser(supabase, promptName, userId).then(
+          (row) => `${promptName}:${row.version}`,
+        );
+        promptVersionMemo.set(promptName, pending);
+      }
+      return pending;
+    }
+
     async function cacheRowMatchesCurrentSource(row: DailyHapRow, date: string): Promise<boolean> {
       const rowRelationId = row.primary_relation_id ?? null;
       if (rowRelationId !== currentRelationId) return false;
@@ -285,7 +302,7 @@ export async function GET(request: Request) {
       const relationChart = currentRelationId
         ? await resolveRelationChart(currentRelationId, date)
         : null;
-      const promptVersion = relationChart ? PROMPT_VERSION_RELATION : PROMPT_VERSION_SINGLE;
+      const promptVersion = await promptVersionFor(relationChart !== null);
       const expectedHash = buildSourcePacketHash({
         self_chart: selfChart,
         relation_chart: relationChart,
@@ -376,7 +393,7 @@ export async function GET(request: Request) {
           ? await resolveRelationChart(currentRelationId, target)
           : null;
         const relationPresent = relationChart !== null;
-        const promptVersion = relationPresent ? PROMPT_VERSION_RELATION : PROMPT_VERSION_SINGLE;
+        const promptVersion = await promptVersionFor(relationPresent);
         const modelId = selectLlmModel('today');
 
         const hash = buildSourcePacketHash({

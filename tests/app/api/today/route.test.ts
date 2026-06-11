@@ -8,6 +8,18 @@ vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/today/openai');
 vi.mock('@/lib/chart/queries');
 vi.mock('@/lib/supabase/service-role');
+// W5: 라우트가 캐시 키 prompt_version 을 실제 로드 행에서 파생 — active 행 기본 mock
+vi.mock('@/lib/llm/prompt-loader', () => ({
+  loadPromptForUser: vi.fn(async (_client: unknown, promptName: string) => ({
+    prompt_name: promptName,
+    version: promptName === 'today_with_relation' ? 'v0.3' : 'v0.4',
+    content: '본문',
+    status: 'active',
+    canary_ratio: null,
+    notes: null,
+    created_at: '2026-06-11T00:00:00Z',
+  })),
+}));
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { buildDailyHap } from '@/lib/today/builder';
@@ -681,6 +693,39 @@ describe('GET /api/today (F1.2 saveCard 신규 컬럼 영속화)', () => {
     expect(payload.primary_relation_id).toBe('rel-abc');
     expect(payload.relation_nickname).toBe('민지');
     expect(payload.today_compat_score).toBe(75);
+  });
+
+  it('W5: canary 행 로드 시 source_packet_hash 가 실제 버전을 따른다 (ADR-008 라벨 동기)', async () => {
+    const { loadPromptForUser } = await import('@/lib/llm/prompt-loader');
+    // 이번 요청만 canary v0.4 행 — 하드코딩 상수였다면 해시는 v0.3 그대로였을 것
+    vi.mocked(loadPromptForUser).mockResolvedValueOnce({
+      prompt_name: 'today_with_relation',
+      version: 'v0.4',
+      content: '본문',
+      status: 'canary',
+      canary_ratio: 0.05,
+      notes: null,
+      created_at: '2026-06-11T00:00:00Z',
+    } as never);
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    vi.mocked(pickTodayRelation).mockResolvedValue({ id: 'rel-abc', nickname: '민지', mode: '일합' });
+    vi.mocked(buildDailyHap).mockImplementation(async (deps) => {
+      const finalCard = { ...CARD, relation_id: 'rel-abc', relation_nickname: '민지', today_compat_score: 75 };
+      await deps.saveCard(finalCard);
+      return finalCard;
+    });
+
+    await GET(makeRequest());
+
+    expect(upsertMock).toHaveBeenCalledTimes(1);
+    const expectedHash = buildSourcePacketHash({
+      self_chart: withYunseAtDate(SELF_CHART, USER_BIRTH_ROW, TODAY_TARGET_DATE),
+      relation_chart: withYunseAtDate(REL_CHART, RELATION_BIRTH_ROW, TODAY_TARGET_DATE),
+      target_date: TODAY_TARGET_DATE,
+      prompt_version: 'today_with_relation:v0.4',
+      model_id: selectLlmModel('today'),
+    });
+    expect(upsertMock.mock.calls[0][0].source_packet_hash).toBe(expectedHash);
   });
 
   it('relation 미존재(인연 0건) → upsert payload의 신규 3컬럼 모두 null', async () => {
