@@ -109,6 +109,7 @@ async function computeAndUpsertChart(
         birth_time_knowledge: draft.birth_time_knowledge,
         birth_time: draft.birth_time,
         gender: draft.gender,
+        birth_longitude: draft.birth_longitude ?? null,
         theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
       },
       process.env.KASI_SERVICE_KEY!,

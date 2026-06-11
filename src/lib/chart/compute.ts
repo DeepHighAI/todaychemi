@@ -1,6 +1,7 @@
 import { lunarToSolar } from 'ssaju';
 import { fetchLunCalInfo } from '@/lib/kasi/client';
 import { normalizeKasiToChartCore, type BirthInput } from '@/lib/kasi/normalize';
+import { DEFAULT_BIRTH_LONGITUDE } from '@/lib/kasi/constants';
 import { deriveChartHash } from './chart-hash';
 import type { ChartCore } from '@/types/chart';
 
@@ -12,6 +13,8 @@ export interface ComputeInput {
   birth_time_knowledge: 'exact' | 'approximate' | 'unknown';
   birth_time: string | null;        // HH:mm or HH:mm:ss
   gender: 'M' | 'F';
+  // 출생 경도 — 시주 진태양시 보정용 (ADR-021 Amended). null/미지정 = 서울(126.978) 가정.
+  birth_longitude?: number | null;
   theory_profile_version: string;
 }
 
@@ -50,7 +53,12 @@ export async function computeChart(input: ComputeInput, serviceKey: string): Pro
     leap: input.is_lunar_leap,
   };
 
-  const chart_core = normalizeKasiToChartCore(kasiItem, input.gender, effectiveTimeStr, birthInput);
+  // 시주 진태양시 보정 컨텍스트 — 균시차는 양력 날짜 기준 (음력 입력은 위에서 변환 완료)
+  const effectiveLongitude = input.birth_longitude ?? DEFAULT_BIRTH_LONGITUDE;
+  const chart_core = normalizeKasiToChartCore(kasiItem, input.gender, effectiveTimeStr, birthInput, {
+    birth_longitude: effectiveLongitude,
+    solar_date: { year: solYear, month: solMonth, day: solDay },
+  });
   const chart_hash = deriveChartHash({
     entity_id: input.entity_id,
     birth_date: input.birth_date,
@@ -58,6 +66,7 @@ export async function computeChart(input: ComputeInput, serviceKey: string): Pro
     is_lunar_leap: input.is_lunar_leap,
     effective_birth_time: effectiveTimeStr,
     gender: input.gender,
+    birth_longitude: effectiveLongitude,
     theory_profile_version: input.theory_profile_version,
   });
 

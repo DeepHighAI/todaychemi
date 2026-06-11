@@ -98,4 +98,36 @@ describe('computeChart', () => {
     vi.mocked(fetchLunCalInfo).mockRejectedValue(new Error('KASI timeout'));
     await expect(computeChart(SOLAR_INPUT, 'key')).rejects.toThrow('KASI timeout');
   });
+
+  it('birth_longitude 미지정 = 서울 기본 명시와 동일 hash (ADR-021 기본 경도)', async () => {
+    const { chart_hash: omitted } = await computeChart(SOLAR_INPUT, 'key');
+    const { chart_hash: seoul } = await computeChart(
+      { ...SOLAR_INPUT, birth_longitude: 126.978 },
+      'key',
+    );
+    const { chart_hash: nulled } = await computeChart(
+      { ...SOLAR_INPUT, birth_longitude: null },
+      'key',
+    );
+    expect(seoul).toBe(omitted);
+    expect(nulled).toBe(omitted);
+  });
+
+  it('birth_longitude 변경 → 다른 hash + 시주 경계에서 시지가 달라질 수 있음', async () => {
+    const { chart_hash: h1 } = await computeChart(SOLAR_INPUT, 'key');
+    const { chart_hash: h2 } = await computeChart(
+      { ...SOLAR_INPUT, birth_longitude: 135 },
+      'key',
+    );
+    expect(h1).not.toBe(h2);
+
+    // 17:05 출생: 서울(−32분) → 申時(戊申), 표준자오선(135°, 0분) → 酉時(己酉) — 壬日 기준
+    const seoul = await computeChart({ ...SOLAR_INPUT, birth_time: '17:05' }, 'key');
+    const meridian = await computeChart(
+      { ...SOLAR_INPUT, birth_time: '17:05', birth_longitude: 135 },
+      'key',
+    );
+    expect(seoul.chart_core.hour_pillar).toBe('戊申');
+    expect(meridian.chart_core.hour_pillar).toBe('己酉');
+  });
 });

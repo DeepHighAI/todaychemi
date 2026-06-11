@@ -51,7 +51,7 @@ export async function ensureRelationChartRow(
   // Step 2: relations row fetch (chart 미생성 인연의 birth 필드)
   const { data: relRow, error: relError } = await supabase
     .from('relations')
-    .select('birth_date, birth_date_calendar, is_lunar_leap, birth_time_knowledge, birth_time, gender')
+    .select('birth_date, birth_date_calendar, is_lunar_leap, birth_time_knowledge, birth_time, gender, birth_longitude')
     .eq('relation_id', relationId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -70,6 +70,7 @@ export async function ensureRelationChartRow(
     birth_time_knowledge: 'exact' | 'approximate' | 'unknown';
     birth_time: string | null;
     gender: 'M' | 'F';
+    birth_longitude: number | null;
   };
   const r = relRow as unknown as RelRow;
   let computeResult: Awaited<ReturnType<typeof computeChart>>;
@@ -83,6 +84,7 @@ export async function ensureRelationChartRow(
         birth_time_knowledge: r.birth_time_knowledge,
         birth_time: r.birth_time,
         gender: r.gender,
+        birth_longitude: r.birth_longitude ?? null,
         theory_profile_version: theoryProfileVersion,
       },
       kasiServiceKey,

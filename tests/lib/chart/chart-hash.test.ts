@@ -10,6 +10,7 @@ const BASE: ChartHashInput = {
   is_lunar_leap: false,
   effective_birth_time: '14:30',
   gender: 'F',
+  birth_longitude: 126.978,
   theory_profile_version: 'v1',
 };
 
@@ -51,5 +52,9 @@ describe('deriveChartHash', () => {
 
   it('entity_id 변경 → 다른 hash (같은 birth_data여도 다른 entity)', () => {
     expect(deriveChartHash(BASE)).not.toBe(deriveChartHash({ ...BASE, entity_id: 'user-uuid-002' }));
+  });
+
+  it('birth_longitude 변경 → 다른 hash (진태양시 보정 입력 — ADR-021)', () => {
+    expect(deriveChartHash(BASE)).not.toBe(deriveChartHash({ ...BASE, birth_longitude: 129.075 }));
   });
 });
