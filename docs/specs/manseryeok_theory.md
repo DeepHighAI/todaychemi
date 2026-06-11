@@ -173,7 +173,9 @@ level = score ≥ 70 → 신강 / score ≤ 30 → 신약 / 그 외 → 중화
   분포 + 결정형 salient 템플릿 문장 ≤3 (선정 규칙 잠금: ① 타깃 일간 슬롯 항상 1문장 ② 최다 그룹
   count ≥ 3 ③ 재성+관성 합 ≥ 4 현실축 집중).
 - **궁위 귀속**: `computeHapChungHyungHaeRaw` 이벤트의 `pillarIndex`를 궁위 라벨로 변환.
-  삼합·삼형·자형 등 다주 합성 이벤트는 단일 궁위 귀속 불가 → `palace: null`.
+  삼합·삼형 등 다주 합성 이벤트는 단일 궁위 귀속 불가 → `palace: null`.
+  자형은 동일 슬롯 쌍이므로 궁위 귀속됨. 형·삼합 계열의 참여 지지는 raw 이벤트의
+  `participants` 메타데이터(점수 무영향)로 전달되어 detail 문장을 직접 구성한다.
 
   | 궁위 | 의미 (`palace_meaning`) |
   |---|---|

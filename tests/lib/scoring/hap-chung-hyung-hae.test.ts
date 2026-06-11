@@ -234,3 +234,58 @@ describe('normalizeHapChungHyungHae (§2.6)', () => {
     expect(normalizeHapChungHyungHae(withDup)).toBeGreaterThan(normalizeHapChungHyungHae(noDup));
   });
 });
+
+// W3: 형·삼합 계열 participants 메타데이터 — 점수 무영향, 교차분석 detail 소비용
+describe('participants 메타데이터 (W3)', () => {
+  it('삼형: 트리플 3지지 + pillarIndex 없음', () => {
+    // 합산 지지에 寅·巳·申 — self 寅巳 + rel 申
+    const self = makeChart('甲寅', '己巳', '丙午');
+    const rel = makeChart('壬申', '乙丑', '乙丑');
+    const triple = computeHapChungHyungHaeRaw(self, rel).find(
+      (e) => e.type === 'hyung' && (e.participants?.length ?? 0) >= 3,
+    );
+    expect(triple).toBeDefined();
+    expect(triple?.participants).toEqual(['寅', '巳', '申']);
+    expect(triple?.pillarIndex).toBeUndefined();
+  });
+
+  it('자형: 해당 지지 1개 + 동일 슬롯 pillarIndex 보유', () => {
+    const self = makeChart('甲子', '乙丑', '丙午');
+    const rel = makeChart('甲子', '乙丑', '庚午');
+    const selfHyung = computeHapChungHyungHaeRaw(self, rel).filter(
+      (e) => e.type === 'hyung' && e.participants?.length === 1,
+    );
+    expect(selfHyung.map((e) => ({ p: e.participants, idx: e.pillarIndex }))).toEqual([
+      { p: ['子'], idx: 0 },
+      { p: ['午'], idx: 2 },
+    ]);
+  });
+
+  it('삼합 완성: 그룹 3지지 / 반합: 성립 2지지 (그룹 고정 순서)', () => {
+    // 申子辰 완성: self 申子 + rel 辰
+    const full = computeHapChungHyungHaeRaw(
+      makeChart('壬申', '甲子', '丙午'),
+      makeChart('戊辰', '乙丑', '辛亥'),
+    ).find((e) => e.type === 'samhap_full');
+    expect(full?.participants).toEqual(['申', '子', '辰']);
+
+    // 寅午 반합 (양측 분산)
+    const half = computeHapChungHyungHaeRaw(
+      makeChart('甲寅', '乙丑', '乙丑'),
+      makeChart('丙午', '乙丑', '乙丑'),
+    ).find((e) => e.type === 'samhap_half');
+    expect(half?.participants).toEqual(['寅', '午']);
+  });
+
+  it('participants 추가 후에도 normalize 점수 불변 (점수 무영향 단언)', () => {
+    const withMeta: HapChungEvent[] = [
+      { type: 'hyung', score: -8, participants: ['寅', '巳', '申'] },
+      { type: 'samhap_half', score: 8, participants: ['寅', '午'] },
+    ];
+    const withoutMeta: HapChungEvent[] = [
+      { type: 'hyung', score: -8 },
+      { type: 'samhap_half', score: 8 },
+    ];
+    expect(normalizeHapChungHyungHae(withMeta)).toBe(normalizeHapChungHyungHae(withoutMeta));
+  });
+});

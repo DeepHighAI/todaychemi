@@ -237,7 +237,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
       "relation_to_self": {"stems":{"year":"정재","month":"정관","day":"겁재","hour":"정인"},"branches_jeonggi":{"year":"편관","month":"정인","day":"편관","hour":"비견"},"distribution":{"비겁":2,"식상":0,"재성":1,"관성":3,"인성":2},"salient":["내 일간(丙) = 상대 일간 기준 겁재(비겁)","상대 일간 기준 내 사주에 관성 기운이 3곳","상대 일간 기준 내 사주에 재성·관성이 합 4곳으로 집중"]}
     },
     "gungwi_events": [
-      {"kind":"hyung","palace":null,"palace_meaning":null,"detail":"내 시지 午 ↔ 상대 시지 午 자형"},
+      {"kind":"hyung","palace":"시주","palace_meaning":"미래·자식","detail":"내 시지 午 ↔ 상대 시지 午 자형"},
       {"kind":"samhap_half","palace":null,"palace_meaning":null,"detail":"양측 지지에 寅·午 반합"}
     ],
     "yunse_cross": [
@@ -319,9 +319,9 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
       "relation_to_self": {"stems":{"year":"편재","month":"식신","day":"편재","hour":"편재"},"branches_jeonggi":{"year":"정인","month":"정재","day":"정인","hour":"정재"},"distribution":{"비겁":0,"식상":1,"재성":5,"관성":0,"인성":2},"salient":["내 일간(壬) = 상대 일간 기준 편재(재성)","상대 일간 기준 내 사주에 재성 기운이 5곳","상대 일간 기준 내 사주에 재성·관성이 합 5곳으로 집중"]}
     },
     "gungwi_events": [
+      {"kind":"hyung","palace":"월주","palace_meaning":"사회·부모","detail":"내 월지 子 ↔ 상대 월지 子 자형"},
       {"kind":"chung","palace":"일주","palace_meaning":"배우자궁·자아","detail":"내 일지 午 ↔ 상대 일지 子 충"},
       {"kind":"chung","palace":"시주","palace_meaning":"미래·자식","detail":"내 시지 子 ↔ 상대 시지 午 충"},
-      {"kind":"hyung","palace":null,"palace_meaning":null,"detail":"내 월지 子 ↔ 상대 월지 子 자형"},
       {"kind":"samhap_half","palace":null,"palace_meaning":null,"detail":"양측 지지에 子·辰 반합"}
     ],
     "yunse_cross": [

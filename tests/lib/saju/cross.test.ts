@@ -215,20 +215,20 @@ describe('computeGungwiEvents — 합·충 이벤트 궁위 귀속', () => {
     ]);
   });
 
-  it('자형(hyung): raw 이벤트에 pillarIndex 없음 → palace null, detail은 재계산 보강', () => {
+  it('자형(hyung): 동일 슬롯 쌍 — raw participants+pillarIndex 로 궁위 귀속 (W3)', () => {
     const selfJ = makeChart({ year: '甲子', month: null, day: '丙午', hour: null });
     const relJ = makeChart({ year: '甲子', month: null, day: '庚午', hour: null });
     expect(computeGungwiEvents(selfJ, relJ)).toEqual([
       {
         kind: 'hyung',
-        palace: null,
-        palace_meaning: null,
+        palace: '년주',
+        palace_meaning: '뿌리·초년',
         detail: '내 년지 子 ↔ 상대 년지 子 자형',
       },
       {
         kind: 'hyung',
-        palace: null,
-        palace_meaning: null,
+        palace: '일주',
+        palace_meaning: '배우자궁·자아',
         detail: '내 일지 午 ↔ 상대 일지 午 자형',
       },
     ]);
