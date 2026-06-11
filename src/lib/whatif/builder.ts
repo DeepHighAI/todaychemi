@@ -8,6 +8,7 @@ import { deriveCacheKey } from '@/lib/whatif/cache-key';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
+import { resolveDerivedForLlm, type LlmDerived } from '@/lib/llm/payload';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 
 export interface BuildWhatifResult {
@@ -35,8 +36,13 @@ export interface BuildWhatifDeps {
   ragQueryText: (input: BuildWhatifInput) => string;
 }
 
-function projectChartCoreForWhatif(chart: ChartCore): ChartCore {
-  return {
+// whatif self_chart_core — 명시 복사 + P3 압축 derived projection.
+// derived 는 풀 SajuDerived 가 아닌 LlmDerived 만 전달 (payload.ts 단일 출처 재사용).
+// cross_analysis 는 자기진단(단일 차트)이라 해당 없음 — 화이트리스트 2키 유지 (설계 §1.4).
+type WhatifChartCore = Omit<ChartCore, 'derived'> & { derived?: LlmDerived };
+
+function projectChartCoreForWhatif(chart: ChartCore): WhatifChartCore {
+  const projected: WhatifChartCore = {
     year_pillar: chart.year_pillar,
     month_pillar: chart.month_pillar,
     day_pillar: chart.day_pillar,
@@ -74,6 +80,12 @@ function projectChartCoreForWhatif(chart: ChartCore): ChartCore {
       },
     },
   };
+  // 압축 derived — 변형/계산 실패 시 fail-open 생략 (payload.ts resolveDerivedForLlm 공용)
+  const derived = resolveDerivedForLlm(chart);
+  if (derived !== undefined) {
+    projected.derived = derived;
+  }
+  return projected;
 }
 
 function mapDbRow(data: unknown): WhatifResult {

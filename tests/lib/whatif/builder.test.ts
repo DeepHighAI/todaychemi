@@ -381,3 +381,47 @@ describe('buildWhatif — PII 가드 (AGENTS.md §5)', () => {
     expect(wl.size).toBe(2);
   });
 });
+
+describe('buildWhatif — derived 압축 projection (P3)', () => {
+  interface WhatifPayloadShape {
+    self_chart_core: {
+      derived?: Record<string, unknown> & { sinkang?: Record<string, unknown> };
+    };
+  }
+
+  it('self_chart_core.derived 압축 LlmDerived 포함 (sinkang verdict만, 숫자 score 부재)', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    const derived = (callInput.userPayload as unknown as WhatifPayloadShape).self_chart_core
+      .derived;
+    expect(derived).toBeDefined();
+    expect(Object.keys(derived!).sort()).toEqual([
+      'dominant_sipsin',
+      'jijanggan_elements',
+      'missing_sipsin',
+      'sinkang',
+      'sipsin_distribution',
+      'yinyang',
+      'yongsin_candidates',
+      'zodiac_animal',
+    ]);
+    expect(Object.keys(derived!.sinkang!)).toEqual(['verdict']);
+    expect(JSON.stringify(callInput.userPayload)).not.toMatch(/"score"/);
+  });
+
+  it('cross_analysis 부재 + 화이트리스트 2키 불변 (자기진단 — 교차 대상 없음)', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+    const callInput = mockCallOpenAi.mock.calls[0][0];
+    const payload = callInput.userPayload as Record<string, unknown>;
+    expect(Object.keys(payload).sort()).toEqual(['self_chart_core', 'type']);
+    expect('cross_analysis' in payload).toBe(false);
+    expect(
+      'cross_analysis' in (payload.self_chart_core as Record<string, unknown>),
+    ).toBe(false);
+    const wl = callInput.payloadWhitelist as Set<string>;
+    expect(wl.size).toBe(2);
+    expect(wl.has('cross_analysis')).toBe(false);
+  });
+});
