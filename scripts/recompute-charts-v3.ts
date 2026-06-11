@@ -10,7 +10,7 @@ import { DEFAULT_THEORY_PROFILE_VERSION } from '../src/types/chart';
 // - 기존 버전 row 는 보존 (과거 hapcards FK·이력 무결성)
 // - KASI 호출이 엔티티당 1회 발생하므로 직렬 실행
 // - 미백필 유저는 lazy 경로(ensure-user-chart / lazy-relation-chart)가 커버
-// (v2 백필 이력: scripts/recompute-charts-v2.ts — 로직은 DEFAULT_THEORY_PROFILE_VERSION 구동 동일)
+// (v2 백필 스크립트는 본 파일로 대체·삭제 — DEFAULT_THEORY_PROFILE_VERSION 구동이라 동작 동일했음)
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

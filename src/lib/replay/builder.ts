@@ -28,7 +28,8 @@ export interface ReplayCacheKeyInput {
   jinjin_date: string; // YYYY-MM-DD (UTC+9)
 }
 
-// spec §8: replay_cache_key = sha256(chart_hash | scoring_version | prompt_version | jinjin_date)
+// replay_cache_key = sha256(양측 chart_hash | prompt_version | theory_profile_version | jinjin_date)
+// scoring_version 미포함 — 점수 버전 회전은 theory 버전(chart_hash) 동반 범프가 커버 (리뷰 F9 주석 정정)
 export function buildReplayCacheKey(input: ReplayCacheKeyInput): string {
   const payload =
     input.user_chart_hash +

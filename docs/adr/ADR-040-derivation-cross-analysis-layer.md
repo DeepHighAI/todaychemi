@@ -41,9 +41,19 @@ This round adds two deterministic pure-function layers:
    strings enter any output or LLM payload. Key naming avoids forbidden PII key
    segments (e.g. `palace_meaning`, never `palace_name`). LLM projection
    (`projectDerivedForLlm`) drops the sinkang numeric score — verdict string only.
+   *Known pre-existing side channel (Phase Y2, outside this layer):*
+   `LlmYunse.daeun.current` carries `{age, year}` from which a birth year is
+   derivable (`year − age` ±1). Whether to strip `year` is a pending §1.1
+   decision — until then the band-only guarantee applies to this layer's own
+   outputs, not the whole payload.
 5. **Persistence:** `derived` persists inside `chart_core` jsonb (v3);
    `cross_analysis` is computed per request and **never persisted** — cached only as
    part of the LLM result row it contributed to.
+   **Cache-coupling rule:** LLM result cache keys do NOT include
+   `CROSS_ANALYSIS_VERSION`/`derived_version`. Any future bump of either MUST be
+   accompanied by a prompt version bump (or theory version bump) — that is the
+   cache rotation lever. A silent cross/derive algorithm change without one keeps
+   serving cached interpretations built from old facts.
 6. **Compatibility:** `ChartCore.derived` is optional (legacy v2 rows);
    `resolveDerivedForLlm` recomputes on the fly for v2 rows and omits with a
    `[DERIVED_INVALID]` warn on validation failure (fail-open — interpretation
