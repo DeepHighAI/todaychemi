@@ -554,6 +554,30 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(callArgs.userPayload.relation_chart_core.yunse.iliun.today_date).toBe(BASE_INPUT.target_date);
   });
 
+  it('LLM payload에 cross_analysis 포함 — births 기반 age_gap + 연도 원본 미유출', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const cross = callArgs.userPayload.cross_analysis;
+    expect(cross).toBeDefined();
+    expect(cross.version).toBe('cross-v1');
+    // mock births 양측 1990-01-01 → 동갑 밴드 (연도 원본은 band 산출에만 사용)
+    expect(cross.age_gap).toEqual({ band: '동갑', relation_is: '동갑' });
+    // 출생연도 패턴 미유출 — cross 직렬화에 4자리 연도 부재
+    expect(JSON.stringify(cross)).not.toMatch(/\b(19|20)\d{2}\b/);
+  });
+
+  it('ADR-035 — cross_analysis 는 computeScore 입력에 무접촉 (self/relation/mode 만)', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const scoreArgs = (computeScore as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(Object.keys(scoreArgs).sort()).toEqual(['mode', 'relation', 'self']);
+  });
+
   it('INSERT row에 user_id, relation_id, mode, user_chart_hash, relation_chart_hash 포함', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 

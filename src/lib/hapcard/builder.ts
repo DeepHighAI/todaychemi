@@ -3,6 +3,7 @@ import type { ChartCore, ChartHash } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 import type { HapcardResult } from '@/types/hapcard';
 import { withYunseAtDate, type ChartBirthForYunse } from '@/lib/chart/yunse-at-date';
+import { computeCrossAnalysis } from '@/lib/saju/cross';
 import { computeScore } from '@/lib/scoring/index';
 import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { deriveCacheKey } from '@/lib/hapcard/cache-key';
@@ -155,10 +156,18 @@ async function fetchRelationBirth(
   return toBirthForYunse(data as BirthRow);
 }
 
+interface TargetDateCharts {
+  self: ChartCore;
+  relation: ChartCore;
+  // 교차분석 연령차 밴드 산출용 — 서버 내부 전용, LLM 페이로드 미진입
+  selfBirth: ChartBirthForYunse;
+  relationBirth: ChartBirthForYunse;
+}
+
 async function buildTargetDateCharts(
   input: BuildHapcardInput,
   client: SupabaseClient,
-): Promise<{ self: ChartCore; relation: ChartCore }> {
+): Promise<TargetDateCharts> {
   const [selfBirth, relationBirth] = await Promise.all([
     fetchUserBirth(client, input.user_id),
     fetchRelationBirth(client, input.relation_id),
@@ -166,7 +175,16 @@ async function buildTargetDateCharts(
   return {
     self: withYunseAtDate(input.self, selfBirth, input.target_date),
     relation: withYunseAtDate(input.relation, relationBirth, input.target_date),
+    selfBirth,
+    relationBirth,
   };
+}
+
+// 출생연도 추출 — band 산출 전용 (음력 연초 ±1 오차는 문서화된 단순화, 설계 §1.3).
+// 파싱 실패 시 undefined → age_gap 생략 (fail-open)
+function birthYearOf(birth: ChartBirthForYunse): number | undefined {
+  const year = Number(birth.birth_date.slice(0, 4));
+  return Number.isFinite(year) ? year : undefined;
 }
 
 export async function buildHapcardWithMeta(
@@ -232,6 +250,17 @@ export async function buildHapcardWithMeta(
     mode: input.mode,
   });
 
+  // 5.5 교차분석 — 점수와 동일한 dated 차트 기준, LLM 해석 근거 전용 facts.
+  //     ADR-035: computeScore 입력·출력에 무접촉. 출생연도는 band 산출에만 사용 —
+  //     원본 연도는 payload 미진입 (age_gap band/relation_is 문자열만).
+  const crossAnalysis = computeCrossAnalysis({
+    self: datedCharts.self,
+    relation: datedCharts.relation,
+    mode: input.mode,
+    self_birth_year: birthYearOf(datedCharts.selfBirth),
+    relation_birth_year: birthYearOf(datedCharts.relationBirth),
+  });
+
   // 6. LLM payload 빌드 (PII 5필드 제외 — AGENTS.md §5)
   const payload = buildLlmPayload({
     self: datedCharts.self,
@@ -240,6 +269,7 @@ export async function buildHapcardWithMeta(
     theory_profile_version: input.theory_profile_version,
     target_date: input.target_date,
     question_slot: input.question_slot,
+    cross_analysis: crossAnalysis,
   });
 
   // 7. RAG retrieval

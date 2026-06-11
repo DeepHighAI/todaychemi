@@ -12,6 +12,7 @@ import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
+import { computeCrossAnalysis } from '@/lib/saju/cross';
 import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
@@ -121,11 +122,20 @@ export async function buildReplay(
   const selfChart = (ucRow as unknown as ChartRow).chart_core;
   const relationChart = (rcRow as unknown as ChartRow).chart_core;
 
+  // 교차분석 — replay 도 동일 6모드 프롬프트가 cross 참조를 지시하므로 배선 필수 (설계 §1.4).
+  // replay 는 birth 미페치 → 출생연도 미제공 → age_gap 생략.
+  const crossAnalysis = computeCrossAnalysis({
+    self: selfChart,
+    relation: relationChart,
+    mode: hapcard.mode,
+  });
+
   const basePayload = buildLlmPayload({
     self: selfChart,
     relation: relationChart,
     mode: hapcard.mode,
     theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+    cross_analysis: crossAnalysis,
   });
   const replayPayload = buildReplayPayload(basePayload, input.jinjin_date);
   const llmModel = selectLlmModel('replay');

@@ -306,6 +306,37 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     ).resolves.toBeDefined();
   });
 
+  it('payload 에 cross_analysis 포함 + age_gap 부재 (birth 미페치)', async () => {
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      output: {
+        main_text: '갑목일간',
+        cause_factors: [],
+        classic_citation: [],
+        actions: [],
+        why_cards: [],
+      },
+      usage: { token_in: 50, token_out: 100, total_usd: 0 },
+      model: 'gpt-5',
+    });
+
+    const { userClient, serviceClient } = makeMockClients();
+
+    await buildReplay(
+      { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
+      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+    );
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const cross = callArgs.userPayload.cross_analysis;
+    expect(cross).toBeDefined();
+    expect(cross.version).toBe('cross-v1');
+    // replay 는 출생연도 미제공 — age_gap 키 자체 부재
+    expect(cross.age_gap).toBeUndefined();
+    // 동일 6모드 프롬프트 호환 — sipsin_cross/gungwi_events/yunse_cross/ilgan_pair 동봉
+    expect(cross.sipsin_cross).toBeDefined();
+    expect(cross.ilgan_pair).toBeDefined();
+  });
+
   it('classic_citation 빈 배열이면 변환 없이 빈 배열 그대로', async () => {
     (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
       output: {
