@@ -1,0 +1,15 @@
+asset_id: classic_smth_008
+source_title: "삼명통회 (三命通會)"
+source_chapter: "論年月日時"
+original_text: "命以年為本為父，月為兄弟僚友，日為主為妻為己身，時為子孫。"
+original_reading: "명이년위본위부, 월위형제료우, 일위주위처위기신, 시위자손."
+modern_translation: >
+  년주는 근본(뿌리·웃어른), 월주는 형제와 동료(사회 관계),
+  일주는 자기 자신과 배우자, 시주는 자손 — 네 기둥의 궁위 배속.
+topic_tags:
+  - palace_positions
+  - four_pillars_roles
+  - spouse_palace
+  - 썸합
+version: v1.0
+review_status: approved_ai_pending_human

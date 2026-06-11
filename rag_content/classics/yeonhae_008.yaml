@@ -1,0 +1,15 @@
+asset_id: classic_yhzp_008
+source_title: "연해자평 (淵海子平)"
+source_chapter: "繼善篇"
+original_text: "欲知貴賤，先觀月令乃提綱，次斷吉凶。專用日干為主本。"
+original_reading: "욕지귀천, 선관월령내제강, 차단길흉. 전용일간위주본."
+modern_translation: >
+  운명의 높낮이를 보려면 먼저 월령(태어난 달의 기운)을 벼리로 삼고,
+  길흉 판단은 오로지 일간을 중심(주본)으로 한다.
+topic_tags:
+  - month_command_priority
+  - daymaster_centered
+  - daymaster_strength
+  - 일합
+version: v1.0
+review_status: approved_ai_pending_human

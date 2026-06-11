@@ -1,0 +1,15 @@
+asset_id: classic_smth_007
+source_title: "삼명통회 (三命通會)"
+source_chapter: "論人元司事"
+original_text: "申中有坤土用事五日，壬水長生五日，庚金二十日。酉中有庚金用事七日，辛金二十三日。戌中有辛金用事七日，丙火墓庫五日，戊土一十八日。亥中有戊土五日，甲木長生五日，壬水用事二十日。子中有壬水用事七日，癸水二十三日。丑中有癸水用事七日，庚金墓庫五日，己土一十八日。"
+original_reading: "신중유곤토용사오일, 임수장생오일, 경금이십일. 유중유경금용사칠일, 신금이십삼일. 술중유신금용사칠일, 병화묘고오일, 무토일십팔일. 해중유무토오일, 갑목장생오일, 임수용사이십일. 자중유임수용사칠일, 계수이십삼일. 축중유계수용사칠일, 경금묘고오일, 기토일십팔일."
+modern_translation: >
+  가을·겨울 여섯 달의 지장간 사령 일수 — 역시 정기가 18~23일로
+  주도하고 나머지 기운은 5~7일씩 짧게 작용한다.
+topic_tags:
+  - hidden_stems
+  - command_days
+  - principal_stem_dominance
+  - 돈합
+version: v1.0
+review_status: approved_ai_pending_human

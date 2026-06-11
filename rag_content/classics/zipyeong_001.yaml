@@ -1,0 +1,15 @@
+asset_id: classic_zpjj_001
+source_title: "자평진전 (子平真詮)"
+source_chapter: "論用神"
+original_text: "八字用神，專求月令，以日乾配月令地支，而生克不同，格局分焉。"
+original_reading: "팔자용신, 전구월령, 이일건배월령지지, 이생극부동, 격국분언."
+modern_translation: >
+  용신은 오로지 월령(태어난 달)에서 구하며, 일간을 월지와
+  짝지어 생극 관계를 따져 격국을 나눈다 — 월령 중심의 강약·용신론.
+topic_tags:
+  - useful_god
+  - month_command_priority
+  - daymaster_strength
+  - 일합
+version: v1.0
+review_status: approved_ai_pending_human

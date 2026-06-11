@@ -1,0 +1,15 @@
+asset_id: classic_smth_006
+source_title: "삼명통회 (三命通會)"
+source_chapter: "論人元司事"
+original_text: "寅中有艮土用事五日，丙火長生五日，甲木二十日。卯中有甲木用事七日，乙木二十三日。辰中有乙木用事七日，壬水墓庫五日，戊土一十八日。巳中有戊土七日，庚金長生五日，丙火一十八日。午中丙火用事七日，丁火二十三日。未中有丁火用事七日，甲木墓庫五日，己土一十八日。"
+original_reading: "인중유간토용사오일, 병화장생오일, 갑목이십일. 묘중유갑목용사칠일, 을목이십삼일. 진중유을목용사칠일, 임수묘고오일, 무토일십팔일. 사중유무토칠일, 경금장생오일, 병화일십팔일. 오중병화용사칠일, 정화이십삼일. 미중유정화용사칠일, 갑목묘고오일, 기토일십팔일."
+modern_translation: >
+  봄·여름 여섯 달의 지장간 사령 일수 — 한 달 30일 중 정기가
+  18~23일을 맡고 여기·중기는 5~7일씩이라, 정기의 비중이 압도적이다.
+topic_tags:
+  - hidden_stems
+  - command_days
+  - principal_stem_dominance
+  - 일합
+version: v1.0
+review_status: approved_ai_pending_human
