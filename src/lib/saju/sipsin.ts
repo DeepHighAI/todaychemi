@@ -56,3 +56,31 @@ export function sipsinOf(dayStem: Stem, target: Stem): SipsinName {
 export function sipsinOfBranch(dayStem: Stem, branch: Branch): SipsinName {
   return sipsinOf(dayStem, principalStem(branch));
 }
+
+// ---------------------------------------------------------------------------
+// 십신 5그룹 — 단일 정의 (잠금: 비겁=비견+겁재 / 식상 / 재성 / 관성 / 인성)
+// payload.ts(LlmDerived projection)와 cross.ts(교차분석)가 공유 — 정의 드리프트 차단.
+// ---------------------------------------------------------------------------
+export type SipsinGroup = '비겁' | '식상' | '재성' | '관성' | '인성';
+
+// 고정 그룹 순서 — 동률 tie-break·missing 나열 등 결정성의 기준 순서
+export const SIPSIN_GROUP_ORDER: readonly SipsinGroup[] = [
+  '비겁',
+  '식상',
+  '재성',
+  '관성',
+  '인성',
+];
+
+export const SIPSIN_TO_GROUP: Readonly<Record<SipsinName, SipsinGroup>> = Object.freeze({
+  비견: '비겁',
+  겁재: '비겁',
+  식신: '식상',
+  상관: '식상',
+  편재: '재성',
+  정재: '재성',
+  편관: '관성',
+  정관: '관성',
+  편인: '인성',
+  정인: '인성',
+});

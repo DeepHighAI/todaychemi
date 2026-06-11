@@ -19,7 +19,13 @@ import {
   type Branch,
 } from './ganji';
 import { JIJANGGAN } from './jijanggan';
-import { sipsinOf, type SipsinName } from './sipsin';
+import {
+  sipsinOf,
+  SIPSIN_GROUP_ORDER,
+  SIPSIN_TO_GROUP as SIPSIN_TO_GROUP_CANONICAL,
+  type SipsinGroup,
+  type SipsinName,
+} from './sipsin';
 
 // ---------------------------------------------------------------------------
 // 버전 · 궁위 상수
@@ -41,7 +47,8 @@ export const PALACE_MEANINGS: Record<PalaceLabel, string> = {
 // 타입 (설계 §1.2)
 // ---------------------------------------------------------------------------
 
-export type SipsinGroup = '비겁' | '식상' | '재성' | '관성' | '인성';
+// 5그룹 정의·순서는 saju/sipsin.ts 단일 출처 — 여기서는 재export만 (정의 드리프트 차단)
+export type { SipsinGroup } from './sipsin';
 
 export interface SipsinCrossDirection {
   // 상대 4천간 → 보는 쪽 일간 기준 십신 (결측 기둥 슬롯은 생략)
@@ -165,22 +172,9 @@ function normalizeChartPillars(chart: ChartCore): NormalizedPillars {
 // 십신 교차 매트릭스
 // ---------------------------------------------------------------------------
 
-// 십신 → 5그룹 매핑 (비겁=비견+겁재 / 식상=식신+상관 / 재성=편재+정재 / 관성=편관+정관 / 인성=편인+정인)
-const SIPSIN_TO_GROUP: Record<SipsinName, SipsinGroup> = {
-  비견: '비겁',
-  겁재: '비겁',
-  식신: '식상',
-  상관: '식상',
-  편재: '재성',
-  정재: '재성',
-  편관: '관성',
-  정관: '관성',
-  편인: '인성',
-  정인: '인성',
-};
-
-// distribution 최다 그룹 동률 판정용 고정 순서 — 결정성
-const GROUP_ORDER: readonly SipsinGroup[] = ['비겁', '식상', '재성', '관성', '인성'];
+// 십신 → 5그룹 매핑·고정 순서 — saju/sipsin.ts 단일 출처 (W2 통합)
+const SIPSIN_TO_GROUP = SIPSIN_TO_GROUP_CANONICAL;
+const GROUP_ORDER = SIPSIN_GROUP_ORDER;
 
 const SALIENT_MAX = 3;
 // ② 최다 그룹 문장 발화 최소 카운트

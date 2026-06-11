@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 import type { CrossAnalysis } from '@/lib/saju/cross';
 import { deriveSaju } from '@/lib/saju/derive';
+import {
+  SIPSIN_GROUP_ORDER,
+  SIPSIN_NAMES,
+  SIPSIN_TO_GROUP,
+  type SipsinGroup,
+} from '@/lib/saju/sipsin';
 import type { ChartCore, SajuDerived, SipsinName, YunseCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
@@ -29,9 +35,8 @@ export interface LlmYunse {
 // LLM 해석에 필요한 요약만 의도적으로 전달한다 (설계 §2.1, 토큰 절약).
 // ---------------------------------------------------------------------------
 
-// 십신 5그룹 — 비겁=비견+겁재 / 식상=식신+상관 / 재성=편재+정재 / 관성=편관+정관 / 인성=편인+정인
-const SIPSIN_GROUP_ORDER = ['비겁', '식상', '재성', '관성', '인성'] as const;
-type LlmSipsinGroup = (typeof SIPSIN_GROUP_ORDER)[number];
+// 십신 5그룹 — 정의·순서는 saju/sipsin.ts 단일 출처 (W2 통합)
+type LlmSipsinGroup = SipsinGroup;
 
 // dominant 최대 개수 / 용신 후보 최대 개수 (설계 §2.1)
 const DOMINANT_SIPSIN_MAX = 2;
@@ -97,14 +102,17 @@ export type SajuDerivedBoundary = z.infer<typeof SajuDerivedSchema>;
 export function projectDerivedForLlm(derived: SajuDerivedBoundary): LlmDerived {
   const counts: Record<SipsinName, number> = derived.sipsin.counts;
 
-  // 5그룹 집계 — 명시 합산 (그룹 구성 잠금)
+  // 5그룹 집계 — SIPSIN_TO_GROUP 단일 출처 매핑으로 합산 (그룹 구성 잠금)
   const distribution: Record<LlmSipsinGroup, number> = {
-    비겁: counts.비견 + counts.겁재,
-    식상: counts.식신 + counts.상관,
-    재성: counts.편재 + counts.정재,
-    관성: counts.편관 + counts.정관,
-    인성: counts.편인 + counts.정인,
+    비겁: 0,
+    식상: 0,
+    재성: 0,
+    관성: 0,
+    인성: 0,
   };
+  for (const name of SIPSIN_NAMES) {
+    distribution[SIPSIN_TO_GROUP[name]] += counts[name];
+  }
 
   // dominant: count>0 그룹을 count 내림차순 정렬 — 동률은 고정 그룹 순서 유지(stable sort)
   const dominant = SIPSIN_GROUP_ORDER.filter((group) => distribution[group] > 0)
