@@ -6,6 +6,8 @@ import {
   computeSipsinCross,
   computeGungwiEvents,
   computeYunseCross,
+  computeCrossAnalysis,
+  projectCrossForToday,
 } from '@/lib/saju/cross';
 import type { ChartCore, YunseCore } from '@/types/chart';
 
@@ -429,5 +431,202 @@ describe('computeYunseCross — 양방향 운세 교차 facts', () => {
     const facts = computeYunseCross(selfBadIliun, REL_Y);
     expect(facts.some((f) => f.layer === 'iliun')).toBe(false);
     expect(facts).toHaveLength(4);
+  });
+});
+
+describe('computeCrossAnalysis — 통합 (ilgan_pair + mode_focus + age_gap)', () => {
+  it('version + ilgan_pair(음양·천간합) + age_gap 통합 산출', () => {
+    const cross = computeCrossAnalysis({
+      self: SELF_Y,
+      relation: REL_Y,
+      mode: '썸합',
+      self_birth_year: 1990,
+      relation_birth_year: 1995,
+    });
+    expect(cross.version).toBe(CROSS_ANALYSIS_VERSION);
+    expect(cross.ilgan_pair).toEqual({
+      self_stem: '丙',
+      relation_stem: '庚',
+      self_polarity: '양',
+      relation_polarity: '양',
+      stem_hap: false,
+      mode_focus: [
+        '내 일간 기준 상대 일간 = 편재(재성)',
+        '상대 일간 기준 내 일간 = 편관(관성)',
+      ],
+    });
+    expect(cross.age_gap).toEqual({ band: '4-6', relation_is: '연하' });
+    // 하위 모듈 결과와 동일 (단일 조립 — 별도 변형 없음)
+    expect(cross.sipsin_cross).toEqual(computeSipsinCross(SELF_Y, REL_Y));
+    expect(cross.gungwi_events).toEqual(computeGungwiEvents(SELF_Y, REL_Y));
+    expect(cross.yunse_cross).toEqual(computeYunseCross(SELF_Y, REL_Y));
+  });
+
+  it('stem_hap: 丙辛 합 페어는 true', () => {
+    const relHap = makeChart({ year: '戊申', month: '己酉', day: '辛丑', hour: null });
+    const cross = computeCrossAnalysis({ self: SELF, relation: relHap });
+    expect(cross.ilgan_pair.stem_hap).toBe(true);
+    expect(cross.ilgan_pair.self_polarity).toBe('양');
+    expect(cross.ilgan_pair.relation_polarity).toBe('음');
+  });
+
+  it('mode_focus: 썸합/오래합에만 존재, 그 외 모드·모드 미지정 시 키 자체 부재', () => {
+    const base = { self: SELF_Y, relation: REL_Y };
+    expect('mode_focus' in computeCrossAnalysis({ ...base, mode: '일합' }).ilgan_pair).toBe(false);
+    expect('mode_focus' in computeCrossAnalysis(base).ilgan_pair).toBe(false);
+    expect(computeCrossAnalysis({ ...base, mode: '오래합' }).ilgan_pair.mode_focus).toEqual([
+      '내 일간 기준 상대 일간 = 편재(재성)',
+      '상대 일간 기준 내 일간 = 편관(관성)',
+    ]);
+  });
+
+  it('mode_focus: 양방향 모두 재성/관성이 아니면 빈 배열 (키는 존재)', () => {
+    // 丙↔甲: 편인(인성) / 식신(식상) — 재·관 아님
+    const relNoFocus = makeChart({ year: '戊申', month: '己酉', day: '甲戌', hour: '辛丑' });
+    const cross = computeCrossAnalysis({ self: SELF, relation: relNoFocus, mode: '썸합' });
+    expect(cross.ilgan_pair.mode_focus).toEqual([]);
+  });
+
+  it('age_gap 밴드 경계: 0=동갑 / 1-3 / 4-6 / 7+ · 연상/연하 방향', () => {
+    const band = (selfYear: number, relationYear: number) =>
+      computeCrossAnalysis({
+        self: SELF,
+        relation: RELATION,
+        self_birth_year: selfYear,
+        relation_birth_year: relationYear,
+      }).age_gap;
+    expect(band(1990, 1990)).toEqual({ band: '동갑', relation_is: '동갑' });
+    expect(band(1990, 1991)).toEqual({ band: '1-3', relation_is: '연하' });
+    expect(band(1990, 1993)).toEqual({ band: '1-3', relation_is: '연하' });
+    expect(band(1990, 1994)).toEqual({ band: '4-6', relation_is: '연하' });
+    expect(band(1990, 1996)).toEqual({ band: '4-6', relation_is: '연하' });
+    expect(band(1990, 1997)).toEqual({ band: '7+', relation_is: '연하' });
+    expect(band(1993, 1990)).toEqual({ band: '1-3', relation_is: '연상' });
+    expect(band(1997, 1990)).toEqual({ band: '7+', relation_is: '연상' });
+  });
+
+  it('age_gap: 연도가 하나라도 없으면 키 자체 부재 (연도 원본은 출력물 미진입)', () => {
+    expect('age_gap' in computeCrossAnalysis({ self: SELF, relation: RELATION })).toBe(false);
+    expect(
+      'age_gap' in computeCrossAnalysis({ self: SELF, relation: RELATION, self_birth_year: 1990 }),
+    ).toBe(false);
+    expect(
+      'age_gap' in
+        computeCrossAnalysis({ self: SELF, relation: RELATION, relation_birth_year: 1990 }),
+    ).toBe(false);
+  });
+
+  it('PII 키 스캔: 출력 객체 어디에도 금지 세그먼트 키 없음 + 출생연도 숫자 미노출', () => {
+    const cross = computeCrossAnalysis({
+      self: SELF_Y,
+      relation: REL_Y,
+      mode: '썸합',
+      self_birth_year: 1990,
+      relation_birth_year: 1995,
+    });
+    const piiPattern = /(^|_)(name|nickname|email|gender|birth_date|birth_time|birth_place)($|_)/;
+    const keys: string[] = [];
+    const collect = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        for (const item of value) collect(item);
+        return;
+      }
+      if (value !== null && typeof value === 'object') {
+        for (const [key, child] of Object.entries(value)) {
+          keys.push(key);
+          collect(child);
+        }
+      }
+    };
+    collect(cross);
+    expect(keys.filter((k) => piiPattern.test(k))).toEqual([]);
+    // 밴드 문자열만 출력 — 서기 연도 리터럴 직렬화 금지
+    expect(JSON.stringify(cross)).not.toMatch(/\b(19|20)\d{2}\b/);
+  });
+});
+
+describe('projectCrossForToday — today 전용 압축', () => {
+  // 일주 궁위 이벤트(丙辛 천간합 + 午丑 해) + 일진 丙子 facts가 생기는 페어
+  const TODAY_YUNSE: YunseCore = {
+    ...QUIET_YUNSE,
+    iliun: { today_pillar: '丙子', today_date: '2026-06-11' },
+  };
+  const SELF_T = makeChart({ year: '甲寅', month: '乙卯', day: '丙午', hour: '丁亥' }, TODAY_YUNSE);
+  const REL_T = makeChart({ year: '戊申', month: '己酉', day: '辛丑', hour: null });
+
+  it('일주 궁위 이벤트 detail + 오늘 일진 facts만 추출', () => {
+    const cross = computeCrossAnalysis({ self: SELF_T, relation: REL_T, mode: '오래합' });
+    const summary = projectCrossForToday(cross);
+    expect(summary).toEqual({
+      version: CROSS_ANALYSIS_VERSION,
+      ilgan_pair: {
+        self_stem: '丙',
+        relation_stem: '辛',
+        self_polarity: '양',
+        relation_polarity: '음',
+        stem_hap: true,
+        mode_focus: [
+          '내 일간 기준 상대 일간 = 정재(재성)',
+          '상대 일간 기준 내 일간 = 정관(관성)',
+        ],
+      },
+      day_palace_links: [
+        '내 일지 午 ↔ 상대 일지 丑 해',
+        '내 일간 丙 ↔ 상대 일간 辛 천간합',
+      ],
+      iliun_links: [
+        '오늘 일진(丙子) 지지가 내 일지(午)와 충',
+        '오늘 일진(丙子) 천간이 상대 일간(辛)과 천간합',
+        '오늘 일진(丙子) 지지가 상대 일지(丑)와 지지합',
+      ],
+    });
+  });
+
+  it('ilgan_pair는 명시 복사 — 원본 참조 비공유', () => {
+    const cross = computeCrossAnalysis({ self: SELF_T, relation: REL_T, mode: '오래합' });
+    const summary = projectCrossForToday(cross);
+    expect(summary.ilgan_pair).not.toBe(cross.ilgan_pair);
+    expect(summary.ilgan_pair.mode_focus).not.toBe(cross.ilgan_pair.mode_focus);
+  });
+
+  it('mode_focus 부재 시 압축본에도 키 부재', () => {
+    const cross = computeCrossAnalysis({ self: SELF_T, relation: REL_T });
+    expect('mode_focus' in projectCrossForToday(cross).ilgan_pair).toBe(false);
+  });
+});
+
+describe('computeCrossAnalysis — 결정성', () => {
+  const input = {
+    self: SELF_Y,
+    relation: REL_Y,
+    mode: '썸합' as const,
+    self_birth_year: 1990,
+    relation_birth_year: 1995,
+  };
+
+  it('1000회 동일 결과 (직렬화 unique set size === 1)', () => {
+    const serialized = Array.from({ length: 1000 }, () =>
+      JSON.stringify(computeCrossAnalysis(input)),
+    );
+    expect(new Set(serialized).size).toBe(1);
+  });
+
+  it('배열 순서 고정 — 두 호출의 직렬화 결과 동일 (키 삽입 순서 포함)', () => {
+    expect(JSON.stringify(computeCrossAnalysis(input))).toBe(
+      JSON.stringify(computeCrossAnalysis(input)),
+    );
+  });
+
+  it('한글/한자 이중 인코딩 입력의 전체 결과 동일', () => {
+    const selfKo = makeChart(
+      { year: '갑인', month: '을묘', day: '병오', hour: '정해' },
+      SELF_YUNSE_KO,
+    );
+    const relKo = makeChart(
+      { year: '무신', month: '기유', day: '경술', hour: '신축' },
+      REL_YUNSE_KO,
+    );
+    const fromKo = computeCrossAnalysis({ ...input, self: selfKo, relation: relKo });
+    expect(fromKo).toEqual(computeCrossAnalysis(input));
   });
 });

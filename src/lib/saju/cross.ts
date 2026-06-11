@@ -9,7 +9,15 @@ import { computeHapChungHyungHaeRaw } from '@/lib/scoring/hapChungHyungHae';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
-import { STEMS, BRANCHES, normalizeGanji, splitPillar, type Stem, type Branch } from './ganji';
+import {
+  STEMS,
+  BRANCHES,
+  STEM_INFO,
+  normalizeGanji,
+  splitPillar,
+  type Stem,
+  type Branch,
+} from './ganji';
 import { JIJANGGAN } from './jijanggan';
 import { sipsinOf, type SipsinName } from './sipsin';
 
@@ -610,4 +618,109 @@ export function computeYunseCross(self: ChartCore, relation: ChartCore): YunseCr
   }
 
   return facts;
+}
+
+// ---------------------------------------------------------------------------
+// 일간 페어 + 연령차 밴드 + 통합 엔트리
+// ---------------------------------------------------------------------------
+
+// mode_focus 발화 대상 모드 (설계 §1.3 — 썸합/오래합 한정)
+const MODE_FOCUS_MODES: ReadonlySet<Mode> = new Set<Mode>(['썸합', '오래합']);
+// mode_focus 기록 대상 십신 그룹 — 현실축(재성·관성)만
+const FOCUS_GROUPS: ReadonlySet<SipsinGroup> = new Set<SipsinGroup>(['재성', '관성']);
+
+// 연령차 밴드 경계 — |diff| 0=동갑 / 1..NEAR_MAX / NEAR_MAX+1..MID_MAX / 그 이상 7+
+const AGE_BAND_NEAR_MAX = 3;
+const AGE_BAND_MID_MAX = 6;
+
+function buildIlganPair(
+  selfPillars: NormalizedPillars,
+  relationPillars: NormalizedPillars,
+  mode: Mode | undefined,
+): IlganPair {
+  const selfStem = selfPillars.day.stem;
+  const relationStem = relationPillars.day.stem;
+  const pair: IlganPair = {
+    self_stem: selfStem,
+    relation_stem: relationStem,
+    self_polarity: STEM_INFO[selfStem].yinyang,
+    relation_polarity: STEM_INFO[relationStem].yinyang,
+    stem_hap: STEM_HAP[stemPairKey(selfStem, relationStem)] !== undefined,
+  };
+
+  // mode_focus — 썸합/오래합 한정. 양방향 일간 십신 중 재성/관성 그룹만 facts로 기록
+  // (해당 없으면 빈 배열 — 키는 존재). 그 외 모드·모드 미지정 시 키 자체 부재.
+  if (mode !== undefined && MODE_FOCUS_MODES.has(mode)) {
+    const facts: string[] = [];
+    const selfView = sipsinOf(selfStem, relationStem);
+    if (FOCUS_GROUPS.has(SIPSIN_TO_GROUP[selfView])) {
+      facts.push(`내 일간 기준 상대 일간 = ${selfView}(${SIPSIN_TO_GROUP[selfView]})`);
+    }
+    const relationView = sipsinOf(relationStem, selfStem);
+    if (FOCUS_GROUPS.has(SIPSIN_TO_GROUP[relationView])) {
+      facts.push(`상대 일간 기준 내 일간 = ${relationView}(${SIPSIN_TO_GROUP[relationView]})`);
+    }
+    pair.mode_focus = facts;
+  }
+  return pair;
+}
+
+// 연령차 밴드 — 연도 원본은 서버 내부 전용 입력, band/relation_is 문자열만 출력물 진입.
+// 음력 연초 ±1 오차는 문서화된 단순화 (설계 §1.3).
+function buildAgeGap(
+  selfBirthYear: number | undefined,
+  relationBirthYear: number | undefined,
+): AgeGapInfo | undefined {
+  if (selfBirthYear === undefined || relationBirthYear === undefined) return undefined;
+  // 양수 = 상대가 늦게 출생(연하)
+  const diff = relationBirthYear - selfBirthYear;
+  const gap = Math.abs(diff);
+  const band: AgeGapInfo['band'] =
+    gap === 0 ? '동갑' : gap <= AGE_BAND_NEAR_MAX ? '1-3' : gap <= AGE_BAND_MID_MAX ? '4-6' : '7+';
+  const relationIs: AgeGapInfo['relation_is'] = diff === 0 ? '동갑' : diff < 0 ? '연상' : '연하';
+  return { band, relation_is: relationIs };
+}
+
+// 교차분석 통합 엔트리 — 100% 결정형. 점수 산출 무개입(ADR-035), LLM 해석 근거 전용.
+export function computeCrossAnalysis(input: ComputeCrossInput): CrossAnalysis {
+  const selfPillars = normalizeChartPillars(input.self);
+  const relationPillars = normalizeChartPillars(input.relation);
+
+  const analysis: CrossAnalysis = {
+    version: CROSS_ANALYSIS_VERSION,
+    sipsin_cross: computeSipsinCross(input.self, input.relation),
+    gungwi_events: computeGungwiEvents(input.self, input.relation),
+    yunse_cross: computeYunseCross(input.self, input.relation),
+    ilgan_pair: buildIlganPair(selfPillars, relationPillars, input.mode),
+  };
+
+  // age_gap — 양측 연도 모두 제공 시에만 (hapcard 전용; replay/today 생략)
+  const ageGap = buildAgeGap(input.self_birth_year, input.relation_birth_year);
+  if (ageGap !== undefined) analysis.age_gap = ageGap;
+  return analysis;
+}
+
+// today 전용 압축 — 일주 궁위 이벤트 + 오늘 일진 facts만 (토큰 절약)
+export function projectCrossForToday(cross: CrossAnalysis): TodayCrossSummary {
+  // 명시 복사 — 원본 객체/배열 참조 공유 방지
+  const ilganPair: IlganPair = {
+    self_stem: cross.ilgan_pair.self_stem,
+    relation_stem: cross.ilgan_pair.relation_stem,
+    self_polarity: cross.ilgan_pair.self_polarity,
+    relation_polarity: cross.ilgan_pair.relation_polarity,
+    stem_hap: cross.ilgan_pair.stem_hap,
+  };
+  if (cross.ilgan_pair.mode_focus !== undefined) {
+    ilganPair.mode_focus = [...cross.ilgan_pair.mode_focus];
+  }
+  return {
+    version: cross.version,
+    ilgan_pair: ilganPair,
+    day_palace_links: cross.gungwi_events
+      .filter((event) => event.palace === '일주')
+      .map((event) => event.detail),
+    iliun_links: cross.yunse_cross
+      .filter((fact) => fact.layer === 'iliun')
+      .map((fact) => fact.detail),
+  };
 }
