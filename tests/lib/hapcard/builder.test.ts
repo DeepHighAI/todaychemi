@@ -661,7 +661,7 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(row.relation_id).toBe(BASE_INPUT.relation_id);
     expect(row.mode).toBe(BASE_INPUT.mode);
     expect(row.compat_score).toBe(MOCK_SCORE.score);
-    expect(row.scoring_version).toBe('1');
+    expect(row.scoring_version).toBe('2');
     expect(row.prompt_version).toBe(MOCK_PROMPT.version);
     expect(row.target_date).toBe(BASE_INPUT.target_date);
   });

@@ -15,8 +15,8 @@ import {
 } from '@/lib/scoring/constants';
 
 describe('SCORING_VERSION', () => {
-  it('is 1', () => {
-    expect(SCORING_VERSION).toBe(1);
+  it('is 2 (v2: yunse 한자 인코딩 수정 2026-06-11)', () => {
+    expect(SCORING_VERSION).toBe(2);
   });
 });
 

@@ -1,6 +1,9 @@
 import type { Mode } from '@/types/mode';
 
-export const SCORING_VERSION = 1;
+// v2 (2026-06-11): yunse_adjustment 한자 인코딩 수정 — 프로덕션 ganji(한자)에서
+// 합·충 매칭이 항상 실패해 보정이 0 으로 고정되던 버그 해소. 점수 의미·가중치 불변.
+// ADR-036: scoring_version 이 다른 스냅샷 간 점수 비교 금지.
+export const SCORING_VERSION = 2;
 
 // ADR-036: |change_score| ≥ 이 값이면 '오늘 변화 큼' badge + 케미피드 상단 정렬
 export const CHANGE_SCORE_THRESHOLD = 10;

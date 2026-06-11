@@ -72,6 +72,50 @@ describe('computeYunseAdjustment (Phase Y3 — §1.1 승인 후 GREEN)', () => {
   });
 });
 
+describe('computeYunseAdjustment — 한자 인코딩 (프로덕션, SCORING_VERSION 2)', () => {
+  const MODE: Mode = '일합';
+
+  // makeYunse 기본값(한글)의 한자 등가 — daeun 甲子 / seyun 丙午 / wolun 癸巳 / iliun 甲子
+  function makeHanjaYunse(overrides?: Partial<{
+    daePillar: string;
+    seyunPillar: string;
+  }>): YunseCore {
+    return makeYunse({
+      daePillar: overrides?.daePillar ?? '甲子',
+      seyunPillar: overrides?.seyunPillar ?? '丙午',
+      wolunPillar: '癸巳',
+      iliun: { today_pillar: '甲子', today_date: '2026-05-07' },
+    });
+  }
+
+  it('회귀: 한자 yunse + 한자 relation day_pillar 천간합(甲己) → 양수 보정 (v1 에서 항상 0 이던 케이스)', () => {
+    // ssaju yunse 한자 + KASI day_pillar 한자 — 프로덕션 인코딩 조합
+    const result = computeYunseAdjustment(makeHanjaYunse(), '己卯', MODE);
+    expect(result).toBeGreaterThan(0);
+  });
+
+  it('이중 인코딩 동치: 천간합 케이스 — 한자 입력 = 한글 입력 결과', () => {
+    const hanja = computeYunseAdjustment(makeHanjaYunse(), '己卯', MODE);
+    const hangul = computeYunseAdjustment(makeYunse({ daePillar: '갑자' }), '기묘', MODE);
+    expect(hanja).toBe(hangul);
+    expect(hanja).not.toBe(0);
+  });
+
+  it('이중 인코딩 동치: 지지충(子午) 케이스 — 한자 입력 = 한글 입력 결과 (음수)', () => {
+    const hanja = computeYunseAdjustment(makeHanjaYunse({ seyunPillar: '丙子' }), '丙午', MODE);
+    const hangul = computeYunseAdjustment(makeYunse({ seyunPillar: '병자' }), '병오', MODE);
+    expect(hanja).toBe(hangul);
+    expect(hanja).toBeLessThan(0);
+  });
+
+  it('혼합 인코딩: 한글 yunse + 한자 relation day_pillar 도 동일 결과 (스냅샷 픽스처 조합)', () => {
+    const mixed = computeYunseAdjustment(makeYunse({ daePillar: '갑자' }), '己卯', MODE);
+    const hangul = computeYunseAdjustment(makeYunse({ daePillar: '갑자' }), '기묘', MODE);
+    expect(mixed).toBe(hangul);
+    expect(mixed).toBeGreaterThan(0);
+  });
+});
+
 describe('score_breakdown.yunse_adjustment 노출 (Phase Y3 통합)', () => {
   it('computeFinalScore 결과에 yunse_adjustment 필드가 존재한다', async () => {
     const { computeFinalScore } = await import('@/lib/scoring/final');

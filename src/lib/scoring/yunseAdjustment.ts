@@ -1,9 +1,36 @@
 import type { YunseCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
+import { HEAVENLY_STEMS, EARTHLY_BRANCHES } from '@/lib/kasi/constants';
+import { STEM_HAP, BRANCH_HAP, CHUNG } from '@/lib/scoring/constants';
 
-// 한글 기둥 문자열 기반 — Hanja constants 와 별도 (ADR-035 결정형)
-const HANGUL_STEMS = ['갑','을','병','정','무','기','경','신','임','계'] as const;
-const HANGUL_BRANCHES = ['자','축','인','묘','진','사','오','미','신','유','술','해'] as const;
+// SCORING_VERSION 2 (2026-06-11): 프로덕션 ganji 는 한자다 —
+// ssaju yunse(대운/세운/월운/일운)와 KASI relation.day_pillar 모두 한자('庚辰' 등).
+// v1 은 한글 배열 indexOf 매칭이라 프로덕션에서 합·충 검출이 항상 실패해 보정이 0 이었다.
+// 아래 변환 헬퍼는 today.ts 의 private hangulPillarToHanja 를 미러링한 것 (인코딩 면역):
+// 한글 입력은 한자로 변환하고, 이미 한자면 그대로 통과시켜 두 인코딩 모두 수용한다.
+const STEM_HANGUL = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'] as const;
+const BRANCH_HANGUL = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'] as const;
+
+function hangulPillarToHanja(pillar: string): string {
+  const stemIdx = STEM_HANGUL.indexOf(pillar[0] as (typeof STEM_HANGUL)[number]);
+  const branchIdx = BRANCH_HANGUL.indexOf(pillar[1] as (typeof BRANCH_HANGUL)[number]);
+  // 이미 한자면 그대로 통과
+  if (stemIdx < 0 || branchIdx < 0) return pillar;
+  return HEAVENLY_STEMS[stemIdx] + EARTHLY_BRANCHES[branchIdx];
+}
+
+// 정규화 키 (작은 인덱스 먼저) — constants 한자 테이블과 동일 규칙 (today.ts 미러)
+function stemKey(a: string, b: string): string {
+  const ia = HEAVENLY_STEMS.indexOf(a as (typeof HEAVENLY_STEMS)[number]);
+  const ib = HEAVENLY_STEMS.indexOf(b as (typeof HEAVENLY_STEMS)[number]);
+  return ia <= ib ? a + b : b + a;
+}
+
+function branchKey(a: string, b: string): string {
+  const ia = EARTHLY_BRANCHES.indexOf(a as (typeof EARTHLY_BRANCHES)[number]);
+  const ib = EARTHLY_BRANCHES.indexOf(b as (typeof EARTHLY_BRANCHES)[number]);
+  return ia <= ib ? a + b : b + a;
+}
 
 // 4-layer 가중치 (사용자 §1.1 승인 2026-05-07)
 const LAYER_WEIGHTS = {
@@ -23,42 +50,22 @@ const MODE_FACTOR: Record<Mode, number> = {
   '오래합': 0.70,
 };
 
-// 천간합: 간격 5 (갑-기, 을-경, 병-신, 정-임, 무-계)
-function detectStemHap(s1: string, s2: string): boolean {
-  const i1 = HANGUL_STEMS.indexOf(s1 as (typeof HANGUL_STEMS)[number]);
-  const i2 = HANGUL_STEMS.indexOf(s2 as (typeof HANGUL_STEMS)[number]);
-  if (i1 < 0 || i2 < 0) return false;
-  return Math.abs(i1 - i2) === 5;
-}
-
-// 지지합 (6합): 자축(0+1=1), 나머지 5쌍(인해·묘술·진유·사신·오미) 합=13
-function detectBranchHap(b1: string, b2: string): boolean {
-  const i1 = HANGUL_BRANCHES.indexOf(b1 as (typeof HANGUL_BRANCHES)[number]);
-  const i2 = HANGUL_BRANCHES.indexOf(b2 as (typeof HANGUL_BRANCHES)[number]);
-  if (i1 < 0 || i2 < 0) return false;
-  const s = i1 + i2;
-  return s === 1 || s === 13;
-}
-
-// 지지충 (6충): 간격 6 (자오·축미·인신·묘유·진술·사해)
-function detectBranchChung(b1: string, b2: string): boolean {
-  const i1 = HANGUL_BRANCHES.indexOf(b1 as (typeof HANGUL_BRANCHES)[number]);
-  const i2 = HANGUL_BRANCHES.indexOf(b2 as (typeof HANGUL_BRANCHES)[number]);
-  if (i1 < 0 || i2 < 0) return false;
-  return Math.abs(i1 - i2) === 6;
-}
-
 // 단순화된 Δ: 천간합 +1, 지지합 +1, 지지충 -1 (§2 점수표 미사용, 사용자 §1.1 승인)
+// 양쪽 기둥을 한자로 정규화한 뒤 canonical 한자 테이블(STEM_HAP/BRANCH_HAP/CHUNG) lookup.
+// 점수 의미(+1/+1/-1, clamp ±1)는 v1 과 동일 — 인코딩 매칭만 수정 (SCORING_VERSION 2).
 function deltaScore(layerPillar: string, relDayPillar: string): number {
   if (!layerPillar || !relDayPillar) return 0;
-  const lStem = layerPillar[0];
-  const lBranch = layerPillar[1];
-  const rStem = relDayPillar[0];
-  const rBranch = relDayPillar[1];
+  const layer = hangulPillarToHanja(layerPillar);
+  const rel = hangulPillarToHanja(relDayPillar);
+  if (layer.length < 2 || rel.length < 2) return 0;
+  const lStem = layer[0];
+  const lBranch = layer[1];
+  const rStem = rel[0];
+  const rBranch = rel[1];
   let s = 0;
-  if (detectStemHap(lStem, rStem)) s += 1.0;
-  if (detectBranchHap(lBranch, rBranch)) s += 1.0;
-  if (detectBranchChung(lBranch, rBranch)) s -= 1.0;
+  if (STEM_HAP[stemKey(lStem, rStem)] !== undefined) s += 1.0;
+  if (BRANCH_HAP[branchKey(lBranch, rBranch)] !== undefined) s += 1.0;
+  if (CHUNG[branchKey(lBranch, rBranch)] !== undefined) s -= 1.0;
   return Math.max(-1, Math.min(1, s));
 }
 

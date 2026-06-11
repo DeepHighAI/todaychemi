@@ -40,18 +40,18 @@ describe('computeScore (§1 + §7)', () => {
       expect(typeof out.scoring_version).toBe('number');
     });
 
-    it('scoring_version 기본값 = 1 (D-1)', () => {
+    it('scoring_version 기본값 = 2 (v2: yunse 한자 인코딩 수정)', () => {
       const self = makeChart('甲子', '甲子', '甲子', '甲子');
       const rel = makeChart('乙丑', '乙丑', '乙丑', '乙丑');
       const out = computeScore({ self, relation: rel, mode: '일합' });
-      expect(out.scoring_version).toBe(1);
+      expect(out.scoring_version).toBe(2);
     });
 
-    it('scoring_version override 가능', () => {
+    it('scoring_version override 가능 (레거시 버전 passthrough)', () => {
       const self = makeChart('甲子', '甲子', '甲子', '甲子');
       const rel = makeChart('乙丑', '乙丑', '乙丑', '乙丑');
-      const out = computeScore({ self, relation: rel, mode: '일합', scoring_version: 2 });
-      expect(out.scoring_version).toBe(2);
+      const out = computeScore({ self, relation: rel, mode: '일합', scoring_version: 1 });
+      expect(out.scoring_version).toBe(1);
     });
   });
 
