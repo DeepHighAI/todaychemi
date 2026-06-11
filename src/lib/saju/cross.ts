@@ -700,6 +700,20 @@ export function computeCrossAnalysis(input: ComputeCrossInput): CrossAnalysis {
   return analysis;
 }
 
+// fail-open 래퍼 — 레거시 jsonb 변형 기둥(빈 문자열·공백·비간지 문자)은 splitPillar 가
+// throw 한다. 교차분석은 LLM 해석 근거 전용이므로 실패 시 생략(undefined) + warn 으로
+// 강등하고 유료 요청 자체는 차단하지 않는다 (resolveDerivedForLlm 과 동일 정책, 리뷰 F3).
+export function computeCrossAnalysisSafe(input: ComputeCrossInput): CrossAnalysis | undefined {
+  try {
+    return computeCrossAnalysis(input);
+  } catch (err) {
+    console.warn('[CROSS_INVALID]', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return undefined;
+  }
+}
+
 // today 전용 압축 — 일주 궁위 이벤트 + 오늘 일진 facts만 (토큰 절약)
 export function projectCrossForToday(cross: CrossAnalysis): TodayCrossSummary {
   // 명시 복사 — 원본 객체/배열 참조 공유 방지

@@ -3,7 +3,7 @@ import type { ChartCore, ChartHash } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 import type { HapcardResult } from '@/types/hapcard';
 import { withYunseAtDate, type ChartBirthForYunse } from '@/lib/chart/yunse-at-date';
-import { computeCrossAnalysis } from '@/lib/saju/cross';
+import { computeCrossAnalysisSafe } from '@/lib/saju/cross';
 import { computeScore } from '@/lib/scoring/index';
 import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { deriveCacheKey } from '@/lib/hapcard/cache-key';
@@ -253,7 +253,7 @@ export async function buildHapcardWithMeta(
   // 5.5 교차분석 — 점수와 동일한 dated 차트 기준, LLM 해석 근거 전용 facts.
   //     ADR-035: computeScore 입력·출력에 무접촉. 출생연도는 band 산출에만 사용 —
   //     원본 연도는 payload 미진입 (age_gap band/relation_is 문자열만).
-  const crossAnalysis = computeCrossAnalysis({
+  const crossAnalysis = computeCrossAnalysisSafe({
     self: datedCharts.self,
     relation: datedCharts.relation,
     mode: input.mode,

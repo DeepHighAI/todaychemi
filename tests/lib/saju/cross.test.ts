@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import {
   CROSS_ANALYSIS_VERSION,
@@ -7,6 +7,7 @@ import {
   computeGungwiEvents,
   computeYunseCross,
   computeCrossAnalysis,
+  computeCrossAnalysisSafe,
   projectCrossForToday,
 } from '@/lib/saju/cross';
 import type { ChartCore, YunseCore } from '@/types/chart';
@@ -628,5 +629,28 @@ describe('computeCrossAnalysis — 결정성', () => {
     );
     const fromKo = computeCrossAnalysis({ ...input, self: selfKo, relation: relKo });
     expect(fromKo).toEqual(computeCrossAnalysis(input));
+  });
+});
+
+// 리뷰 F3: 레거시 jsonb 변형 기둥 → fail-open (요청 차단 금지)
+describe('computeCrossAnalysisSafe — fail-open', () => {
+  it('정상 입력 → computeCrossAnalysis 동일 결과', () => {
+    const input = { self: SELF, relation: RELATION };
+    expect(computeCrossAnalysisSafe(input)).toEqual(computeCrossAnalysis(input));
+  });
+
+  it('변형 기둥(빈 문자열 day_pillar) → undefined + [CROSS_INVALID] warn, throw 없음', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const broken = makeChart({ year: '甲寅', month: null, day: '', hour: null });
+    expect(computeCrossAnalysisSafe({ self: broken, relation: RELATION })).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith('[CROSS_INVALID]', expect.any(Object));
+    warnSpy.mockRestore();
+  });
+
+  it('비간지 문자 기둥 → undefined (fail-open)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const broken = makeChart({ year: '甲寅', month: null, day: '??', hour: null });
+    expect(computeCrossAnalysisSafe({ self: SELF, relation: broken })).toBeUndefined();
+    warnSpy.mockRestore();
   });
 });

@@ -12,7 +12,7 @@ import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
-import { computeCrossAnalysis } from '@/lib/saju/cross';
+import { computeCrossAnalysisSafe } from '@/lib/saju/cross';
 import {
   fetchLatestUserChartForVersion,
   fetchLatestRelationChartForVersion,
@@ -124,7 +124,7 @@ export async function buildReplay(
 
   // 교차분석 — replay 도 동일 6모드 프롬프트가 cross 참조를 지시하므로 배선 필수 (설계 §1.4).
   // replay 는 birth 미페치 → 출생연도 미제공 → age_gap 생략.
-  const rawCross = computeCrossAnalysis({
+  const rawCross = computeCrossAnalysisSafe({
     self: selfChart,
     relation: relationChart,
     mode: hapcard.mode,
@@ -132,10 +132,10 @@ export async function buildReplay(
   // 저장된 chart_core.yunse 는 row 생성 시점 고정 — 세운/월운/일운 facts 는
   // "올해/이번 달/오늘 일진" 을 단정하므로 jinjin_date 기준으로 거짓일 수 있다.
   // replay 는 시간층(shared) facts 를 제외하고 10년 단위 대운 facts 만 유지 (리뷰 F1).
-  const crossAnalysis = {
-    ...rawCross,
-    yunse_cross: rawCross.yunse_cross.filter((fact) => fact.layer === 'daeun'),
-  };
+  const crossAnalysis =
+    rawCross === undefined
+      ? undefined
+      : { ...rawCross, yunse_cross: rawCross.yunse_cross.filter((fact) => fact.layer === 'daeun') };
 
   const basePayload = buildLlmPayload({
     self: selfChart,

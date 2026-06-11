@@ -7,7 +7,7 @@ import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { projectChartForLlm } from '@/lib/llm/payload';
-import { computeCrossAnalysis, projectCrossForToday } from '@/lib/saju/cross';
+import { computeCrossAnalysisSafe, projectCrossForToday } from '@/lib/saju/cross';
 import type { AnthropicMessagesClient } from '@/lib/llm/anthropic';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 
@@ -101,14 +101,18 @@ export async function callDailyHapLlm(
 
   // PII 0건 페이로드 (chart_core 만 + today_date)
   // relation 분기: 압축 교차 요약(일주 궁위 + 오늘 일진 facts) 동봉 — 토큰 절약 (설계 §1.4).
+  // 교차분석 실패(레거시 jsonb 변형 기둥)는 fail-open — cross_analysis 생략, 요청 진행 (리뷰 F3).
   // 단일축(guest 포함)은 무변경.
+  const todayCross = relationPresent
+    ? computeCrossAnalysisSafe({ self: input.self_chart, relation: relationChart })
+    : undefined;
   const userPayload = relationPresent
     ? {
         chart_core: projectChartForLlm(input.self_chart),
         relation_chart_core: projectChartForLlm(relationChart),
-        cross_analysis: projectCrossForToday(
-          computeCrossAnalysis({ self: input.self_chart, relation: relationChart }),
-        ),
+        ...(todayCross !== undefined
+          ? { cross_analysis: projectCrossForToday(todayCross) }
+          : {}),
         today_date: input.today_date,
       }
     : {
