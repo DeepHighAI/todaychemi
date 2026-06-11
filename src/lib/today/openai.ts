@@ -7,6 +7,7 @@ import { selectLlmModel } from '@/lib/llm/model-router';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { projectChartForLlm } from '@/lib/llm/payload';
+import { computeCrossAnalysis, projectCrossForToday } from '@/lib/saju/cross';
 import type { AnthropicMessagesClient } from '@/lib/llm/anthropic';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 
@@ -40,7 +41,13 @@ const DAILY_HAP_LLM_OUTPUT_SCHEMA = z
 
 type DailyHapLlmOutput = z.infer<typeof DAILY_HAP_LLM_OUTPUT_SCHEMA>;
 
-const TODAY_PAYLOAD_WHITELIST = new Set(['chart_core', 'relation_chart_core', 'today_date']);
+// cross_analysis: 압축 교차 요약(TodayCrossSummary) — relation 분기 한정 (ADR-035 점수 무개입)
+const TODAY_PAYLOAD_WHITELIST = new Set([
+  'chart_core',
+  'cross_analysis',
+  'relation_chart_core',
+  'today_date',
+]);
 
 export interface DailyHapLlmOptions {
   costClient?: SupabaseClient;
@@ -93,10 +100,15 @@ export async function callDailyHapLlm(
   const systemPrompt = promptRow.content;
 
   // PII 0건 페이로드 (chart_core 만 + today_date)
+  // relation 분기: 압축 교차 요약(일주 궁위 + 오늘 일진 facts) 동봉 — 토큰 절약 (설계 §1.4).
+  // 단일축(guest 포함)은 무변경.
   const userPayload = relationPresent
     ? {
         chart_core: projectChartForLlm(input.self_chart),
         relation_chart_core: projectChartForLlm(relationChart),
+        cross_analysis: projectCrossForToday(
+          computeCrossAnalysis({ self: input.self_chart, relation: relationChart }),
+        ),
         today_date: input.today_date,
       }
     : {

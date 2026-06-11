@@ -337,11 +337,47 @@ describe('callDailyHapLlm — 3축 인연 종합 (G2)', () => {
     expect(userText).not.toMatch(/birth_date/i);
     expect(userText).not.toMatch(/birth_place/i);
 
-    // 추가: user 페이로드는 chart_core / relation_chart_core / today_date 3 키만 허용
+    // 추가: relation 분기 user 페이로드는 4 키만 허용 (P3: cross_analysis 압축 요약 동봉)
     const userObj = JSON.parse(userText);
-    expect(Object.keys(userObj).sort()).toEqual(
-      ['chart_core', 'relation_chart_core', 'today_date'].sort(),
+    expect(Object.keys(userObj).sort()).toEqual([
+      'chart_core',
+      'cross_analysis',
+      'relation_chart_core',
+      'today_date',
+    ]);
+  });
+
+  it('relation 분기 cross_analysis = TodayCrossSummary 압축형 (풀 CrossAnalysis 아님)', async () => {
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+    await callDailyHapLlm(makeInput(REL_CHART), mockOpenai, mockSupabase, TEST_USER_ID);
+    const userMsg = mockCreate.mock.calls[0][0].messages.find(
+      (m: { role: string }) => m.role === 'user',
     );
+    const userObj = JSON.parse(userMsg.content);
+    const cross = userObj.cross_analysis;
+    expect(Object.keys(cross).sort()).toEqual([
+      'day_palace_links',
+      'iliun_links',
+      'ilgan_pair',
+      'version',
+    ].sort());
+    expect(cross.version).toBe('cross-v1');
+    // 풀 cross 필드(gungwi_events/sipsin_cross/yunse_cross/age_gap)는 미동봉 — 토큰 절약
+    expect(cross.gungwi_events).toBeUndefined();
+    expect(cross.sipsin_cross).toBeUndefined();
+    expect(cross.age_gap).toBeUndefined();
+  });
+
+  it('단일축(relation_chart=null) 페이로드는 2 키 유지 — cross_analysis 미동봉', async () => {
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+    await callDailyHapLlm(makeInput(null), mockOpenai, mockSupabase, TEST_USER_ID);
+    const userMsg = mockCreate.mock.calls[0][0].messages.find(
+      (m: { role: string }) => m.role === 'user',
+    );
+    const userObj = JSON.parse(userMsg.content);
+    expect(Object.keys(userObj).sort()).toEqual(['chart_core', 'today_date']);
   });
 
   it('runtime chart_core 에 섞인 PII/원본 gender extra key 를 LLM 페이로드에서 제거한다', async () => {
