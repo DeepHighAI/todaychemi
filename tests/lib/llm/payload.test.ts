@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildLlmPayload } from '@/lib/llm/payload';
+import { deriveSaju } from '@/lib/saju/derive';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
@@ -236,6 +237,31 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       expect(json).not.toMatch(/compat_score/);
       expect(json).not.toMatch(/"score"/);
       expect(json).not.toMatch(/score_breakdown/);
+    });
+  });
+
+  describe('derived 파생층 차단 (P1 — P3에서 의도적 projection으로 재도입 예정)', () => {
+    // 기둥에서 derived를 실제로 채운 ChartCore 생성 (타입 안전 — derived는 optional 필드)
+    const withDerived = (chart: ChartCore): ChartCore => ({
+      ...chart,
+      derived: deriveSaju({
+        year_pillar: chart.year_pillar,
+        month_pillar: chart.month_pillar,
+        day_pillar: chart.day_pillar,
+        hour_pillar: chart.hour_pillar,
+      }),
+    });
+
+    it('chart_core에 derived가 있어도 현재 projection 출력에 derived 키 부재', () => {
+      const payload = buildLlmPayload({
+        self: withDerived(SELF_CHART),
+        relation: withDerived(RELATION_CHART),
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(Object.keys(payload.self_chart_core)).not.toContain('derived');
+      expect(Object.keys(payload.relation_chart_core)).not.toContain('derived');
+      expect(JSON.stringify(payload)).not.toMatch(/"derived"/);
     });
   });
 

@@ -19,7 +19,8 @@ export interface LlmYunse {
   iliun: { today_pillar: string; today_date: string };
 }
 
-export interface LlmChartCore extends Omit<ChartCore, 'yunse'> {
+// P1: derived 파생층은 타입 레벨에서도 차단 — P3에서 의도적 projection으로 재도입 예정
+export interface LlmChartCore extends Omit<ChartCore, 'yunse' | 'derived'> {
   yunse: LlmYunse;
 }
 
