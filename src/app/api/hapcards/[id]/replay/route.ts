@@ -42,6 +42,8 @@ function createLazyReplayDeps(
         },
       },
     },
+    // W4: theory 버전 범프 직후 lazy 재계산용 — fast path(row 존재)에서는 미사용
+    kasiServiceKey: process.env.KASI_SERVICE_KEY ?? '',
   };
 }
 

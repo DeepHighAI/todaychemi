@@ -15,6 +15,10 @@ vi.mock('@/lib/llm/prompt-loader', () => ({
 vi.mock('@/lib/llm/openai', () => ({
   callOpenAi: vi.fn(),
 }));
+// W4: ensure* 의 KASI computeChart 경로 — 실 KASI 호출 차단 (lazy 재계산 테스트 전용)
+vi.mock('@/lib/chart/compute', () => ({
+  computeChart: vi.fn(),
+}));
 
 import {
   buildReplaySystemPrompt,
@@ -25,6 +29,7 @@ import {
 import type { LlmPayload } from '@/lib/llm/payload';
 import { loadPromptForUser } from '@/lib/llm/prompt-loader';
 import { callOpenAi } from '@/lib/llm/openai';
+import { computeChart } from '@/lib/chart/compute';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HapcardResult } from '@/types/hapcard';
 import { MOCK_YUNSE_CORE } from '../../fixtures/hapcard';
@@ -270,7 +275,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
     await buildReplay(
       { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
     );
 
     const insertCall = insert.mock.calls[0][0];
@@ -301,7 +306,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     await expect(
       buildReplay(
         { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
       ),
     ).resolves.toBeDefined();
   });
@@ -323,7 +328,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
     await buildReplay(
       { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
     );
 
     const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
@@ -358,7 +363,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
     await buildReplay(
       { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+      { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
     );
 
     const insertCall = insert.mock.calls[0][0];
@@ -424,7 +429,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
       const result = await buildReplay(
         { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+        { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
       );
 
       // 기존 persisted row 가 진실의 원천 — 재조회된 row 의 값 반환
@@ -449,9 +454,116 @@ describe('buildReplay — classic_citation Korean 변환', () => {
       await expect(
         buildReplay(
           { hapcard: MOCK_HAPCARD, jinjin_date: JINJIN_DATE },
-          { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } } },
+          { supabaseUserClient: userClient, supabaseServiceClient: serviceClient, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
         ),
       ).rejects.toThrow('HAPCARD_REPLAY_INSERT_FAILED');
     });
+  });
+});
+
+// W4: theory 버전 범프 직후 relation_charts 현재 버전 row 부재 → lazy 재계산 경로
+describe('buildReplay — lazy 차트 재계산 (W4)', () => {
+  const CHART_CORE = {
+    year_pillar: '갑자',
+    month_pillar: '을축',
+    day_pillar: '병인',
+    hour_pillar: null,
+    day_master_element: '화',
+    five_elements_counts: { 목: 2, 화: 1, 토: 1, 금: 0, 수: 0 },
+    gender_normalized: 'M',
+    yunse: MOCK_YUNSE_CORE,
+  };
+  const MOCK_HAPCARD_W4: HapcardResult = {
+    hapcard_id: 'hapcard-001',
+    user_id: 'user-001',
+    relation_id: 'rel-001',
+    mode: '일합',
+    target_date: '2026-05-20',
+    compat_score: 72,
+    score_breakdown: { hap_chung_hyung_hae: 70, sipsin: 75, ohaeng: 68, yunse_adjustment: 0, mode_adjustment: 5 },
+    content: { main_text: '갑목일간', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
+    prompt_version: 'v0.3',
+    llm_model: 'gpt-5',
+    cache_key: 'cache-abc',
+    user_chart_hash: 'self-hash',
+    relation_chart_hash: 'rel-hash',
+    archived_at: null,
+    version_label: null,
+    created_at: '2026-05-01T00:00:00Z',
+  };
+
+  it('relation_charts v3 row 부재 → computeChart + upsert 후 진행 (결제 후 500 창 제거)', async () => {
+    (loadPromptForUser as ReturnType<typeof vi.fn>).mockResolvedValue({
+      prompt_name: 'ilhap', version: 'v0.15', content: '본문', status: 'active',
+      canary_ratio: null, notes: null, created_at: '2026-05-04T00:00:00Z',
+    });
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      output: { main_text: '갑목일간', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
+      usage: { token_in: 10, token_out: 20, total_usd: 0 },
+      model: 'gpt-5',
+    });
+    (computeChart as ReturnType<typeof vi.fn>).mockResolvedValue({
+      chart_core: CHART_CORE,
+      chart_hash: 'recomputed-hash',
+    });
+
+    // user_charts: row 존재 (fast path) / relation_charts: select null → upsert
+    const chartMaybeSingle = vi.fn().mockResolvedValue({ data: { chart_core: CHART_CORE, chart_hash: 'self-hash' }, error: null });
+    const relChartMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const makeChartChain = (maybeSingle: ReturnType<typeof vi.fn>) => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({ maybeSingle }),
+            }),
+          }),
+        }),
+      }),
+    });
+    const relChartUpsert = vi.fn().mockResolvedValue({ error: null });
+    // relations: birth 필드 (.select().eq().eq().maybeSingle())
+    const relationsMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        birth_date: '1992-03-05', birth_date_calendar: 'solar', is_lunar_leap: false,
+        birth_time_knowledge: 'unknown', birth_time: null, gender: 'F', birth_longitude: null,
+      },
+      error: null,
+    });
+    const replayInsert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: { replay_id: 'replay-001', created_at: '2026-05-06T00:00:00Z' }, error: null }),
+      }),
+    });
+
+    const from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'user_charts') return makeChartChain(chartMaybeSingle);
+      if (table === 'relation_charts') return { ...makeChartChain(relChartMaybeSingle), upsert: relChartUpsert };
+      if (table === 'relations') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({ maybeSingle: relationsMaybeSingle }),
+            }),
+          }),
+        };
+      }
+      if (table === 'hapcard_replays') return { insert: replayInsert };
+      return {};
+    });
+    const client = { from } as unknown as SupabaseClient;
+
+    const result = await buildReplay(
+      { hapcard: MOCK_HAPCARD_W4, jinjin_date: JINJIN_DATE },
+      { supabaseUserClient: client, supabaseServiceClient: client, openaiClient: { chat: { completions: { create: vi.fn() } } }, kasiServiceKey: 'kasi-test-key' },
+    );
+
+    expect(result.replay_id).toBe('replay-001');
+    // lazy 재계산: computeChart 가 relation birth 로 호출 + upsert 발생
+    expect(computeChart).toHaveBeenCalledWith(
+      expect.objectContaining({ entity_id: 'rel-001', birth_date: '1992-03-05' }),
+      'kasi-test-key',
+    );
+    expect(relChartUpsert).toHaveBeenCalled();
   });
 });

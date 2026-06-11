@@ -13,10 +13,8 @@ import { loadPromptForUser, MODE_TO_PROMPT_NAME } from '@/lib/llm/prompt-loader'
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
 import { computeCrossAnalysisSafe } from '@/lib/saju/cross';
-import {
-  fetchLatestUserChartForVersion,
-  fetchLatestRelationChartForVersion,
-} from '@/lib/chart/queries';
+import { ensureUserChartRow } from '@/lib/chart/ensure-user-chart';
+import { ensureRelationChartRow } from '@/lib/today/lazy-relation-chart';
 
 const JINJIN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -66,10 +64,8 @@ export interface BuildReplayDeps {
   supabaseUserClient: SupabaseClient;
   supabaseServiceClient: SupabaseClient;
   openaiClient: CallOpenAiDeps['openaiClient'];
-}
-
-interface ChartRow {
-  chart_core: ChartCore;
+  // W4: theory 버전 범프 후 lazy 재계산용 (ensure* 가 KASI computeChart 호출 시 사용)
+  kasiServiceKey: string;
 }
 
 export async function buildReplay(
@@ -95,33 +91,33 @@ export async function buildReplay(
 
   const replaySystemPrompt = buildReplaySystemPrompt(prompt.content, input.jinjin_date);
 
-  // user_charts / relation_charts 는 독립 쿼리 — 병렬 fetch
-  // MeEdit 시 신규 row INSERT (ADR-016 FK 보존) → fetchLatest*ForVersion 으로 latest 선택
-  const [ucResult, rcResult] = await Promise.all([
-    fetchLatestUserChartForVersion(
-      deps.supabaseUserClient as Parameters<typeof fetchLatestUserChartForVersion>[0],
+  // user_charts / relation_charts 는 독립 쿼리 — 병렬 확보.
+  // W4: theory 버전 범프(v2→v3 등) 직후 현재 버전 row 가 없으면 ensure* 가 lazy 재계산
+  // (KASI computeChart + upsert) — 유료 replay 가 백필 타이밍에 결제 후 500 나는 창 제거.
+  // ensure* fast path 는 fetchLatest*ForVersion 동일 쿼리 (MeEdit 복수 row → latest 선택 유지).
+  const [ucRow, rcRow] = await Promise.all([
+    ensureUserChartRow(
+      deps.supabaseUserClient as Parameters<typeof ensureUserChartRow>[0],
       hapcard.user_id,
-      DEFAULT_THEORY_PROFILE_VERSION,
+      deps.kasiServiceKey,
     ),
-    fetchLatestRelationChartForVersion(
-      deps.supabaseUserClient as Parameters<typeof fetchLatestRelationChartForVersion>[0],
+    ensureRelationChartRow(
+      deps.supabaseUserClient as Parameters<typeof ensureRelationChartRow>[0],
       hapcard.relation_id,
-      DEFAULT_THEORY_PROFILE_VERSION,
+      hapcard.user_id,
+      deps.kasiServiceKey,
     ),
   ]);
 
-  const { data: ucRow, error: ucErr } = ucResult;
-  if (ucErr || !ucRow) {
-    throw new Error(`USER_CHART_NOT_FOUND: ${ucErr?.message ?? 'no chart'}`);
+  if (!ucRow) {
+    throw new Error('USER_CHART_NOT_FOUND: no chart (lazy recompute unavailable)');
+  }
+  if (!rcRow) {
+    throw new Error('RELATION_CHART_NOT_FOUND: no chart (lazy recompute unavailable)');
   }
 
-  const { data: rcRow, error: rcErr } = rcResult;
-  if (rcErr || !rcRow) {
-    throw new Error(`RELATION_CHART_NOT_FOUND: ${rcErr?.message ?? 'no chart'}`);
-  }
-
-  const selfChart = (ucRow as unknown as ChartRow).chart_core;
-  const relationChart = (rcRow as unknown as ChartRow).chart_core;
+  const selfChart = ucRow.chart_core;
+  const relationChart = rcRow.chart_core;
 
   // 교차분석 — replay 도 동일 6모드 프롬프트가 cross 참조를 지시하므로 배선 필수 (설계 §1.4).
   // replay 는 birth 미페치 → 출생연도 미제공 → age_gap 생략.
