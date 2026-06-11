@@ -193,6 +193,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **ADR-037** 기술 스택 잠금 (`tech_stack.md` 참조)
 - **ADR-038** Hanja 노출 금지 — UI display layer에서 한자 제거. RAG/DB verbatim 유지. `convertHanja()` safety-net 의무.
 - **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). **Amended 2026-06-10 §9**: 인연 등록 슬롯(모델 B) — 2명까지 무료, 3번째부터 `relation_slot` 1,000원/10부적, 현재 보유 수 게이트(삭제 시 회복), draft 스테이징→머티리얼라이즈(claim-first 멱등+lazy recovery), cash-gen 한도 미적용. (`docs/adr/ADR-039-pay-per-use-billing.md`)
+- **ADR-040** 파생·교차분석층 = LLM 해석 근거 전용, 점수 무개입 — `chart_core.derived`(theory v3) + `cross_analysis`(cross-v1, 비영속). 순수 결정형(1000회 테스트 의무) + 프롬프트 환각 가드("제공 필드 외 단정 금지") + PII 연령차 밴드만. 신강약·용신 룰은 specialist 검수 전 잠정(`manseryeok_theory.md` §6.7). (`docs/adr/ADR-040-derivation-cross-analysis-layer.md`)
 
 ---
 
@@ -327,6 +328,10 @@ C:\DEV\SAJU\
 | 케미 다시 맞추기 (재해석) | `replay` | `reInterpret`, `다시합`, `그럴리 없어! 다시` |
 | 또 다른 나 (자기진단 6모드) | `whatif` (DiagnosticType) | `만약에 우리`, `마이플레이`, `만약합` |
 | 인연 슬롯 / 등록비 (3번째+ 1,000원) | `relation_slot` (feature_id) | `사람칸`, `person-slot`, `seat`, `quota` |
+| 지장간 | `jijanggan` | `hiddenStems`, `장간` (코드 식별자) |
+| 신강약 | `sinkang` — `'신강' \| '중화' \| '신약'` | `dayStrength`, `strength` |
+| 용신 | `yongsin` (희신 `huisin`) | `usefulGod`, `favorableElement` |
+| 궁위 | `gungwi` — 년주/월주/일주/시주 | `palace`... 단 LLM payload 키 `palace`/`palace_meaning`은 전송용 영문 키로 예외 (`palace_name` 금지 — PII 키 스캔) |
 
 새로운 도메인 용어 추가 시 본 표를 갱신하며 §1.1 승인 절차 적용.
 

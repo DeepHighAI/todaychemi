@@ -253,6 +253,13 @@ sha256(
 
 LLM은 본문 작성 시 *점수 입력값으로만 받음*. 점수 산출 자체에 절대 개입 금지. 점수 관련 LLM 출력 시 grep 테스트로 차단.
 
+### 8.4 파생·교차분석층 무접촉 (ADR-040, 2026-06-11)
+
+`chart_core.derived`(SajuDerived)와 `cross_analysis`(CrossAnalysis)는 **LLM 해석 근거
+전용**이며 본 spec의 어떤 점수 컴포넌트에도 입력되지 않는다. 알고리즘·검수 체크리스트는
+`docs/specs/manseryeok_theory.md` §6 참조. 해당 층의 변경은 SCORING_VERSION을 움직이지
+않는다 (점수식 무접촉 — 같은 라운드의 SCORING_VERSION 2는 C1 yunse 인코딩 버그픽스로 별건).
+
 ---
 
 ## 8.5 yunse_adjustment (Phase Y3 — 사용자 §1.1 확정 2026-05-07)
