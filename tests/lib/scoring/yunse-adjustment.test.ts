@@ -116,6 +116,29 @@ describe('computeYunseAdjustment — 한자 인코딩 (프로덕션, SCORING_VER
   });
 });
 
+// 리뷰 F8: 레거시 jsonb 변형 — current_index 범위 밖이어도 throw 없이 대운 항만 0 강등
+describe('computeYunseAdjustment — daeun index 방어', () => {
+  it('current_index 범위 밖 → throw 없이 숫자 반환 (대운 항 0)', () => {
+    const yunse = makeYunse();
+    const broken: YunseCore = {
+      ...yunse,
+      daeun: { ...yunse.daeun, current_index: 7 },
+    };
+    const result = computeYunseAdjustment(broken, '己巳', '일합');
+    expect(typeof result).toBe('number');
+    expect(Number.isFinite(result)).toBe(true);
+  });
+
+  it('빈 daeun list → throw 없이 숫자 반환', () => {
+    const yunse = makeYunse();
+    const broken: YunseCore = {
+      ...yunse,
+      daeun: { ...yunse.daeun, list: [], current_index: 0 },
+    };
+    expect(typeof computeYunseAdjustment(broken, '己巳', '일합')).toBe('number');
+  });
+});
+
 describe('score_breakdown.yunse_adjustment 노출 (Phase Y3 통합)', () => {
   it('computeFinalScore 결과에 yunse_adjustment 필드가 존재한다', async () => {
     const { computeFinalScore } = await import('@/lib/scoring/final');

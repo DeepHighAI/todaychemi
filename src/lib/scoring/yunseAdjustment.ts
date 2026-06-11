@@ -75,9 +75,10 @@ export function computeYunseAdjustment(
   relationDayPillar: string,
   mode: Mode,
 ): number {
+  // current_index 범위 밖(레거시 jsonb 변형) 방어 — 대운 레이어만 0 으로 강등 (cross.ts 동일 정책)
   const cur = yunse.daeun.list[yunse.daeun.current_index];
   const sum =
-      LAYER_WEIGHTS.daeun * deltaScore(cur.pillar, relationDayPillar)
+      LAYER_WEIGHTS.daeun * deltaScore(cur?.pillar ?? '', relationDayPillar)
     + LAYER_WEIGHTS.seyun * deltaScore(yunse.seyun.current_pillar, relationDayPillar)
     + LAYER_WEIGHTS.wolun * deltaScore(yunse.wolun.current_pillar, relationDayPillar)
     + LAYER_WEIGHTS.iliun * deltaScore(yunse.iliun.today_pillar, relationDayPillar);
