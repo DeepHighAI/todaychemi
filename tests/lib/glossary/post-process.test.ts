@@ -113,6 +113,47 @@ describe('convertHanja — ADR-038 회귀', () => {
   });
 });
 
+// P3-6 (2026-06-11): 파생·교차층 신규 도메인 용어 — ADR-038 convertHanja 안전망 확장
+describe('convertHanja — 파생층 용어 (ADR-040)', () => {
+  it('십신 추가: 劫財 → 겁재, 偏官 → 편관', () => {
+    expect(convertHanja('劫財')).toBe('겁재');
+    expect(convertHanja('偏官')).toBe('편관');
+  });
+  it('지장간: 支藏干/地藏干/藏干/餘氣/中氣/正氣', () => {
+    expect(convertHanja('支藏干')).toBe('지장간');
+    expect(convertHanja('地藏干')).toBe('지장간');
+    expect(convertHanja('藏干')).toBe('장간');
+    expect(convertHanja('餘氣')).toBe('여기');
+    expect(convertHanja('中氣')).toBe('중기');
+    expect(convertHanja('正氣')).toBe('정기');
+  });
+  it('신강약: 身强/身強(이체자)/身弱/中和/得令/得地/得勢/月令', () => {
+    expect(convertHanja('身强')).toBe('신강');
+    expect(convertHanja('身強')).toBe('신강');
+    expect(convertHanja('身弱')).toBe('신약');
+    expect(convertHanja('中和')).toBe('중화');
+    expect(convertHanja('得令')).toBe('득령');
+    expect(convertHanja('得地')).toBe('득지');
+    expect(convertHanja('得勢')).toBe('득세');
+    expect(convertHanja('月令')).toBe('월령');
+  });
+  it('용신: 用神/喜神/忌神/抑扶', () => {
+    expect(convertHanja('用神')).toBe('용신');
+    expect(convertHanja('喜神')).toBe('희신');
+    expect(convertHanja('忌神')).toBe('기신');
+    expect(convertHanja('抑扶')).toBe('억부');
+  });
+  it('궁위: 宮位/夫妻宮/十二支 + 단일자 宮 → 궁', () => {
+    expect(convertHanja('宮位')).toBe('궁위');
+    expect(convertHanja('夫妻宮')).toBe('부처궁');
+    expect(convertHanja('十二支')).toBe('십이지');
+    expect(convertHanja('日支宮')).toBe('일지궁');
+  });
+  it('통합 문장: "身强한 일주는 抑扶 用神으로 균형"', () => {
+    expect(convertHanja('身强한 일주는 抑扶 用神으로 균형')).toBe('신강한 일주는 억부 용신으로 균형');
+  });
+});
+
 describe('translateChapter', () => {
   it('"通神頌" → "통신송"', () => {
     expect(translateChapter('通神頌')).toBe('통신송');
