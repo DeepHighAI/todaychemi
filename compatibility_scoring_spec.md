@@ -2,7 +2,7 @@
 
 > 본 문서는 **개발 명세**이다. ADR-035에 따라 기획서(`fluttering-gathering-island.md`)의 §3.2.1 가중치 외 *상세 점수 산정 명세*를 분리 관리한다. Phase 0 G1 단계에서 명리 specialist가 채우고 검수한다.
 
-**버전 관리**: `scoring_version` 필드로 추적. prompt_version과 별개. 카나리 5%·즉시 롤백 가능 (ADR-008과 동일 방식).
+**버전 관리**: `scoring_version` 필드로 추적. prompt_version과 별개. 카나리 5%·즉시 롤백 가능 (ADR-008과 동일 방식). **현행 `SCORING_VERSION = 2`** (2026-06-11, §10 변경 이력 참조).
 
 **결정성 원칙**: 동일 입력 → 동일 점수. LLM은 점수 산출에 개입 금지.
 
@@ -274,9 +274,8 @@ yunse_adjustment = clamp(
 Δ(layerPillar, relDayPillar) = clamp((천간합?+1:0) + (지지합?+1:0) + (지지충?-1:0), -1, +1)
 ```
 
-- 천간합 판단: 한글 간지 인덱스 차이 = 5 (갑-기, 을-경, 병-신, 정-임, 무-계)
-- 지지합 판단: 인덱스 합 = 1 (자축) 또는 13 (나머지 5쌍)
-- 지지충 판단: 인덱스 차이 = 6 (자오, 축미, 인신, 묘유, 진술, 사해)
+- **판정 방식 (SCORING_VERSION 2, 2026-06-11)**: 양쪽 기둥을 한자로 정규화(한글 입력은 변환, 한자는 통과)한 뒤 §2.1 천간합 / §2.2 지지합 / §2.4 충 한자 테이블 lookup
+  - v1은 한글 배열 인덱스 매칭(갑-기 간격 5 등)이라 프로덕션 ganji(한자 — ssaju yunse·KASI day_pillar)에서 검출이 항상 실패해 `yunse_adjustment`가 0으로 고정되는 버그가 있었다. v2는 인코딩 매칭만 수정 — 점수 의미(+1/+1/−1, clamp ±1)는 v1과 동일
 - 형·파·해·삼합·반합 미포함 (단순화)
 
 ### MODE_FACTOR
@@ -307,5 +306,6 @@ yunse_adjustment = clamp(
 | v0.1 (초안) | Phase 0 G1 진입 시 작성 | 본 문서 골격 |
 | v1.0 (잠금) | G1 통과 시 | scoring_version=1로 lock |
 | v1.1 | 2026-05-21 | 사용자 노출 지표를 100점 만점에서 오늘온도(°C) 표시로 변환. 내부 `compat_score`는 유지 |
+| **v2 (현행)** | 2026-06-11 | **SCORING_VERSION 1→2**. `yunse_adjustment` 한자 인코딩 수정 — 프로덕션 ganji는 한자(ssaju yunse·KASI day_pillar)인데 v1이 한글 배열 매칭이라 합·충 검출이 항상 실패, 보정이 0으로 고정되던 버그 해소. 점수 산식·가중치·의미 불변(§8.5). ADR-036에 따라 scoring_version 교차 비교 가드 추가: 케미피드 badge는 버전 불일치 시 변화량 미산출, 타임라인은 버전 경계에 점선 마커 + 안내 캡션 |
 
 > **본 문서는 ADR-035에 의해 분리되었으며, 기획서(fluttering-gathering-island.md) §3.2.1 가중치와 일관성 유지 의무.** 가중치 변경은 양 문서 동시 갱신.
