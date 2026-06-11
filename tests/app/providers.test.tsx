@@ -41,10 +41,13 @@ describe('Providers', () => {
     vi.clearAllMocks();
     supabaseMocks.callbacks.length = 0;
     observedQueryClient = null;
+    window.localStorage.removeItem('theme');
+    document.documentElement.classList.remove('light', 'dark');
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
-        matches: false,
+        // prefers-color-scheme: dark 를 참으로 — 디폴트가 system 이면 dark 로 해석되는 환경
+        matches: query.includes('prefers-color-scheme: dark'),
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -58,6 +61,19 @@ describe('Providers', () => {
 
   afterEach(() => {
     observedQueryClient = null;
+  });
+
+  it('저장된 테마가 없으면 시스템이 다크여도 라이트 모드가 디폴트다', async () => {
+    render(
+      <Providers>
+        <CacheProbe />
+      </Providers>,
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.classList.contains('light')).toBe(true);
+    });
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
   });
 
   it('Supabase SIGNED_OUT 이벤트를 받으면 사용자 귀속 Query cache를 비운다', async () => {
