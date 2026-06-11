@@ -1300,6 +1300,10 @@ export type Database = {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: Json
       }
+      insert_relation_if_under_free_cap: {
+        Args: { p_draft: Json; p_free_slots: number; p_user_id: string }
+        Returns: string
+      }
       match_classics: {
         Args: {
           filter_statuses: string[]
@@ -1318,6 +1322,7 @@ export type Database = {
         }[]
       }
       purge_deleted_users: { Args: never; Returns: undefined }
+      purge_pending_relation_drafts: { Args: never; Returns: undefined }
       refund_tokens: {
         Args: { delta: number; reason: string; ref?: string; uid: string }
         Returns: number
