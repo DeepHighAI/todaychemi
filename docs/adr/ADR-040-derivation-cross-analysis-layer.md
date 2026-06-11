@@ -41,11 +41,13 @@ This round adds two deterministic pure-function layers:
    strings enter any output or LLM payload. Key naming avoids forbidden PII key
    segments (e.g. `palace_meaning`, never `palace_name`). LLM projection
    (`projectDerivedForLlm`) drops the sinkang numeric score — verdict string only.
-   *Known pre-existing side channel (Phase Y2, outside this layer):*
-   `LlmYunse.daeun.current` carries `{age, year}` from which a birth year is
-   derivable (`year − age` ±1). Whether to strip `year` is a pending §1.1
-   decision — until then the band-only guarantee applies to this layer's own
-   outputs, not the whole payload.
+   *Accepted side channel (user decision 2026-06-12):* `LlmYunse.daeun.current`
+   carries `{age, year}` from which a birth year is derivable (`year − age` ±1).
+   This pre-existing Phase Y2 field is **explicitly accepted** — assessed as
+   carrying no legal/PII risk (birth year alone is not among the §5 forbidden
+   fields; only the original `birth_date` is). The band-only guarantee therefore
+   applies to this layer's own outputs; the payload as a whole intentionally
+   exposes the daeun year for interpretation quality.
 5. **Persistence:** `derived` persists inside `chart_core` jsonb (v3);
    `cross_analysis` is computed per request and **never persisted** — cached only as
    part of the LLM result row it contributed to.
