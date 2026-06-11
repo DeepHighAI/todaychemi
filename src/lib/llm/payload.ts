@@ -66,6 +66,9 @@ const Element5CountsSchema = z.object({
 // 경량 경계 스키마 — projection이 읽는 필드만 검증 (non-strict: 미지 필드 통과).
 // DB jsonb 경유 derived 변형 방어 — 실패 시 fail-open(derived 생략, 설계 §2.4).
 export const SajuDerivedSchema = z.object({
+  // 버전 고정 — 미래 derived_version 2 가 v1 의미론으로 잘못 투영되는 것 차단
+  // (parse 실패 → resolveDerivedForLlm 의 warn-and-omit 경로, 리뷰 api-contract)
+  derived_version: z.literal(1),
   sipsin: z.object({
     counts: z.object({
       비견: z.number(),
