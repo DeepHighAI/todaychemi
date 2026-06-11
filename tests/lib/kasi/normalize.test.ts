@@ -156,6 +156,23 @@ describe('normalizeKasiToChartCore', () => {
     expect(core.month_pillar).toBe('庚辰'); // ssaju 절기 기준 — NOT null
   });
 
+  describe('파생층 derived 부착 (theory v3 — "v3 ⇒ derived 존재" 불변식)', () => {
+    it('chart_core.derived가 존재하고 derived_version=1·hour_known 반영', () => {
+      const core = normalizeKasiToChartCore(baseItem, 'M', '14:30', baseBirthInput);
+      expect(core.derived).toBeDefined();
+      expect(core.derived?.derived_version).toBe(1);
+      expect(core.derived?.hour_known).toBe(true);
+      expect(core.derived?.ilju.pillar).toBe('壬子');
+    });
+
+    it('derived.sinkang.level은 3값 중 하나, 시간 미상 시 hour_known=false', () => {
+      const core = normalizeKasiToChartCore(baseItem, 'M', null, baseBirthInput);
+      expect(['신강', '중화', '신약']).toContain(core.derived?.sinkang.level);
+      expect(core.derived?.hour_known).toBe(false);
+      expect(core.derived?.sipsin.hour).toBeNull();
+    });
+  });
+
   it('extracts hanja from Korean-reading+paren format (real KASI response)', () => {
     // 실제 KASI 응답: "경오(庚午)" "경자(庚子)" "임자(壬子)"
     // lunWolgeon='경자(庚子)' — 이 값은 무시되고 ssaju 기준 月柱가 반환됨

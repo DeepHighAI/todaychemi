@@ -182,7 +182,7 @@ describe('HapcardPage', () => {
     expect(body).toEqual({
       relation_id: 'r1',
       mode: '친구합',
-      theory_profile_version: 'v2',
+      theory_profile_version: 'v3',
     });
   });
 

@@ -8,6 +8,7 @@ import {
   type Element,
 } from './constants';
 import { apparentSolarMinutes, type SolarDate } from './solar-time';
+import { deriveSaju } from '@/lib/saju/derive';
 import type { ChartCore, YunseCore } from '@/types/chart';
 
 function formatKstDate(now: Date): string {
@@ -156,5 +157,7 @@ export function normalizeKasiToChartCore(
     five_elements_counts,
     gender_normalized: gender,
     yunse: mapSsajuToYunse(sajuResult, now),
+    // 파생층 — 기둥 확정 후 부착 ("v3 ⇒ derived 존재" 불변식, 결정형)
+    derived: deriveSaju({ year_pillar, month_pillar, day_pillar, hour_pillar }),
   };
 }
