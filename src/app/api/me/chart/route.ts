@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
-import { fetchLatestUserChart } from '@/lib/chart/queries';
+import { ensureUserChartRow } from '@/lib/chart/ensure-user-chart';
 import { createClient } from '@/lib/supabase/server';
-import type { ChartCore } from '@/types/chart';
 
 export async function GET() {
   try {
@@ -16,14 +15,14 @@ export async function GET() {
       return apiErrorResponse('UNAUTHORIZED', '', 401);
     }
 
-    const { data, error } = await fetchLatestUserChart(supabase, user.id);
+    // 현재 theory_profile_version 기준 차트 — 없으면 users 행으로 lazy 재계산 (v2 전환, ADR-021)
+    const ensured = await ensureUserChartRow(
+      supabase,
+      user.id,
+      process.env.KASI_SERVICE_KEY ?? '',
+    );
 
-    if (error) {
-      return apiErrorResponse('INTERNAL_ERROR', '', 500);
-    }
-
-    const chart = data ? ((data as unknown as { chart_core: ChartCore }).chart_core) : null;
-    return NextResponse.json({ ok: true, chart });
+    return NextResponse.json({ ok: true, chart: ensured?.chart_core ?? null });
   } catch (err) {
     console.error('[/api/me/chart]', { error: sanitizeErrorForLog(err) });
     return apiErrorResponse('INTERNAL_ERROR', '', 500);

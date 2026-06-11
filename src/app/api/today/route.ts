@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { apiErrorResponse } from '@/lib/errors/route-response';
-import { fetchLatestUserChartForVersion } from '@/lib/chart/queries';
+import { ensureUserChartRow } from '@/lib/chart/ensure-user-chart';
 
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -194,12 +194,19 @@ export async function GET(request: Request) {
 
     async function resolveBaseSelfChart(): Promise<ChartCore | null> {
       if (cachedBaseSelfChartResolved) return cachedBaseSelfChart;
-      const { data } = await fetchLatestUserChartForVersion(
-        supabase,
-        userId,
-        DEFAULT_THEORY_PROFILE_VERSION,
-      );
-      cachedBaseSelfChart = data ? (data.chart_core as unknown as ChartCore) : null;
+      // v2 범프 후 기존 유저 lazy 재계산 (ADR-021) — 실패해도 종전처럼 null 로 degrade.
+      try {
+        const ensured = await ensureUserChartRow(
+          supabase,
+          userId,
+          process.env.KASI_SERVICE_KEY ?? '',
+          DEFAULT_THEORY_PROFILE_VERSION,
+        );
+        cachedBaseSelfChart = ensured?.chart_core ?? null;
+      } catch (err) {
+        console.error('[today] ensureUserChartRow failed', { error: sanitizeErrorForLog(err) });
+        cachedBaseSelfChart = null;
+      }
       cachedBaseSelfChartResolved = true;
       return cachedBaseSelfChart;
     }

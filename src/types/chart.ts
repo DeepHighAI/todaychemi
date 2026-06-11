@@ -73,4 +73,7 @@ export interface TheoryProfile {
   longitude_correction: boolean;
 }
 
-export const DEFAULT_THEORY_PROFILE_VERSION = 'v1';
+// v2 (2026-06-11, ADR-021 Amended): 시주 진태양시 보정 도입(서울 기본 −32.1분 + 균시차).
+// 엔진 동작 변경 시 반드시 범프 — chart_hash 입력에 포함되어 전 다운스트림 캐시가 분리된다.
+// v1: 보정 없음 (벽시계 시각 그대로 시지 판정).
+export const DEFAULT_THEORY_PROFILE_VERSION = 'v2';
