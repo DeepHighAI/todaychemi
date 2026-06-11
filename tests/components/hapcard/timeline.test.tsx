@@ -89,6 +89,91 @@ describe('HapcardTimeline — error', () => {
   });
 });
 
+describe('HapcardTimeline — scoring_version 경계 마커 (ADR-036)', () => {
+  const MIXED_VERSION_DATA: HapcardSnapshotsResponse = {
+    today_index: 3,
+    snapshots: [
+      { date: '2026-05-07', score: 60, scoring_version: '1' },
+      { date: '2026-05-08', score: 65, scoring_version: '1' },
+      { date: '2026-05-09', score: 70, scoring_version: '2' },
+      { date: '2026-05-10', score: 75, scoring_version: '2' },
+      { date: '2026-05-11', score: null, scoring_version: null },
+      { date: '2026-05-12', score: null, scoring_version: null },
+      { date: '2026-05-13', score: null, scoring_version: null },
+    ],
+  };
+
+  const UNIFORM_VERSION_DATA: HapcardSnapshotsResponse = {
+    today_index: 3,
+    snapshots: [
+      { date: '2026-05-07', score: 60, scoring_version: '2' },
+      { date: '2026-05-08', score: 65, scoring_version: '2' },
+      { date: '2026-05-09', score: 70, scoring_version: '2' },
+      { date: '2026-05-10', score: 75, scoring_version: '2' },
+      { date: '2026-05-11', score: null, scoring_version: null },
+      { date: '2026-05-12', score: null, scoring_version: null },
+      { date: '2026-05-13', score: null, scoring_version: null },
+    ],
+  };
+
+  it('버전 혼재 → 점선 경계 마커 + 캡션 렌더', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => MIXED_VERSION_DATA,
+    } as Response);
+
+    renderWithProviders(<HapcardTimeline {...DEFAULT_PROPS} />);
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="hapcard-timeline"]')).not.toBeNull(),
+    );
+
+    expect(
+      document.querySelector('[data-testid="hapcard-timeline-version-marker"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByText('점수 기준이 업데이트됐어요 — 이전 막대와 직접 비교는 어려워요'),
+    ).toBeInTheDocument();
+  });
+
+  it('버전 단일 → 마커·캡션 없음', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => UNIFORM_VERSION_DATA,
+    } as Response);
+
+    renderWithProviders(<HapcardTimeline {...DEFAULT_PROPS} />);
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="hapcard-timeline"]')).not.toBeNull(),
+    );
+
+    expect(
+      document.querySelector('[data-testid="hapcard-timeline-version-marker"]'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('점수 기준이 업데이트됐어요 — 이전 막대와 직접 비교는 어려워요'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('scoring_version 미포함(레거시 응답) → 마커 없이 기존 렌더 유지', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => FULL_DATA,
+    } as Response);
+
+    renderWithProviders(<HapcardTimeline {...DEFAULT_PROPS} />);
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="hapcard-timeline"]')).not.toBeNull(),
+    );
+
+    expect(
+      document.querySelector('[data-testid="hapcard-timeline-version-marker"]'),
+    ).toBeNull();
+  });
+});
+
 describe('HapcardTimeline — today highlight', () => {
   it('today_index=3 막대만 data-today="true", 나머지 false', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({

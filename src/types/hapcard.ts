@@ -175,6 +175,9 @@ export interface HapcardReplayResult extends HapcardResult {
 export interface HapcardSnapshotEntry {
   date: string;        // YYYY-MM-DD (KST)
   score: number | null; // null = 데이터 없음 (미래 날짜 포함)
+  // ADR-036: scoring_version 이 다른 막대 간 직접 비교 금지 — 타임라인 버전 경계 마커 판정용
+  // (null = 데이터 없음, optional = 레거시 응답 하위호환)
+  scoring_version?: string | null;
 }
 
 export interface HapcardSnapshotsResponse {

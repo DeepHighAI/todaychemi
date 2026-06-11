@@ -52,7 +52,7 @@ export async function GET(
   const db = supabase;
   const { data: rows, error: snapErr } = await db
     .from('hapcard_score_snapshots')
-    .select('target_date, compat_score, created_at')
+    .select('target_date, compat_score, scoring_version, created_at')
     .eq('relation_id', relation_id)
     .eq('mode', mode)
     .gte('target_date', start)
@@ -65,10 +65,15 @@ export async function GET(
   }
 
   // 4. 같은 날짜의 여러 행 → ORDER BY created_at desc로 이미 정렬돼 있으므로 첫 행 채택
-  const scoreMap = new Map<string, number>();
-  for (const row of (rows ?? []) as Array<{ target_date: string; compat_score: number }>) {
+  // scoring_version 동반 전달 — ADR-036 타임라인 버전 경계 마커 판정용
+  const scoreMap = new Map<string, { score: number; scoring_version: string | null }>();
+  type SnapRow = { target_date: string; compat_score: number; scoring_version: string | null };
+  for (const row of (rows ?? []) as SnapRow[]) {
     if (!scoreMap.has(row.target_date)) {
-      scoreMap.set(row.target_date, Number(row.compat_score));
+      scoreMap.set(row.target_date, {
+        score: Number(row.compat_score),
+        scoring_version: row.scoring_version ?? null,
+      });
     }
   }
 
@@ -76,7 +81,12 @@ export async function GET(
   const snapshots: HapcardSnapshotEntry[] = [];
   for (let i = -3; i <= 3; i++) {
     const date = addDays(today, i);
-    snapshots.push({ date, score: scoreMap.get(date) ?? null });
+    const hit = scoreMap.get(date);
+    snapshots.push({
+      date,
+      score: hit?.score ?? null,
+      scoring_version: hit?.scoring_version ?? null,
+    });
   }
 
   return NextResponse.json({ snapshots, today_index: 3 } satisfies HapcardSnapshotsResponse, {

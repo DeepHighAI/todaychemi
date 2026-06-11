@@ -34,7 +34,7 @@ export async function GET() {
   const thirtyDaysAgo = kstDateDaysAgo(30);
   const { data: snapshots, error: snapErr } = await db
     .from('hapcard_score_snapshots')
-    .select('relation_id, mode, compat_score, target_date, created_at')
+    .select('relation_id, mode, compat_score, scoring_version, target_date, created_at')
     .gte('target_date', thirtyDaysAgo)
     .order('target_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -43,12 +43,20 @@ export async function GET() {
   if (snapErr) return apiErrorResponse('INTERNAL_ERROR', '', 500);
 
   // 3. (relation_id::mode) 키별 target_date 최신 2건만 유지 (already sorted desc)
-  type SnapRow = { relation_id: string; mode: string; compat_score: number; target_date: string };
-  const byKey = new Map<string, Array<{ compat_score: number }>>();
+  type SnapRow = {
+    relation_id: string;
+    mode: string;
+    compat_score: number;
+    scoring_version: string | null;
+    target_date: string;
+  };
+  const byKey = new Map<string, Array<{ compat_score: number; scoring_version: string | null }>>();
   for (const s of (snapshots ?? []) as SnapRow[]) {
     const key = `${s.relation_id}::${s.mode}`;
     const arr = byKey.get(key) ?? [];
-    if (arr.length < 2) arr.push({ compat_score: Number(s.compat_score) });
+    if (arr.length < 2) {
+      arr.push({ compat_score: Number(s.compat_score), scoring_version: s.scoring_version ?? null });
+    }
     byKey.set(key, arr);
   }
 
@@ -56,8 +64,15 @@ export async function GET() {
   type RelRow = { relation_id: string; nickname: string; mode: string; created_at: string };
   const items: FeedItem[] = (relations ?? []).map((r: RelRow) => {
     const pair = byKey.get(`${r.relation_id}::${r.mode}`) ?? [];
-    const latest = pair[0]?.compat_score ?? null;
-    const prev = pair[1]?.compat_score ?? null;
+    const latestSnap = pair[0] ?? null;
+    const prevSnap = pair[1] ?? null;
+    const latest = latestSnap?.compat_score ?? null;
+    // ADR-036: scoring_version 이 다른 스냅샷 간 점수 비교 금지 — 불일치 시 변화량 미산출 (badge 스킵)
+    const prevComparable =
+      latestSnap !== null &&
+      prevSnap !== null &&
+      latestSnap.scoring_version === prevSnap.scoring_version;
+    const prev = prevComparable ? prevSnap.compat_score : null;
     const change_score = latest === null ? 0 : computeChangeScore(prev, latest);
     return {
       relation_id: r.relation_id,

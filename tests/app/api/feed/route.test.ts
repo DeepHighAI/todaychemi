@@ -8,10 +8,12 @@ import { GET } from '@/app/api/feed/route';
 vi.mock('@/lib/today/kst-date', () => ({ todayKST: () => '2026-05-21' }));
 
 // 스냅샷 fixture 행 형식 (hapcard_score_snapshots 컬럼 subset)
+// scoring_version 미지정 fixture 는 동일 버전으로 취급 (ADR-036 비교 가능)
 interface SnapshotRow {
   relation_id: string;
   mode: string;
   compat_score: number;
+  scoring_version?: string;
   target_date: string;
   created_at: string;
 }
@@ -121,7 +123,7 @@ describe('GET /api/feed', () => {
     expect(item).toHaveProperty('created_at');
     // limit/gte 호출 인수 검증
     expect(client._relationsLimit).toHaveBeenCalledWith(200);
-    expect(client._snapshotsSelect).toHaveBeenCalledWith('relation_id, mode, compat_score, target_date, created_at');
+    expect(client._snapshotsSelect).toHaveBeenCalledWith('relation_id, mode, compat_score, scoring_version, target_date, created_at');
     expect(client._snapshotsGte).toHaveBeenCalledWith('target_date', '2026-04-21');
     expect(client._snapshotsOrder).toHaveBeenNthCalledWith(1, 'target_date', { ascending: false });
     expect(client._snapshotsOrder).toHaveBeenNthCalledWith(2, 'created_at', { ascending: false });
@@ -226,6 +228,48 @@ describe('GET /api/feed', () => {
     const body = await res.json();
     const item = body.items[0];
     expect(item.change_score).toBe(-18);     // 50 - 68 = -18 (|-18| >= 10)
+    expect(item.has_significant_change).toBe(true);
+  });
+
+  it('200 → ADR-036 버전 가드: 두 스냅샷 scoring_version 불일치 시 비교 스킵 (change_score=0, badge=false)', async () => {
+    const client = makeClient({
+      relations: [
+        { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
+      ],
+      snapshots: [
+        // |Δ| = 20 ≥ 10 이지만 v2 vs v1 — 비교 금지 (ADR-036)
+        { relation_id: 'r1', mode: '친구합', compat_score: 85, scoring_version: '2', target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 65, scoring_version: '1', target_date: '2026-05-20', created_at: '2026-05-05T09:00:00Z' },
+      ],
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    const body = await res.json();
+    const item = body.items[0];
+    expect(item.compat_score).toBe(85);          // 최신 점수는 그대로 노출
+    expect(item.change_score).toBe(0);           // 비교 미산출
+    expect(item.has_significant_change).toBe(false);
+  });
+
+  it('200 → ADR-036 버전 가드: scoring_version 일치 시 badge 정상 산출', async () => {
+    const client = makeClient({
+      relations: [
+        { relation_id: 'r1', nickname: '봄달', mode: '친구합', created_at: '2026-05-05T10:00:00Z' },
+      ],
+      snapshots: [
+        { relation_id: 'r1', mode: '친구합', compat_score: 85, scoring_version: '2', target_date: '2026-05-21', created_at: '2026-05-06T09:00:00Z' },
+        { relation_id: 'r1', mode: '친구합', compat_score: 65, scoring_version: '2', target_date: '2026-05-20', created_at: '2026-05-05T09:00:00Z' },
+      ],
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET();
+
+    const body = await res.json();
+    const item = body.items[0];
+    expect(item.change_score).toBe(20);
     expect(item.has_significant_change).toBe(true);
   });
 

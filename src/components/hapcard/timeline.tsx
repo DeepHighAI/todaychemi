@@ -14,6 +14,21 @@ const BAR_WIDTH = 28;
 const BAR_GAP = 12;
 const MAX_BAR_H = 56;
 const SVG_H = 80;
+const VERSION_MARKER_DASH = '4 4';
+const VERSION_MARKER_STROKE_W = 1;
+
+// ADR-036: 표시 구간이 둘 이상의 scoring_version 에 걸치면 경계 인덱스 반환 (없으면 null).
+// null 버전(데이터 없는 날짜)은 건너뛰고, 직전 비-null 버전과 달라지는 첫 막대 인덱스를 찾는다.
+function findVersionBoundaryIndex(snapshots: HapcardSnapshotEntry[]): number | null {
+  let prevVersion: string | null = null;
+  for (let i = 0; i < snapshots.length; i++) {
+    const version = snapshots[i].scoring_version ?? null;
+    if (version === null) continue;
+    if (prevVersion !== null && version !== prevVersion) return i;
+    prevVersion = version;
+  }
+  return null;
+}
 
 async function fetchSnapshots(hapcardId: string): Promise<HapcardSnapshotsResponse> {
   const res = await fetch(`/api/hapcards/${hapcardId}/snapshots`);
@@ -24,11 +39,18 @@ async function fetchSnapshots(hapcardId: string): Promise<HapcardSnapshotsRespon
 function BarChart({
   snapshots,
   todayIndex,
+  versionBoundaryIndex,
 }: {
   snapshots: HapcardSnapshotEntry[];
   todayIndex: number;
+  versionBoundaryIndex: number | null;
 }) {
   const svgW = snapshots.length * (BAR_WIDTH + BAR_GAP) - BAR_GAP;
+  // 경계 막대 직전 gap 중앙에 점선 세로선 (ADR-036 버전 경계 마커)
+  const boundaryX =
+    versionBoundaryIndex === null
+      ? null
+      : versionBoundaryIndex * (BAR_WIDTH + BAR_GAP) - BAR_GAP / 2;
   return (
     <svg
       width="100%"
@@ -36,6 +58,18 @@ function BarChart({
       aria-hidden="true"
       preserveAspectRatio="xMidYMax meet"
     >
+      {boundaryX !== null && (
+        <line
+          data-testid="hapcard-timeline-version-marker"
+          x1={boundaryX}
+          x2={boundaryX}
+          y1={0}
+          y2={SVG_H}
+          stroke="var(--border)"
+          strokeWidth={VERSION_MARKER_STROKE_W}
+          strokeDasharray={VERSION_MARKER_DASH}
+        />
+      )}
       {snapshots.map((entry, i) => {
         const isToday = i === todayIndex;
         const h = entry.score === null ? 4 : Math.max(4, (entry.score / 100) * MAX_BAR_H);
@@ -103,14 +137,29 @@ export function HapcardTimeline({ hapcardId, mode }: Props) {
 
   if (!data?.snapshots) return null;
 
+  // ADR-036: 표시 막대가 둘 이상의 scoring_version 에 걸치면 경계 마커 + 안내 캡션
+  const versionBoundaryIndex = findVersionBoundaryIndex(data.snapshots);
+
   return (
     <div data-testid="hapcard-timeline" className="rounded-2xl bg-primary/10 p-4 space-y-2">
       <div className="flex items-center justify-between">
         <span className="font-eyebrow text-primary">{t('title')}</span>
         <span className="font-cap text-muted-foreground">{t('caption')}</span>
       </div>
-      <BarChart snapshots={data.snapshots} todayIndex={data.today_index} />
+      <BarChart
+        snapshots={data.snapshots}
+        todayIndex={data.today_index}
+        versionBoundaryIndex={versionBoundaryIndex}
+      />
       <p className="text-xs text-center text-primary font-medium">{t('today')}</p>
+      {versionBoundaryIndex !== null && (
+        <p
+          data-testid="hapcard-timeline-version-caption"
+          className="font-cap text-muted-foreground text-center"
+        >
+          {t('version_boundary')}
+        </p>
+      )}
     </div>
   );
 }

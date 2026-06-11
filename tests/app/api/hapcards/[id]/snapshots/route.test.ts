@@ -14,7 +14,8 @@ const D_PLUS_3 = '2026-05-13';
 
 const HAPCARD_ROW = { relation_id: 'rel-uuid-001', mode: '친구합' };
 
-type SnapRow = { target_date: string; compat_score: number; created_at: string };
+// scoring_version: ADR-036 타임라인 버전 경계 마커용 (미지정 fixture 는 null 취급)
+type SnapRow = { target_date: string; compat_score: number; scoring_version?: string; created_at: string };
 
 function makeSnapshotsChain(opts: {
   rows?: SnapRow[];
@@ -185,6 +186,24 @@ describe('GET /api/hapcards/[id]/snapshots — today_index + empty + error', () 
     expect(body.snapshots).toHaveLength(7);
     expect(body.snapshots.every((s: { score: number | null }) => s.score === null)).toBe(true);
     expect(body.today_index).toBe(3);
+  });
+
+  it('scoring_version: 행의 scoring_version 을 entry 로 passthrough, 빈 날짜는 null (ADR-036)', async () => {
+    const { client } = makeClient({
+      snapshotRows: [
+        { target_date: TODAY, compat_score: 75, scoring_version: '2', created_at: '2026-05-10T01:00:00Z' },
+        { target_date: D_MINUS_3, compat_score: 70, scoring_version: '1', created_at: '2026-05-07T01:00:00Z' },
+      ],
+    });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+
+    const res = await GET(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.snapshots[0].scoring_version).toBe('1');   // D-3
+    expect(body.snapshots[3].scoring_version).toBe('2');   // today
+    expect(body.snapshots[6].scoring_version).toBeNull();  // 데이터 없는 미래 날짜
   });
 
   it('error: snapshot select 오류 → 500 INTERNAL_ERROR', async () => {
