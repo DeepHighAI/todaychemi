@@ -53,29 +53,77 @@ describe('normalizeKasiToChartCore', () => {
     expect(core.hour_pillar).toBeNull();
   });
 
-  it('computes hour_pillar from lunIljin stem and hour (14:30)', () => {
-    // 壬日, hour=14 → 未支(index 7), base=6 → (6+7)%10=3 → 丁 → 丁未
+  it('computes hour_pillar from lunIljin stem and hour (14:30 → 진태양시 13:58 → 未)', () => {
+    // 壬日, 14:30 보정(서울 −32.1 + EoT −0.2) → 837.7분(13:58) → 未支(7), base=6 → 丁未
     const core = normalizeKasiToChartCore(baseItem, 'M', '14:30', baseBirthInput);
     expect(core.hour_pillar).toBe('丁未');
   });
 
-  it('hour 23 uses current day stem (야자시 어드밴스 제거 — 조자시 통합 학파)', () => {
-    // 壬日 base=6, branch=子(0), stem=(6+0)%10=6 → 庚 → 庚子
-    // ADR-037 §1.1 결정 (2026-05-03): ssaju와 동일 기준 채택
+  it('23:30 → 진태양시 22:58 → 亥時 (ADR-021 보정 효과 — 학파 변경 아님)', () => {
+    // 壬日, 1377.7분(22:58) → 亥(11), (6+11)%10=7 → 辛亥.
+    // 보정 후 자시 진입은 ~23:32부터. 조자시 통합 학파(ADR-037)는 그대로 유지된다.
     const core = normalizeKasiToChartCore(baseItem, 'M', '23:30', baseBirthInput);
-    expect(core.hour_pillar).toBe('庚子');
+    expect(core.hour_pillar).toBe('辛亥');
   });
 
-  it('hour 00 uses current day stem (조자시 — 변화 없음)', () => {
-    // 壬日 00시: base=6, branch=子(0) → 庚子
+  it('00:30 → 보정으로 전날 23:58이어도 子時 + 당일 일간 (시주-only 보정)', () => {
+    // 壬日, −2.3분 → 정규화 1437.7(23:57) → 子(0), 일간은 입력 날짜 당일 유지 → 庚子
     const core = normalizeKasiToChartCore(baseItem, 'M', '00:30', baseBirthInput);
     expect(core.hour_pillar).toBe('庚子');
   });
 
   it('hour 22 uses current day stem (sanity check, 변화 없음)', () => {
-    // 壬日 22시: base=6, branch=亥(11), stem=(6+11)%10=7 → 辛 → 辛亥
+    // 壬日 22:30 → 1317.7분(21:58) → 亥(11), stem=(6+11)%10=7 → 辛 → 辛亥
     const core = normalizeKasiToChartCore(baseItem, 'M', '22:30', baseBirthInput);
     expect(core.hour_pillar).toBe('辛亥');
+  });
+
+  describe('진태양시 시지 경계 (ADR-021 Amended — 서울 기본 −32.1분 + 균시차)', () => {
+    it('17:05 → 진태양시 16:33 → 申時 (壬日 戊申)', () => {
+      // 992.7분 → 申(8), (6+8)%10=4 → 戊申. 보정 미적용이면 酉時(辛酉)였을 케이스.
+      const core = normalizeKasiToChartCore(baseItem, 'M', '17:05', baseBirthInput);
+      expect(core.hour_pillar).toBe('戊申');
+    });
+
+    it('사용자 보고 케이스 동형: 戊申日 17:05 → 庚申 (3eyes 일치)', () => {
+      // 戊日 base=8, 申(8) → (8+8)%10=6 → 庚申. 보정 전 구현은 辛酉를 반환했다.
+      const userCaseItem: KasiLunCalItem = { ...baseItem, lunIljin: '무신(戊申)' };
+      const core = normalizeKasiToChartCore(userCaseItem, 'M', '17:05', baseBirthInput);
+      expect(core.hour_pillar).toBe('庚申');
+    });
+
+    it('17:40 → 진태양시 17:08 → 酉時 유지 (壬日 己酉)', () => {
+      // 1027.7분 → 酉(9), (6+9)%10=5 → 己酉
+      const core = normalizeKasiToChartCore(baseItem, 'M', '17:40', baseBirthInput);
+      expect(core.hour_pillar).toBe('己酉');
+    });
+
+    it('15:30 → 진태양시 14:58 → 未時 (경계 직전)', () => {
+      const core = normalizeKasiToChartCore(baseItem, 'M', '15:30', baseBirthInput);
+      expect(core.hour_pillar).toBe('丁未');
+    });
+
+    it('15:35 → 진태양시 15:03 → 申時 진입', () => {
+      const core = normalizeKasiToChartCore(baseItem, 'M', '15:35', baseBirthInput);
+      expect(core.hour_pillar).toBe('戊申');
+    });
+
+    it('경도 명시(135°E 표준자오선) → 경도항 0, EoT만 적용', () => {
+      // 17:05 + EoT(−0.2) = 1024.8분(17:04) → 酉(9) → 己酉 (서울 기본과 다른 결과)
+      const core = normalizeKasiToChartCore(baseItem, 'M', '17:05', baseBirthInput, {
+        birth_longitude: 135,
+      });
+      expect(core.hour_pillar).toBe('己酉');
+    });
+
+    it('solar_date 명시 시 균시차는 그 날짜 기준 (음력 입력 보호 경로)', () => {
+      // 11월 초 EoT ≈ +16.4분: 17:20 − 32.1 + 16.4 ≈ 1024.3분(17:04) → 酉
+      // (4월 기준이면 1007.7분(16:47) → 申이 됐을 입력 — solar_date가 실제로 반영됨을 판별)
+      const core = normalizeKasiToChartCore(baseItem, 'M', '17:20', baseBirthInput, {
+        solar_date: { year: 1990, month: 11, day: 3 },
+      });
+      expect(core.hour_pillar).toBe('己酉');
+    });
   });
 
   it('sets day_master_element from lunIljin stem', () => {

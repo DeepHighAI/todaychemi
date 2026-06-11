@@ -3,9 +3,11 @@ import type { KasiLunCalItem } from './types';
 import {
   HEAVENLY_STEMS, EARTHLY_BRANCHES,
   STEM_ELEMENT, BRANCH_ELEMENT,
-  hourToBranchIndex, HOUR_STEM_BASE,
+  minutesToBranchIndex, HOUR_STEM_BASE,
+  DEFAULT_BIRTH_LONGITUDE,
   type Element,
 } from './constants';
+import { apparentSolarMinutes, type SolarDate } from './solar-time';
 import type { ChartCore, YunseCore } from '@/types/chart';
 
 function formatKstDate(now: Date): string {
@@ -51,9 +53,18 @@ function buildPillar(stemIdx: number, branchIdx: number): string {
   return HEAVENLY_STEMS[stemIdx] + EARTHLY_BRANCHES[branchIdx];
 }
 
-function computeHourPillar(dayStem: string, timeStr: string): string {
-  const hour = parseInt(timeStr.split(':')[0], 10);
-  const branchIdx = hourToBranchIndex(hour);
+// 時支는 진태양시(경도 보정 + 균시차) 기준으로 판정한다 (ADR-021 Amended 2026-06-11).
+// 보정이 자정을 넘어도 일간(stem 기준)은 입력 날짜의 당일 일간 그대로 — 시주-only 보정 결정.
+function computeHourPillar(
+  dayStem: string,
+  timeStr: string,
+  longitude: number,
+  solarDate: SolarDate,
+): string {
+  const [hh, mm] = timeStr.split(':');
+  const hour = parseInt(hh, 10);
+  const minute = parseInt(mm ?? '0', 10);
+  const branchIdx = minutesToBranchIndex(apparentSolarMinutes(hour, minute, longitude, solarDate));
   // ADR-037 §1.1 결정 (2026-05-03): 야자시 어드밴스 제거 — ssaju 동일 기준 (조자시 통합 학파)
   const stemBase = HOUR_STEM_BASE[dayStem as keyof typeof HOUR_STEM_BASE] ?? 0;
   const stemIdx = (stemBase + branchIdx) % 10;
@@ -90,11 +101,20 @@ export interface BirthInput {
   leap?: boolean;
 }
 
+export interface SolarTimeContext {
+  // 출생 경도 — null/미지정 시 서울 기본 (ADR-021 Amended)
+  birth_longitude?: number | null;
+  // 균시차 계산용 양력 날짜 — 음력 입력 출생자는 호출부(compute.ts)가 변환해 명시 전달.
+  // 미지정 시 birthInput 날짜를 사용하므로 음력 직접 호출은 EoT가 최대 ~10분 어긋날 수 있다.
+  solar_date?: SolarDate;
+}
+
 export function normalizeKasiToChartCore(
   item: KasiLunCalItem,
   gender: Gender,
   timeStr: string | null,
   birthInput: BirthInput,
+  solarTime?: SolarTimeContext,
 ): ChartCore {
   const day_pillar = extractHanja(item.lunIljin);
   const dayStem = day_pillar[0];
@@ -116,7 +136,13 @@ export function normalizeKasiToChartCore(
   const year_pillar = sajuResult.pillars.year;
   const month_pillar = sajuResult.pillars.month;
 
-  const hour_pillar = timeStr ? computeHourPillar(dayStem, timeStr) : null;
+  const longitude = solarTime?.birth_longitude ?? DEFAULT_BIRTH_LONGITUDE;
+  const solarDate = solarTime?.solar_date ?? {
+    year: birthInput.year,
+    month: birthInput.month,
+    day: birthInput.day,
+  };
+  const hour_pillar = timeStr ? computeHourPillar(dayStem, timeStr, longitude, solarDate) : null;
 
   const day_master_element = STEM_ELEMENT[dayStem] ?? '목';
   const five_elements_counts = countElements([year_pillar, month_pillar, day_pillar, hour_pillar]);

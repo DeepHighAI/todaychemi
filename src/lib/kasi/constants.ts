@@ -1,6 +1,11 @@
 export const HEAVENLY_STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'] as const;
 export const EARTHLY_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'] as const;
 
+// 한국 표준시 기준 자오선(UTC+9 = 135°E)과 기본 출생 경도(서울).
+// 출생지 미입력 시 서울 가정 — 진태양시 경도항 (126.978−135)×4 ≈ −32.1분 (ADR-021 Amended).
+export const KST_STANDARD_MERIDIAN = 135;
+export const DEFAULT_BIRTH_LONGITUDE = 126.978;
+
 export type Element = '목' | '화' | '토' | '금' | '수';
 
 export const STEM_ELEMENT: Record<string, Element> = {
@@ -20,7 +25,14 @@ export const BRANCH_ELEMENT: Record<string, Element> = {
   '戌': '토', '亥': '수',
 };
 
-// 時支 인덱스: 시각(0~23) → 地支 배열 인덱스
+// 時支 인덱스: 분 총합(진태양시 보정 후, 음수·1440 초과 허용) → 地支 배열 인덱스.
+// 경계는 홀수 정시(23,1,3,…) — 子時 = [23:00, 01:00) 이므로 +60분 시프트 후 120분 단위.
+export function minutesToBranchIndex(totalMinutes: number): number {
+  const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+  return Math.floor((normalized + 60) / 120) % 12;
+}
+
+// 時支 인덱스: 시각(0~23) → 地支 배열 인덱스 (보정 없는 벽시계용 — G0 도구 호환 유지)
 export function hourToBranchIndex(hour: number): number {
   if (hour >= 23 || hour < 1) return 0;   // 子
   if (hour < 3) return 1;                  // 丑
