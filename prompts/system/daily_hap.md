@@ -2,7 +2,7 @@
 
 > Mode: 오늘합 (todayHap)  
 > Model: GPT-5 mini (tech_stack §3.1)  
-> Version: v0.4 (chart_core.derived 결정형 근거 입력 + 환각 가드, 2026-06-11)  
+> Version: v0.5 (derived v2 — 사계월 지장간 가중 R1, 2026-06-12)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
 ## Role

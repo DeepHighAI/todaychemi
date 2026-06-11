@@ -2,8 +2,8 @@
 
 > Mode: 돈합  
 > Model: GPT-5 (tech_stack §3.1)  
-> Version: v0.15 (derived·cross_analysis 결정형 근거 입력 + 환각 가드, 2026-06-11)  
-> CanaryVersion: v0.16 (canary routing 인프라 검증 — 본문 동일, ADR-008)
+> Version: v0.17 (derived v2 — 사계월 지장간 가중 R1, 2026-06-12)  
+> CanaryVersion: v0.18 (canary routing 인프라 검증 — 본문 동일, ADR-008)
 > CanaryRatio: 0.05
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
@@ -82,7 +82,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 
 - `derived.sipsin_distribution` — 자기 글자(일간 제외) 십신 5그룹(비겁/식상/재성/관성/인성) 집계
 - `derived.dominant_sipsin` / `derived.missing_sipsin` — 최다 그룹(최대 2)·부재 그룹
-- `derived.jijanggan_elements` — 지장간 가중 오행 분포 (정수 스케일, 표면 카운트와 별개)
+- `derived.jijanggan_elements` — 지장간 가중 오행 분포 (정수 스케일, 표면 카운트와 별개; 사계월 辰戌丑未는 여기>중기 서열 — derived v2)
 - `derived.sinkang.verdict` — '신강' | '신약' | '중화' (숫자 점수 없음)
 - `derived.yongsin_candidates` — 용신 후보 오행 (한글, 최대 3)
 - `derived.yinyang` — 표면 글자 양/음 개수

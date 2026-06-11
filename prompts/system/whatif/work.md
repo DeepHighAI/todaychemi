@@ -2,7 +2,7 @@
 
 > Series: work  
 > Model: GPT-5 (tech_stack §3.1)  
-> Version: v0.2 (derived 입력 + 환각 가드, 2026-06-11)  
+> Version: v0.3 (derived v2 — 사계월 지장간 가중 R1, 2026-06-12)  
 > Anchor: self-only (chart_core, no relation)  
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 

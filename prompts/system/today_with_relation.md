@@ -2,8 +2,8 @@
 
 > Mode: 오늘합 (today_with_relation)
 > Model: GPT-5 (G2 / Phase 3 C5 — 인연 종합 해석 깊이 ↑)
-> Version: v0.3 (derived·cross_analysis 결정형 근거 입력 + 환각 가드, 2026-06-11 — v0.2는 구 canary 번호라 건너뜀)
-> CanaryVersion: v0.4 (canary routing 인프라 검증 — 본문 동일, ADR-008)
+> Version: v0.5 (derived v2 — 사계월 지장간 가중 R1, 2026-06-12)
+> CanaryVersion: v0.6 (canary routing 인프라 검증 — 본문 동일, ADR-008)
 > CanaryRatio: 0.05
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 > 참고: 단일축(인연 미포함) 오늘합은 prompts/system/daily_hap.md 사용.

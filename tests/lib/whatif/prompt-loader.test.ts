@@ -5,17 +5,17 @@ import type { DiagnosticType } from '@/types/diagnostic';
 const ALL_TYPES: DiagnosticType[] = ['work', 'love', 'conflict', 'leadership', 'money', 'first_meet'];
 
 describe('loadWhatifPrompt', () => {
-  it('work 타입 → { content: string, version: "v0.2" } 반환', () => {
+  it('work 타입 → { content: string, version: "v0.3" } 반환', () => {
     const result = loadWhatifPrompt('work');
     expect(typeof result.content).toBe('string');
     expect(result.content.length).toBeGreaterThan(0);
-    expect(result.version).toBe('v0.2');
+    expect(result.version).toBe('v0.3');
   });
 
   it('6개 타입 전부 로드 성공', () => {
     for (const type of ALL_TYPES) {
       const result = loadWhatifPrompt(type);
-      expect(result.version).toBe('v0.2');
+      expect(result.version).toBe('v0.3');
       expect(result.content).toContain('Series:');
     }
   });
