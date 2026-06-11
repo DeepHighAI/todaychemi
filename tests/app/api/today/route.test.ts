@@ -60,7 +60,7 @@ const REL_CHART: ChartCore = {
   day_master_element: '금',
 };
 
-const TODAY_RELATION_PROMPT_VERSION = 'today_with_relation:v0.1';
+const TODAY_RELATION_PROMPT_VERSION = 'today_with_relation:v0.3';
 const TODAY_TARGET_DATE = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Asia/Seoul',
   year: 'numeric',

@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
-// 6모드 합카드 프롬프트 (v0.13 schema — actions / ohaeng_interpretation / Plain-language 등 strict)
+// 6모드 합카드 프롬프트 (v0.15 schema — actions / ohaeng_interpretation / Plain-language / derived·cross_analysis 등 strict)
 const HAPCARD_MODE_NAMES = new Set([
   'ilhap', 'chinguhap', 'donhap', 'cheothap', 'sseomhap', 'oraehap',
 ]);
@@ -24,7 +24,7 @@ export { HAPCARD_MODE_NAMES, OTHER_VALID_NAMES };
 
 const VERSION_RE = /^>\s*Version:\s*(v\d+\.\d+)/m;
 // Task 2 (ADR-008): canary frontmatter — 같은 본문으로 active + canary row 동시 시드.
-//   `> CanaryVersion: v0.14` `> CanaryRatio: 0.05`
+//   `> CanaryVersion: v0.16` `> CanaryRatio: 0.05`
 const CANARY_VERSION_RE = /^>\s*CanaryVersion:\s*(v\d+\.\d+)/m;
 const CANARY_RATIO_RE = /^>\s*CanaryRatio:\s*([\d.]+)/m;
 

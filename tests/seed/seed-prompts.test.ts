@@ -21,33 +21,54 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('active: 6모드 v0.13 + today_with_relation v0.1 + daily_hap v0.3', () => {
+  it('active: 6모드 v0.15 + today_with_relation v0.3 + daily_hap v0.4', () => {
     const active = loadPromptFiles(dir).filter((r) => r.status === 'active');
     expect(active).toHaveLength(8);
     for (const row of active) {
       if (HAPCARD_MODE_NAMES.has(row.prompt_name)) {
-        expect(row.version, `${row.prompt_name} active version`).toBe('v0.13');
+        expect(row.version, `${row.prompt_name} active version`).toBe('v0.15');
       } else if (row.prompt_name === 'today_with_relation') {
-        expect(row.version).toBe('v0.1');
-      } else if (row.prompt_name === 'daily_hap') {
         expect(row.version).toBe('v0.3');
+      } else if (row.prompt_name === 'daily_hap') {
+        expect(row.version).toBe('v0.4');
       }
     }
   });
 
-  it('canary: 6모드 v0.14 + today_with_relation v0.2 (daily_hap canary 없음)', () => {
+  it('canary: 6모드 v0.16 + today_with_relation v0.4 (daily_hap canary 없음)', () => {
     const canary = loadPromptFiles(dir).filter((r) => r.status === 'canary');
     expect(canary).toHaveLength(7);
     for (const row of canary) {
       expect(row.canary_ratio).toBe(0.05);
       if (HAPCARD_MODE_NAMES.has(row.prompt_name)) {
-        expect(row.version, `${row.prompt_name} canary version`).toBe('v0.14');
+        expect(row.version, `${row.prompt_name} canary version`).toBe('v0.16');
       } else if (row.prompt_name === 'today_with_relation') {
-        expect(row.version).toBe('v0.2');
+        expect(row.version).toBe('v0.4');
       }
     }
     // daily_hap 은 canary 시드 없음
     expect(canary.find((r) => r.prompt_name === 'daily_hap')).toBeUndefined();
+  });
+
+  // P3 (2026-06-11): derived·cross_analysis 입력 문서화 + 환각 가드 content-lock
+  it('전 row: derived 가이드 + 환각 가드 조항 포함', () => {
+    const rows = loadPromptFiles(dir);
+    for (const row of rows) {
+      expect(row.content, `${row.prompt_name} derived doc`).toContain('derived');
+      expect(row.content, `${row.prompt_name} hallucination guard`).toContain(
+        '제공 필드 외 단정 금지',
+      );
+    }
+  });
+
+  it('관계 프롬프트(6모드 + today_with_relation): cross_analysis 입력 문서화', () => {
+    const rows = loadPromptFiles(dir).filter(
+      (r) => HAPCARD_MODE_NAMES.has(r.prompt_name) || r.prompt_name === 'today_with_relation',
+    );
+    expect(rows.length).toBe(14); // (6+1) × active+canary
+    for (const row of rows) {
+      expect(row.content, `${row.prompt_name} cross_analysis doc`).toContain('cross_analysis');
+    }
   });
 
   it('canary row 본문은 active row 본문과 동일 (본문 변경 없는 routing 인프라 검증)', () => {

@@ -5,18 +5,27 @@ import type { DiagnosticType } from '@/types/diagnostic';
 const ALL_TYPES: DiagnosticType[] = ['work', 'love', 'conflict', 'leadership', 'money', 'first_meet'];
 
 describe('loadWhatifPrompt', () => {
-  it('work 타입 → { content: string, version: "v0.1" } 반환', () => {
+  it('work 타입 → { content: string, version: "v0.2" } 반환', () => {
     const result = loadWhatifPrompt('work');
     expect(typeof result.content).toBe('string');
     expect(result.content.length).toBeGreaterThan(0);
-    expect(result.version).toBe('v0.1');
+    expect(result.version).toBe('v0.2');
   });
 
   it('6개 타입 전부 로드 성공', () => {
     for (const type of ALL_TYPES) {
       const result = loadWhatifPrompt(type);
-      expect(result.version).toBe('v0.1');
+      expect(result.version).toBe('v0.2');
       expect(result.content).toContain('Series:');
+    }
+  });
+
+  // P3 (2026-06-11): derived 입력 가이드 + 환각 가드 content-lock
+  it('v0.2 전 타입에 derived 가이드 + 환각 가드 조항 포함', () => {
+    for (const type of ALL_TYPES) {
+      const result = loadWhatifPrompt(type);
+      expect(result.content, `${type} derived guide`).toContain('self_chart_core.derived');
+      expect(result.content, `${type} hallucination guard`).toContain('제공 필드 외 단정 금지');
     }
   });
 

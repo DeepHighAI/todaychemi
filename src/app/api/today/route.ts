@@ -124,8 +124,9 @@ async function fetchRelationBirthForYunse(
 }
 
 // G2 / Phase 3 C7 — 프롬프트 버전 식별자 (캐시 키 차원).
-const PROMPT_VERSION_SINGLE = 'daily_hap:v0.3';
-const PROMPT_VERSION_RELATION = 'today_with_relation:v0.1';
+// P3 (2026-06-11): derived·cross_analysis 입력 반영 — 프롬프트 본문 범프와 동기 의무 (설계 §3).
+const PROMPT_VERSION_SINGLE = 'daily_hap:v0.4';
+const PROMPT_VERSION_RELATION = 'today_with_relation:v0.3';
 
 // G2 / Phase 3 C9 — feature flag (false 시 기존 단독축 today 유지).
 function todayWithRelationEnabled(): boolean {
