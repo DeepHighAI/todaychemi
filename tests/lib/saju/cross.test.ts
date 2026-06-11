@@ -5,6 +5,7 @@ import {
   PALACE_MEANINGS,
   computeSipsinCross,
   computeGungwiEvents,
+  computeYunseCross,
 } from '@/lib/saju/cross';
 import type { ChartCore, YunseCore } from '@/types/chart';
 
@@ -288,5 +289,145 @@ describe('computeGungwiEvents — 합·충 이벤트 궁위 귀속', () => {
     const selfKo = makeChart({ year: '갑인', month: '을묘', day: '병오', hour: '정해' });
     const relationKo = makeChart({ year: '무신', month: '기유', day: '경술', hour: '신축' });
     expect(computeGungwiEvents(selfKo, relationKo)).toEqual(computeGungwiEvents(SELF, RELATION));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 운세 교차 픽스처 — 한자/한글 동일 내용 이중 인코딩
+//   self 대운 乙亥(current_index 1) / rel 대운 庚子
+//   공유 레이어는 self 측 yunse가 정본 — rel 쪽은 디코이(甲子: 잘못 쓰면 子午 충 발생)
+// ---------------------------------------------------------------------------
+const SELF_YUNSE_HANJA: YunseCore = {
+  daeun: {
+    start_age: 7,
+    list: [
+      { age: 7, pillar: '甲子', year: 1990 },
+      { age: 17, pillar: '乙亥', year: 2000 },
+    ],
+    current_index: 1,
+  },
+  seyun: { current_pillar: '辛丑', current_year: 2026 },
+  wolun: { current_pillar: '癸巳', current_month: '2026-06' },
+  iliun: { today_pillar: '甲辰', today_date: '2026-06-11' },
+};
+
+const REL_YUNSE_HANJA: YunseCore = {
+  daeun: { start_age: 5, list: [{ age: 5, pillar: '庚子', year: 1995 }], current_index: 0 },
+  seyun: { current_pillar: '甲子', current_year: 2026 },
+  wolun: { current_pillar: '甲子', current_month: '2026-06' },
+  iliun: { today_pillar: '甲子', today_date: '2026-06-11' },
+};
+
+const SELF_YUNSE_KO: YunseCore = {
+  daeun: {
+    start_age: 7,
+    list: [
+      { age: 7, pillar: '갑자', year: 1990 },
+      { age: 17, pillar: '을해', year: 2000 },
+    ],
+    current_index: 1,
+  },
+  seyun: { current_pillar: '신축', current_year: 2026 },
+  wolun: { current_pillar: '계사', current_month: '2026-06' },
+  iliun: { today_pillar: '갑진', today_date: '2026-06-11' },
+};
+
+const REL_YUNSE_KO: YunseCore = {
+  daeun: { start_age: 5, list: [{ age: 5, pillar: '경자', year: 1995 }], current_index: 0 },
+  seyun: { current_pillar: '갑자', current_year: 2026 },
+  wolun: { current_pillar: '갑자', current_month: '2026-06' },
+  iliun: { today_pillar: '갑자', today_date: '2026-06-11' },
+};
+
+const SELF_Y = makeChart({ year: '甲寅', month: '乙卯', day: '丙午', hour: '丁亥' }, SELF_YUNSE_HANJA);
+const REL_Y = makeChart({ year: '戊申', month: '己酉', day: '庚戌', hour: '辛丑' }, REL_YUNSE_HANJA);
+
+describe('computeYunseCross — 양방향 운세 교차 facts', () => {
+  it('대운 3방향 + 공유 레이어(세운·월운·일운) — 이벤트 발생분만 고정 순서로 기록', () => {
+    expect(computeYunseCross(SELF_Y, REL_Y)).toEqual([
+      // ① 내 현재 대운 乙亥 ↔ 상대 일주 庚戌: 乙庚 천간합
+      {
+        layer: 'daeun',
+        direction: 'self_to_relation',
+        kind: 'stem_hap',
+        detail: '내 현재 대운(乙亥) 천간이 상대 일간(庚)과 천간합',
+      },
+      // ② 상대 현재 대운 庚子 ↔ 내 일주 丙午: 子午 충
+      {
+        layer: 'daeun',
+        direction: 'relation_to_self',
+        kind: 'chung',
+        detail: '상대 현재 대운(庚子) 지지가 내 일지(午)와 충',
+      },
+      // ③ 대운 ↔ 대운: 乙庚 천간합
+      {
+        layer: 'daeun',
+        direction: 'mutual',
+        kind: 'stem_hap',
+        detail: '내 현재 대운(乙亥) ↔ 상대 현재 대운(庚子) 천간합',
+      },
+      // ④ 세운 辛丑(공유, self 측 정본) ↔ 내 일간 丙: 丙辛 천간합
+      {
+        layer: 'seyun',
+        direction: 'shared',
+        kind: 'stem_hap',
+        detail: '올해 세운(辛丑) 천간이 내 일간(丙)과 천간합',
+      },
+      // ⑤ 일운 甲辰 ↔ 상대 일지 戌: 辰戌 충 (월운 癸巳는 무이벤트)
+      {
+        layer: 'iliun',
+        direction: 'shared',
+        kind: 'chung',
+        detail: '오늘 일진(甲辰) 지지가 상대 일지(戌)와 충',
+      },
+    ]);
+  });
+
+  it('한글/한자 이중 인코딩 픽스처가 동일 출력 (normalizeGanji 선적용)', () => {
+    const selfKo = makeChart(
+      { year: '갑인', month: '을묘', day: '병오', hour: '정해' },
+      SELF_YUNSE_KO,
+    );
+    const relKo = makeChart(
+      { year: '무신', month: '기유', day: '경술', hour: '신축' },
+      REL_YUNSE_KO,
+    );
+    const fromKo = computeYunseCross(selfKo, relKo);
+    expect(fromKo).toEqual(computeYunseCross(SELF_Y, REL_Y));
+    // detail 내 간지 표기도 한자 단일 인코딩으로 수렴
+    expect(fromKo[0].detail).toContain('乙亥');
+  });
+
+  it('공유 레이어는 self 측 yunse가 정본 — 상대 쪽 디코이(甲子) 미사용', () => {
+    const facts = computeYunseCross(SELF_Y, REL_Y);
+    // 디코이 甲子가 쓰였다면 '오늘 일진(甲子) 지지가 내 일지(午)와 충'이 생겼을 것
+    expect(facts.some((f) => f.detail.includes('甲子'))).toBe(false);
+  });
+
+  it('대운 current_index 범위 밖이면 해당 측 대운 facts 스킵 (throw 금지)', () => {
+    const selfBadDaeun = makeChart(
+      { year: '甲寅', month: '乙卯', day: '丙午', hour: '丁亥' },
+      {
+        ...SELF_YUNSE_HANJA,
+        daeun: { ...SELF_YUNSE_HANJA.daeun, current_index: 5 },
+      },
+    );
+    const facts = computeYunseCross(selfBadDaeun, REL_Y);
+    // ①(내 대운)·③(mutual) 소멸, ②·④·⑤만 잔존
+    expect(facts).toHaveLength(3);
+    expect(facts.map((f) => f.direction)).toEqual(['relation_to_self', 'shared', 'shared']);
+  });
+
+  it('무효 간지(파싱 불가) 레이어는 스킵 (throw 금지)', () => {
+    const selfBadIliun = makeChart(
+      { year: '甲寅', month: '乙卯', day: '丙午', hour: '丁亥' },
+      {
+        ...SELF_YUNSE_HANJA,
+        iliun: { today_pillar: '??', today_date: '2026-06-11' },
+      },
+    );
+    const facts = computeYunseCross(selfBadIliun, REL_Y);
+    expect(facts.some((f) => f.layer === 'iliun')).toBe(false);
+    expect(facts).toHaveLength(4);
   });
 });

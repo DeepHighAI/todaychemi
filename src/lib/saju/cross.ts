@@ -4,12 +4,12 @@
 // 한자 글자는 내부 데이터 레이어 허용 — UI 노출은 LLM 출력 + convertHanja 안전망 경유 (ADR-038).
 // scoring 모듈은 순수 함수·상수 read-only import만 허용 (scoring 파일 0줄 수정).
 
-import { HYUNG_TRIPLES, HYUNG_SELF, SAMHAP } from '@/lib/scoring/constants';
+import { STEM_HAP, BRANCH_HAP, CHUNG, HYUNG_TRIPLES, HYUNG_SELF, SAMHAP } from '@/lib/scoring/constants';
 import { computeHapChungHyungHaeRaw } from '@/lib/scoring/hapChungHyungHae';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
-import { normalizeGanji, splitPillar, type Stem, type Branch } from './ganji';
+import { STEMS, BRANCHES, normalizeGanji, splitPillar, type Stem, type Branch } from './ganji';
 import { JIJANGGAN } from './jijanggan';
 import { sipsinOf, type SipsinName } from './sipsin';
 
@@ -453,4 +453,161 @@ export function computeGungwiEvents(self: ChartCore, relation: ChartCore): Gungw
     return a.detail < b.detail ? -1 : a.detail > b.detail ? 1 : 0;
   });
   return events;
+}
+
+// ---------------------------------------------------------------------------
+// 운세 교차 — 양측 yunse, kind는 stem_hap/branch_hap/chung만 (yunse_spec §8.5 정합)
+// ---------------------------------------------------------------------------
+
+const LAYER_LABELS: Record<YunseCrossFact['layer'], string> = {
+  daeun: '현재 대운',
+  seyun: '올해 세운',
+  wolun: '이번 달 월운',
+  iliun: '오늘 일진',
+};
+
+// scoring/hapChungHyungHae.ts의 stemKey/branchKey와 동일 규칙 (미export — 로컬 재유도).
+// STEMS/BRANCHES 배열 순서 = kasi HEAVENLY_STEMS/EARTHLY_BRANCHES와 동일.
+function stemPairKey(a: Stem, b: Stem): string {
+  return STEMS.indexOf(a) <= STEMS.indexOf(b) ? a + b : b + a;
+}
+
+function branchPairKey(a: Branch, b: Branch): string {
+  return BRANCHES.indexOf(a) <= BRANCHES.indexOf(b) ? a + b : b + a;
+}
+
+// 운세 간지 안전 분해 — normalizeGanji 선적용(한글/한자 양 인코딩 동일 결과), 무효 입력은 null
+function safeYunseParts(pillar: string): PillarParts | null {
+  const normalized = normalizeGanji(pillar);
+  if (normalized.length !== 2) return null;
+  try {
+    return splitPillar(normalized);
+  } catch {
+    // 무효 간지(미지원 글자 등)는 해당 레이어 facts 스킵 — throw 전파 금지
+    return null;
+  }
+}
+
+// 두 간지 사이 합/충 판정 — 발생 kind 목록 (고정 순서 stem_hap → branch_hap → chung)
+function pairKinds(a: PillarParts, b: PillarParts): Array<YunseCrossFact['kind']> {
+  const kinds: Array<YunseCrossFact['kind']> = [];
+  if (STEM_HAP[stemPairKey(a.stem, b.stem)] !== undefined) kinds.push('stem_hap');
+  const branchKey = branchPairKey(a.branch, b.branch);
+  if (BRANCH_HAP[branchKey] !== undefined) kinds.push('branch_hap');
+  if (CHUNG[branchKey] !== undefined) kinds.push('chung');
+  return kinds;
+}
+
+// 운세 기둥 ↔ 일주 비교 detail — '내 현재 대운(乙亥) 천간이 상대 일간(庚)과 천간합' 형
+function yunseDetail(
+  kind: YunseCrossFact['kind'],
+  subject: string,
+  yunseParts: PillarParts,
+  counterLabel: '내' | '상대',
+  day: PillarParts,
+): string {
+  const pillarStr = yunseParts.stem + yunseParts.branch;
+  if (kind === 'stem_hap') {
+    return `${subject}(${pillarStr}) 천간이 ${counterLabel} 일간(${day.stem})과 천간합`;
+  }
+  if (kind === 'branch_hap') {
+    return `${subject}(${pillarStr}) 지지가 ${counterLabel} 일지(${day.branch})와 지지합`;
+  }
+  return `${subject}(${pillarStr}) 지지가 ${counterLabel} 일지(${day.branch})와 충`;
+}
+
+function mutualDaeunDetail(
+  kind: YunseCrossFact['kind'],
+  selfDaeun: PillarParts,
+  relationDaeun: PillarParts,
+): string {
+  const selfStr = selfDaeun.stem + selfDaeun.branch;
+  const relationStr = relationDaeun.stem + relationDaeun.branch;
+  const suffix = kind === 'stem_hap' ? '천간합' : kind === 'branch_hap' ? '지지합' : '충';
+  return `내 현재 대운(${selfStr}) ↔ 상대 현재 대운(${relationStr}) ${suffix}`;
+}
+
+// 현재 대운 기둥 — current_index 범위 밖/무효 간지는 null (해당 측 facts 스킵)
+function currentDaeunParts(chart: ChartCore): PillarParts | null {
+  const { list, current_index: currentIndex } = chart.yunse.daeun;
+  if (currentIndex < 0 || currentIndex >= list.length) return null;
+  return safeYunseParts(list[currentIndex].pillar);
+}
+
+// 양방향 운세 교차 facts.
+//   대운 3방향: ①내 대운↔상대 일주 ②상대 대운↔내 일주 ③대운↔대운(mutual)
+//   공유 레이어(세운·월운·일운): 같은 KST 날짜 기준 공유 간지 — self 측 yunse를 정본으로
+//   사용해 양측 일주와 각각 비교 (direction 'shared'). 이벤트 발생분만 기록.
+// 고정 순서: daeun(①→②→③) → seyun(내→상대) → wolun(내→상대) → iliun(내→상대),
+// 각 비교 내부는 stem_hap → branch_hap → chung — 결정성.
+export function computeYunseCross(self: ChartCore, relation: ChartCore): YunseCrossFact[] {
+  const selfPillars = normalizeChartPillars(self);
+  const relationPillars = normalizeChartPillars(relation);
+  const facts: YunseCrossFact[] = [];
+
+  const selfDaeun = currentDaeunParts(self);
+  const relationDaeun = currentDaeunParts(relation);
+
+  // ① 내 현재 대운 ↔ 상대 일주
+  if (selfDaeun !== null) {
+    for (const kind of pairKinds(selfDaeun, relationPillars.day)) {
+      facts.push({
+        layer: 'daeun',
+        direction: 'self_to_relation',
+        kind,
+        detail: yunseDetail(kind, `내 ${LAYER_LABELS.daeun}`, selfDaeun, '상대', relationPillars.day),
+      });
+    }
+  }
+
+  // ② 상대 현재 대운 ↔ 내 일주
+  if (relationDaeun !== null) {
+    for (const kind of pairKinds(relationDaeun, selfPillars.day)) {
+      facts.push({
+        layer: 'daeun',
+        direction: 'relation_to_self',
+        kind,
+        detail: yunseDetail(kind, `상대 ${LAYER_LABELS.daeun}`, relationDaeun, '내', selfPillars.day),
+      });
+    }
+  }
+
+  // ③ 대운 ↔ 대운
+  if (selfDaeun !== null && relationDaeun !== null) {
+    for (const kind of pairKinds(selfDaeun, relationDaeun)) {
+      facts.push({
+        layer: 'daeun',
+        direction: 'mutual',
+        kind,
+        detail: mutualDaeunDetail(kind, selfDaeun, relationDaeun),
+      });
+    }
+  }
+
+  // ④ 공유 레이어 — 세운/월운/일운 ↔ 양측 일주
+  const sharedLayers: ReadonlyArray<{ layer: YunseCrossFact['layer']; pillar: string }> = [
+    { layer: 'seyun', pillar: self.yunse.seyun.current_pillar },
+    { layer: 'wolun', pillar: self.yunse.wolun.current_pillar },
+    { layer: 'iliun', pillar: self.yunse.iliun.today_pillar },
+  ];
+  const daySides: ReadonlyArray<{ day: PillarParts; label: '내' | '상대' }> = [
+    { day: selfPillars.day, label: '내' },
+    { day: relationPillars.day, label: '상대' },
+  ];
+  for (const { layer, pillar } of sharedLayers) {
+    const parts = safeYunseParts(pillar);
+    if (parts === null) continue;
+    for (const { day, label } of daySides) {
+      for (const kind of pairKinds(parts, day)) {
+        facts.push({
+          layer,
+          direction: 'shared',
+          kind,
+          detail: yunseDetail(kind, LAYER_LABELS[layer], parts, label, day),
+        });
+      }
+    }
+  }
+
+  return facts;
 }
