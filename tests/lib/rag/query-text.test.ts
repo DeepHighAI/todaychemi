@@ -88,3 +88,36 @@ describe('buildRagQueryText — 오늘 케미 RAG 쿼리 텍스트 빌더', () =
     expect(ilhap).not.toBe(sseomhap);
   });
 });
+
+// P3-8 (ADR-040): derived 존재 시 dominant 십신 그룹 + 신강약 verdict 토큰 추가
+describe('buildRagQueryText — 파생층 토큰 (ADR-040)', () => {
+  it('derived 없는 v2 차트 → 기존 텍스트 그대로 (회귀 0)', () => {
+    const text = buildRagQueryText(BASE_INPUT);
+    expect(text).toBe('일합 일주 병인 일간 화 상대 일주 신사 상대 일간 금');
+  });
+
+  it('self.derived 존재 시 신강약 verdict + dominant 십신 그룹 토큰 포함', async () => {
+    const { deriveSaju } = await import('@/lib/saju/derive');
+    const derived = deriveSaju({
+      year_pillar: SELF.year_pillar,
+      month_pillar: SELF.month_pillar,
+      day_pillar: SELF.day_pillar,
+      hour_pillar: SELF.hour_pillar,
+    });
+    const text = buildRagQueryText({ ...BASE_INPUT, self: { ...SELF, derived } });
+    expect(text).toContain(derived.sinkang.level);
+    expect(text).toMatch(/십신 (비겁|식상|재성|관성|인성)/);
+  });
+
+  it('derived 토큰 포함 시에도 결정형 (동일 input → 동일 output)', async () => {
+    const { deriveSaju } = await import('@/lib/saju/derive');
+    const derived = deriveSaju({
+      year_pillar: SELF.year_pillar,
+      month_pillar: SELF.month_pillar,
+      day_pillar: SELF.day_pillar,
+      hour_pillar: SELF.hour_pillar,
+    });
+    const input = { ...BASE_INPUT, self: { ...SELF, derived } };
+    expect(buildRagQueryText(input)).toBe(buildRagQueryText(input));
+  });
+});
