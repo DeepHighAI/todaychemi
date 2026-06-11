@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildRagQueryText } from '@/lib/rag/query-text';
 import type { BuildHapcardInput } from '@/lib/hapcard/builder';
 import type { ChartCore } from '@/types/chart';
@@ -107,6 +107,14 @@ describe('buildRagQueryText — 파생층 토큰 (ADR-040)', () => {
     const text = buildRagQueryText({ ...BASE_INPUT, self: { ...SELF, derived } });
     expect(text).toContain(derived.sinkang.level);
     expect(text).toMatch(/십신 (비겁|식상|재성|관성|인성)/);
+  });
+
+  it('변형(jsonb 손상) derived → throw 없이 레거시 텍스트 fail-open', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const malformed = { derived_version: 1 } as unknown as NonNullable<ChartCore['derived']>;
+    const text = buildRagQueryText({ ...BASE_INPUT, self: { ...SELF, derived: malformed } });
+    expect(text).toBe('일합 일주 병인 일간 화 상대 일주 신사 상대 일간 금');
+    warnSpy.mockRestore();
   });
 
   it('derived 토큰 포함 시에도 결정형 (동일 input → 동일 output)', async () => {
