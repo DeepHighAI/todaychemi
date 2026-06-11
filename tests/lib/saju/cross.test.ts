@@ -4,6 +4,7 @@ import {
   CROSS_ANALYSIS_VERSION,
   PALACE_MEANINGS,
   computeSipsinCross,
+  computeGungwiEvents,
 } from '@/lib/saju/cross';
 import type { ChartCore, YunseCore } from '@/types/chart';
 
@@ -157,5 +158,135 @@ describe('computeSipsinCross — 양방향 십신 교차 매트릭스', () => {
     const selfKo = makeChart({ year: '갑인', month: '을묘', day: '병오', hour: '정해' });
     const relationKo = makeChart({ year: '무신', month: '기유', day: '경술', hour: '신축' });
     expect(computeSipsinCross(selfKo, relationKo)).toEqual(computeSipsinCross(SELF, RELATION));
+  });
+});
+
+describe('computeGungwiEvents — 합·충 이벤트 궁위 귀속', () => {
+  it('pillarIndex 보유 이벤트(충)는 궁위 + 의미 라벨, 삼합은 palace null', () => {
+    // SELF×RELATION: 寅申 충(년), 卯酉 충(월), 寅午戌 삼합 완성(궁위 미상)
+    expect(computeGungwiEvents(SELF, RELATION)).toEqual([
+      {
+        kind: 'chung',
+        palace: '년주',
+        palace_meaning: '뿌리·초년',
+        detail: '내 년지 寅 ↔ 상대 년지 申 충',
+      },
+      {
+        kind: 'chung',
+        palace: '월주',
+        palace_meaning: '사회·부모',
+        detail: '내 월지 卯 ↔ 상대 월지 酉 충',
+      },
+      {
+        kind: 'samhap_full',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 寅·午·戌 삼합 완성',
+      },
+    ]);
+  });
+
+  it('동일 궁위 내 kind 사전순 정렬 — 寅亥는 지지합+파 동시 발생', () => {
+    const selfS = makeChart({ year: '甲寅', month: null, day: '丙午', hour: null });
+    const relS = makeChart({ year: '乙亥', month: null, day: '庚戌', hour: null });
+    expect(computeGungwiEvents(selfS, relS)).toEqual([
+      {
+        kind: 'branch_hap',
+        palace: '년주',
+        palace_meaning: '뿌리·초년',
+        detail: '내 년지 寅 ↔ 상대 년지 亥 지지합',
+      },
+      {
+        kind: 'pa',
+        palace: '년주',
+        palace_meaning: '뿌리·초년',
+        detail: '내 년지 寅 ↔ 상대 년지 亥 파',
+      },
+      {
+        kind: 'samhap_full',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 寅·午·戌 삼합 완성',
+      },
+    ]);
+  });
+
+  it('자형(hyung): raw 이벤트에 pillarIndex 없음 → palace null, detail은 재계산 보강', () => {
+    const selfJ = makeChart({ year: '甲子', month: null, day: '丙午', hour: null });
+    const relJ = makeChart({ year: '甲子', month: null, day: '庚午', hour: null });
+    expect(computeGungwiEvents(selfJ, relJ)).toEqual([
+      {
+        kind: 'hyung',
+        palace: null,
+        palace_meaning: null,
+        detail: '내 년지 子 ↔ 상대 년지 子 자형',
+      },
+      {
+        kind: 'hyung',
+        palace: null,
+        palace_meaning: null,
+        detail: '내 일지 午 ↔ 상대 일지 午 자형',
+      },
+    ]);
+  });
+
+  it('시주 이벤트 발생 케이스 — 시지 충 + 반합 2건 (반합 detail 사전순)', () => {
+    const selfH = makeChart({ year: '甲子', month: null, day: '乙丑', hour: '丙午' });
+    const relH = makeChart({ year: '戊辰', month: null, day: '己巳', hour: '庚子' });
+    expect(computeGungwiEvents(selfH, relH)).toEqual([
+      {
+        kind: 'chung',
+        palace: '시주',
+        palace_meaning: '미래·자식',
+        detail: '내 시지 午 ↔ 상대 시지 子 충',
+      },
+      {
+        kind: 'samhap_half',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 子·辰 반합',
+      },
+      {
+        kind: 'samhap_half',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 巳·丑 반합',
+      },
+    ]);
+  });
+
+  it('hour_pillar null: 시주 쌍 자동 스킵 — 시주 이벤트 소멸, 반합은 유지', () => {
+    const selfH0 = makeChart({ year: '甲子', month: null, day: '乙丑', hour: null });
+    const relH0 = makeChart({ year: '戊辰', month: null, day: '己巳', hour: null });
+    const events = computeGungwiEvents(selfH0, relH0);
+    expect(events.every((e) => e.palace !== '시주')).toBe(true);
+    expect(events).toEqual([
+      {
+        kind: 'samhap_half',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 子·辰 반합',
+      },
+      {
+        kind: 'samhap_half',
+        palace: null,
+        palace_meaning: null,
+        detail: '양측 지지에 巳·丑 반합',
+      },
+    ]);
+  });
+
+  it('한쪽만 hour null이어도 시주 쌍 스킵 (양측 모두 있어야 비교)', () => {
+    const selfH0 = makeChart({ year: '甲子', month: null, day: '乙丑', hour: null });
+    const relH = makeChart({ year: '戊辰', month: null, day: '己巳', hour: '庚子' });
+    const events = computeGungwiEvents(selfH0, relH);
+    expect(events.every((e) => e.palace !== '시주')).toBe(true);
+    expect(events.filter((e) => e.kind === 'chung')).toHaveLength(0);
+  });
+
+  it('한글 독음 입력도 한자 입력과 동일 결과', () => {
+    const selfKo = makeChart({ year: '갑인', month: '을묘', day: '병오', hour: '정해' });
+    const relationKo = makeChart({ year: '무신', month: '기유', day: '경술', hour: '신축' });
+    expect(computeGungwiEvents(selfKo, relationKo)).toEqual(computeGungwiEvents(SELF, RELATION));
   });
 });

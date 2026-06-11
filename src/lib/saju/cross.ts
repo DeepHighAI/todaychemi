@@ -4,6 +4,8 @@
 // 한자 글자는 내부 데이터 레이어 허용 — UI 노출은 LLM 출력 + convertHanja 안전망 경유 (ADR-038).
 // scoring 모듈은 순수 함수·상수 read-only import만 허용 (scoring 파일 0줄 수정).
 
+import { HYUNG_TRIPLES, HYUNG_SELF, SAMHAP } from '@/lib/scoring/constants';
+import { computeHapChungHyungHaeRaw } from '@/lib/scoring/hapChungHyungHae';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 
@@ -276,4 +278,179 @@ export function computeSipsinCross(self: ChartCore, relation: ChartCore): Sipsin
     self_to_relation: buildSipsinDirection(selfPillars.day.stem, relationPillars, '내', '상대'),
     relation_to_self: buildSipsinDirection(relationPillars.day.stem, selfPillars, '상대', '내'),
   };
+}
+
+// ---------------------------------------------------------------------------
+// 궁위(宮位) 이벤트 — scoring raw 재호출 (pure·cheap, scoring 0줄 수정)
+// ---------------------------------------------------------------------------
+
+// raw HapChungEvent.type → GungwiEvent.kind 는 1:1 동일 union (8종).
+// pillarIndex 보유: stem_hap/branch_hap/chung/pa/hae.
+// 미보유(소스 확인): hyung(삼형·자형 모두)/samhap_full/samhap_half → palace null.
+
+const PALACE_BY_INDEX: readonly PalaceLabel[] = ['년주', '월주', '일주', '시주'];
+// detail 문장용 궁위 1글자 — '년간'/'년지' 조립
+const PALACE_SHORT: readonly string[] = ['년', '월', '일', '시'];
+// 궁위 미상(null)은 정렬 시 맨 뒤
+const PALACE_RANK_NULL = PALACE_BY_INDEX.length;
+
+type IndexedKind = 'stem_hap' | 'branch_hap' | 'chung' | 'pa' | 'hae';
+
+const KIND_SUFFIX: Record<IndexedKind, string> = {
+  stem_hap: '천간합',
+  branch_hap: '지지합',
+  chung: '충',
+  pa: '파',
+  hae: '해',
+};
+
+function pillarAt(pillars: NormalizedPillars, index: number): PillarParts | null {
+  const slot = PILLAR_SLOTS[index];
+  return slot !== undefined ? pillars[slot] : null;
+}
+
+// raw 계산용 정규화 사본 — 기둥 4필드만 교체 (점수는 미사용, 이벤트 배열만 소비)
+function withNormalizedPillars(chart: ChartCore, pillars: NormalizedPillars): ChartCore {
+  return {
+    ...chart,
+    year_pillar: pillars.year.stem + pillars.year.branch,
+    month_pillar: pillars.month !== null ? pillars.month.stem + pillars.month.branch : null,
+    day_pillar: pillars.day.stem + pillars.day.branch,
+    hour_pillar: pillars.hour !== null ? pillars.hour.stem + pillars.hour.branch : null,
+  };
+}
+
+// 결측 기둥 제외 지지 목록 (년→시 순)
+function presentBranches(pillars: NormalizedPillars): string[] {
+  const branches: string[] = [];
+  for (const slot of PILLAR_SLOTS) {
+    const parts = pillars[slot];
+    if (parts !== null) branches.push(parts.branch);
+  }
+  return branches;
+}
+
+// pillarIndex 보유 이벤트의 detail — '내 일지 午 ↔ 상대 일지 子 충' 형
+function indexedDetail(
+  kind: IndexedKind,
+  selfPillars: NormalizedPillars,
+  relationPillars: NormalizedPillars,
+  index: number,
+): string | null {
+  const selfParts = pillarAt(selfPillars, index);
+  const relationParts = pillarAt(relationPillars, index);
+  if (selfParts === null || relationParts === null) return null;
+  const short = PALACE_SHORT[index];
+  if (kind === 'stem_hap') {
+    return `내 ${short}간 ${selfParts.stem} ↔ 상대 ${short}간 ${relationParts.stem} ${KIND_SUFFIX.stem_hap}`;
+  }
+  return `내 ${short}지 ${selfParts.branch} ↔ 상대 ${short}지 ${relationParts.branch} ${KIND_SUFFIX[kind]}`;
+}
+
+// 형(삼형·자형) detail 재구성 큐 — raw 이벤트에 참여 지지 정보가 없어 동일 알고리즘·
+// 동일 순회 순서로 재계산한다 (hapChungHyungHae.ts push 순서와 1:1 정렬:
+// HYUNG_TRIPLES 순 → 자형 pair idx 순). 순서 가정이 깨지면 큐 고갈 시 일반 문구 폴백 —
+// 결정성은 어느 쪽이든 유지.
+function buildHyungDetailQueue(
+  selfPillars: NormalizedPillars,
+  relationPillars: NormalizedPillars,
+): string[] {
+  const combined = [...presentBranches(selfPillars), ...presentBranches(relationPillars)];
+  const queue: string[] = [];
+  for (const triple of HYUNG_TRIPLES) {
+    if (triple.every((b) => combined.includes(b))) {
+      queue.push(`양측 지지에 ${triple.join('·')} 삼형 구성`);
+    }
+  }
+  // 자형 — 같은 궁위 지지 동일 + 자형 집합 (raw와 동일 pair 순회)
+  for (let i = 0; i < PILLAR_SLOTS.length; i++) {
+    const selfParts = pillarAt(selfPillars, i);
+    const relationParts = pillarAt(relationPillars, i);
+    if (selfParts === null || relationParts === null) continue;
+    if (selfParts.branch === relationParts.branch && HYUNG_SELF.has(selfParts.branch)) {
+      queue.push(
+        `내 ${PALACE_SHORT[i]}지 ${selfParts.branch} ↔ 상대 ${PALACE_SHORT[i]}지 ${relationParts.branch} 자형`,
+      );
+    }
+  }
+  return queue;
+}
+
+// 삼합·반합 detail 재구성 큐 — SAMHAP 그룹 순회 순서가 raw push 순서와 1:1
+function buildSamhapDetailQueues(
+  selfPillars: NormalizedPillars,
+  relationPillars: NormalizedPillars,
+): { full: string[]; half: string[] } {
+  const selfBranches = presentBranches(selfPillars);
+  const relationBranches = presentBranches(relationPillars);
+  const combined = [...selfBranches, ...relationBranches];
+  const full: string[] = [];
+  const half: string[] = [];
+  for (const group of SAMHAP) {
+    const present = group.full.filter((b) => combined.includes(b));
+    if (present.length === 3) {
+      full.push(`양측 지지에 ${group.full.join('·')} 삼합 완성`);
+    } else if (present.length === 2) {
+      const inSelf = group.full.filter((b) => selfBranches.includes(b)).length;
+      const inRelation = group.full.filter((b) => relationBranches.includes(b)).length;
+      if (inSelf >= 1 && inRelation >= 1) {
+        half.push(`양측 지지에 ${present.join('·')} 반합`);
+      }
+    }
+  }
+  return { full, half };
+}
+
+function palaceRank(palace: PalaceLabel | null): number {
+  return palace === null ? PALACE_RANK_NULL : PALACE_BY_INDEX.indexOf(palace);
+}
+
+// 두 사주 사이 합·충·형·파·해·삼합 이벤트를 궁위에 귀속
+export function computeGungwiEvents(self: ChartCore, relation: ChartCore): GungwiEvent[] {
+  const selfPillars = normalizeChartPillars(self);
+  const relationPillars = normalizeChartPillars(relation);
+
+  // raw 호출도 정규화 기둥으로 — 한글 입력 인코딩 면역
+  const rawEvents = computeHapChungHyungHaeRaw(
+    withNormalizedPillars(self, selfPillars),
+    withNormalizedPillars(relation, relationPillars),
+  );
+
+  const hyungQueue = buildHyungDetailQueue(selfPillars, relationPillars);
+  const samhapQueues = buildSamhapDetailQueues(selfPillars, relationPillars);
+
+  const events: GungwiEvent[] = [];
+  for (const raw of rawEvents) {
+    // pillarIndex 미보유 종류 — palace null + 재구성 detail (큐 고갈 시 일반 문구 폴백)
+    if (raw.type === 'hyung' || raw.type === 'samhap_full' || raw.type === 'samhap_half') {
+      const detail =
+        raw.type === 'hyung'
+          ? (hyungQueue.shift() ?? '양측 지지 조합에서 형 발생')
+          : raw.type === 'samhap_full'
+            ? (samhapQueues.full.shift() ?? '양측 지지가 삼합 완성')
+            : (samhapQueues.half.shift() ?? '양측 지지가 반합 구성');
+      events.push({ kind: raw.type, palace: null, palace_meaning: null, detail });
+      continue;
+    }
+
+    // pillarIndex 보유 종류 — 소스상 항상 설정되나 방어적으로 미설정 시 궁위 미상 처리
+    const index = raw.pillarIndex;
+    const palace = index !== undefined ? (PALACE_BY_INDEX[index] ?? null) : null;
+    const detail = index !== undefined ? indexedDetail(raw.type, selfPillars, relationPillars, index) : null;
+    events.push({
+      kind: raw.type,
+      palace,
+      palace_meaning: palace !== null ? PALACE_MEANINGS[palace] : null,
+      detail: detail ?? `${KIND_SUFFIX[raw.type]} 발생(궁위 미상)`,
+    });
+  }
+
+  // 정렬: 년→시→궁위 미상, 동일 궁위 내 kind 사전순, 마지막 detail 사전순 — 결정성
+  events.sort((a, b) => {
+    const rank = palaceRank(a.palace) - palaceRank(b.palace);
+    if (rank !== 0) return rank;
+    if (a.kind !== b.kind) return a.kind < b.kind ? -1 : 1;
+    return a.detail < b.detail ? -1 : a.detail > b.detail ? 1 : 0;
+  });
+  return events;
 }
