@@ -116,7 +116,7 @@ create policy "users_self_update" on public.users for update using (auth.uid() =
 
 ### 2. user_charts
 
-본인 사주 계산 결과 캐시. `chart_hash`는 `sha256(birth_data + theory_profile_version)`.
+본인 사주 계산 결과 캐시. `chart_hash`는 `sha256(entity_id | birth_data | birth_longitude | theory_profile_version)` (실구현 `src/lib/chart/chart-hash.ts`, birth_longitude 는 ADR-021 Amended 2026-06-11 시주 진태양시 보정 입력).
 
 ```sql
 -- supabase/migrations/0003_user_charts.sql
