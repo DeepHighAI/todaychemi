@@ -90,8 +90,11 @@ export const SajuDerivedSchema = z.object({
   tti: z.object({ animal_ko: z.string() }),
 });
 
-// SajuDerived → LlmDerived 명시 필드별 projection (설계 §2.1)
-export function projectDerivedForLlm(derived: SajuDerived): LlmDerived {
+// 경계 스키마 통과 형태 — SajuDerived 전체 타입은 구조적으로 이 부분집합을 만족
+export type SajuDerivedBoundary = z.infer<typeof SajuDerivedSchema>;
+
+// SajuDerived(부분집합) → LlmDerived 명시 필드별 projection (설계 §2.1)
+export function projectDerivedForLlm(derived: SajuDerivedBoundary): LlmDerived {
   const counts: Record<SipsinName, number> = derived.sipsin.counts;
 
   // 5그룹 집계 — 명시 합산 (그룹 구성 잠금)
@@ -151,7 +154,8 @@ export function resolveDerivedForLlm(chart: ChartCore): LlmDerived | undefined {
       });
       return undefined;
     }
-    return projectDerivedForLlm(source);
+    // parsed.data 사용 — Zod strip/transform 이 미래에 추가돼도 경계가 유지된다 (리뷰)
+    return projectDerivedForLlm(parsed.data);
   } catch (err) {
     console.warn('[DERIVED_INVALID]', {
       error: err instanceof Error ? err.message : String(err),

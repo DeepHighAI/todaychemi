@@ -116,6 +116,19 @@ describe('computeYunseAdjustment — 한자 인코딩 (프로덕션, SCORING_VER
   });
 });
 
+// 리뷰(codex): 혼합 인코딩 단일 기둥('갑子'/'甲자')도 글자별 정규화로 순수 인코딩과 동일 결과
+describe('computeYunseAdjustment — 혼합 인코딩 정규화', () => {
+  it("대운 '갑子' == '갑자' == '甲子' (글자별 normalizeGanji)", () => {
+    const pure = computeYunseAdjustment(makeYunse({ daePillar: '갑자' }), '기축', '일합');
+    const mixedKoHanja = computeYunseAdjustment(makeYunse({ daePillar: '갑子' }), '기축', '일합');
+    const mixedHanjaKo = computeYunseAdjustment(makeYunse({ daePillar: '甲자' }), '기축', '일합');
+    expect(mixedKoHanja).toBe(pure);
+    expect(mixedHanjaKo).toBe(pure);
+    // 갑기 천간합 → 대운 항 양수 (0 강등 아님을 확인)
+    expect(pure).toBeGreaterThan(0);
+  });
+});
+
 // 리뷰 F8: 레거시 jsonb 변형 — current_index 범위 밖이어도 throw 없이 대운 항만 0 강등
 describe('computeYunseAdjustment — daeun index 방어', () => {
   it('current_index 범위 밖 → throw 없이 숫자 반환 (대운 항 0)', () => {
