@@ -4,7 +4,9 @@ vi.mock('@/lib/relations/insert', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/relations/insert')>();
   return { ...actual, insertRelationAndComputeChart: vi.fn() };
 });
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
+import * as Sentry from '@sentry/nextjs';
 import { insertRelationAndComputeChart, RelationInsertError } from '@/lib/relations/insert';
 import { materializeRelationSlot } from '@/lib/relations/materialize';
 import type { RelationCreate } from '@/types/relation';
@@ -209,6 +211,40 @@ describe('materializeRelationSlot (delivered_at 상태머신)', () => {
     const updates = ops.filter((o) => o.op === 'update');
     expect(updates).toHaveLength(1);
     expect((updates[0].payload as Record<string, unknown>).delivered_at).toBeUndefined();
+  });
+
+  it('전달 마킹 UPDATE 에러 → throw 없이 성공 반환(인연은 이미 전달) + Sentry 캡처', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { service } = makeService({
+      'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
+      'pending_relation_registrations:update': [
+        { data: [{ pending_id: PENDING }], error: null }, // 클레임 OK
+        { data: null, error: { code: 'PGRST000', message: 'mark down' } }, // 전달 마킹 실패
+      ],
+    });
+
+    // throw 금지가 핵심 — throw 하면 호출부 catch 가 토큰 환불을 쏘는데 인연은 이미
+    // INSERT 된 상태라 "전달됐는데 환불"(이중 보상)이 된다. 성공 반환 + 관측만.
+    const relationId = await materializeRelationSlot(service, USER, PENDING);
+
+    expect(relationId).toBe(PENDING);
+    expect(Sentry.captureException).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'relation_slot_deliver_mark_failed',
+      expect.objectContaining({ pending_id: PENDING }),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('클레임 에러에 code 없음(네트워크) → unknown 으로 메시지 구성', async () => {
+    const { service } = makeService({
+      'pending_relation_registrations:select': [{ data: pendingRow(), error: null }],
+      'pending_relation_registrations:update': [{ data: null, error: { message: 'fetch failed' } }],
+    });
+
+    await expect(materializeRelationSlot(service, USER, PENDING)).rejects.toThrow(
+      'pending claim failed: unknown',
+    );
   });
 
   it('클레임 UPDATE DB 에러 → throw, INSERT 미진행', async () => {

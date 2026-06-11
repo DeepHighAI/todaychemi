@@ -105,6 +105,7 @@ function makeService(opts: {
   stageError?: { code: string; message: string } | null;
   refundError?: { message: string } | null;
   openPendingCount?: number;
+  openPendingError?: { code: string; message: string } | null;
 } = {}) {
   const rpc = vi.fn().mockResolvedValue({ data: null, error: opts.refundError ?? null });
 
@@ -137,7 +138,10 @@ function makeService(opts: {
   openPendingChain.eq = vi.fn(() => openPendingChain);
   openPendingChain.is = vi.fn(() => openPendingChain);
   openPendingChain.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
-    Promise.resolve({ count: opts.openPendingCount ?? 0, error: null }).then(res, rej);
+    Promise.resolve({
+      count: opts.openPendingError ? null : (opts.openPendingCount ?? 0),
+      error: opts.openPendingError ?? null,
+    }).then(res, rej);
   const pendingFrom = {
     insert: pendingInsert,
     select: vi.fn((_col: string, selOpts?: { head?: boolean }) =>
@@ -151,7 +155,13 @@ function makeService(opts: {
     return { select: vi.fn() };
   });
 
-  return { service: { from, rpc } as never, rpc, from, _pendingInsert: pendingInsert };
+  return {
+    service: { from, rpc } as never,
+    rpc,
+    from,
+    _pendingInsert: pendingInsert,
+    _pendingSelIs: pendingSelChain.is as ReturnType<typeof vi.fn>,
+  };
 }
 
 function makeRequest(body: unknown) {
@@ -556,6 +566,37 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     );
     expect(res.status).toBe(402);
     consoleSpy.mockRestore();
+  });
+
+  it('A1 복구 조회는 delivered_at IS NULL 필터 — 클레임만 되고 죽은(materialized_at 有) paid 고아도 포함', async () => {
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({
+      stagedPendingId: 'pend-new-001',
+      paidRefs: ['relation_slot:pend-stuck-01'],
+      pendings: [{ pending_id: 'pend-stuck-01' }],
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    await POST(makeRequest(VALID_BODY));
+
+    // 미전달 판별의 단일 진실은 delivered_at (materialized_at 은 클레임 마커일 뿐 — feb93af 상태머신)
+    expect(svc._pendingSelIs).toHaveBeenCalledWith('delivered_at', null);
+    expect(svc._pendingSelIs).not.toHaveBeenCalledWith('materialized_at', null);
+    expect(materializeRelationSlot).toHaveBeenCalledWith(expect.anything(), 'user-uuid-001', 'pend-stuck-01');
+  });
+
+  it('open-pending 캡 count 조회 실패 → 500 fail-closed, 스테이징 안 함', async () => {
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({ openPendingError: { code: 'PGRST000', message: 'count down' } });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    expect(svc._pendingInsert).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
   });
 
   it('open-pending 캡: 미머티리얼라이즈 pending ≥10 → 429 RATE_LIMITED, 스테이징 안 함', async () => {

@@ -81,11 +81,13 @@ async function handlePaidSlot(
 ) {
   // open-pending 캡 (ADR-039 §9) — 402 받고 결제 이탈한 미전달 pending 누적 abuse 방어.
   // 정상 흐름은 즉시 머티리얼라이즈/현금결제로 delivered 되므로 닿지 않는다.
-  const { count: openPending } = await service
+  const { count: openPending, error: openPendingError } = await service
     .from('pending_relation_registrations')
     .select('pending_id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .is('delivered_at', null);
+  // 게이트 판정 불가 시 fail-closed — count 에러를 무시하면 (null ?? 0) 으로 캡이 열려버린다.
+  if (openPendingError) return apiErrorResponse('INTERNAL_ERROR', '', 500);
   if ((openPending ?? 0) >= OPEN_PENDING_CAP) {
     return apiErrorResponse('RATE_LIMITED', '', 429);
   }
@@ -168,13 +170,15 @@ async function recoverPaidPendings(
       .filter(Boolean);
     if (paidPendingIds.length === 0) return;
 
-    // 결제된 것 중 아직 머티리얼라이즈 안 된 것만 조회 (대부분 이미 처리 → 빈 결과).
+    // 결제된 것 중 아직 전달 안 된 것만 조회 (대부분 이미 처리 → 빈 결과).
+    // 미전달 판별은 delivered_at 단일 진실 — materialized_at 은 클레임 마커일 뿐이라
+    // 클레임 후 죽은(INSERT/마킹 실패) 고아가 영구 누락된다. materialize 는 멱등이라 재시도 안전.
     const { data: pendings, error: pendingsError } = await service
       .from('pending_relation_registrations')
       .select('pending_id')
       .eq('user_id', userId)
       .in('pending_id', paidPendingIds)
-      .is('materialized_at', null);
+      .is('delivered_at', null);
     if (pendingsError) throw pendingsError;
 
     for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {

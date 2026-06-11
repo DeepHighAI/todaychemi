@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database.types';
@@ -51,7 +52,7 @@ export async function materializeRelationSlot(
       .is('materialized_at', null)
       .select('pending_id');
     if (claimError) {
-      throw new Error(`pending claim failed: ${claimError.code}`);
+      throw new Error(`pending claim failed: ${claimError.code ?? 'unknown'}`);
     }
   }
 
@@ -65,12 +66,25 @@ export async function materializeRelationSlot(
   }
 
   // 전달 마킹 — relation_id(방금 INSERT 됐으므로 FK 충족) + delivered_at.
-  await service
+  // 실패해도 throw 금지: 인연은 이미 INSERT 됐으므로 throw 하면 호출부 catch 가
+  // 환불을 쏴 "전달됐는데 환불"(이중 보상)이 된다. 관측(log+Sentry)만 남긴다 —
+  // 현금 경로는 recoverPaidPendings(delivered_at IS NULL)가 다음 POST 에서 재마킹해 수렴.
+  const { error: deliverMarkError } = await service
     .from('pending_relation_registrations')
     .update({ relation_id: relationId, delivered_at: new Date().toISOString() })
     .eq('pending_id', pendingId)
     .eq('user_id', userId)
     .select('pending_id');
+  if (deliverMarkError) {
+    console.error('relation_slot_deliver_mark_failed', {
+      user_id: userId,
+      pending_id: pendingId,
+      error_code: deliverMarkError.code ?? 'unknown',
+    });
+    Sentry.captureException(new Error('relation_slot deliver mark failed'), {
+      tags: { area: 'payments', payment_step: 'relation_slot_deliver_mark' },
+    });
+  }
 
   return relationId;
 }
@@ -97,7 +111,7 @@ async function fetchPending(
     .maybeSingle();
 
   if (error) {
-    throw new Error(`pending select failed: ${error.code}`);
+    throw new Error(`pending select failed: ${error.code ?? 'unknown'}`);
   }
   if (!data || (data as PendingRow).user_id !== userId) {
     throw new Error('PENDING_NOT_FOUND');

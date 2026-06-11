@@ -48,7 +48,10 @@ export async function insertRelationAndComputeChart(
     .select('relation_id');
 
   if (error) {
-    throw new RelationInsertError(`relations insert failed: ${error.code}`, error.code ?? null);
+    throw new RelationInsertError(
+      `relations insert failed: ${error.code ?? 'unknown'}`,
+      error.code ?? null,
+    );
   }
 
   const relationId = (insertedRows as Array<{ relation_id: string }>)?.[0]?.relation_id ?? '';
@@ -77,7 +80,7 @@ export async function insertFreeRelationIfUnderCap(
   });
   if (error) {
     throw new RelationInsertError(
-      `insert_relation_if_under_free_cap failed: ${error.code}`,
+      `insert_relation_if_under_free_cap failed: ${error.code ?? 'unknown'}`,
       error.code ?? null,
     );
   }
