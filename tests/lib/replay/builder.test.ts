@@ -335,6 +335,10 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     // 동일 6모드 프롬프트 호환 — sipsin_cross/gungwi_events/yunse_cross/ilgan_pair 동봉
     expect(cross.sipsin_cross).toBeDefined();
     expect(cross.ilgan_pair).toBeDefined();
+    // 리뷰 F1: 저장 yunse 는 row 생성 시점 고정 — "올해/이번 달/오늘 일진" 단정을 막기 위해
+    // 시간층(shared: 세운/월운/일운) facts 제외, 대운(daeun)만 허용
+    const layers = (cross.yunse_cross as Array<{ layer: string }>).map((f) => f.layer);
+    expect(layers.every((layer) => layer === 'daeun')).toBe(true);
   });
 
   it('classic_citation 빈 배열이면 변환 없이 빈 배열 그대로', async () => {
