@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildLlmPayload } from '@/lib/llm/payload';
+import { computeCrossAnalysis } from '@/lib/saju/cross';
 import { deriveSaju } from '@/lib/saju/derive';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
@@ -161,7 +162,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
     });
   });
 
-  describe('chart_core 무손실 전달 (yunse 는 Y2 투영 형태로 전달)', () => {
+  describe('chart_core 무손실 전달 (yunse 는 Y2 투영, derived 는 P3 압축 투영)', () => {
     it('self_chart_core 의 pillar·element·counts·gender 보존', () => {
       const payload = buildLlmPayload({
         self: SELF_CHART,
@@ -170,7 +171,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
         theory_profile_version: '2026-05',
       });
       const { yunse: _sy, ...restSelf } = SELF_CHART;
-      const { yunse: _py, ...restPayload } = payload.self_chart_core;
+      const { yunse: _py, derived: _pd, ...restPayload } = payload.self_chart_core;
       expect(restPayload).toEqual(restSelf);
     });
 
@@ -182,7 +183,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
         theory_profile_version: '2026-05',
       });
       const { yunse: _ry, ...restRelation } = RELATION_CHART;
-      const { yunse: _py, ...restPayload } = payload.relation_chart_core;
+      const { yunse: _py, derived: _pd, ...restPayload } = payload.relation_chart_core;
       expect(restPayload).toEqual(restRelation);
     });
   });
@@ -240,7 +241,7 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
     });
   });
 
-  describe('derived 파생층 차단 (P1 — P3에서 의도적 projection으로 재도입 예정)', () => {
+  describe('derived 압축 projection (P3 — LlmDerived)', () => {
     // 기둥에서 derived를 실제로 채운 ChartCore 생성 (타입 안전 — derived는 optional 필드)
     const withDerived = (chart: ChartCore): ChartCore => ({
       ...chart,
@@ -252,16 +253,205 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       }),
     });
 
-    it('chart_core에 derived가 있어도 현재 projection 출력에 derived 키 부재', () => {
+    const EXPECTED_DERIVED_KEYS = [
+      'dominant_sipsin',
+      'jijanggan_elements',
+      'missing_sipsin',
+      'sinkang',
+      'sipsin_distribution',
+      'yinyang',
+      'yongsin_candidates',
+      'zodiac_animal',
+    ];
+
+    it('chart.derived 존재 시 압축 LlmDerived 형태로 포함 (양측)', () => {
       const payload = buildLlmPayload({
         self: withDerived(SELF_CHART),
         relation: withDerived(RELATION_CHART),
         mode: '일합',
         theory_profile_version: '2026-05',
       });
-      expect(Object.keys(payload.self_chart_core)).not.toContain('derived');
-      expect(Object.keys(payload.relation_chart_core)).not.toContain('derived');
-      expect(JSON.stringify(payload)).not.toMatch(/"derived"/);
+      const selfDerived = payload.self_chart_core.derived;
+      const relationDerived = payload.relation_chart_core.derived;
+      expect(selfDerived).toBeDefined();
+      expect(relationDerived).toBeDefined();
+      expect(Object.keys(selfDerived!).sort()).toEqual(EXPECTED_DERIVED_KEYS);
+      expect(Object.keys(relationDerived!).sort()).toEqual(EXPECTED_DERIVED_KEYS);
+      // 압축 검증 — 풀 SajuDerived 필드(8슬롯 맵·detail)는 미전달
+      expect(Object.keys(selfDerived!)).not.toContain('jijanggan');
+      expect(Object.keys(selfDerived!)).not.toContain('sipsin');
+      expect(Object.keys(selfDerived!)).not.toContain('ilju');
+    });
+
+    it('sipsin_distribution 5그룹 + dominant ≤2 + missing 정합', () => {
+      const payload = buildLlmPayload({
+        self: withDerived(SELF_CHART),
+        relation: withDerived(RELATION_CHART),
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      const derived = payload.self_chart_core.derived!;
+      expect(Object.keys(derived.sipsin_distribution).sort()).toEqual(
+        ['관성', '비겁', '식상', '인성', '재성'].sort(),
+      );
+      expect(derived.dominant_sipsin.length).toBeLessThanOrEqual(2);
+      for (const group of derived.dominant_sipsin) {
+        expect(
+          derived.sipsin_distribution[group as keyof typeof derived.sipsin_distribution],
+        ).toBeGreaterThan(0);
+      }
+      for (const group of derived.missing_sipsin) {
+        expect(
+          derived.sipsin_distribution[group as keyof typeof derived.sipsin_distribution],
+        ).toBe(0);
+      }
+    });
+
+    it('sinkang 은 verdict 만 — 숫자 score 키 부재 (findScoreLeak/ADR-035 방어)', () => {
+      const payload = buildLlmPayload({
+        self: withDerived(SELF_CHART),
+        relation: withDerived(RELATION_CHART),
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      const derived = payload.self_chart_core.derived!;
+      expect(Object.keys(derived.sinkang)).toEqual(['verdict']);
+      expect(['신강', '중화', '신약']).toContain(derived.sinkang.verdict);
+      expect(JSON.stringify(payload)).not.toMatch(/"score"/);
+    });
+
+    it('derived 부재(v2 레거시 row) → deriveSaju 폴백으로 동일 결과', () => {
+      const explicit = buildLlmPayload({
+        self: withDerived(SELF_CHART),
+        relation: withDerived(RELATION_CHART),
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      // SELF_CHART/RELATION_CHART 에는 derived 없음 → 폴백 경로
+      const fallback = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(fallback.self_chart_core.derived).toEqual(explicit.self_chart_core.derived);
+      expect(fallback.relation_chart_core.derived).toEqual(explicit.relation_chart_core.derived);
+    });
+
+    it('derived 변형(jsonb 손상) → safeParse 실패 시 생략 + [DERIVED_INVALID] warn (fail-open)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const broken = {
+        ...SELF_CHART,
+        derived: { derived_version: 1 } as unknown as ChartCore['derived'],
+      };
+      const payload = buildLlmPayload({
+        self: broken,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(payload.self_chart_core.derived).toBeUndefined();
+      // relation 측은 정상 폴백 — fail-open 이 측별로 독립
+      expect(payload.relation_chart_core.derived).toBeDefined();
+      expect(warnSpy).toHaveBeenCalledWith('[DERIVED_INVALID]', expect.anything());
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('cross_analysis 패스스루 (P3 — 결정형 교차분석)', () => {
+    const CROSS = computeCrossAnalysis({
+      self: SELF_CHART,
+      relation: RELATION_CHART,
+      mode: '일합',
+      self_birth_year: 1990,
+      relation_birth_year: 1996,
+    });
+
+    // openai.ts isForbiddenLlmPayloadKey 와 동일 규칙 (gender_normalized 예외 포함)
+    const FORBIDDEN_KEY_RE =
+      /(^|_)(birth_date|birth_time|name|nickname|email|birth_place|gender)($|_)/;
+    const normalizeKey = (key: string): string =>
+      key
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/[-\s]+/g, '_')
+        .toLowerCase();
+    const collectKeys = (value: unknown, keys: string[] = []): string[] => {
+      if (value === null || typeof value !== 'object') return keys;
+      if (Array.isArray(value)) {
+        for (const item of value) collectKeys(item, keys);
+        return keys;
+      }
+      for (const [key, nested] of Object.entries(value)) {
+        keys.push(key);
+        collectKeys(nested, keys);
+      }
+      return keys;
+    };
+
+    it('cross 미제공 → top-level 4키 유지', () => {
+      const payload = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(Object.keys(payload).sort()).toEqual([
+        'mode',
+        'relation_chart_core',
+        'self_chart_core',
+        'theory_profile',
+      ]);
+    });
+
+    it('cross 제공 → top-level 5키 + verbatim 패스스루', () => {
+      const payload = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+        cross_analysis: CROSS,
+      });
+      expect(Object.keys(payload).sort()).toEqual([
+        'cross_analysis',
+        'mode',
+        'relation_chart_core',
+        'self_chart_core',
+        'theory_profile',
+      ]);
+      expect(payload.cross_analysis).toBe(CROSS);
+    });
+
+    it('cross 직렬화에 출생연도 패턴 부재 — band 문자열만 진입', () => {
+      const payload = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+        cross_analysis: CROSS,
+      });
+      const crossJson = JSON.stringify(payload.cross_analysis);
+      expect(crossJson).not.toMatch(/\b(19|20)\d{2}\b/);
+      expect(payload.cross_analysis?.age_gap).toEqual({ band: '4-6', relation_is: '연하' });
+    });
+
+    it('cross + derived 신규 표면에 금지 PII 키 세그먼트 0 (재귀 키 스캔)', () => {
+      const payload = buildLlmPayload({
+        self: SELF_CHART,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+        cross_analysis: CROSS,
+      });
+      const keys = [
+        ...collectKeys(payload.cross_analysis),
+        ...collectKeys(payload.self_chart_core.derived),
+        ...collectKeys(payload.relation_chart_core.derived),
+      ];
+      expect(keys.length).toBeGreaterThan(0);
+      const violations = keys.filter((key) => FORBIDDEN_KEY_RE.test(normalizeKey(key)));
+      expect(violations).toEqual([]);
+      // 함정 키명 직접 단언 — palace_name 금지 (palace_meaning 사용)
+      expect(keys).not.toContain('palace_name');
     });
   });
 

@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { callOpenAi } from '@/lib/llm/openai';
 import { resetLlmCircuitBreakersForTest } from '@/lib/llm/circuit-breaker';
+import { computeCrossAnalysis } from '@/lib/saju/cross';
 import type { LlmPayload } from '@/lib/llm/payload';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
+import type { ChartCore } from '@/types/chart';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // 최소 유효 LLM 출력 (150~200자 main_text, 각 배열 제약 충족)
@@ -71,6 +73,36 @@ function makeValidPayload(): LlmPayload {
     theory_profile: { profile_version: 'v1.0' },
   };
 }
+
+// computeCrossAnalysis 입력용 ChartCore 픽스처 (full yunse list 필요)
+const CROSS_YUNSE: ChartCore['yunse'] = {
+  daeun: { start_age: 7, list: [{ age: 7, pillar: '갑자', year: 1990 }], current_index: 0 },
+  seyun: { current_pillar: '병오', current_year: 2026 },
+  wolun: { current_pillar: '계사', current_month: '2026-05' },
+  iliun: { today_pillar: '갑자', today_date: '2026-05-07' },
+};
+
+const CROSS_SELF: ChartCore = {
+  year_pillar: '甲寅',
+  month_pillar: '乙卯',
+  day_pillar: '丙午',
+  hour_pillar: '丁亥',
+  day_master_element: '화',
+  five_elements_counts: { 목: 3, 화: 3, 토: 1, 금: 0, 수: 1 },
+  gender_normalized: 'M',
+  yunse: CROSS_YUNSE,
+};
+
+const CROSS_RELATION: ChartCore = {
+  year_pillar: '戊申',
+  month_pillar: '己酉',
+  day_pillar: '庚戌',
+  hour_pillar: '辛丑',
+  day_master_element: '금',
+  five_elements_counts: { 목: 0, 화: 0, 토: 3, 금: 4, 수: 1 },
+  gender_normalized: 'F',
+  yunse: CROSS_YUNSE,
+};
 
 // 빈 banned-phrase 카탈로그 (테스트 중 파일 읽기 방지)
 const EMPTY_CATALOG: BannedPhraseCategory[] = [];
@@ -185,6 +217,62 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     ).rejects.toThrow('PII_GUARD_VIOLATION');
 
     expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('whitelist — cross_analysis top-level 키 허용, PII 가드 통과 후 정상 호출', async () => {
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient();
+    const cross = computeCrossAnalysis({
+      self: CROSS_SELF,
+      relation: CROSS_RELATION,
+      mode: '일합',
+      self_birth_year: 1990,
+      relation_birth_year: 1993,
+    });
+    const payload: LlmPayload = { ...makeValidPayload(), cross_analysis: cross };
+
+    const result = await callOpenAi(
+      { systemPrompt: '시스템', userPayload: payload },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(result.output).toBeDefined();
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('PII 가드 — cross_analysis 내부 주입 palace_name 류 키 → PII_GUARD_VIOLATION, 호출 0회', async () => {
+    const create = vi.fn();
+    const { client: supabase } = makeMockServiceClient();
+    const cross = computeCrossAnalysis({ self: CROSS_SELF, relation: CROSS_RELATION });
+    // 재귀 스캔 함정 검증 — /(^|_)name($|_)/ 적중 키를 nested 배열 안에 주입
+    const tampered = {
+      ...cross,
+      gungwi_events: [
+        ...cross.gungwi_events,
+        { kind: 'chung', palace: '일주', palace_name: '배우자궁', detail: '주입' },
+      ],
+    };
+    const payload = {
+      ...makeValidPayload(),
+      cross_analysis: tampered,
+    } as unknown as LlmPayload;
+
+    await expect(
+      callOpenAi(
+        { systemPrompt: '시스템', userPayload: payload },
+        {
+          openaiClient: { chat: { completions: { create } } },
+          supabaseServiceRole: supabase,
+          bannedPhraseCatalog: EMPTY_CATALOG,
+        },
+      ),
+    ).rejects.toThrow('PII_GUARD_VIOLATION');
+
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('정상 응답 → HapcardLlmOutput parse 성공, result 반환', async () => {
