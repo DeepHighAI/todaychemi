@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { computeSinkang } from '@/lib/saju/sinkang';
+import { computeSinkang, sinkangLevelOf } from '@/lib/saju/sinkang';
 
 describe('computeSinkang — golden hand-computed cases', () => {
   it('scores 득령+건록 as 신강 with full detail breakdown', () => {
@@ -114,5 +114,23 @@ describe('computeSinkang — golden hand-computed cases', () => {
     for (let i = 0; i < 100; i += 1) {
       expect(computeSinkang(input)).toEqual(first);
     }
+  });
+});
+
+// 리뷰: 임계 경계(70/30) 회귀 잠금 — >= / <= 의미 (off-by-one 방어)
+describe('sinkangLevelOf — 경계값', () => {
+  it('score 70 = 신강 (>=), 69 = 중화', () => {
+    expect(sinkangLevelOf(70)).toBe('신강');
+    expect(sinkangLevelOf(69)).toBe('중화');
+  });
+
+  it('score 30 = 신약 (<=), 31 = 중화', () => {
+    expect(sinkangLevelOf(30)).toBe('신약');
+    expect(sinkangLevelOf(31)).toBe('중화');
+  });
+
+  it('computeSinkang level 은 sinkangLevelOf(score)와 항상 일치', () => {
+    const result = computeSinkang({ year: '甲寅', month: '丙寅', day: '甲子', hour: '乙亥' });
+    expect(result.level).toBe(sinkangLevelOf(result.score));
   });
 });

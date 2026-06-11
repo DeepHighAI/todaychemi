@@ -632,6 +632,31 @@ describe('computeCrossAnalysis — 결정성', () => {
   });
 });
 
+// 리뷰: 삼형(寅巳申) detail 큐 커버리지 — 자형 외 HYUNG_TRIPLES 경로 검증
+describe('computeGungwiEvents — 삼형 detail', () => {
+  it('양측 합산 지지에 寅巳申 → hyung 이벤트 + 삼형 구성 detail', () => {
+    // self 寅·巳 + relation 申 — 합산 삼형. 부수 이벤트(寅申 충, 巳申 합·형·파)도 발생 가능.
+    const selfT = makeChart({ year: '甲寅', month: '己巳', day: '丙午', hour: null });
+    const relT = makeChart({ year: '壬申', month: null, day: '乙丑', hour: null });
+    const events = computeGungwiEvents(selfT, relT);
+    const hyungEvents = events.filter((e) => e.kind === 'hyung');
+    expect(hyungEvents.length).toBeGreaterThan(0);
+    const tripleDetail = hyungEvents.find((e) => e.detail.includes('삼형'));
+    expect(tripleDetail).toBeDefined();
+    expect(tripleDetail?.detail).toBe('양측 지지에 寅·巳·申 삼형 구성');
+    expect(tripleDetail?.palace).toBeNull();
+  });
+
+  it('삼형 detail 도 결정형 (동일 입력 100회 동일 출력)', () => {
+    const selfT = makeChart({ year: '甲寅', month: '己巳', day: '丙午', hour: null });
+    const relT = makeChart({ year: '壬申', month: null, day: '乙丑', hour: null });
+    const first = computeGungwiEvents(selfT, relT);
+    for (let i = 0; i < 100; i += 1) {
+      expect(computeGungwiEvents(selfT, relT)).toEqual(first);
+    }
+  });
+});
+
 // 리뷰 F3: 레거시 jsonb 변형 기둥 → fail-open (요청 차단 금지)
 describe('computeCrossAnalysisSafe — fail-open', () => {
   it('정상 입력 → computeCrossAnalysis 동일 결과', () => {

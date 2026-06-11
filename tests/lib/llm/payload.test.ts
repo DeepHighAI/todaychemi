@@ -356,6 +356,20 @@ describe('buildLlmPayload — PII 가드 + 화이트리스트', () => {
       expect(warnSpy).toHaveBeenCalledWith('[DERIVED_INVALID]', expect.anything());
       warnSpy.mockRestore();
     });
+
+    it('v2 레거시(derived 부재) + 비간지 기둥 → 폴백 deriveSaju throw catch → 생략 + warn', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const brokenLegacy = { ...SELF_CHART, day_pillar: '??', derived: undefined };
+      const payload = buildLlmPayload({
+        self: brokenLegacy,
+        relation: RELATION_CHART,
+        mode: '일합',
+        theory_profile_version: '2026-05',
+      });
+      expect(payload.self_chart_core.derived).toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledWith('[DERIVED_INVALID]', expect.anything());
+      warnSpy.mockRestore();
+    });
   });
 
   describe('cross_analysis 패스스루 (P3 — 결정형 교차분석)', () => {

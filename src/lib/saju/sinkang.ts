@@ -49,6 +49,11 @@ const WEAK_THRESHOLD = 30; // score <= 30 → 신약
 const PROSPEROUS_STAGES: readonly Stage12[] = ['건록', '제왕'];
 const DECLINING_STAGES: readonly Stage12[] = ['사', '절', '묘'];
 
+// 임계 분류 단독 함수 — 경계(70/30) 회귀 테스트 전용 노출 (>= / <= 의미 잠금)
+export function sinkangLevelOf(score: number): SinkangLevel {
+  return score >= STRONG_THRESHOLD ? '신강' : score <= WEAK_THRESHOLD ? '신약' : '중화';
+}
+
 // 4기둥(시·월 null 허용) 표면 글자 기반 신강약 점수.
 // 시간 미상이면 6글자 집계로 점수 천장이 낮아짐 — 임계값은 동일 적용 (spec 명문화).
 export function computeSinkang(pillars: SinkangPillars): SinkangResult {
@@ -89,8 +94,7 @@ export function computeSinkang(pillars: SinkangPillars): SinkangResult {
   }
 
   const score = BASE_SCORE + deukryeong + ownTerm + supportTerm + pressureTerm + unseongTerm;
-  const level: SinkangLevel =
-    score >= STRONG_THRESHOLD ? '신강' : score <= WEAK_THRESHOLD ? '신약' : '중화';
+  const level = sinkangLevelOf(score);
 
   return {
     level,
