@@ -181,11 +181,13 @@ function resolveBranch(ch: string): Branch | null {
 
 // 한글 독음 기둥 → 한자 ('갑자' → '甲子'). 이미 한자면 passthrough.
 // 위치 기반 해석: 1글자=천간, 2글자=지지 ('신신' → '辛申').
-// 변환 불가 입력은 원본 그대로 반환 (throw 금지 — splitPillar와 역할 분리).
+// 앞뒤 공백은 제거 후 판정 — ' 갑자 ' 가 길이 검사에서 passthrough 돼 fail-open 강등되는 것 방지.
+// 변환 불가 입력은 (trim 된) 원본 그대로 반환 (throw 금지 — splitPillar와 역할 분리).
 export function normalizeGanji(pillar: string): string {
-  if (pillar.length !== PILLAR_LENGTH) return pillar;
-  const stem = resolveStem(pillar[0]);
-  const branch = resolveBranch(pillar[1]);
-  if (stem === null || branch === null) return pillar;
+  const trimmed = pillar.trim();
+  if (trimmed.length !== PILLAR_LENGTH) return trimmed;
+  const stem = resolveStem(trimmed[0]);
+  const branch = resolveBranch(trimmed[1]);
+  if (stem === null || branch === null) return trimmed;
   return `${stem}${branch}`;
 }

@@ -209,6 +209,15 @@ describe('normalizeGanji', () => {
     expect(normalizeGanji('甲자')).toBe('甲子');
   });
 
+  // 리뷰(codex): 앞뒤 공백·개행이 끼면 길이 검사에서 passthrough 돼 fail-open 강등되던 문제
+  it('trims surrounding whitespace before resolving', () => {
+    expect(normalizeGanji(' 갑자 ')).toBe('甲子');
+    expect(normalizeGanji('甲子\n')).toBe('甲子');
+    expect(normalizeGanji('\t경인')).toBe('庚寅');
+    // 공백 제거 후에도 변환 불가면 trim 된 원본 반환
+    expect(normalizeGanji(' xx ')).toBe('xx');
+  });
+
   it('returns non-convertible input unchanged', () => {
     expect(normalizeGanji('')).toBe('');
     expect(normalizeGanji('갑')).toBe('갑');
