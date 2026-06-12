@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, Trash2, Edit2, Share2, Check } from 'lucide-react';
 
 import { trackEvent } from '@/lib/analytics/ga';
+import { toEasyText } from '@/lib/glossary/easy-term-map';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
@@ -108,6 +109,22 @@ export default function HapcardView() {
   const [expandTab, setExpandTab] = useState<ExpandTab>('summary');
   const [deleted, setDeleted] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
+  // G-5 (D7): 쉽게 보기 — 본문 명리 용어를 평이어로 전환. 선호는 localStorage 보존
+  const [easyMode, setEasyMode] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem('hapcard_easy_mode') === '1',
+  );
+  function toggleEasyMode() {
+    setEasyMode((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem('hapcard_easy_mode', next ? '1' : '0');
+      } catch {
+        // localStorage 차단 환경 — 세션 내 상태만 유지
+      }
+      return next;
+    });
+  }
+  const easyText = (text: string) => (easyMode ? toEasyText(text) : text);
 
   const del = useMutation({
     mutationFn: deleteRelation,
@@ -299,7 +316,7 @@ export default function HapcardView() {
                   className="text-[16px] leading-[1.55] font-semibold text-white/95"
                 >
                   <strong className="font-black text-[var(--p-10)] drop-shadow-sm">{line.label}</strong>{' '}
-                  <span>{line.body}</span>
+                  <span>{easyText(line.body)}</span>
                 </p>
               ))}
             </div>
@@ -353,6 +370,8 @@ export default function HapcardView() {
             mode={mode!}
             tab={expandTab}
             onTab={setExpandTab}
+            easyMode={easyMode}
+            onToggleEasyMode={toggleEasyMode}
           />
         )}
 
@@ -405,15 +424,22 @@ export default function HapcardView() {
 
 /* ── 인라인 펼침 panel — 5개 탭 안에 기존 컴포넌트 재사용 ── */
 function ExpandPanel({
-  data, mode, tab, onTab,
+  data, mode, tab, onTab, easyMode, onToggleEasyMode,
 }: {
   data: HapcardResult;
   mode: string;
   tab: ExpandTab;
   onTab: (t: ExpandTab) => void;
+  easyMode: boolean;
+  onToggleEasyMode: () => void;
 }) {
   const t = useTranslations('hapcard.expand');
+  const easy = (text: string) => (easyMode ? toEasyText(text) : text);
   const summaryLines = formatDetailSummaryLines(data.content.main_text);
+  // G-5: 쉽게 보기 ON 시 근거 항목도 평이어로 — 치환된 텍스트엔 ⓘ 툴팁이 자연히 안 붙음(의도)
+  const causeFactors = (data.content.cause_factors ?? []).map((f) =>
+    easyMode ? { ...f, name: toEasyText(f.name), effect: toEasyText(f.effect) } : f,
+  );
   const tabs: { k: ExpandTab; label: string }[] = [
     { k: 'summary', label: t('tab.summary') },
     { k: 'ohaeng', label: t('tab.ohaeng') },
@@ -429,8 +455,23 @@ function ExpandPanel({
       data-testid="hapcard-expand-panel"
       className="bg-card border border-border rounded-[var(--r-xl)] overflow-hidden shadow-[var(--e-1)] animate-in fade-in slide-in-from-top-2"
     >
-      <header className="px-4 pt-4 pb-3">
+      <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-2">
         <h2 id="hapcard-expand-panel-title" className="font-h2 text-foreground">{t('title')}</h2>
+        {/* G-5 (ADR-023 강화): 쉽게 보기 — 본문 명리 용어 평이어 전환 */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={easyMode}
+          aria-label={t('easyMode.label')}
+          onClick={onToggleEasyMode}
+          className={`inline-flex items-center gap-1.5 rounded-[var(--r-pill)] px-3 py-1.5 text-[12px] font-bold transition ${
+            easyMode
+              ? 'bg-[var(--p-40)] text-white'
+              : 'bg-[var(--surface-1)] text-muted-foreground border border-border'
+          }`}
+        >
+          {t('easyMode.label')}
+        </button>
       </header>
       <nav className="flex gap-0.5 bg-[var(--surface-1)] rounded-[12px] p-[3px] mx-4 mb-3">
         {tabs.map(tb => (
@@ -455,7 +496,7 @@ function ExpandPanel({
               >
                 <strong className="font-black text-primary">{line.label}</strong>
                 <span aria-hidden className="font-black text-primary"> = </span>
-                <span>{line.body}</span>
+                <span>{easy(line.body)}</span>
               </p>
             ))}
           </div>
@@ -470,7 +511,7 @@ function ExpandPanel({
         )}
         {tab === 'evidence' && (
           <>
-            <HapcardCauseFactors factors={data.content.cause_factors ?? []} />
+            <HapcardCauseFactors factors={causeFactors} />
             <HapcardEvidence cards={data.content.why_cards} />
             <HapcardClassic citations={data.content.classic_citation} />
           </>

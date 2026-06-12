@@ -172,6 +172,55 @@ describe('HapcardView AI 생성 고지 (1G)', () => {
   });
 });
 
+// G-5 (2026-06-13 D7): 쉽게 보기 토글 — 본문 명리 용어 평이어 전환 (ADR-023 강화)
+describe('HapcardView 쉽게 보기 토글 (G-5)', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  it('펼침 패널에 쉽게 보기 토글이 노출되고, ON 시 본문 용어가 평이어로 바뀐다', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () =>
+        withVisuals({
+          content: {
+            main_text: '결론 = 비견 교차로 동료감이 큽니다.',
+            cause_factors: [],
+            classic_citation: [],
+            actions: [],
+            why_cards: [],
+          } as never,
+        }),
+    });
+
+    renderWithProviders(<HapcardView />);
+    const user = userEvent.setup();
+
+    // 펼침 → 요약 탭 원문 용어 확인
+    await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
+    expect(await screen.findByText(/비견 교차/)).toBeInTheDocument();
+
+    // 쉽게 보기 ON → 평이어 전환
+    await user.click(screen.getByRole('switch', { name: '쉽게 보기' }));
+    expect(await screen.findByText(/나와 같은 기운 교차/)).toBeInTheDocument();
+    expect(screen.queryByText(/비견 교차/)).toBeNull();
+  });
+
+  it('토글 상태는 localStorage 에 보존된다', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => withVisuals({}),
+    });
+
+    renderWithProviders(<HapcardView />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
+    await user.click(screen.getByRole('switch', { name: '쉽게 보기' }));
+
+    expect(window.localStorage.getItem('hapcard_easy_mode')).toBe('1');
+  });
+});
+
 // G-4 (2026-06-13): 시간 미상 시나리오 추정 — 점수 옆 ± 인라인 + 배지 (FGI §13.2, ADR-024)
 describe('HapcardView 시나리오 추정 표시 (G-4)', () => {
   it('scenario_estimate 존재 시 ± 범위 인라인과 추정 배지를 렌더한다', async () => {

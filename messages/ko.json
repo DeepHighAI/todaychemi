@@ -455,6 +455,9 @@
       "cta": "더 자세히 펼쳐보기",
       "collapse": "접기",
       "title": "자세히 보기",
+      "easyMode": {
+        "label": "쉽게 보기"
+      },
       "tab": {
         "summary": "요약",
         "ohaeng": "오행",
