@@ -189,6 +189,17 @@ export function validateClassicCitation(
 - 0.60~0.75: 선택적 포함 (모드에 따라)
 - < 0.60: 고전 인용 섹션 생략 (`RAG_CLASSIC_MISS`)
 
+**topic_tags lexical 하이브리드 (ISSUE-001, 2026-06-12 §1.1 결정 ③)**: 실 프로덕션
+쿼리(`buildRagQueryText`)는 단문 토큰열이라 유사도 실측 max ~0.35 로 임계 0.60 을
+구조적으로 못 넘는다 → 임베딩 전용 retrieval 은 항상 0 hit 이었다. 보완:
+`buildRagQueryTags`(mode + 파생층 신강약/dominant 십신/용신 + 교차분석 궁위/합·충
+이벤트 → 고전 topic_tags 매핑)로 lexical 직매칭을 병행한다.
+- 채택 규칙: 태그 겹침 ≥ 2 (mode 단독 겹침은 관련성 부족으로 제외)
+- 정렬: 태그 겹침 내림차순 → 유사도 내림차순 → asset_id 오름차순 (결정형)
+- 임베딩 임계(≥0.60) 통과 hit 과 합집합, topK(기본 5) 공통 적용
+- 태그 어휘는 `rag_content/classics/*.yaml` topic_tags 와 동기 유지
+  (`src/lib/rag/query-tags.ts` 매핑 테이블)
+
 **HNSW 인덱스 사용**: `knowledge_assets.embedding` 컬럼에 HNSW 인덱스 (1,000건 이상 권장). Phase 0 MVP는 20건이므로 Sequential Scan도 충분.
 
 ---
