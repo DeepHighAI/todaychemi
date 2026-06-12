@@ -468,6 +468,19 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(insert).toHaveBeenCalledTimes(1);
   });
 
+  // ISSUE-001 (§1.1 결정 ③): lexical 하이브리드 — mode 태그 포함 queryTags 전달
+  it('retrieveClassics 호출 시 queryTags 옵션에 mode 태그 포함', async () => {
+    (retrieveClassics as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (retrieveClassics as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(callArgs[2]).toBeDefined();
+    expect(callArgs[2].queryTags).toContain(BASE_INPUT.mode);
+  });
+
   it('RAG hits 보유 시 systemPrompt 에 ## Available RAG hits 헤더 + <rag_hits> 블록 포함', async () => {
     const hits = [
       {

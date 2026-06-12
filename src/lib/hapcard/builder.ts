@@ -10,6 +10,7 @@ import { deriveCacheKey } from '@/lib/hapcard/cache-key';
 import { buildLlmPayload } from '@/lib/llm/payload';
 import { embedQuery } from '@/lib/rag/embeddings';
 import { retrieveClassics } from '@/lib/rag/classics';
+import { buildRagQueryTags } from '@/lib/rag/query-tags';
 import { selectLlmModel } from '@/lib/llm/model-router';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
@@ -285,7 +286,12 @@ export async function buildHapcardWithMeta(
   };
   const queryText = deps.ragQueryText(datedInput);
   const queryVec = await embedQuery(queryText, { embeddings: deps.embeddingsClient });
-  const ragHits = await retrieveClassics(deps.supabaseServiceClient, queryVec);
+  // ISSUE-001 (§1.1 결정 ③): topic_tags lexical 하이브리드 — 단문 쿼리 임계 미달 우회
+  const queryTags = buildRagQueryTags(
+    { mode: input.mode, self: datedCharts.self },
+    crossAnalysis,
+  );
+  const ragHits = await retrieveClassics(deps.supabaseServiceClient, queryVec, { queryTags });
 
   // 8. system prompt 조합 (RAG hits scaffolding — 0-hit 시 LLM hallucination 차단)
   const ragSection =
