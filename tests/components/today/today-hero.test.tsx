@@ -163,4 +163,32 @@ describe('TodayHero', () => {
       expect(closestAnchor).toBeNull();
     });
   });
+
+  // G-10 (ADR-032 Amend, 2026-06-13): 인연 0건 hero 재구성 — 카피 의무 + CTA 주역화
+  describe('인연 0건 유도 블록 (G-10)', () => {
+    it('인연 0건이면 ADR-032 유도 타이틀을 렌더한다', () => {
+      renderWithProviders(<TodayHero card={card} />);
+      expect(screen.getByText('오늘 떠오르는 사람부터 등록해보세요')).toBeInTheDocument();
+    });
+
+    it('인연 0건이면 본인 정보 사용 목적 서브카피를 렌더한다', () => {
+      renderWithProviders(<TodayHero card={card} />);
+      expect(screen.getByText(/내 사주와 함께 그 사람과의 케미 흐름/)).toBeInTheDocument();
+    });
+
+    it('인연 0건 CTA 링크는 /relations/new 로 연결된다', () => {
+      renderWithProviders(<TodayHero card={card} />);
+      const cta = screen.getByRole('link', { name: /인연 등록/ });
+      expect(cta).toHaveAttribute('href', '/relations/new');
+    });
+
+    it('인연이 있으면 유도 블록을 렌더하지 않는다', () => {
+      renderWithProviders(
+        <TodayHero
+          card={{ ...card, relation_id: 'rel-1', relation_nickname: '민지', today_compat_score: 78 }}
+        />,
+      );
+      expect(screen.queryByText('오늘 떠오르는 사람부터 등록해보세요')).toBeNull();
+    });
+  });
 });

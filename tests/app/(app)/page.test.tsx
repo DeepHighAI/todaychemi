@@ -422,8 +422,9 @@ describe('TodayPage (composition)', () => {
       });
       await renderTodayPage();
       await screen.findByText('좋은 에너지가 흐르는 날');
-      // chip 텍스트는 hero 의 별명 chip 패턴(`오늘 ... 과의 케미`)
-      expect(screen.queryByText(/과의 케미/)).toBeNull();
+      // chip 텍스트는 hero 의 별명 chip 패턴(`오늘 ...과의 케미`).
+      // G-10 유도 블록 서브카피("그 사람과의 케미 흐름...")와 구분하기 위해 chip 전체 패턴으로 매칭
+      expect(screen.queryByText(/오늘 .+과의 케미/)).toBeNull();
     });
 
     it('현재 URL relation_id 인연을 삭제하면 URL을 기본 홈으로 정리하고 today를 재조회한다', async () => {

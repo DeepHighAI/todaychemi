@@ -113,14 +113,23 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
         </span>
       )}
 
-      {/* G2: 인연 0건 사용자용 CTA — 자체 Link 로 /relations/new 이동 */}
+      {/* G-10 (ADR-032 Amend): 인연 0건 유도 블록 — 카피 의무 + 등록 CTA 주역화.
+          환영 팝업(G1)=서비스 소개 / 본 블록=행동 유도 역할 분담 */}
       {!hasRelation && (
-        <Link
-          href="/relations/new"
-          className="relative z-[1] inline-block text-[12px] font-bold text-white/95 underline underline-offset-2"
-        >
-          {t('empty_relation.cta')}
-        </Link>
+        <div className="relative z-[1] bg-white/15 rounded-[var(--r-md)] p-3.5 space-y-1.5">
+          <p className="text-[14px] font-bold text-white leading-[1.35]">
+            {t('empty_relation.title')}
+          </p>
+          <p className="text-[12px] text-white/85 leading-[1.45]">
+            {t('empty_relation.subtitle')}
+          </p>
+          <Link
+            href="/relations/new"
+            className="mt-1 inline-flex items-center justify-center h-9 px-4 rounded-[var(--r-pill)] bg-white text-[13px] font-bold text-[var(--p-40)] active:scale-[0.98] transition-transform"
+          >
+            {t('empty_relation.cta')}
+          </Link>
+        </div>
       )}
     </div>
   );

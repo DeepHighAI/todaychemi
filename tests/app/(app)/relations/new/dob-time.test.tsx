@@ -73,3 +73,31 @@ describe('RelationsDobTimePage (Step 2)', () => {
     expect(mockPush).toHaveBeenCalledWith('/relations/new/mode');
   });
 });
+
+// G-10 (ADR-029 Amend, 2026-06-13): Track B 분기 — 생일 미상 시 "처음 보는 나" 안내
+describe('Track B 분기 — 생일을 잘 몰라요 (G-10)', () => {
+  it('"생일을 잘 몰라요" 토글 버튼이 노출된다', async () => {
+    const { default: Page } = await import('@/app/(app)/relations/new/dob-time/page');
+    renderWithIntl(<Page />);
+    expect(screen.getByRole('button', { name: /생일을 잘 몰라요/ })).toBeTruthy();
+  });
+
+  it('토글 클릭 시 "처음 보는 나" 분기 카드가 /whatif/first_meet 링크와 함께 노출된다', async () => {
+    const { default: Page } = await import('@/app/(app)/relations/new/dob-time/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /생일을 잘 몰라요/ }));
+    const link = await screen.findByRole('link', { name: /처음 보는 나/ });
+    expect(link.getAttribute('href')).toBe('/whatif/first_meet');
+  });
+
+  it('분기 카드가 떠도 등록 진행은 막히지 않는다 (생일 선택 시 다음 활성)', async () => {
+    const { default: Page } = await import('@/app/(app)/relations/new/dob-time/page');
+    renderWithIntl(<Page />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /생일을 잘 몰라요/ }));
+    await user.click(screen.getByRole('radio', { name: '몰라요' }));
+    selectBirthDate();
+    await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
+  });
+});

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -19,6 +20,8 @@ export default function RelationsDobTimePage() {
   const [calendar, setCalendar] = useState<Calendar>(draft.calendar);
   const [knowledge, setKnowledge] = useState<TimeAccuracy>(draft.knowledge);
   const [birthTime, setBirthTime] = useState(draft.birthTime);
+  // G-10 (ADR-029 Amend): 생일 미상 Track B 분기 카드 — 등록을 막지 않는 안내
+  const [showTrackB, setShowTrackB] = useState(false);
 
   const canAdvance = !!birthDate && (knowledge === 'unknown' || !!birthTime);
 
@@ -77,6 +80,28 @@ export default function RelationsDobTimePage() {
           <p className="text-[11px] text-muted-foreground">{t('birth.timeUnknownHint')}</p>
         )}
       </div>
+
+      {/* G-10 (ADR-029 Amend): 생일 자체를 모를 때의 Track B 분기 — whatif first_meet 안내 */}
+      <button
+        type="button"
+        aria-expanded={showTrackB}
+        onClick={() => setShowTrackB((v) => !v)}
+        className="text-[12px] font-semibold text-muted-foreground underline underline-offset-2"
+      >
+        {t('birth.unknownBirthday')}
+      </button>
+      {showTrackB && (
+        <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] p-4 space-y-1.5">
+          <p className="text-[13px] font-bold text-foreground">{t('birth.trackB.title')}</p>
+          <p className="text-[12px] text-muted-foreground leading-[1.5]">{t('birth.trackB.body')}</p>
+          <Link
+            href="/whatif/first_meet"
+            className="inline-flex items-center text-[13px] font-bold text-[var(--p-40)]"
+          >
+            {t('birth.trackB.cta')} →
+          </Link>
+        </div>
+      )}
       <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto">
         <Button
           onClick={handleNext}
