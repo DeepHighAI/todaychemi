@@ -420,6 +420,34 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(insertCall.prompt_version).toBe(MOCK_PROMPT.version);
   });
 
+  // G-4 (2026-06-13): 시간 미상 시나리오 추정 — scoring 산출을 score_breakdown 에 전달
+  it('scenario_estimate 가 score_breakdown 으로 저장된다 (시간 미상 ± 범위)', async () => {
+    (computeScore as ReturnType<typeof vi.fn>).mockReturnValue({
+      ...MOCK_SCORE,
+      scenario_estimate: { is_estimated: true, display_score: 71, display_range: 9, needs_badge: false },
+    });
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const insertCall = insert.mock.calls[0][0];
+    expect(insertCall.score_breakdown.scenario_estimate).toEqual({
+      is_estimated: true,
+      display_score: 71,
+      display_range: 9,
+      needs_badge: false,
+    });
+  });
+
+  it('scenario_estimate=null(시주 보유)이면 score_breakdown 에 null 저장', async () => {
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const insertCall = insert.mock.calls[0][0];
+    expect(insertCall.score_breakdown.scenario_estimate).toBeNull();
+  });
+
   it('케미카드 모델은 gpt-5로 호출하고 저장한다', async () => {
     const { client, insert } = makeMockUserClient({ cachedRow: null });
 

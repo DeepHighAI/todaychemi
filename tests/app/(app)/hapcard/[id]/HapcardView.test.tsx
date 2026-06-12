@@ -172,6 +172,43 @@ describe('HapcardView AI 생성 고지 (1G)', () => {
   });
 });
 
+// G-4 (2026-06-13): 시간 미상 시나리오 추정 — 점수 옆 ± 인라인 + 배지 (FGI §13.2, ADR-024)
+describe('HapcardView 시나리오 추정 표시 (G-4)', () => {
+  it('scenario_estimate 존재 시 ± 범위 인라인과 추정 배지를 렌더한다', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () =>
+        withVisuals({
+          score_breakdown: {
+            hap_chung_hyung_hae: 20, sipsin: 18, ohaeng: 22, yunse_adjustment: 0, mode_adjustment: 13,
+            scenario_estimate: { is_estimated: true, display_score: 71, display_range: 10, needs_badge: false },
+          },
+        }),
+    });
+
+    renderWithProviders(<HapcardView />);
+
+    // display_range 10점 = ±0.5°C (20점/1°C)
+    expect(await screen.findByText('±0.5°C')).toBeInTheDocument();
+    expect(screen.getByText(/시나리오 추정/)).toBeInTheDocument();
+  });
+
+  it('scenario_estimate 없으면(기존 캐시 row 포함) ± 인라인 미노출', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => withVisuals({}),
+    });
+
+    renderWithProviders(<HapcardView />);
+    await screen.findByTestId('ai-disclosure-badge');
+
+    expect(screen.queryByText(/±.*°C/)).toBeNull();
+    expect(screen.queryByText(/시나리오 추정/)).toBeNull();
+  });
+});
+
 describe('HapcardView GA 퍼널 이벤트 (G-8)', () => {
   it('성공 데이터 도달 시 hapcard_view 이벤트 발화', async () => {
     const { trackEvent } = await import('@/lib/analytics/ga');

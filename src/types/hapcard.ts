@@ -31,12 +31,22 @@ export interface HapcardVisuals {
 }
 
 // score_breakdown 필드 구조 (DB jsonb 컬럼 매핑, Y3+ yunse_adjustment 포함)
+// G-4 (2026-06-13): scenario_estimate — 시간 미상 시 12지 시나리오 ± 범위 (결정형 산출,
+// ADR-035 점수 본체 무접촉 — 표시 전용). 기존 row 호환 위해 optional.
+export interface ScenarioEstimateBreakdown {
+  is_estimated: boolean;
+  display_score: number;
+  display_range: number;
+  needs_badge: boolean;
+}
+
 export interface ScoreBreakdown {
   hap_chung_hyung_hae: number;
   sipsin: number;
   ohaeng: number;
   yunse_adjustment: number;
   mode_adjustment: number;
+  scenario_estimate?: ScenarioEstimateBreakdown | null;
 }
 
 export const ScoreBreakdownSchema = z.object({
@@ -45,6 +55,15 @@ export const ScoreBreakdownSchema = z.object({
   ohaeng: z.number(),
   yunse_adjustment: z.number(),
   mode_adjustment: z.number(),
+  scenario_estimate: z
+    .object({
+      is_estimated: z.boolean(),
+      display_score: z.number(),
+      display_range: z.number(),
+      needs_badge: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 
 // DB row 런타임 검증 — score_breakdown shape 핵심 확인, 나머지는 passthrough

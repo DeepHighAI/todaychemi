@@ -299,6 +299,9 @@
     }
   },
   "hapcard": {
+    "scenarioEstimate": {
+      "badge": "시간 미상 · 시나리오 추정"
+    },
     "loading": "오늘 케미를 불러오는 중...",
     "loadingView": {
       "title": "두 사람의 흐름을 분석하고 있어요",

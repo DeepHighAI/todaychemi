@@ -356,6 +356,8 @@ export async function buildHapcardWithMeta(
         ohaeng: scoreOutput.components.ohaeng,
         yunse_adjustment: scoreOutput.yunse_adjustment,
         mode_adjustment: scoreOutput.mode_adjustment,
+        // G-4: 시간 미상 시나리오 ± 범위 — 표시 전용 (점수 본체 무접촉, ADR-035)
+        scenario_estimate: scoreOutput.scenario_estimate,
       },
       content,
       prompt_version: prompt.version,

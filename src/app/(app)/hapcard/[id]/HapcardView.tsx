@@ -37,7 +37,7 @@ import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { convertHanja } from '@/lib/glossary/post-process';
 import { formatDetailSummaryLines, formatHapcardActionItems, formatHeroCoachLines } from '@/lib/hapcard/hero-main-text';
-import { scoreToTemperature } from '@/lib/scoring/temperature';
+import { scoreDeltaToTemperatureDelta, scoreToTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
 
 const RELATION_CHART_PENDING_CODES: HapcardErrorCode[] = ['RELATION_CHART_NOT_FOUND'];
@@ -206,6 +206,8 @@ export default function HapcardView() {
 
   const { visuals } = data;
   const todayTemperature = scoreToTemperature(data.compat_score);
+  // G-4: 시간 미상 시 12지 시나리오 ± 범위 — 기존 캐시 row 에는 없을 수 있음 (optional)
+  const scenarioEstimate = data.score_breakdown?.scenario_estimate ?? null;
   const headerNote = `${data.relation_nickname} · ${convertHanja(visuals.user.day_pillar)} ↔ ${convertHanja(visuals.relation.day_pillar)}`;
   const heroCoachLines = formatHeroCoachLines({
     mainText: data.content.main_text,
@@ -271,7 +273,24 @@ export default function HapcardView() {
                 {todayTemperature.toFixed(1)}
               </span>
               <span className="text-white/85 text-[18px] font-bold">°C</span>
+              {/* G-4: 시간 미상 시나리오 추정 — ± 범위 인라인 (점수 본체 무접촉, 표시 전용) */}
+              {scenarioEstimate && (
+                <span className="text-white/85 text-[14px] font-bold tabular-nums">
+                  ±{scoreDeltaToTemperatureDelta(scenarioEstimate.display_range).toFixed(1)}°C
+                </span>
+              )}
             </div>
+            {scenarioEstimate && (
+              <span
+                className={`inline-block mt-1.5 text-[11px] font-bold rounded-full px-2.5 py-1 ${
+                  scenarioEstimate.needs_badge
+                    ? 'bg-amber-300/30 text-white'
+                    : 'bg-white/20 text-white/90'
+                }`}
+              >
+                {t('scenarioEstimate.badge')}
+              </span>
+            )}
             <div data-testid="hapcard-hero-main-text" className="mt-4 space-y-2.5 text-white">
               {heroCoachLines.map(line => (
                 <p
