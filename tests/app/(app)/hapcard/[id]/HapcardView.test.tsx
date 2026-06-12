@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +19,12 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams({ mode: '일합' }),
   useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
 }));
+
+// G-8: GA 배선 검증용 mock
+vi.mock('@/lib/analytics/ga', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/analytics/ga')>();
+  return { ...mod, trackEvent: vi.fn() };
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -163,5 +169,23 @@ describe('HapcardView AI 생성 고지 (1G)', () => {
     renderWithProviders(<HapcardView />);
 
     expect(await screen.findByTestId('ai-disclosure-badge')).toBeInTheDocument();
+  });
+});
+
+describe('HapcardView GA 퍼널 이벤트 (G-8)', () => {
+  it('성공 데이터 도달 시 hapcard_view 이벤트 발화', async () => {
+    const { trackEvent } = await import('@/lib/analytics/ga');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => withVisuals({ relation_nickname: '민지' }),
+    });
+
+    renderWithProviders(<HapcardView />);
+    await screen.findByTestId('ai-disclosure-badge');
+
+    await waitFor(() =>
+      expect(trackEvent).toHaveBeenCalledWith({ name: 'hapcard_view', params: { mode: '일합' } }),
+    );
   });
 });

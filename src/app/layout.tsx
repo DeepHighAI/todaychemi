@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 
 import './globals.css';
 import Providers from './providers';
+import { GaScript } from '@/components/analytics/ga-script';
+import { GaPageView } from '@/components/analytics/ga-page-view';
+import { GaPurchaseTracker } from '@/components/analytics/ga-purchase-tracker';
 
 export const metadata: Metadata = {
   title: '오늘케미 — 우리 사이, 오늘 케미는?',
@@ -29,6 +33,12 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
+        {/* G-8: GA4 — env 부재 시 전부 no-op. useSearchParams 사용 컴포넌트는 Suspense 의무 */}
+        <GaScript />
+        <Suspense fallback={null}>
+          <GaPageView />
+          <GaPurchaseTracker />
+        </Suspense>
       </body>
     </html>
   );

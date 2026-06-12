@@ -11,6 +11,7 @@ import {
   saveGuestToday,
 } from '@/lib/guest/session';
 import { useOnboardingDraft } from '@/lib/onboarding/draft-store';
+import { trackEvent } from '@/lib/analytics/ga';
 import type { ChartCore } from '@/types/chart';
 import type { DailyHapCard } from '@/types/dailyHap';
 import type { OnboardingRequest } from '@/types/onboarding';
@@ -79,6 +80,7 @@ export default function OnboardingReviewPage() {
         body: JSON.stringify(body),
       });
       if (!res.ok) { setError(t('errors.generic')); setSubmitting(false); return; }
+      trackEvent({ name: 'onboarding_complete' });
       draft.reset();
       router.push('/');
     } catch {

@@ -17,6 +17,13 @@ vi.mock('@tosspayments/tosspayments-sdk', () => ({
   loadTossPayments: toss.loadTossPayments,
 }));
 
+// G-8: GA 배선 검증용 mock
+vi.mock('@/lib/analytics/ga', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/analytics/ga')>();
+  return { ...mod, trackEvent: vi.fn() };
+});
+
+import { trackEvent } from '@/lib/analytics/ga';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 
 const PAYMENT = {
@@ -71,6 +78,18 @@ describe('FeaturePaySheet', () => {
     expect(String(url)).toBe('/api/payments/feature/init');
     expect(init?.method).toBe('POST');
     expect(JSON.parse(String(init?.body))).toEqual({ feature: 'hapcard', ref: 'cache-abc' });
+  });
+
+  it('open → GA begin_checkout 이벤트 발화 (G-8, 가격 단일출처)', async () => {
+    mockInit({ ok: true, unlocked: false, payment: PAYMENT });
+    renderWithProviders(<FeaturePaySheet {...baseProps} />);
+
+    await waitFor(() =>
+      expect(trackEvent).toHaveBeenCalledWith({
+        name: 'begin_checkout',
+        params: { feature_id: 'hapcard', value: 1000, currency: 'KRW' },
+      }),
+    );
   });
 
   it('unlocked:true → 위젯 마운트 없이 onPaid + onOpenChange(false)', async () => {

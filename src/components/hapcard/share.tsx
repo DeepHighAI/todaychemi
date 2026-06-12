@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { HapcardVisuals } from '@/types/hapcard';
+import { trackEvent } from '@/lib/analytics/ga';
 import type { ShareRange } from '@/lib/share/build-share-payload';
 import { shareToKakao } from '@/lib/share/kakao-sdk';
 import { copyShareLink, shareCardOrDownload } from '@/lib/share/share-handler';
@@ -69,6 +70,7 @@ export function HapcardShare({
 
       if (action === 'kakao') {
         await shareToKakao({ ...payload, share_id: created.share_id });
+        trackEvent({ name: 'share', params: { method: 'kakao', content_type: 'hapcard' } });
         setStatus('kakao');
         setSheetOpen(false);
         return;
@@ -80,6 +82,7 @@ export function HapcardShare({
           setStatus('idle');
           return;
         }
+        trackEvent({ name: 'share', params: { method: 'instagram', content_type: 'hapcard' } });
         if (result === 'shared') {
           setStatus('shared');
         } else {
@@ -90,6 +93,7 @@ export function HapcardShare({
       }
 
       await copyShareLink(payload);
+      trackEvent({ name: 'share', params: { method: 'link', content_type: 'hapcard' } });
       setStatus('copied');
       setSheetOpen(false);
     } catch {

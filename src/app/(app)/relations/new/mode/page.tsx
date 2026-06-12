@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { FEATURE_PRICES_KRW, FREE_RELATION_SLOTS } from '@/lib/payments/feature-prices';
 import { useRelationDraft } from '@/lib/relations/draft-store';
+import { trackEvent } from '@/lib/analytics/ga';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem, RelationCreate } from '@/types/relation';
 
@@ -88,6 +89,7 @@ export default function RelationsModePage() {
         return;
       }
       const created = (await res.json().catch(() => null)) as { relation_id?: string } | null;
+      trackEvent({ name: 'relation_create', params: { mode } });
       draft.reset();
       router.push(created?.relation_id ? `/feed?focus=${created.relation_id}` : '/feed');
     } catch {

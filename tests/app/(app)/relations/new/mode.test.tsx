@@ -16,6 +16,12 @@ vi.mock('zustand/middleware', () => ({
 
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(), usePathname: vi.fn() }));
 
+// G-8: GA 배선 검증용 — trackEvent 만 mock (env 부재 시 no-op 이므로 호출 인자 검증엔 mock 필요)
+vi.mock('@/lib/analytics/ga', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/analytics/ga')>();
+  return { ...mod, trackEvent: vi.fn() };
+});
+
 // FeaturePaySheet 는 Toss SDK·vaul 의존 — 시트 자체 테스트가 커버. 여기선 prop 전달만 검증.
 vi.mock('@/components/payments/feature-pay-sheet', () => ({
   FeaturePaySheet: ({
@@ -109,6 +115,24 @@ describe('RelationsModePage (Step 3)', () => {
     expect(body.mode).toBe('썸합');
     expect(body.birth_date).toBe('1995-11-05');
     expect(body.consent_confirmed).toBe(true);
+  });
+
+  it('등록 성공 시 GA relation_create 이벤트 발화 (G-8)', async () => {
+    const { trackEvent } = await import('@/lib/analytics/ga');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ relation_id: 'r-77' }),
+    });
+    const { default: Page } = await import('@/app/(app)/relations/new/mode/page');
+    renderWithProviders(<Page />);
+    const user = userEvent.setup();
+    await user.click(screen.getByText('썸 관계'));
+    await user.click(screen.getByRole('checkbox'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+    await waitFor(() =>
+      expect(trackEvent).toHaveBeenCalledWith({ name: 'relation_create', params: { mode: '썸합' } }),
+    );
   });
 
   it('shows generic error on non-ok response', async () => {

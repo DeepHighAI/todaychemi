@@ -6,7 +6,8 @@ import { Drawer } from 'vaul';
 import { loadTossPayments, type TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
 import { Button } from '@/components/ui/button';
-import type { FeatureId } from '@/lib/payments/feature-prices';
+import { trackEvent } from '@/lib/analytics/ga';
+import { FEATURE_PRICES_KRW, type FeatureId } from '@/lib/payments/feature-prices';
 import type { FeaturePaymentInit, FeaturePaymentInitResponse } from '@/types/feature-payment';
 
 // pay-per-use 결제 시트 (ADR-039, 모델 C). 402 PAYMENT_REQUIRED 수신 시 뷰가 연다.
@@ -54,6 +55,15 @@ export function FeaturePaySheet({
   const [errorMessage, setErrorMessage] = useState(getInitErrorMessage());
   const [retryNonce, setRetryNonce] = useState(0);
   const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
+
+  // G-8: 결제 시트 노출 = 결제 퍼널 진입 이벤트
+  useEffect(() => {
+    if (!open) return;
+    trackEvent({
+      name: 'begin_checkout',
+      params: { feature_id: feature, value: FEATURE_PRICES_KRW[feature].amount_krw, currency: 'KRW' },
+    });
+  }, [open, feature]);
 
   useEffect(() => {
     // 닫힌 동안엔 아무 것도 하지 않음(상태 리셋도 X — Drawer 닫힘 시 본문 비가시).

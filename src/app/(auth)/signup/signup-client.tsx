@@ -11,6 +11,7 @@ import { signUpWithEmail } from '@/lib/auth/email';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { signInWithKakao } from '@/lib/auth/kakao';
 import { loadGuestOnboarding } from '@/lib/guest/session';
+import { trackEvent } from '@/lib/analytics/ga';
 import { validatePassword } from '@/lib/auth/password-policy';
 import {
   EMPTY_LEGAL_CONSENT,
@@ -93,6 +94,7 @@ export function SignupClient({ isGuestIntent }: SignupClientProps) {
       await signUpWithEmail(email, password, legalConsent, {
         reuseExistingConsent: isGuestIntent,
       });
+      trackEvent({ name: 'sign_up', params: { method: 'email' } });
       router.push(isGuestIntent ? '/guest/complete' : '/onboarding');
     } catch (err: unknown) {
       setLoading(false);

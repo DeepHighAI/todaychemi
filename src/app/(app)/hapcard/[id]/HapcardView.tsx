@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, Trash2, Edit2, Share2, Check } from 'lucide-react';
 
+import { trackEvent } from '@/lib/analytics/ga';
 import { DEFAULT_THEORY_PROFILE_VERSION } from '@/types/chart';
 import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
@@ -125,6 +126,11 @@ export default function HapcardView() {
       return () => clearTimeout(t);
     }
   }, [deleted, router]);
+
+  // G-8: 케미카드 도달 퍼널 이벤트 — 성공 데이터 확보 시 1회
+  useEffect(() => {
+    if (data && mode) trackEvent({ name: 'hapcard_view', params: { mode } });
+  }, [data, mode]);
 
   // 402 PAYMENT_REQUIRED → 결제 시트 (generic 에러 분기보다 먼저 가로채기). 닫으면 generic fallback.
   const payErr = error as { code?: string; ref?: string } | null;
