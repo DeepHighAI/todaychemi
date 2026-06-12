@@ -1,8 +1,12 @@
 # today_hap.md — 오늘 케미 (Daily Card) 파이프라인 명세
 
+> **Status: 구현 완료 (2026-06-13 문서 동기)** — PR-A1/A2(2026-05-06) + Phase 3 G2 인연 종합(2026-05-28)로 전체 구현됨.
+> 단, 구현은 본 명세와 일부 다름: Edge Function 대신 **Next.js Route Handler**(`/api/today`), 모델은 G2에서 **GPT-5 격상**(3축 인연 종합), 캐시에 relation 축 추가. 차이는 코드·CLAUDE.md §2가 진실.
+> 본 파일의 미구현 체크리스트는 설계 사료로 보존.
+
 > **Phase**: 1.0 (MVP 출시 시 포함)
-> **모델**: GPT-5 mini (gpt-5-mini)
-> **단일 truth source**: 본 파일.
+> **모델**: ~~GPT-5 mini~~ → GPT-5 (2026-05-28 G2 격상)
+> **단일 truth source**: 구현 코드(`src/lib/today/`, `src/app/api/today/`). 본 파일은 설계 사료.
 
 ---
 

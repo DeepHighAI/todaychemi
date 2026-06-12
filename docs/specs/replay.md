@@ -1,8 +1,8 @@
 # Replay (케미 다시 맞추기) Spec
 
-> **Status: LOCKED — 2026-05-06 사용자 결정 완료**
+> **Status: 구현 완료 (2026-06-13 문서 동기)** — S-07b(2026-05-06) 완료 후 pay-per-use 게이트 통합(dated ref `replay:{id}:{date}` 멱등, 2026-06-02)·lazy yunse 재계산(2026-06-11)까지 반영됨. 단일 truth source = 구현 코드(`src/lib/replay/`, `/api/hapcards/[id]/replay`).
 >
-> D1~D4 모두 확정. 구현 진행 중 (S-07b TDD).
+> D1~D4 확정 기록과 아래 명세는 설계 사료로 보존. 가격은 ADR-039 D6 개정(₩600/6부적)이 우선.
 
 ---
 
