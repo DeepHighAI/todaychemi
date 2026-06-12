@@ -1,7 +1,7 @@
 import { resolveDerivedForLlm } from '@/lib/llm/payload';
 import type { CrossAnalysis, GungwiEvent, YunseCrossFact } from '@/lib/saju/cross';
 import type { ChartCore } from '@/types/chart';
-import type { Mode } from '@/types/relation';
+import type { Mode } from '@/types/mode';
 
 // ISSUE-001 (2026-06-12 §1.1 결정 ③): 단문 임베딩 쿼리가 임계 0.60을 못 넘어
 // classic_citation 이 전면 0건이던 문제 — topic_tags lexical 직매칭용 쿼리 태그.
@@ -52,7 +52,10 @@ const EVENT_KIND_TAGS: Partial<
 };
 
 // mode + 파생층 + 교차분석 → topic_tags lexical 매칭용 쿼리 태그 (결정형, 중복 제거)
-export function buildRagQueryTags(input: RagTagInput, cross: CrossAnalysis | null): string[] {
+export function buildRagQueryTags(
+  input: RagTagInput,
+  cross: CrossAnalysis | null | undefined,
+): string[] {
   const tags: string[] = [input.mode];
 
   const derived = resolveDerivedForLlm(input.self);

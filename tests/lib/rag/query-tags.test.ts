@@ -20,13 +20,15 @@ const SELF: ChartCore = {
   },
 };
 
-// 경계 스키마(SajuDerivedSchema) 통과 형태 — verdict/dominant 그룹을 테스트에서 제어
+// 경계 스키마(SajuDerivedSchema) 통과 형태 — verdict/dominant 그룹을 테스트에서 제어.
+// 런타임은 Zod non-strict 경계만 읽으므로 boundary 부분집합으로 충분 — ChartCore.derived
+// 전체 타입(SajuDerived)으로는 의도적 캐스트 (hour_known/jijanggan/ilju 미사용)
 function makeDerived(overrides: {
   level?: '신강' | '중화' | '신약';
   counts?: Partial<Record<string, number>>;
   yongsin?: { primary: '목' | '화' | '토' | '금' | '수'; secondary: ('목' | '화' | '토' | '금' | '수')[] };
-}): SajuDerivedBoundary {
-  return {
+}): NonNullable<ChartCore['derived']> {
+  const boundary: SajuDerivedBoundary = {
     derived_version: 2,
     sipsin: {
       counts: {
@@ -41,6 +43,7 @@ function makeDerived(overrides: {
     yinyang_balance: { yang: 4, yin: 4 },
     tti: { animal_ko: '쥐' },
   };
+  return boundary as unknown as NonNullable<ChartCore['derived']>;
 }
 
 function makeCross(overrides: Partial<CrossAnalysis> = {}): CrossAnalysis {
