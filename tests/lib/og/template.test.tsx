@@ -85,6 +85,52 @@ describe('OgTemplate — flow', () => {
   });
 });
 
+// Satori(next/og) 제약 회귀 가드: 자식 노드 2개 이상인 비-SVG 요소는 display:flex|contents|none 필수.
+// 단위 테스트가 next/og 를 mock 하므로 Satori 실렌더 오류를 못 잡는다 — 이 구조 검사로 대체.
+const ALLOWED_MULTICHILD_DISPLAY = new Set(['flex', 'contents', 'none']);
+
+function findSatoriViolations(root: Element): string[] {
+  const violations: string[] = [];
+  const walk = (el: Element, insideSvg: boolean) => {
+    const isSvg = insideSvg || el.tagName.toLowerCase() === 'svg';
+    if (!isSvg && el.childNodes.length > 1) {
+      const display = (el as HTMLElement).style?.display ?? '';
+      if (!ALLOWED_MULTICHILD_DISPLAY.has(display)) {
+        const preview = (el.textContent ?? '').slice(0, 20);
+        violations.push(`<${el.tagName.toLowerCase()}> "${preview}" display="${display || 'none-set'}"`);
+      }
+    }
+    el.childNodes.forEach((child) => {
+      if (child.nodeType === 1) walk(child as Element, isSvg);
+    });
+  };
+  walk(root, false);
+  return violations;
+}
+
+describe('OgTemplate — Satori 다중자식 display:flex 제약', () => {
+  const LAYOUTS: OgPayload['layout'][] = ['minimal', 'ohaeng', 'radar', 'comment', 'flow'];
+  for (const layout of LAYOUTS) {
+    it(`${layout} 레이아웃: 다중자식 비-SVG 요소가 모두 display:flex|contents|none`, () => {
+      const { container } = render(
+        <OgTemplate
+          payload={payload({
+            layout,
+            showGender: true,
+            gender_normalized: 'F',
+            ohaeng_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+            area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
+            headline: '동료감이 큰 사이예요',
+            flow_scores: [60, 65, 70, 78],
+          })}
+        />,
+      );
+      const violations = findSatoriViolations(container.firstElementChild as Element);
+      expect(violations, `Satori 위반:\n${violations.join('\n')}`).toEqual([]);
+    });
+  }
+});
+
 describe('OgTemplate — 성별 토글 (ADR-024 옵트인)', () => {
   it('showGender=true → 성별 노출 (레이아웃과 직교)', () => {
     const { getByText } = render(

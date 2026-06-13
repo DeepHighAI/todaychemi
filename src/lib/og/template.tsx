@@ -79,9 +79,7 @@ function LayoutContent({ payload }: { payload: OgPayload }) {
     return (
       <div style={{ display: 'flex', fontSize: 28, color: C_TITLE, gap: 16 }}>
         {OHAENG_ORDER.map((k) => (
-          <span key={k}>
-            {k} {payload.ohaeng_counts?.[k] ?? 0}
-          </span>
+          <span key={k}>{`${k} ${payload.ohaeng_counts?.[k] ?? 0}`}</span>
         ))}
       </div>
     );
@@ -105,7 +103,7 @@ function LayoutContent({ payload }: { payload: OgPayload }) {
           maxWidth: 760,
         }}
       >
-        “{payload.headline}”
+        {`“${payload.headline}”`}
       </div>
     );
   }
@@ -135,10 +133,10 @@ export function OgTemplate({ payload }: { payload: OgPayload }) {
       }}
     >
       <div style={{ fontSize: 32, color: C_TITLE, marginBottom: 16 }}>
-        {payload.nickname}님과의 {payload.mode}
+        {`${payload.nickname}님과의 ${payload.mode}`}
       </div>
       <div style={{ fontSize: 96, fontWeight: 800, color: C_SCORE, marginBottom: 24 }}>
-        케미온도 {payload.temperature_label}
+        {`케미온도 ${payload.temperature_label}`}
       </div>
 
       <LayoutContent payload={payload} />
