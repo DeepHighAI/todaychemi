@@ -389,6 +389,23 @@
       "loading": "흐름 불러오는 중…",
       "version_boundary": "점수 기준이 업데이트됐어요 — 이전 막대와 직접 비교는 어려워요"
     },
+    "changeIndicator": {
+      "title": "직전 해석 대비 변화",
+      "loading": "변화 불러오는 중…",
+      "error": "변화를 불러오지 못했어요",
+      "up": "올랐어요",
+      "down": "내렸어요",
+      "same": "그대로예요",
+      "first": "이번이 첫 해석이에요",
+      "versionChanged": "점수 기준이 업데이트됐어요 — 이전 해석과 직접 비교는 어려워요",
+      "factor": {
+        "hap_chung_hyung_hae": "둘 사이 작용",
+        "sipsin": "역할 관계",
+        "ohaeng": "기운 균형",
+        "yunse_adjustment": "운의 흐름",
+        "mode_adjustment": "관계 유형"
+      }
+    },
     "sharePreview": { "ariaLabel": "공유 미리보기" },
     "replayButton": {
       "label": "케미 다시 맞추기",

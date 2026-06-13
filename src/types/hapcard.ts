@@ -212,6 +212,30 @@ export const SNAPSHOTS_ERROR_CODES = [
 
 export type SnapshotsErrorCode = (typeof SNAPSHOTS_ERROR_CODES)[number];
 
+// GET /api/hapcards/[id]/change 응답 — H-2 변화 폭 인디케이터 (ADR-033/036)
+// status: comparable=직전 비교 가능 / first=직전 해석 없음 / version_changed=scoring·prompt 버전 불일치(비교 금지)
+export type HapcardChangeStatus = 'comparable' | 'first' | 'version_changed';
+
+// topChangedFactors 반환형과 동일 — factor 는 score_breakdown 숫자 구성요소 키
+export interface HapcardChangeFactor {
+  factor: string;
+  delta: number;
+}
+
+export interface HapcardChangeResponse {
+  status: HapcardChangeStatus;
+  delta: number | null;            // comparable 일 때만 ±점수, 그 외 null
+  factors: HapcardChangeFactor[];  // comparable 일 때만 채워짐 (최대 3)
+}
+
+export const CHANGE_ERROR_CODES = [
+  'UNAUTHORIZED',
+  'HAPCARD_NOT_FOUND',
+  'INTERNAL_ERROR',
+] as const;
+
+export type ChangeErrorCode = (typeof CHANGE_ERROR_CODES)[number];
+
 // POST /api/hapcards/[id]/replay 요청 스키마 — .strict()로 PII 불명 필드 거부
 export const ReplayRequestSchema = z
   .object({

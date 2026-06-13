@@ -28,6 +28,7 @@ import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardCauseFactors } from '@/components/hapcard/cause-factors';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
+import { HapcardChangeIndicator } from '@/components/hapcard/change-indicator';
 import { HapcardTimeline } from '@/components/hapcard/timeline';
 import { HapcardLoadingState } from '@/components/hapcard/loading-state';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
@@ -511,6 +512,8 @@ function ExpandPanel({
         )}
         {tab === 'evidence' && (
           <>
+            {/* H-2 변화 폭 인디케이터 (ADR-033/036) — 근거 1단, 직전 해석 대비 ±점수+요인 */}
+            <HapcardChangeIndicator hapcardId={data.hapcard_id} />
             <HapcardCauseFactors factors={causeFactors} />
             <HapcardEvidence cards={data.content.why_cards} />
             <HapcardClassic citations={data.content.classic_citation} />

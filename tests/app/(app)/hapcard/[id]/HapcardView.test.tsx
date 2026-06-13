@@ -258,6 +258,45 @@ describe('HapcardView 시나리오 추정 표시 (G-4)', () => {
   });
 });
 
+// H-2 (2026-06-13): 변화 폭 인디케이터 — 근거 탭 1단 (ADR-033/036)
+describe('HapcardView 변화 폭 인디케이터 (H-2)', () => {
+  function mockWithChange(change: unknown) {
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/change')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => change });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => withVisuals({}) });
+    });
+  }
+
+  it('근거 탭 진입 시 변화 인디케이터 마운트 + 요인 라벨 렌더', async () => {
+    mockWithChange({
+      status: 'comparable',
+      delta: 5,
+      factors: [{ factor: 'hap_chung_hyung_hae', delta: 4 }],
+    });
+
+    renderWithProviders(<HapcardView />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
+    await user.click(screen.getByRole('button', { name: '근거' }));
+
+    expect(await screen.findByTestId('hapcard-change')).toBeInTheDocument();
+    expect(await screen.findByTestId('hapcard-change-factor')).toHaveTextContent('둘 사이 작용');
+  });
+
+  it('요약 탭(기본)에서는 변화 인디케이터 미마운트 (추가 fetch 없음)', async () => {
+    mockWithChange({ status: 'first', delta: null, factors: [] });
+
+    renderWithProviders(<HapcardView />);
+    await screen.findByTestId('ai-disclosure-badge');
+
+    expect(screen.queryByTestId('hapcard-change')).toBeNull();
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes('/change'))).toBe(false);
+  });
+});
+
 describe('HapcardView GA 퍼널 이벤트 (G-8)', () => {
   it('성공 데이터 도달 시 hapcard_view 이벤트 발화', async () => {
     const { trackEvent } = await import('@/lib/analytics/ga');
