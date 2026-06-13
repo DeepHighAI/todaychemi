@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildOgPayload,
   rangeToLayoutOptions,
+  layoutToShareRange,
   type OgPayloadInput,
 } from '@/lib/og/render-payload';
 
@@ -97,5 +98,23 @@ describe('rangeToLayoutOptions — 레거시 range → layout/showGender 매핑 
   });
   it('nickname-gender → minimal, 성별 표시', () => {
     expect(rangeToLayoutOptions('nickname-gender')).toEqual({ layout: 'minimal', showGender: true });
+  });
+});
+
+describe('layoutToShareRange — layout/showGender → 레거시 range (공개 토큰 OG 하위호환)', () => {
+  it('ohaeng → nickname-ohaeng (성별 무관)', () => {
+    expect(layoutToShareRange('ohaeng', false)).toBe('nickname-ohaeng');
+    expect(layoutToShareRange('ohaeng', true)).toBe('nickname-ohaeng');
+  });
+  it('성별 표시(오행 외) → nickname-gender', () => {
+    expect(layoutToShareRange('minimal', true)).toBe('nickname-gender');
+    expect(layoutToShareRange('radar', true)).toBe('nickname-gender');
+    expect(layoutToShareRange('flow', true)).toBe('nickname-gender');
+  });
+  it('그 외 → nickname-only', () => {
+    expect(layoutToShareRange('minimal', false)).toBe('nickname-only');
+    expect(layoutToShareRange('radar', false)).toBe('nickname-only');
+    expect(layoutToShareRange('comment', false)).toBe('nickname-only');
+    expect(layoutToShareRange('flow', false)).toBe('nickname-only');
   });
 });

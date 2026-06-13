@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { HapcardVisuals } from '@/types/hapcard';
 import { trackEvent } from '@/lib/analytics/ga';
 import type { ShareRange } from '@/lib/share/build-share-payload';
+import { layoutToShareRange, type ShareLayout } from '@/lib/og/render-payload';
 import { shareToKakao } from '@/lib/share/kakao-sdk';
 import { copyShareLink, shareCardOrDownload } from '@/lib/share/share-handler';
 import { ShareSheet, type ShareSheetAction } from '@/components/hapcard/share-sheet';
@@ -56,10 +57,12 @@ export function HapcardShare({
     origin: typeof window !== 'undefined' ? window.location.origin : 'https://hap.plae',
   };
 
-  async function handleShare(range: ShareRange, action: ShareSheetAction) {
+  async function handleShare(layout: ShareLayout, showGender: boolean, action: ShareSheetAction) {
     setBusyAction(action);
     setStatus('idle');
     try {
+      // 공개 토큰 OG(수신자 미리보기)는 아직 range 기반 — 가장 가까운 range 로 매핑(Phase 2 레이아웃 운반).
+      const range = layoutToShareRange(layout, showGender);
       const created = await createShare(hapcardId, range, action);
       const payload = {
         title: created.title,
@@ -67,6 +70,9 @@ export function HapcardShare({
         url: created.url,
         og_image_url: created.og_image_url,
       };
+      // 저장/인스타는 사용자가 이미지 자체를 게시 → 선택 레이아웃의 인증 OG 이미지 사용(보이는 그대로).
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const authedImageUrl = `${origin}/api/og/hapcard/${encodeURIComponent(hapcardId)}?layout=${layout}&gender=${showGender ? 1 : 0}`;
 
       if (action === 'kakao') {
         await shareToKakao({ ...payload, share_id: created.share_id });
@@ -77,7 +83,7 @@ export function HapcardShare({
       }
 
       if (action === 'instagram') {
-        const result = await shareCardOrDownload(payload);
+        const result = await shareCardOrDownload({ ...payload, og_image_url: authedImageUrl });
         if (result === 'aborted') {
           setStatus('idle');
           return;

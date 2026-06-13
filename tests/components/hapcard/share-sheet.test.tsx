@@ -16,72 +16,78 @@ const MOCK_HAPCARD: SharePayloadInput = {
   origin: 'https://hap.plae',
 };
 
-describe('ShareSheet', () => {
-  it('open=true 시 3개 범위 라디오 옵션 표시', () => {
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
-    );
-    expect(screen.getByLabelText('별명만')).toBeInTheDocument();
-    expect(screen.getByLabelText('별명 + 오행')).toBeInTheDocument();
-    expect(screen.getByLabelText('별명 + 성별')).toBeInTheDocument();
+function renderSheet(onShare = vi.fn(), onOpenChange = vi.fn(), open = true) {
+  renderWithProviders(
+    <ShareSheet open={open} onOpenChange={onOpenChange} hapcard={MOCK_HAPCARD} onShare={onShare} />,
+  );
+  return { onShare, onOpenChange };
+}
+
+describe('ShareSheet — 레이아웃 5종 탭', () => {
+  it('open=true 시 5개 레이아웃 탭 표시', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: '온도만' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '오행' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '영역' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '한 줄' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '흐름' })).toBeInTheDocument();
   });
 
-  it('기본 선택 = nickname-only (별명만 라디오 checked)', () => {
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
-    );
-    const radio = screen.getByLabelText('별명만') as HTMLInputElement;
-    expect(radio.checked).toBe(true);
+  it('기본 선택 = minimal (온도만 탭 aria-pressed=true)', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: '온도만' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('"카카오톡" 버튼 클릭 → onShare(range, kakao) 호출', () => {
-    const onShare = vi.fn();
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
-    );
+  it('카카오톡 → onShare(minimal, false, kakao)', () => {
+    const { onShare } = renderSheet();
     fireEvent.click(screen.getByRole('button', { name: '카카오톡' }));
-    expect(onShare).toHaveBeenCalledWith('nickname-only', 'kakao');
+    expect(onShare).toHaveBeenCalledWith('minimal', false, 'kakao');
   });
 
-  it('라디오 변경 후 "인스타그램/카드" → 변경된 range로 onShare 호출', () => {
-    const onShare = vi.fn();
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
-    );
-    fireEvent.click(screen.getByLabelText('별명 + 오행'));
+  it('레이아웃 탭 변경 후 인스타그램 → 변경된 layout 으로 onShare', () => {
+    const { onShare } = renderSheet();
+    fireEvent.click(screen.getByRole('button', { name: '영역' }));
     fireEvent.click(screen.getByRole('button', { name: '인스타그램/카드' }));
-    expect(onShare).toHaveBeenCalledWith('nickname-ohaeng', 'instagram');
+    expect(onShare).toHaveBeenCalledWith('radar', false, 'instagram');
   });
 
-  it('"링크 복사" 버튼 클릭 → onShare(range, copy_link) 호출', () => {
-    const onShare = vi.fn();
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={onShare} />,
-    );
+  it('성별 토글 ON 후 링크 복사 → showGender=true 로 onShare', () => {
+    const { onShare } = renderSheet();
+    fireEvent.click(screen.getByLabelText('성별 표시'));
     fireEvent.click(screen.getByRole('button', { name: '링크 복사' }));
-    expect(onShare).toHaveBeenCalledWith('nickname-only', 'copy_link');
+    expect(onShare).toHaveBeenCalledWith('minimal', true, 'copy_link');
+  });
+});
+
+describe('ShareSheet — 프리뷰 = 실제 OG 이미지', () => {
+  it('프리뷰 img src 가 선택 레이아웃의 authed OG 라우트를 가리킨다', () => {
+    renderSheet();
+    const img = screen.getByLabelText('공유 미리보기') as HTMLImageElement;
+    expect(img.tagName).toBe('IMG');
+    expect(img.getAttribute('src')).toContain('/api/og/hapcard/hap-uuid-001');
+    expect(img.getAttribute('src')).toContain('layout=minimal');
+    expect(img.getAttribute('src')).toContain('gender=0');
   });
 
-  it('"취소" 버튼 클릭 → onOpenChange(false) 호출', () => {
-    const onOpenChange = vi.fn();
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={onOpenChange} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
-    );
+  it('레이아웃·성별 변경 시 프리뷰 src 갱신', () => {
+    renderSheet();
+    fireEvent.click(screen.getByRole('button', { name: '흐름' }));
+    fireEvent.click(screen.getByLabelText('성별 표시'));
+    const img = screen.getByLabelText('공유 미리보기') as HTMLImageElement;
+    expect(img.getAttribute('src')).toContain('layout=flow');
+    expect(img.getAttribute('src')).toContain('gender=1');
+  });
+});
+
+describe('ShareSheet — 기타', () => {
+  it('취소 → onOpenChange(false)', () => {
+    const { onOpenChange } = renderSheet();
     fireEvent.click(screen.getByRole('button', { name: '취소' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('open=false 시 라디오 옵션 미노출', () => {
-    renderWithProviders(
-      <ShareSheet open={false} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
-    );
-    expect(screen.queryByLabelText('별명만')).toBeNull();
-  });
-
-  it('open=true 시 미리보기 타일이 마운트됨 (aria-label "공유 미리보기")', () => {
-    renderWithProviders(
-      <ShareSheet open={true} onOpenChange={vi.fn()} hapcard={MOCK_HAPCARD} onShare={vi.fn()} />,
-    );
-    expect(screen.getByLabelText('공유 미리보기')).toBeInTheDocument();
+  it('open=false 시 탭 미노출', () => {
+    renderSheet(vi.fn(), vi.fn(), false);
+    expect(screen.queryByRole('button', { name: '온도만' })).toBeNull();
   });
 });

@@ -83,3 +83,11 @@ const RANGE_TO_LAYOUT: Record<ShareRange, OgPayloadOptions> = {
 export function rangeToLayoutOptions(range: ShareRange): OgPayloadOptions {
   return RANGE_TO_LAYOUT[range];
 }
+
+// layout/showGender → 레거시 range. 공개 토큰 OG(수신자 미리보기)는 아직 range 기반이므로,
+// 공유 생성 시 가장 가까운 range 로 매핑한다. (레이아웃 운반은 Phase 2)
+export function layoutToShareRange(layout: ShareLayout, showGender: boolean): ShareRange {
+  if (layout === 'ohaeng') return 'nickname-ohaeng';
+  if (showGender) return 'nickname-gender';
+  return 'nickname-only';
+}

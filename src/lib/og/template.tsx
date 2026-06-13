@@ -8,7 +8,9 @@ const C_BG_TO = '#FFEDD5';
 const C_TITLE = '#92400E';
 const C_SCORE = '#7C2D12';
 const C_ACCENT = '#A16207';
-const C_LINE = '#D97706';
+// 솔리드 색만 사용 (Satori 는 SVG fill-opacity/stroke-opacity 미지원 가능 — 투명도 대신 옅은 솔리드).
+const C_RADAR_GUIDE = '#EBCBA3';
+const C_RADAR_FILL = '#E7B583';
 
 // radar 축 (content.area_scores 순서 고정)
 const RADAR_AXES: Array<{ key: keyof ShareAreaScores; label: string }> = [
@@ -19,9 +21,9 @@ const RADAR_AXES: Array<{ key: keyof ShareAreaScores; label: string }> = [
   { key: 'future', label: '미래' },
 ];
 
-const RADAR_CX = 130;
-const RADAR_CY = 130;
-const RADAR_R = 92;
+const RADAR_CX = 120;
+const RADAR_CY = 120;
+const RADAR_R = 95;
 
 function clamp01(value: number): number {
   return Math.min(100, Math.max(0, value)) / 100;
@@ -32,24 +34,24 @@ function radarPoint(index: number, ratio: number): [number, number] {
   return [RADAR_CX + RADAR_R * ratio * Math.cos(angle), RADAR_CY + RADAR_R * ratio * Math.sin(angle)];
 }
 
+// Satori 는 SVG <text> 렌더가 불확실하므로 축 라벨은 SVG 밖 DIV 범례로 분리한다.
 function RadarChart({ scores }: { scores: ShareAreaScores }) {
   const guide = RADAR_AXES.map((_, i) => radarPoint(i, 1)).map(([x, y]) => `${x},${y}`).join(' ');
   const data = RADAR_AXES.map((axis, i) => radarPoint(i, clamp01(scores[axis.key] ?? 0)))
     .map(([x, y]) => `${x},${y}`)
     .join(' ');
   return (
-    <svg data-testid="og-radar" width="260" height="260" viewBox="0 0 260 260">
-      <polygon points={guide} fill="none" stroke={C_LINE} strokeOpacity="0.35" strokeWidth="2" />
-      <polygon points={data} fill={C_SCORE} fillOpacity="0.28" stroke={C_SCORE} strokeWidth="3" />
-      {RADAR_AXES.map((axis, i) => {
-        const [lx, ly] = radarPoint(i, 1.18);
-        return (
-          <text key={axis.key} x={lx} y={ly} fill={C_TITLE} fontSize="20" textAnchor="middle">
-            {axis.label}
-          </text>
-        );
-      })}
-    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <svg data-testid="og-radar" width="240" height="240" viewBox="0 0 240 240">
+        <polygon points={guide} fill="none" stroke={C_RADAR_GUIDE} strokeWidth="2" />
+        <polygon points={data} fill={C_RADAR_FILL} stroke={C_SCORE} strokeWidth="3" />
+      </svg>
+      <div style={{ display: 'flex', gap: 12, fontSize: 18, color: C_TITLE }}>
+        {RADAR_AXES.map((axis) => (
+          <span key={axis.key}>{axis.label}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 

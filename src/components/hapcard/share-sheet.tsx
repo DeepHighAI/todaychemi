@@ -13,8 +13,8 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { HapcardSharePreviewTile } from '@/components/hapcard/share-preview-tile';
-import type { SharePayloadInput, ShareRange } from '@/lib/share/build-share-payload';
+import type { ShareLayout } from '@/lib/og/render-payload';
+import type { SharePayloadInput } from '@/lib/share/build-share-payload';
 
 export type ShareSheetAction = 'kakao' | 'instagram' | 'copy_link';
 
@@ -22,19 +22,25 @@ interface ShareSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hapcard: SharePayloadInput;
-  onShare: (range: ShareRange, action: ShareSheetAction) => void;
+  onShare: (layout: ShareLayout, showGender: boolean, action: ShareSheetAction) => void;
   busyAction?: ShareSheetAction | null;
 }
 
-const RANGE_OPTIONS: Array<{ value: ShareRange; labelKey: string }> = [
-  { value: 'nickname-only', labelKey: 'nicknameOnly' },
-  { value: 'nickname-ohaeng', labelKey: 'withOhaeng' },
-  { value: 'nickname-gender', labelKey: 'withGender' },
+const LAYOUT_OPTIONS: Array<{ value: ShareLayout; labelKey: string }> = [
+  { value: 'minimal', labelKey: 'minimal' },
+  { value: 'ohaeng', labelKey: 'ohaeng' },
+  { value: 'radar', labelKey: 'radar' },
+  { value: 'comment', labelKey: 'comment' },
+  { value: 'flow', labelKey: 'flow' },
 ];
 
 export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = null }: ShareSheetProps) {
   const t = useTranslations('hapcard.shareSheet');
-  const [range, setRange] = useState<ShareRange>('nickname-only');
+  const [layout, setLayout] = useState<ShareLayout>('minimal');
+  const [showGender, setShowGender] = useState(false);
+
+  // 프리뷰 = 실제 인증 OG 이미지 (선택 레이아웃·성별). "보이는 그대로 공유" (§1.1).
+  const previewSrc = `/api/og/hapcard/${encodeURIComponent(hapcard.hapcard_id)}?layout=${layout}&gender=${showGender ? 1 : 0}`;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -45,26 +51,61 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
             {t('description')}
           </DrawerDescription>
         </DrawerHeader>
-        <HapcardSharePreviewTile hapcard={hapcard} range={range} />
-        <div className="px-4 pb-2 space-y-2">
-          {RANGE_OPTIONS.map(({ value, labelKey }) => (
-            <label key={value} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="share-range"
-                value={value}
-                checked={range === value}
-                onChange={() => setRange(value)}
-                className="accent-primary"
-              />
-              <span className="text-sm">{t(`range.${labelKey}`)}</span>
-            </label>
+
+        {/* 실제 OG 미리보기 */}
+        <div className="px-4 pb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={previewSrc}
+            src={previewSrc}
+            alt={t('preview')}
+            aria-label="공유 미리보기"
+            width={1200}
+            height={630}
+            className="aspect-[1200/630] w-full rounded-[var(--radius-xl)] border border-border bg-card object-cover shadow-md"
+          />
+        </div>
+
+        {/* 레이아웃 탭 5종 */}
+        <div
+          role="group"
+          aria-label={t('layoutGroupLabel')}
+          className="px-4 pb-2 flex flex-wrap gap-2"
+        >
+          {LAYOUT_OPTIONS.map(({ value, labelKey }) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={layout === value}
+              onClick={() => setLayout(value)}
+              className={`min-h-[40px] rounded-[var(--radius-pill)] px-3.5 text-sm font-semibold ${
+                layout === value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {t(`layout.${labelKey}`)}
+            </button>
           ))}
         </div>
+
+        {/* 성별 표시 토글 (ADR-024 옵트인) */}
+        <div className="px-4 pb-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={showGender}
+              onChange={(e) => setShowGender(e.target.checked)}
+              className="accent-primary"
+            />
+            <span>{t('showGender')}</span>
+          </label>
+        </div>
+
         <DrawerFooter>
           <Button
             className="w-full gap-2 border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
-            onClick={() => onShare(range, 'kakao')}
+            onClick={() => onShare(layout, showGender, 'kakao')}
             disabled={busyAction !== null}
           >
             <MessageCircle size={18} />
@@ -73,7 +114,7 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
           <Button
             variant="outline"
             className="w-full gap-2"
-            onClick={() => onShare(range, 'instagram')}
+            onClick={() => onShare(layout, showGender, 'instagram')}
             disabled={busyAction !== null}
           >
             <ImageDown size={18} />
@@ -82,7 +123,7 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
           <Button
             variant="outline"
             className="w-full gap-2"
-            onClick={() => onShare(range, 'copy_link')}
+            onClick={() => onShare(layout, showGender, 'copy_link')}
             disabled={busyAction !== null}
           >
             <Copy size={18} />

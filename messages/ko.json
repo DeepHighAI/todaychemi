@@ -352,14 +352,24 @@
     "classic": "왜 이런 사이?",
     "share": "공유하기",
     "shareSheet": {
-      "title": "공유 범위 선택",
-      "description": "공유 범위를 선택하고 미리보기를 확인합니다",
+      "title": "공유 카드 꾸미기",
+      "description": "카드 모양을 고르고 미리보기를 확인합니다",
       "range": {
         "nicknameOnly": "별명만",
         "withOhaeng": "별명 + 오행",
         "withGender": "별명 + 성별"
       },
+      "layout": {
+        "minimal": "온도만",
+        "ohaeng": "오행",
+        "radar": "영역",
+        "comment": "한 줄",
+        "flow": "흐름"
+      },
+      "layoutGroupLabel": "카드 모양",
+      "showGender": "성별 표시",
       "preview": "미리보기",
+      "previewLoading": "미리보기 만드는 중…",
       "cta": "공유하기",
       "ctaKakao": "카카오톡",
       "ctaInstagram": "인스타그램/카드",

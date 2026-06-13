@@ -27,4 +27,9 @@ describe('extractShareHeadline', () => {
     expect(extractShareHeadline('')).toBe('');
     expect(extractShareHeadline('   ')).toBe('');
   });
+
+  it('선행 개행으로 시작해도 첫 비어있지 않은 줄을 추출 (LLM \\n 구분 본문)', () => {
+    expect(extractShareHeadline('\n결론 = 끌림이 강해요. 둘째 문장.')).toBe('끌림이 강해요');
+    expect(extractShareHeadline('\n\n잘 맞는 사이예요')).toBe('잘 맞는 사이예요');
+  });
 });
