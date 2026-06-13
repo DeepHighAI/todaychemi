@@ -102,4 +102,23 @@ describe('HapcardEvidence + GlossaryProvider 통합', () => {
     // 자오충 definition 텍스트 일부 확인
     expect(screen.getByText(/정반대 방향으로 부딪히는/)).toBeInTheDocument();
   });
+
+  it('단일글자 용어 "충"이 합성어 "충돌" 안에 있으면 매칭하지 않는다', () => {
+    const cards = [{ title: '두 사람 사이에 충돌이 잦아요', reason: '조율이 필요합니다.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    expect(screen.queryByTestId('term-tooltip-trigger')).toBeNull();
+    expect(screen.getByText(/충돌이 잦아요/)).toBeInTheDocument();
+  });
+
+  it('단일글자 용어 "해/형/합"도 합성어("해석"·"형성"·"합의") 안에서는 매칭하지 않는다', () => {
+    const cards = [{ title: '해석과 형성', reason: '합의가 필요합니다.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    expect(screen.queryByTestId('term-tooltip-trigger')).toBeNull();
+  });
+
+  it('비-한글 경계로 분리된 단일글자 용어 "합/형/충/해"는 단독 매칭한다', () => {
+    const cards = [{ title: '합, 형, 충, 해', reason: '네 가지 작용.' }];
+    renderWithProviders(<HapcardEvidence cards={cards} />);
+    expect(screen.getAllByTestId('term-tooltip-trigger')).toHaveLength(4);
+  });
 });
