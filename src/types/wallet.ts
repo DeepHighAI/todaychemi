@@ -1,3 +1,5 @@
+// token_ledger.reason 정본 집합 (0009_token_ledger.sql 주석과 동기).
+// purchase 는 구 충전 모델 하위호환(ADR-039 pay-per-use 전환 이전 행).
 export type LedgerReason =
   | 'purchase'
   | 'hapcard_use'
@@ -6,6 +8,8 @@ export type LedgerReason =
   | 'replay_refund'
   | 'whatif_use'
   | 'whatif_refund'
+  | 'relation_slot_use'
+  | 'relation_slot_refund'
   | 'refund'
   | 'bonus';
 

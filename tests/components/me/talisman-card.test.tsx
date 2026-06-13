@@ -92,4 +92,20 @@ describe('TalismanCard', () => {
     expect(screen.getByText('+10 부적')).toBeInTheDocument();
     expect(screen.getByText('-1 부적')).toBeInTheDocument();
   });
+
+  it('인연 슬롯 사유를 §8 한글 라벨로 매핑한다', () => {
+    renderWithIntl(
+      <TalismanCard
+        balance={BALANCE}
+        ledger={[
+          ledgerRow({ ledger_id: 'rs', reason: 'relation_slot_use', delta: -10, balance_after: 8 }),
+          ledgerRow({ ledger_id: 'rsr', reason: 'relation_slot_refund', delta: 10, balance_after: 18 }),
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /사용 기록/ }));
+
+    expect(screen.getByText('인연 등록')).toBeInTheDocument();
+    expect(screen.getByText('인연 등록 환불')).toBeInTheDocument();
+  });
 });
