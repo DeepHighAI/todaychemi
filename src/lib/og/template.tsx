@@ -1,4 +1,4 @@
-import type { OgPayload, ShareAreaScores } from '@/lib/og/render-payload';
+import type { OgPayload, RadarOverlay } from '@/lib/og/render-payload';
 
 const OHAENG_ORDER = ['목', '화', '토', '금', '수'] as const;
 
@@ -10,23 +10,15 @@ const C_SCORE = '#7C2D12';
 const C_ACCENT = '#A16207';
 // 솔리드 색만 사용 (Satori 는 SVG fill-opacity/stroke-opacity 미지원 가능 — 투명도 대신 옅은 솔리드).
 const C_RADAR_GUIDE = '#EBCBA3';
-const C_RADAR_FILL = '#E7B583';
-
-// radar 축 (content.area_scores 순서 고정)
-const RADAR_AXES: Array<{ key: keyof ShareAreaScores; label: string }> = [
-  { key: 'talk', label: '대화' },
-  { key: 'attract', label: '끌림' },
-  { key: 'speed', label: '속도' },
-  { key: 'money', label: '금전' },
-  { key: 'future', label: '미래' },
-];
+const C_RADAR_USER = '#7C2D12';   // 나
+const C_RADAR_REL = '#D97706';    // 인연
 
 const RADAR_CX = 120;
 const RADAR_CY = 120;
 const RADAR_R = 95;
 
-function clamp01(value: number): number {
-  return Math.min(100, Math.max(0, value)) / 100;
+function ohaengRatio(counts: Record<string, number>, key: string, denom: number): number {
+  return Math.max(0, counts[key] ?? 0) / denom;
 }
 
 function radarPoint(index: number, ratio: number): [number, number] {
@@ -34,25 +26,41 @@ function radarPoint(index: number, ratio: number): [number, number] {
   return [RADAR_CX + RADAR_R * ratio * Math.cos(angle), RADAR_CY + RADAR_R * ratio * Math.sin(angle)];
 }
 
-// Satori 는 SVG <text> 렌더가 불확실하므로 축 라벨은 SVG 밖 DIV 범례로 분리한다.
-function RadarChart({ scores }: { scores: ShareAreaScores }) {
-  const guide = RADAR_AXES.map((_, i) => radarPoint(i, 1)).map(([x, y]) => `${x},${y}`).join(' ');
-  const data = RADAR_AXES.map((axis, i) => radarPoint(i, clamp01(scores[axis.key] ?? 0)))
+function radarPolygon(counts: Record<string, number>, denom: number): string {
+  return OHAENG_ORDER.map((k, i) => radarPoint(i, Math.min(1, ohaengRatio(counts, k, denom))))
     .map(([x, y]) => `${x},${y}`)
     .join(' ');
+}
+
+// 나 vs 인연 오행(목화토금수) 오버레이 (§1.1). Satori 는 SVG <text> 불확실 → 축 라벨은 DIV 범례.
+function RadarChart({ radar }: { radar: RadarOverlay }) {
+  const denom = Math.max(
+    1,
+    ...OHAENG_ORDER.map((k) => Math.max(radar.user[k] ?? 0, radar.relation[k] ?? 0)),
+  );
+  const guide = OHAENG_ORDER.map((_, i) => radarPoint(i, 1)).map(([x, y]) => `${x},${y}`).join(' ');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
       <svg data-testid="og-radar" width="240" height="240" viewBox="0 0 240 240">
         <polygon points={guide} fill="none" stroke={C_RADAR_GUIDE} strokeWidth="2" />
-        <polygon points={data} fill={C_RADAR_FILL} stroke={C_SCORE} strokeWidth="3" />
+        <polygon points={radarPolygon(radar.relation, denom)} fill="none" stroke={C_RADAR_REL} strokeWidth="3" />
+        <polygon points={radarPolygon(radar.user, denom)} fill="none" stroke={C_RADAR_USER} strokeWidth="3" />
       </svg>
       <div style={{ display: 'flex', gap: 12, fontSize: 18, color: C_TITLE }}>
-        {RADAR_AXES.map((axis) => (
-          <span key={axis.key}>{axis.label}</span>
+        {OHAENG_ORDER.map((k) => (
+          <span key={k}>{k}</span>
         ))}
+      </div>
+      <div style={{ display: 'flex', gap: 16, fontSize: 16 }}>
+        <span style={{ color: C_RADAR_USER }}>{'— 나'}</span>
+        <span style={{ color: C_RADAR_REL }}>{'— 인연'}</span>
       </div>
     </div>
   );
+}
+
+function clamp01(value: number): number {
+  return Math.min(100, Math.max(0, value)) / 100;
 }
 
 function FlowChart({ scores }: { scores: number[] }) {
@@ -60,16 +68,26 @@ function FlowChart({ scores }: { scores: number[] }) {
   const H = 96;
   const PAD = 12;
   const n = scores.length;
-  const points = scores
-    .map((s, i) => {
-      const x = PAD + (W - 2 * PAD) * (n <= 1 ? 0 : i / (n - 1));
-      const y = H - PAD - (H - 2 * PAD) * clamp01(s);
-      return `${x},${y}`;
-    })
-    .join(' ');
+  const coords = scores.map((s, i): [number, number] => {
+    const x = PAD + (W - 2 * PAD) * (n <= 1 ? 0.5 : i / (n - 1));
+    const y = H - PAD - (H - 2 * PAD) * clamp01(s);
+    return [x, y];
+  });
   return (
     <svg data-testid="og-flow" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-      <polyline points={points} fill="none" stroke={C_SCORE} strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+      {n >= 2 ? (
+        <polyline
+          points={coords.map(([x, y]) => `${x},${y}`).join(' ')}
+          fill="none"
+          stroke={C_SCORE}
+          strokeWidth="4"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      ) : (
+        // 해석 1건이면 선이 안 보이므로 단일 점 마커 (ISSUE-003)
+        <circle cx={coords[0]?.[0] ?? W / 2} cy={coords[0]?.[1] ?? H / 2} r="6" fill={C_SCORE} />
+      )}
     </svg>
   );
 }
@@ -84,10 +102,10 @@ function LayoutContent({ payload }: { payload: OgPayload }) {
       </div>
     );
   }
-  if (payload.layout === 'radar' && payload.area_scores) {
+  if (payload.layout === 'radar' && payload.radar) {
     return (
       <div style={{ display: 'flex' }}>
-        <RadarChart scores={payload.area_scores} />
+        <RadarChart radar={payload.radar} />
       </div>
     );
   }

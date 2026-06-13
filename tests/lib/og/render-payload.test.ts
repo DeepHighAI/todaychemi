@@ -12,7 +12,10 @@ const BASE: OgPayloadInput = {
   mode: '친구합',
   ohaeng_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
   gender_normalized: 'F',
-  area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
+  radar: {
+    user: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+    relation: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+  },
   headline: '동료감이 큰 사이예요',
   flow_scores: [60, 65, 70, 78],
 };
@@ -27,7 +30,7 @@ describe('buildOgPayload — layout 기반', () => {
     expect(r.layout).toBe('minimal');
     expect(r.showGender).toBe(false);
     expect(r.ohaeng_counts).toBeUndefined();
-    expect(r.area_scores).toBeUndefined();
+    expect(r.radar).toBeUndefined();
     expect(r.headline).toBeUndefined();
     expect(r.flow_scores).toBeUndefined();
     expect(r.gender_normalized).toBeUndefined();
@@ -36,12 +39,15 @@ describe('buildOgPayload — layout 기반', () => {
   it('ohaeng → ohaeng_counts 포함', () => {
     const r = buildOgPayload(BASE, { layout: 'ohaeng', showGender: false });
     expect(r.ohaeng_counts).toEqual({ 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 });
-    expect(r.area_scores).toBeUndefined();
+    expect(r.radar).toBeUndefined();
   });
 
-  it('radar → area_scores 포함', () => {
+  it('radar → 나 vs 인연 오행 오버레이 포함', () => {
     const r = buildOgPayload(BASE, { layout: 'radar', showGender: false });
-    expect(r.area_scores).toEqual({ talk: 80, attract: 60, speed: 50, money: 70, future: 65 });
+    expect(r.radar).toEqual({
+      user: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+      relation: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+    });
     expect(r.ohaeng_counts).toBeUndefined();
   });
 
@@ -62,7 +68,7 @@ describe('buildOgPayload — layout 기반', () => {
   });
 
   it('showGender=false → gender_normalized 미포함', () => {
-    const r = buildOgPayload(BASE, { layout: 'radar', showGender: false });
+    const r = buildOgPayload(BASE, { layout: 'minimal', showGender: false });
     expect(r.gender_normalized).toBeUndefined();
   });
 

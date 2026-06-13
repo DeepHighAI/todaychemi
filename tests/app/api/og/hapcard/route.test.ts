@@ -40,7 +40,6 @@ function makeClient(opts: {
       relation_id: 'rel-001',
       content: {
         main_text: '결론 = 동료감이 큰 사이예요. 서로 배려가 깊어요.',
-        area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
       },
     },
     error: null,
@@ -83,6 +82,22 @@ function makeClient(opts: {
               maybeSingle: () => Promise.resolve({
                 data: { chart_core: { five_elements_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 } } },
                 error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'user_charts') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: () => Promise.resolve({
+                    data: { chart_core: { five_elements_counts: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 } } },
+                    error: null,
+                  }),
+                }),
               }),
             }),
           }),
@@ -186,14 +201,17 @@ describe('GET /api/og/hapcard/[id]', () => {
   });
 
   // H-4: layout 파라미터 + 성별 토글
-  it('?layout=radar → payload.layout=radar + area_scores 포함', async () => {
+  it('?layout=radar → payload.layout=radar + 나 vs 인연 오행 오버레이 포함', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=radar`);
     const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
     expect(res.status).toBe(200);
     const p = payloadFromSpy();
     expect(p.layout).toBe('radar');
-    expect(p.area_scores).toEqual({ talk: 80, attract: 60, speed: 50, money: 70, future: 65 });
+    expect(p.radar).toEqual({
+      user: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+      relation: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+    });
   });
 
   it('?layout=comment → headline(본문 한 줄) 포함', async () => {

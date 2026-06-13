@@ -5,13 +5,10 @@ import { formatShareModeLabel, truncateShareNickname } from '@/lib/share/display
 // H-4 (2026-06-13): 공유케미카드 5종 레이아웃 (정보 구성 변형). §1.1 확정.
 export type ShareLayout = 'minimal' | 'ohaeng' | 'radar' | 'comment' | 'flow';
 
-// 영역별 호환성 점수 (content.area_scores) — radar 레이아웃 입력
-export interface ShareAreaScores {
-  talk?: number;
-  attract?: number;
-  speed?: number;
-  money?: number;
-  future?: number;
+// radar 레이아웃 입력 — 나 vs 인연 오행(목화토금수) 오버레이 (인앱 미니 레이더 S-10-A 와 동일, §1.1)
+export interface RadarOverlay {
+  user: Record<string, number>;
+  relation: Record<string, number>;
 }
 
 export interface OgPayloadInput {
@@ -20,7 +17,7 @@ export interface OgPayloadInput {
   mode: string;
   ohaeng_counts?: Record<string, number>;
   gender_normalized?: 'F' | 'M';
-  area_scores?: ShareAreaScores;   // radar
+  radar?: RadarOverlay;            // radar (나 vs 인연 오행 오버레이)
   headline?: string;               // comment (한 줄)
   flow_scores?: number[];          // flow (스파크라인)
 }
@@ -39,7 +36,7 @@ export interface OgPayload {
   showGender: boolean;
   ohaeng_counts?: Record<string, number>;
   gender_normalized?: 'F' | 'M';
-  area_scores?: ShareAreaScores;
+  radar?: RadarOverlay;
   headline?: string;
   flow_scores?: number[];
 }
@@ -59,7 +56,7 @@ export function buildOgPayload(input: OgPayloadInput, opts: OgPayloadOptions): O
   if (layout === 'ohaeng') {
     base.ohaeng_counts = input.ohaeng_counts;
   } else if (layout === 'radar') {
-    base.area_scores = input.area_scores;
+    base.radar = input.radar;
   } else if (layout === 'comment') {
     base.headline = input.headline;
   } else if (layout === 'flow') {

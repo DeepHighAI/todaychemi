@@ -48,20 +48,22 @@ describe('OgTemplate — ohaeng', () => {
   });
 });
 
-describe('OgTemplate — radar', () => {
-  it('영역 레이더 SVG(오각형) 노출', () => {
-    const { container } = render(
-      <OgTemplate
-        payload={payload({
-          layout: 'radar',
-          area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
-        })}
-      />,
+const RADAR_OVERLAY = {
+  user: { 목: 2, 화: 1, 토: 2, 금: 1, 수: 2 },
+  relation: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+};
+
+describe('OgTemplate — radar (나 vs 인연 오행 오버레이)', () => {
+  it('레이더 SVG + 가이드/나/인연 3개 polygon + 나·인연 범례 노출', () => {
+    const { container, getByText } = render(
+      <OgTemplate payload={payload({ layout: 'radar', radar: RADAR_OVERLAY })} />,
     );
     const svg = container.querySelector('svg[data-testid="og-radar"]');
     expect(svg).not.toBeNull();
-    // 오각형 polygon 존재
-    expect(svg?.querySelector('polygon')).not.toBeNull();
+    // 가이드 + 인연 + 나 = polygon 3개
+    expect(svg?.querySelectorAll('polygon')).toHaveLength(3);
+    expect(getByText('— 나')).toBeInTheDocument();
+    expect(getByText('— 인연')).toBeInTheDocument();
   });
 });
 
@@ -119,7 +121,7 @@ describe('OgTemplate — Satori 다중자식 display:flex 제약', () => {
             showGender: true,
             gender_normalized: 'F',
             ohaeng_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
-            area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
+            radar: RADAR_OVERLAY,
             headline: '동료감이 큰 사이예요',
             flow_scores: [60, 65, 70, 78],
           })}
@@ -134,7 +136,7 @@ describe('OgTemplate — Satori 다중자식 display:flex 제약', () => {
 describe('OgTemplate — 성별 토글 (ADR-024 옵트인)', () => {
   it('showGender=true → 성별 노출 (레이아웃과 직교)', () => {
     const { getByText } = render(
-      <OgTemplate payload={payload({ layout: 'radar', showGender: true, gender_normalized: 'F', area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 } })} />,
+      <OgTemplate payload={payload({ layout: 'radar', showGender: true, gender_normalized: 'F', radar: RADAR_OVERLAY })} />,
     );
     expect(getByText('여성')).toBeInTheDocument();
   });

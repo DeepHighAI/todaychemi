@@ -8,7 +8,6 @@ import {
   rangeToLayoutOptions,
   type OgPayloadInput,
   type OgPayloadOptions,
-  type ShareAreaScores,
   type ShareLayout,
 } from '@/lib/og/render-payload';
 import { OgTemplate } from '@/lib/og/template';
@@ -77,7 +76,7 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       mode: string;
       compat_score: number;
       relation_id: string;
-      content?: { main_text?: string; area_scores?: ShareAreaScores } | null;
+      content?: { main_text?: string } | null;
     };
 
     const { data: relRow } = await supabase
@@ -94,11 +93,15 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       gender_normalized: rel.gender === 'M' ? 'M' : 'F',
     };
 
-    // 레이아웃별 데이터 — 비-PII (오행 수치·영역 점수·요약 코멘트·점수 흐름)
+    // 레이아웃별 데이터 — 비-PII (오행 수치·나vs인연 오행·요약 코멘트·점수 흐름)
     if (options.layout === 'ohaeng') {
       input.ohaeng_counts = await loadOhaengCounts(supabase, hap.relation_id);
     } else if (options.layout === 'radar') {
-      input.area_scores = hap.content?.area_scores;
+      const [userCounts, relationCounts] = await Promise.all([
+        loadUserOhaengCounts(supabase, user.id),
+        loadOhaengCounts(supabase, hap.relation_id),
+      ]);
+      input.radar = { user: userCounts ?? {}, relation: relationCounts ?? {} };
     } else if (options.layout === 'comment') {
       input.headline = extractShareHeadline(hap.content?.main_text ?? '');
     } else if (options.layout === 'flow') {
@@ -127,6 +130,21 @@ async function loadOhaengCounts(
     .from('relation_charts')
     .select('chart_core')
     .eq('relation_id', relationId)
+    .maybeSingle();
+  const chart = data as { chart_core?: { five_elements_counts?: Record<string, number> } } | null;
+  return chart?.chart_core?.five_elements_counts;
+}
+
+async function loadUserOhaengCounts(
+  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  userId: string,
+): Promise<Record<string, number> | undefined> {
+  const { data } = await supabase
+    .from('user_charts')
+    .select('chart_core')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
   const chart = data as { chart_core?: { five_elements_counts?: Record<string, number> } } | null;
   return chart?.chart_core?.five_elements_counts;
