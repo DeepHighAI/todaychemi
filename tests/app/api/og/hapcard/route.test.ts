@@ -29,6 +29,7 @@ interface MockResult<T = unknown> {
 function makeClient(opts: {
   userId?: string | null;
   hapcardRow?: MockResult<Record<string, unknown>>;
+  snapshotRows?: Array<{ compat_score: number }>;
 } = {}) {
   const userId = opts.userId === undefined ? 'user-001' : opts.userId;
   const hapcardRow = opts.hapcardRow ?? {
@@ -37,9 +38,14 @@ function makeClient(opts: {
       mode: '친구합',
       compat_score: 78,
       relation_id: 'rel-001',
+      content: {
+        main_text: '결론 = 동료감이 큰 사이예요. 서로 배려가 깊어요.',
+        area_scores: { talk: 80, attract: 60, speed: 50, money: 70, future: 65 },
+      },
     },
     error: null,
   };
+  const snapshotRows = opts.snapshotRows ?? [{ compat_score: 60 }, { compat_score: 70 }, { compat_score: 78 }];
 
   return {
     auth: {
@@ -82,9 +88,27 @@ function makeClient(opts: {
           }),
         };
       }
+      if (table === 'hapcard_score_snapshots') {
+        // select→eq→eq→order→order(resolve)
+        let orderCalls = 0;
+        const chain: Record<string, unknown> = {};
+        chain.select = () => chain;
+        chain.eq = () => chain;
+        chain.order = () => {
+          orderCalls++;
+          if (orderCalls < 2) return chain;
+          return Promise.resolve({ data: snapshotRows, error: null });
+        };
+        return chain;
+      }
       return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }) };
     }),
   };
+}
+
+function payloadFromSpy() {
+  const el = imageResponseSpy.mock.calls[0][0] as { props: { payload: Record<string, unknown> } };
+  return el.props.payload;
 }
 
 function makeRequest(url: string): Request {
@@ -159,6 +183,67 @@ describe('GET /api/og/hapcard/[id]', () => {
 
   it('runtime = "edge" export', () => {
     expect(runtime).toBe('edge');
+  });
+
+  // H-4: layout 파라미터 + 성별 토글
+  it('?layout=radar → payload.layout=radar + area_scores 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=radar`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('radar');
+    expect(p.area_scores).toEqual({ talk: 80, attract: 60, speed: 50, money: 70, future: 65 });
+  });
+
+  it('?layout=comment → headline(본문 한 줄) 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=comment`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('comment');
+    expect(typeof p.headline).toBe('string');
+    expect((p.headline as string).length).toBeGreaterThan(0);
+    // "결론 =" 접두는 제거
+    expect(p.headline).not.toContain('결론');
+  });
+
+  it('?layout=flow → flow_scores(스냅샷 점수 배열) 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=flow`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('flow');
+    expect(p.flow_scores).toEqual([60, 70, 78]);
+  });
+
+  it('?layout=minimal&gender=1 → showGender=true + gender_normalized 노출', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=minimal&gender=1`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.showGender).toBe(true);
+    expect(p.gender_normalized).toBe('F');
+  });
+
+  it('?layout=invalid → 400', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=bogus`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(400);
+  });
+
+  it('레거시 ?range=nickname-ohaeng → layout=ohaeng 매핑 (하위호환)', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-ohaeng`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('ohaeng');
+    expect(p.ohaeng_counts).toEqual({ 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 });
   });
 
   it('render catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {

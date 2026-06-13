@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { buildOgPayload } from '@/lib/og/render-payload';
+import { buildOgPayload, rangeToLayoutOptions } from '@/lib/og/render-payload';
 import type { SharePayloadInput, ShareRange } from '@/lib/share/build-share-payload';
 
 const OHAENG_ORDER = ['목', '화', '토', '금', '수'] as const;
@@ -32,7 +32,7 @@ export function HapcardSharePreviewTile({ hapcard, range }: Props) {
       ohaeng_counts: hapcard.ohaeng_counts,
       gender_normalized: hapcard.gender_normalized,
     },
-    range,
+    rangeToLayoutOptions(range),
   );
 
   return (

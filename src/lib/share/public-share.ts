@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
 
 import { getAppOrigin } from '@/lib/app-url';
-import { buildOgPayload, type OgPayload } from '@/lib/og/render-payload';
+import { buildOgPayload, rangeToLayoutOptions, type OgPayload } from '@/lib/og/render-payload';
 import { buildPublicShareUrls } from '@/lib/share/build-share-payload';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import type { Database } from '@/types/database.types';
@@ -125,6 +125,6 @@ export function buildPublicShareOgPayload(share: PublicShare): OgPayload {
       ohaeng_counts: share.ohaeng_counts,
       gender_normalized: share.gender_normalized,
     },
-    share.range,
+    rangeToLayoutOptions(share.range),
   );
 }
