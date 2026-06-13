@@ -87,6 +87,44 @@ describe('RelationDetailPage', () => {
   });
 });
 
+// ─── H-1: 인연 디테일 타임라인 뷰 (S-09) ───────────────────────────────────
+
+const TIMELINE_OK = {
+  events: [
+    { type: 'hapcard', occurred_at: '2026-06-01T09:00:00Z', mode: '친구합' },
+    { type: 'registered', occurred_at: '2026-05-01T00:00:00Z', mode: null },
+  ],
+};
+
+function mockFetchWithTimeline() {
+  mockFetch.mockImplementation((url: string) => {
+    if (url.includes('/timeline')) {
+      return Promise.resolve({ ok: true, json: async () => TIMELINE_OK });
+    }
+    if (url.includes('/memos')) {
+      return Promise.resolve({ ok: true, json: async () => MEMOS_OK });
+    }
+    return Promise.resolve({ ok: true, json: async () => DETAIL_OK });
+  });
+}
+
+describe('RelationDetailPage — 타임라인 (H-1)', () => {
+  it('GET /api/relations/rel-001/timeline 호출', async () => {
+    mockFetchWithTimeline();
+    await renderDetailPage();
+    await screen.findAllByText('봄달');
+    expect(mockFetch).toHaveBeenCalledWith('/api/relations/rel-001/timeline');
+  });
+
+  it('relation-timeline 컴포넌트 마운트 + 이벤트 렌더', async () => {
+    mockFetchWithTimeline();
+    await renderDetailPage();
+    expect(await screen.findByTestId('relation-timeline')).toBeInTheDocument();
+    const rows = await screen.findAllByTestId('relation-timeline-event');
+    expect(rows).toHaveLength(2);
+  });
+});
+
 // ─── Cycle 14: 메모 목록 로드 ──────────────────────────────────────────────
 
 const MEMOS_OK = {

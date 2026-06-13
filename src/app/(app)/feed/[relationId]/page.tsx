@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { RelationFlowChart } from '@/components/relation/relation-flow-chart';
+import { RelationTimeline } from '@/components/relation/relation-timeline';
 import { MemoList } from '@/components/memo/memo-list';
 import { MemoSheet } from '@/components/memo/memo-sheet';
 import { convertHanja } from '@/lib/glossary/post-process';
@@ -165,6 +166,9 @@ export default function RelationDetailPage() {
 
         {/* 합흐름 그래프 */}
         <RelationFlowChart points={flow} />
+
+        {/* 이력 타임라인 (S-09 H-1) — 등록·해석·다시맞추기 시간순 (최신순) */}
+        <RelationTimeline relationId={relation.relation_id} />
 
         {/* 본명식 요약 (chart 있을 때만) */}
         {chart && (

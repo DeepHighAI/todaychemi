@@ -98,6 +98,21 @@ export interface RelationDetailResponse {
   flow: FlowPoint[];
 }
 
+// S-09 인연 디테일 타임라인 (PRD §5.2, §1.1 2026-06-13: 메모 제외·최신순·v1 표시 전용)
+export type RelationTimelineEventType = 'registered' | 'hapcard' | 'replay';
+
+// 메타데이터만 — 본문(content)·점수 미포함 (ADR-039 read-path: 결제 게이트 불필요 범위)
+export interface RelationTimelineEvent {
+  type: RelationTimelineEventType;
+  occurred_at: string;        // timestamptz ISO
+  mode: Mode | null;          // registered 이벤트는 null, replay 는 소속 케미카드의 모드
+}
+
+// GET /api/relations/[id]/timeline 응답 — 최신순(desc), 등록 이벤트는 상한과 무관하게 항상 마지막
+export interface RelationTimelineResponse {
+  events: RelationTimelineEvent[];
+}
+
 export const RELATION_ERROR_CODES = [
   'INVALID_BODY',
   'UNAUTHORIZED',

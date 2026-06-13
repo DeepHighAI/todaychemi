@@ -176,6 +176,17 @@
           "cancel": "취소",
           "submitting": "저장 중..."
         }
+      },
+      "timeline": {
+        "title": "지나온 사이",
+        "loading": "타임라인 불러오는 중",
+        "empty": "아직 기록이 없어요",
+        "error": "타임라인을 불러오지 못했어요",
+        "event": {
+          "registered": "인연 등록",
+          "hapcard": "케미카드",
+          "replay": "케미 다시 맞추기"
+        }
       }
     },
     "new": {
