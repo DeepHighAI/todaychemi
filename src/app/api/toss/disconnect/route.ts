@@ -93,14 +93,20 @@ function verifyBasicAuth(authHeader: string | null): boolean {
 /**
  * userKey 에 대응하는 Supabase 유저의 세션을 무효화한다.
  *
- * 1. toss_connections 에서 user_id 조회
- * 2. auth.admin.signOut(userId, 'global') 호출
- * 3. toss_connections 행 삭제 (연결 해제 완료)
+ * // TODO(§1.1 D-CALLBACK): UNLINK=세션 무효화만(현행), WITHDRAWAL_TERMS/WITHDRAWAL_TOSS=매핑/소유데이터 처리 정책 결정 후 분기
+ *
+ * 처리 순서:
+ *   1. toss_connections 에서 user_id 조회
+ *   2. auth.admin.signOut(userId, 'global') 호출 — referrer 와 무관하게 세션만 무효화
+ *
+ * ⚠️ toss_connections 매핑 행은 삭제하지 않는다.
+ *   UNLINK = 로그아웃(사용자가 재로그인하면 기존 매핑 재사용).
+ *   WITHDRAWAL_TERMS / WITHDRAWAL_TOSS 의 데이터 라이프사이클은 §1.1 D-CALLBACK 대기.
  *
  * 멱등: toss_connections 행이 없으면 조용히 성공 처리.
  */
 async function handleDisconnect(payload: DisconnectPayload): Promise<void> {
-  const { userKey } = payload;
+  const { userKey, referrer } = payload;
   const admin = createServiceRoleClient();
 
   // ── 1. toss_connections 에서 user_id 조회 ────────────────────────────────
@@ -124,25 +130,19 @@ async function handleDisconnect(payload: DisconnectPayload): Promise<void> {
   const userId = conn.user_id;
 
   // ── 2. Supabase 세션 무효화 ──────────────────────────────────────────────
+  // referrer 를 로깅하되 PII 포함 없음(§5).
   // 'global' scope: 해당 유저의 모든 세션 토큰을 일괄 무효화한다.
+  console.info('[toss/disconnect] 세션 무효화 시작, referrer:', referrer);
   const { error: signOutErr } = await admin.auth.admin.signOut(userId, 'global');
   if (signOutErr) {
-    // 세션 무효화 실패는 경고 — 연결 행 삭제는 계속 진행
+    // 세션 무효화 실패는 경고 — 멱등이므로 계속 진행(이미 만료된 세션 등)
     console.error('[toss/disconnect] signOut 실패 (계속 진행):', signOutErr.message);
   }
 
-  // ── 3. toss_connections 행 삭제 ──────────────────────────────────────────
-  // TODO(§1.1 D-CALLBACK): WITHDRAWAL_TOSS / WITHDRAWAL_TERMS 시
-  //   user-owned relations / hapcards / user_charts 의 hard-delete vs soft-disable 결정 필요.
-  //   현재 구현: 세션 무효화 + toss_connections 삭제만 수행하고 데이터는 보존.
-  const { error: deleteErr } = await admin
-    .from('toss_connections')
-    .delete()
-    .eq('toss_user_key', userKey);
-
-  if (deleteErr) {
-    console.error('[toss/disconnect] toss_connections 삭제 실패:', deleteErr.message);
-  }
+  // ── 매핑 행 삭제 없음 ────────────────────────────────────────────────────
+  // UNLINK = 로그아웃(재로그인 시 매핑 재사용 가능).
+  // WITHDRAWAL_TERMS / WITHDRAWAL_TOSS 의 매핑·소유 데이터 삭제는
+  // §1.1 D-CALLBACK 결정 후 이 분기에서 처리한다.
 }
 
 // ---------------------------------------------------------------------------

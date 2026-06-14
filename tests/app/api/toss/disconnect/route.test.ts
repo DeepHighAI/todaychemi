@@ -2,6 +2,7 @@
  * /api/toss/disconnect route 단위 테스트.
  *
  * Basic Auth 검증, referrer 분기, 멱등성, 2xx 반환을 검증한다.
+ * 특히 매핑(toss_connections) 행이 삭제되지 않음을 단언한다.
  * 네트워크/Supabase 없이 service-role mock 으로만 검증.
  */
 
@@ -33,13 +34,11 @@ function makeAdminClient(opts: {
   connData?: { user_id: string } | null;
   connError?: unknown;
   signOutError?: { message: string } | null;
-  deleteError?: unknown;
 } = {}) {
   const {
     connData = null,
     connError = null,
     signOutError = null,
-    deleteError = null,
   } = opts;
 
   const maybeSingle = vi.fn().mockResolvedValue({
@@ -49,7 +48,8 @@ function makeAdminClient(opts: {
   const eqConn = vi.fn().mockReturnValue({ maybeSingle });
   const selectFn = vi.fn().mockReturnValue({ eq: eqConn });
 
-  const eqDelete = vi.fn().mockResolvedValue({ data: null, error: deleteError });
+  // delete 메서드 — 호출 여부를 단언하기 위해 spy 로 노출
+  const eqDelete = vi.fn().mockResolvedValue({ data: null, error: null });
   const deleteFn = vi.fn().mockReturnValue({ eq: eqDelete });
 
   const signOut = vi.fn().mockResolvedValue({ error: signOutError });
@@ -61,6 +61,7 @@ function makeAdminClient(opts: {
 
   return {
     from,
+    deleteFn, // 호출 여부 단언용
     auth: {
       admin: { signOut },
     },
@@ -154,7 +155,7 @@ describe('POST /api/toss/disconnect', () => {
   });
 
   describe('referrer 분기', () => {
-    it('UNLINK — 세션 무효화 + 2xx', async () => {
+    it('UNLINK — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
       const adminMock = makeAdminClient({ connData: { user_id: 'uid-001' } });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -164,10 +165,13 @@ describe('POST /api/toss/disconnect', () => {
       ));
 
       expect(res.status).toBe(200);
+      // 세션 무효화는 수행
       expect(adminMock.auth.admin.signOut).toHaveBeenCalledWith('uid-001', 'global');
+      // 매핑 행(toss_connections) 삭제는 하지 않음 (재로그인 시 재사용)
+      expect(adminMock.deleteFn).not.toHaveBeenCalled();
     });
 
-    it('WITHDRAWAL_TERMS — 세션 무효화 + 2xx (데이터 보존)', async () => {
+    it('WITHDRAWAL_TERMS — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
       const adminMock = makeAdminClient({ connData: { user_id: 'uid-002' } });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -177,11 +181,13 @@ describe('POST /api/toss/disconnect', () => {
       ));
 
       expect(res.status).toBe(200);
-      // 현재 구현: 세션 무효화만 수행 (데이터 라이프사이클은 §1.1 D-CALLBACK 대기)
+      // 세션 무효화는 수행
       expect(adminMock.auth.admin.signOut).toHaveBeenCalled();
+      // 매핑 행 삭제 없음 — 데이터 라이프사이클은 §1.1 D-CALLBACK 대기
+      expect(adminMock.deleteFn).not.toHaveBeenCalled();
     });
 
-    it('WITHDRAWAL_TOSS — 세션 무효화 + 2xx (데이터 보존)', async () => {
+    it('WITHDRAWAL_TOSS — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
       const adminMock = makeAdminClient({ connData: { user_id: 'uid-003' } });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -192,6 +198,7 @@ describe('POST /api/toss/disconnect', () => {
 
       expect(res.status).toBe(200);
       expect(adminMock.auth.admin.signOut).toHaveBeenCalled();
+      expect(adminMock.deleteFn).not.toHaveBeenCalled();
     });
   });
 
@@ -208,6 +215,8 @@ describe('POST /api/toss/disconnect', () => {
       expect(res.status).toBe(200);
       // 연결 없으면 signOut 호출하지 않음
       expect(adminMock.auth.admin.signOut).not.toHaveBeenCalled();
+      // 삭제도 없음
+      expect(adminMock.deleteFn).not.toHaveBeenCalled();
     });
 
     it('signOut 실패해도 2xx 반환 (세션 이미 만료 등)', async () => {
@@ -228,7 +237,7 @@ describe('POST /api/toss/disconnect', () => {
 });
 
 describe('GET /api/toss/disconnect', () => {
-  it('쿼리파라미터로 disconnect 처리 시 200 반환', async () => {
+  it('쿼리파라미터로 disconnect 처리 시 200 반환 + 매핑 삭제 없음', async () => {
     const adminMock = makeAdminClient({ connData: { user_id: 'uid-get-001' } });
     vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -239,6 +248,8 @@ describe('GET /api/toss/disconnect', () => {
 
     expect(res.status).toBe(200);
     expect(adminMock.auth.admin.signOut).toHaveBeenCalledWith('uid-get-001', 'global');
+    // 매핑 행 삭제 없음
+    expect(adminMock.deleteFn).not.toHaveBeenCalled();
   });
 
   it('GET — Basic Auth 누락 시 401 반환', async () => {
