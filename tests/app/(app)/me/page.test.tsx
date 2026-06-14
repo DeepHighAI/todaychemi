@@ -149,15 +149,13 @@ describe('MePage (내 프로필 화면)', () => {
     expect(screen.queryByRole('button', { name: /충전/ })).toBeNull();
   });
 
-  it('chart 있을 때 개인정보 권리 행사 링크와 계정 삭제 요청을 제공한다', async () => {
+  it('chart 있을 때 데이터 내려받기 없이 계정 삭제 요청을 제공한다', async () => {
     mockChartAndWallet();
     await renderMePage();
-    await waitFor(() => expect(screen.getByText('내 데이터 내려받기')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /계정 삭제 요청/ })).toBeInTheDocument());
 
-    expect(screen.getByRole('link', { name: /내 데이터 내려받기/ })).toHaveAttribute(
-      'href',
-      '/api/me/export',
-    );
+    expect(screen.queryByText('내 데이터 내려받기')).not.toBeInTheDocument();
+    expect(screen.queryByText('JSON 파일로 저장')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /계정 삭제 요청/ })).toBeInTheDocument();
   });
 
@@ -176,12 +174,16 @@ describe('MePage (내 프로필 화면)', () => {
     });
   });
 
-  it('로그아웃 클릭 시 세션 종료 API 호출 후 로그인 화면으로 이동한다', async () => {
+  it('로그아웃 클릭 시 확인 팝업을 열고 예 선택 후 세션 종료 API 호출 후 로그인 화면으로 이동한다', async () => {
     mockChartAndWallet();
     await renderMePage();
     await waitFor(() => expect(screen.getByRole('button', { name: /로그아웃/ })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /로그아웃/ }));
+    await waitFor(() => expect(screen.getByText('정말 로그아웃 하시겠습니까?')).toBeInTheDocument());
+    expect(mockFetch).not.toHaveBeenCalledWith('/api/auth/sign-out', { method: 'POST' });
+
+    fireEvent.click(screen.getByRole('button', { name: '예' }));
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/sign-out', { method: 'POST' });
@@ -218,6 +220,8 @@ describe('MePage (내 프로필 화면)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /로그아웃/ })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /로그아웃/ }));
+    await waitFor(() => expect(screen.getByText('정말 로그아웃 하시겠습니까?')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: '예' }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -225,6 +229,20 @@ describe('MePage (내 프로필 화면)', () => {
       );
       expect(routerMocks.replace).not.toHaveBeenCalled();
     });
+  });
+
+  it('로그아웃 확인 팝업에서 아니오를 누르면 세션 종료 API를 호출하지 않는다', async () => {
+    mockChartAndWallet();
+    await renderMePage();
+    await waitFor(() => expect(screen.getByRole('button', { name: /로그아웃/ })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /로그아웃/ }));
+    await waitFor(() => expect(screen.getByText('정말 로그아웃 하시겠습니까?')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: '아니오' }));
+
+    await waitFor(() => expect(screen.queryByText('정말 로그아웃 하시겠습니까?')).not.toBeInTheDocument());
+    expect(mockFetch).not.toHaveBeenCalledWith('/api/auth/sign-out', { method: 'POST' });
+    expect(routerMocks.replace).not.toHaveBeenCalled();
   });
 
   it('fetch 실패 → error-card 렌더', async () => {

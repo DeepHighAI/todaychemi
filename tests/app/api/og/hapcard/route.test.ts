@@ -30,6 +30,7 @@ function makeClient(opts: {
   userId?: string | null;
   hapcardRow?: MockResult<Record<string, unknown>>;
   snapshotRows?: Array<{ compat_score: number }>;
+  relationChartMissing?: boolean;
 } = {}) {
   const userId = opts.userId === undefined ? 'user-001' : opts.userId;
   const hapcardRow = opts.hapcardRow ?? {
@@ -37,9 +38,17 @@ function makeClient(opts: {
       hapcard_id: HAPCARD_ID,
       mode: '친구합',
       compat_score: 78,
+      score_breakdown: {
+        hap_chung_hyung_hae: 70,
+        sipsin: 75,
+        ohaeng: 68,
+        yunse_adjustment: 3,
+        mode_adjustment: 5,
+      },
       relation_id: 'rel-001',
       content: {
         main_text: '결론 = 동료감이 큰 사이예요. 서로 배려가 깊어요.',
+        area_scores: { talk: 80, attract: 74, speed: 62, money: 55, future: 68 },
       },
     },
     error: null,
@@ -80,7 +89,9 @@ function makeClient(opts: {
           select: () => ({
             eq: () => ({
               maybeSingle: () => Promise.resolve({
-                data: { chart_core: { five_elements_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 } } },
+                data: opts.relationChartMissing
+                  ? null
+                  : { chart_core: { five_elements_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 } } },
                 error: null,
               }),
             }),
@@ -185,6 +196,12 @@ describe('GET /api/og/hapcard/[id]', () => {
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?range=nickname-only`);
     await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
     expect(imageResponseSpy).toHaveBeenCalledOnce();
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('minimal');
+    expect(p.ohaeng_counts).toBeUndefined();
+    expect(p.area_scores).toBeUndefined();
+    expect(p.headline).toBeUndefined();
+    expect(p.flow_scores).toBeUndefined();
   });
 
   it('200 — ImageResponse에 Noto Sans KR fonts 옵션 전달됨', async () => {
@@ -196,11 +213,77 @@ describe('GET /api/og/hapcard/[id]', () => {
     expect(opts?.fonts?.[0]?.name).toBe('Noto Sans KR');
   });
 
+  it('200 — 스마트폰 공유용 세로형 4:5 이미지로 렌더한다', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=combined`);
+    await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    const opts = imageResponseSpy.mock.calls[0][1] as { width?: number; height?: number };
+    expect(opts.width).toBe(1080);
+    expect(opts.height).toBe(1350);
+  });
+
   it('runtime = "edge" export', () => {
     expect(runtime).toBe('edge');
   });
 
   // H-4: layout 파라미터 + 성별 토글
+  it('?layout=combined → 온도 외 오행·영역·한 줄 payload 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=combined`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.layout).toBe('combined');
+    expect(p.ohaeng_counts).toEqual({ 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 });
+    expect(p.area_scores).toEqual({ talk: 80, attract: 74, speed: 62, money: 55, future: 68 });
+    expect(p.headline).toBe('동료감이 큰 사이예요');
+    expect(p.flow_scores).toBeUndefined();
+  });
+
+  it('?layout=combined → content.area_scores 없으면 score_breakdown 기반 영역 fallback 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient({
+      hapcardRow: {
+        data: {
+          hapcard_id: HAPCARD_ID,
+          mode: '친구합',
+          compat_score: 78,
+          score_breakdown: {
+            hap_chung_hyung_hae: 70,
+            sipsin: 75,
+            ohaeng: 68,
+            yunse_adjustment: 3,
+            mode_adjustment: 5,
+          },
+          relation_id: 'rel-001',
+          content: {
+            main_text: '결론 = 동료감이 큰 사이예요. 서로 배려가 깊어요.',
+          },
+        },
+        error: null,
+      },
+    }) as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=combined`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.area_scores).toEqual({
+      talk: 76,
+      attract: 74,
+      speed: 87,
+      money: 73,
+      future: 74,
+    });
+  });
+
+  it('?layout=combined&ohaeng=... → relation chart 누락 시 미리보기 fallback 오행 포함', async () => {
+    vi.mocked(createServerClient).mockResolvedValue(makeClient({ relationChartMissing: true }) as never);
+    const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=combined&ohaeng=1,2,3,4,5`);
+    const res = await GET(req, { params: Promise.resolve({ id: HAPCARD_ID }) });
+    expect(res.status).toBe(200);
+    const p = payloadFromSpy();
+    expect(p.ohaeng_counts).toEqual({ 목: 1, 화: 2, 토: 3, 금: 4, 수: 5 });
+  });
+
   it('?layout=radar → payload.layout=radar + 나 vs 인연 오행 오버레이 포함', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeClient() as never);
     const req = makeRequest(`https://hap.plae/api/og/hapcard/${HAPCARD_ID}?layout=radar`);
@@ -262,6 +345,9 @@ describe('GET /api/og/hapcard/[id]', () => {
     const p = payloadFromSpy();
     expect(p.layout).toBe('ohaeng');
     expect(p.ohaeng_counts).toEqual({ 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 });
+    expect(p.area_scores).toBeUndefined();
+    expect(p.headline).toBeUndefined();
+    expect(p.flow_scores).toBeUndefined();
   });
 
   it('render catch 로그에 birth_date/birth_time/gender 원본을 남기지 않는다', async () => {

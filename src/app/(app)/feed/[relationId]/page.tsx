@@ -13,8 +13,12 @@ import { RelationTimeline } from '@/components/relation/relation-timeline';
 import { MemoList } from '@/components/memo/memo-list';
 import { MemoSheet } from '@/components/memo/memo-sheet';
 import { convertHanja } from '@/lib/glossary/post-process';
-import { computeChangeScore } from '@/lib/scoring/changeScore';
-import { formatTodayTemperature, formatTemperatureDelta } from '@/lib/scoring/temperature';
+import {
+  DETAILED_TEMPERATURE_PRECISION,
+  formatTemperatureDeltaBetweenScores,
+  formatTodayTemperature,
+  temperatureDeltaBetweenScores,
+} from '@/lib/scoring/temperature';
 import type { RelationDetailResponse } from '@/types/relation';
 import type { MemoItem, MemoListResponse } from '@/types/memo';
 
@@ -124,7 +128,9 @@ export default function RelationDetailPage() {
   const { relation, chart, flow } = data;
   const lastScore = flow.length > 0 ? flow[flow.length - 1].score : null;
   const prevScore = flow.length > 1 ? flow[flow.length - 2].score : null;
-  const changeScore = lastScore !== null ? computeChangeScore(prevScore ?? null, lastScore) : 0;
+  const temperatureDelta = lastScore !== null
+    ? temperatureDeltaBetweenScores(prevScore, lastScore, DETAILED_TEMPERATURE_PRECISION)
+    : 0;
 
   function handleCta() {
     router.push(`/hapcard/${relation.relation_id}?mode=${encodeURIComponent(relation.mode)}`);
@@ -153,11 +159,11 @@ export default function RelationDetailPage() {
           {lastScore !== null && (
             <div className="flex items-center gap-2">
               <span className="font-display font-extrabold text-2xl tabular-nums text-foreground">
-                {formatTodayTemperature(lastScore)}
+                {formatTodayTemperature(lastScore, DETAILED_TEMPERATURE_PRECISION)}
               </span>
-              {changeScore !== 0 && (
-                <span className={`text-sm font-bold ${changeScore > 0 ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>
-                  {changeScore > 0 ? '↑' : '↓'} {formatTemperatureDelta(changeScore)}
+              {temperatureDelta !== 0 && (
+                <span className={`text-sm font-bold ${temperatureDelta > 0 ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>
+                  {temperatureDelta > 0 ? '↑' : '↓'} {formatTemperatureDeltaBetweenScores(prevScore, lastScore, DETAILED_TEMPERATURE_PRECISION)}
                 </span>
               )}
             </div>

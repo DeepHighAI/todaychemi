@@ -59,15 +59,27 @@ describe('shareOrCopy', () => {
     expect(result).toBe('aborted');
   });
 
-  it('navigator.share, clipboard 둘 다 실패 시 throw', async () => {
+  it('clipboard 권한 거부(NotAllowedError)는 "aborted" 반환, throw 없음', async () => {
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
-    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard denied'));
+    const writeTextMock = vi.fn().mockRejectedValue(new DOMException('Write permission denied', 'NotAllowedError'));
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: writeTextMock },
       configurable: true,
     });
 
     const { shareOrCopy } = await import('@/lib/share/share-handler');
-    await expect(shareOrCopy(MOCK_PAYLOAD)).rejects.toThrow('Clipboard denied');
+    await expect(shareOrCopy(MOCK_PAYLOAD)).resolves.toBe('aborted');
+  });
+
+  it('navigator.share, clipboard 일반 오류는 throw', async () => {
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard broken'));
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    });
+
+    const { shareOrCopy } = await import('@/lib/share/share-handler');
+    await expect(shareOrCopy(MOCK_PAYLOAD)).rejects.toThrow('Clipboard broken');
   });
 });

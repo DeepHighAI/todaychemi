@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, Download, FileText, Globe2, Info, LogOut, Mail, Shield, Trash2 } from 'lucide-react';
+import { ChevronRight, FileText, Globe2, Info, LogOut, Shield, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface InfoCardProps {
@@ -37,10 +37,8 @@ export function InfoCard({
       <InfoRow Icon={Globe2} label={t('language')} sub={t('languageSub')} onClick={onLang} />
       <InfoRow Icon={Shield} label={t('privacy')} sub={t('privacySub')} onClick={onPrivacy} />
       <InfoRow Icon={FileText} label={t('terms')} sub={t('termsSub')} onClick={onTerms} />
-      <InfoRow Icon={Download} label={t('dataExport')} sub={t('dataExportSub')} href="/api/me/export" />
       <InfoRow Icon={Trash2} label={t('deleteAccount')} sub={t('deleteAccountSub')} onClick={onDeleteAccount} danger />
       <InfoRow Icon={Info} label={t('about')} sub={t('aboutSub')} onClick={onAbout} />
-      <InfoRow Icon={Mail} label={t('contact')} sub="02 3443 1028" href="tel:0234431028" />
       <InfoRow
         Icon={LogOut}
         label={t('logout')}

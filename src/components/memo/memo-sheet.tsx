@@ -36,12 +36,12 @@ export function MemoSheet({ open, onOpenChange, mode, initialBody = '', onSubmit
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent role="dialog" aria-labelledby="memo-sheet-title" aria-describedby="memo-sheet-desc">
+      <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle id="memo-sheet-title">
+          <DrawerTitle>
             {mode === 'create' ? t('sheet.createTitle') : t('sheet.editTitle')}
           </DrawerTitle>
-          <DrawerDescription id="memo-sheet-desc" className="sr-only">
+          <DrawerDescription className="sr-only">
             {t('sheet.description')}
           </DrawerDescription>
         </DrawerHeader>

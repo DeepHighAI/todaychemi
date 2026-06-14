@@ -22,9 +22,9 @@ export function GlossarySheet() {
 
   return (
     <Drawer open={!!sheetTerm} onOpenChange={(open) => { if (!open) closeSheet(); }}>
-      <DrawerContent role="dialog" aria-labelledby="glossary-sheet-title" aria-describedby="glossary-sheet-desc">
+      <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle id="glossary-sheet-title">
+          <DrawerTitle>
             {entry?.term}
             {entry?.reading && (
               <span className="ml-1.5 text-sm font-normal text-muted-foreground">
@@ -32,7 +32,7 @@ export function GlossarySheet() {
               </span>
             )}
           </DrawerTitle>
-          <DrawerDescription id="glossary-sheet-desc" className="sr-only">
+          <DrawerDescription className="sr-only">
             {t('sheet.description')}
           </DrawerDescription>
         </DrawerHeader>

@@ -13,8 +13,7 @@ export async function shareOrCopy(payload: SharePayload): Promise<ShareResult> {
     }
   }
 
-  await navigator.clipboard.writeText(`${payload.text}\n${payload.url}`);
-  return 'copied';
+  return writeClipboardText(`${payload.text}\n${payload.url}`);
 }
 
 export async function shareLink(payload: SharePayload): Promise<ShareResult> {
@@ -57,8 +56,7 @@ export async function shareCardOrDownload(payload: SharePayload): Promise<ShareR
 }
 
 export async function copyShareLink(payload: SharePayload): Promise<ShareResult> {
-  await navigator.clipboard.writeText(`${payload.text}\n${payload.url}`);
-  return 'copied';
+  return writeClipboardText(`${payload.text}\n${payload.url}`);
 }
 
 export async function downloadShareImage(payload: SharePayload): Promise<void> {
@@ -83,4 +81,22 @@ async function buildShareImageFile(payload: SharePayload): Promise<File | null> 
   if (!response.ok) return null;
   const blob = await response.blob();
   return new File([blob], 'oneul-sai-card.png', { type: blob.type || 'image/png' });
+}
+
+async function writeClipboardText(text: string): Promise<ShareResult> {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+    return 'aborted';
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return 'copied';
+  } catch (err) {
+    if (isClipboardPermissionError(err)) return 'aborted';
+    throw err;
+  }
+}
+
+function isClipboardPermissionError(err: unknown): boolean {
+  return err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
 }

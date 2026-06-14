@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Check, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/swipe-row';
@@ -36,6 +36,12 @@ async function deleteRelation(id: string) {
   if (!res.ok) throw new Error('DELETE_FAILED');
 }
 
+async function deleteRelations(ids: string[]) {
+  for (const id of ids) {
+    await deleteRelation(id);
+  }
+}
+
 export default function FeedPage() {
   const t = useTranslations('feed');
   const tMode = useTranslations('relations.new.mode');
@@ -46,7 +52,9 @@ export default function FeedPage() {
   const qc = useQueryClient();
 
   const [activeFilter, setActiveFilter] = useState<FilterMode>('all');
-  const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [confirmDelete, setConfirmDelete] = useState<FeedItem[] | null>(null);
 
   // 인연 등록 현금 결제는 confirm 303 전면 리다이렉트로 여기 복귀 — mode 페이지의
   // draft.reset() 이 실행되지 않아 결제 완료된 인연이 localStorage 에 남는다.
@@ -66,7 +74,7 @@ export default function FeedPage() {
     refetchOnMount: 'always',
   });
   const del = useMutation({
-    mutationFn: deleteRelation,
+    mutationFn: deleteRelations,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['feed'] });
       qc.invalidateQueries({ queryKey: ['relations'] });
@@ -97,25 +105,132 @@ export default function FeedPage() {
     ];
   }, [data, focusedRelationId]);
   const filtered = activeFilter === 'all' ? items : items.filter(i => i.mode === activeFilter);
+  const selectedItems = useMemo(
+    () => items.filter(item => selectedIds.has(item.relation_id)),
+    [items, selectedIds],
+  );
 
   // 오늘 변화 큼 인연 1개 (canvas의 cool Liquid Glass card)
   const highlight = useMemo(() => items.find(i => i.has_significant_change), [items]);
   const rest = highlight ? filtered.filter(i => i.relation_id !== highlight.relation_id) : filtered;
 
   const handleRowClick = useCallback((item: FeedItem) => {
+    if (selectionMode) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(item.relation_id)) next.delete(item.relation_id);
+        else next.add(item.relation_id);
+        return next;
+      });
+      return;
+    }
     router.push(`/feed/${item.relation_id}`);
-  }, [router]);
+  }, [router, selectionMode]);
+
+  const startSelectionMode = useCallback(() => {
+    setSelectionMode(true);
+    setSelectedIds(new Set());
+  }, []);
+
+  const cancelSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const changeFilter = useCallback((value: FilterMode) => {
+    setActiveFilter(value);
+    setSelectedIds(new Set());
+  }, []);
+
+  const confirmSelectedDelete = useCallback(() => {
+    if (selectedItems.length === 0) return;
+    setConfirmDelete(selectedItems);
+  }, [selectedItems]);
+
+  const submitDelete = useCallback((targets: FeedItem[]) => {
+    del.mutate(targets.map(item => item.relation_id), {
+      onSuccess: () => {
+        setConfirmDelete(null);
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+      },
+    });
+  }, [del]);
+
+  const renderSelectionMark = (item: FeedItem) => {
+    if (!selectionMode) return null;
+    const selected = selectedIds.has(item.relation_id);
+    return (
+      <span
+        aria-hidden="true"
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 ${
+          selected
+            ? 'border-primary bg-primary text-primary-foreground'
+            : 'border-border bg-background text-transparent'
+        }`}
+      >
+        <Check size={16} />
+      </span>
+    );
+  };
+
+  const renderRowContent = (item: FeedItem) => (
+    <div
+      className={`bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3 ${
+        selectedIds.has(item.relation_id) ? 'ring-2 ring-primary/60' : ''
+      }`}
+    >
+      {renderSelectionMark(item)}
+      <div
+        className="w-10 h-10 rounded-[12px] flex items-center justify-center font-bold text-[13px] shrink-0"
+        style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}
+      >
+        {item.nickname.slice(0, 2)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[14px] text-foreground truncate">{item.nickname}</p>
+        <p className="text-[12px] text-muted-foreground truncate">{tMode(item.mode)}</p>
+      </div>
+      <div className="text-right shrink-0">
+        {item.compat_score !== null ? (
+          <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
+            {formatTodayTemperature(item.compat_score)}
+          </p>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">—</p>
+        )}
+        {typeof item.change_score === 'number' && item.change_score !== 0 && (
+          <p className={`text-[10px] font-bold mt-1 ${item.change_score > 0 ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>
+            {item.change_score > 0 ? '↑' : '↓'} {formatTemperatureDelta(item.change_score)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <main className="bg-background min-h-screen pb-32 px-4">
       <header className="pt-8 pb-6 flex items-center justify-between">
         <h1 className="font-h1 text-foreground">{t('title')}</h1>
-        <Link href="/relations/new">
-          <Button type="button" variant="default" className="h-9 px-3 gap-1.5">
-            <Plus size={16} />
-            {t('addRelation')}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <Button
+              type="button"
+              variant={selectionMode ? 'secondary' : 'outline'}
+              className="h-9 px-3 gap-1.5"
+              onClick={selectionMode ? cancelSelectionMode : startSelectionMode}
+            >
+              <Trash2 size={16} />
+              {selectionMode ? t('select.cancel') : t('select.start')}
+            </Button>
+          )}
+          <Link href="/relations/new">
+            <Button type="button" variant="default" className="h-9 px-3 gap-1.5">
+              <Plus size={16} />
+              {t('addRelation')}
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {/* Seg 필터 바 */}
@@ -126,7 +241,7 @@ export default function FeedPage() {
             type="button"
             role="radio"
             aria-checked={activeFilter === f.value}
-            onClick={() => setActiveFilter(f.value)}
+            onClick={() => changeFilter(f.value)}
             className={`flex-1 text-center py-[10px] text-[13px] font-semibold rounded-[12px] transition ${
               activeFilter === f.value
                 ? 'bg-[var(--surface)] text-[var(--on-surface)] shadow-[var(--e-1)]'
@@ -150,26 +265,73 @@ export default function FeedPage() {
         </div>
       )}
 
+      {selectionMode && items.length > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[var(--r-md)] border border-border bg-card p-3">
+          <p className="text-sm font-bold text-foreground">
+            {t('select.count', { count: selectedIds.size })}
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            className="h-8 px-3 gap-1.5"
+            disabled={selectedIds.size === 0}
+            onClick={confirmSelectedDelete}
+          >
+            <Trash2 size={15} />
+            {t('select.delete')}
+          </Button>
+        </div>
+      )}
+
       {/* 오늘 변화 큼 강조 카드 (mini Liquid Glass) */}
       {highlight && (activeFilter === 'all' || highlight.mode === activeFilter) && (
-        <Link
-          href={`/feed/${highlight.relation_id}`}
-          className="block rounded-[var(--r-xl)] p-4 mb-3 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0066FF 0%, #6541F2 50%, #9333EA 110%)' }}
-        >
-          <span aria-hidden className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
-          <div className="relative z-[1] flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">⚡ {t('change.eyebrow')}</p>
-              <p className="font-display font-extrabold text-[18px] leading-[1.2] tracking-[-0.018em] text-white mt-1.5 truncate">{highlight.nickname}</p>
-              <p className="text-[13px] text-white/85 mt-1">
-                {tMode(highlight.mode)} · {formatTemperatureDelta(highlight.change_score ?? 0)}
-              </p>
+        selectionMode ? (
+          <button
+            type="button"
+            aria-pressed={selectedIds.has(highlight.relation_id)}
+            aria-label={t('select.itemLabel', { nickname: highlight.nickname })}
+            className={`block w-full rounded-[var(--r-xl)] p-4 mb-3 relative overflow-hidden text-left ${
+              selectedIds.has(highlight.relation_id) ? 'ring-2 ring-primary/70' : ''
+            }`}
+            style={{ background: 'linear-gradient(135deg, #0066FF 0%, #6541F2 50%, #9333EA 110%)' }}
+            onClick={() => handleRowClick(highlight)}
+          >
+            <span aria-hidden className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
+            <div className="relative z-[1] flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">⚡ {t('change.eyebrow')}</p>
+                <p className="font-display font-extrabold text-[18px] leading-[1.2] tracking-[-0.018em] text-white mt-1.5 truncate">{highlight.nickname}</p>
+                <p className="text-[13px] text-white/85 mt-1">
+                  {tMode(highlight.mode)} · {formatTemperatureDelta(highlight.change_score ?? 0)}
+                </p>
+              </div>
+              <span className="flex items-center gap-3">
+                {renderSelectionMark(highlight)}
+                <span className="font-display font-extrabold text-[32px] leading-none tracking-[-0.04em] text-white">↗</span>
+              </span>
             </div>
-            <span className="font-display font-extrabold text-[32px] leading-none tracking-[-0.04em] text-white">↗</span>
-          </div>
-        </Link>
+          </button>
+        ) : (
+          <Link
+            href={`/feed/${highlight.relation_id}`}
+            className="block rounded-[var(--r-xl)] p-4 mb-3 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #0066FF 0%, #6541F2 50%, #9333EA 110%)' }}
+          >
+            <span aria-hidden className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)' }} />
+            <div className="relative z-[1] flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">⚡ {t('change.eyebrow')}</p>
+                <p className="font-display font-extrabold text-[18px] leading-[1.2] tracking-[-0.018em] text-white mt-1.5 truncate">{highlight.nickname}</p>
+                <p className="text-[13px] text-white/85 mt-1">
+                  {tMode(highlight.mode)} · {formatTemperatureDelta(highlight.change_score ?? 0)}
+                </p>
+              </div>
+              <span className="font-display font-extrabold text-[32px] leading-none tracking-[-0.04em] text-white">↗</span>
+            </div>
+          </Link>
+        )
       )}
 
       {!isLoading && !isError && filtered.length === 0 && items.length > 0 && (
@@ -181,37 +343,24 @@ export default function FeedPage() {
         <ul className="space-y-2">
           {rest.map((item) => (
             <li key={item.relation_id}>
-              <SwipeRow
-                onDelete={() => setConfirmDelete(item)}
-                onClick={() => handleRowClick(item)}
-              >
-                <div className="bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-[12px] flex items-center justify-center font-bold text-[13px] shrink-0"
-                    style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}
-                  >
-                    {item.nickname.slice(0, 2)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[14px] text-foreground truncate">{item.nickname}</p>
-                    <p className="text-[12px] text-muted-foreground truncate">{tMode(item.mode)}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {item.compat_score !== null ? (
-                      <p className="font-display font-extrabold text-[16px] leading-none text-foreground tabular-nums">
-                        {formatTodayTemperature(item.compat_score)}
-                      </p>
-                    ) : (
-                      <p className="text-[13px] text-muted-foreground">—</p>
-                    )}
-                    {typeof item.change_score === 'number' && item.change_score !== 0 && (
-                      <p className={`text-[10px] font-bold mt-1 ${item.change_score > 0 ? 'text-[var(--ok)]' : 'text-[var(--warn)]'}`}>
-                        {item.change_score > 0 ? '↑' : '↓'} {formatTemperatureDelta(item.change_score)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </SwipeRow>
+              {selectionMode ? (
+                <button
+                  type="button"
+                  aria-pressed={selectedIds.has(item.relation_id)}
+                  aria-label={t('select.itemLabel', { nickname: item.nickname })}
+                  className="block w-full text-left"
+                  onClick={() => handleRowClick(item)}
+                >
+                  {renderRowContent(item)}
+                </button>
+              ) : (
+                <SwipeRow
+                  onDelete={() => setConfirmDelete([item])}
+                  onClick={() => handleRowClick(item)}
+                >
+                  {renderRowContent(item)}
+                </SwipeRow>
+              )}
             </li>
           ))}
         </ul>
@@ -228,7 +377,9 @@ export default function FeedPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="font-h3 text-foreground">
-              {t('delete.confirmTitle', { nickname: confirmDelete.nickname })}
+              {confirmDelete.length === 1
+                ? t('delete.confirmTitle', { nickname: confirmDelete[0].nickname })
+                : t('delete.bulkConfirmTitle', { count: confirmDelete.length })}
             </p>
             <p className="font-sub text-muted-foreground">{t('delete.confirmBody')}</p>
             <div className="flex gap-2 pt-2">
@@ -244,12 +395,12 @@ export default function FeedPage() {
                 type="button"
                 variant="destructive"
                 className="flex-1"
+                disabled={del.isPending}
                 onClick={() => {
-                  del.mutate(confirmDelete.relation_id);
-                  setConfirmDelete(null);
+                  submitDelete(confirmDelete);
                 }}
               >
-                {t('delete.confirm')}
+                {del.isPending ? t('delete.deleting') : t('delete.confirm')}
               </Button>
             </div>
           </div>

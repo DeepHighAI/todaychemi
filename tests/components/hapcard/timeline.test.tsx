@@ -46,7 +46,7 @@ describe('HapcardTimeline — loading', () => {
 });
 
 describe('HapcardTimeline — data', () => {
-  it('데이터 로드 → 7개 막대 + data-testid="hapcard-timeline"', async () => {
+  it('데이터 로드 → 7개 막대와 흐름 요약·수치·날짜별 내용을 함께 표시', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => FULL_DATA,
@@ -60,6 +60,15 @@ describe('HapcardTimeline — data', () => {
 
     const bars = document.querySelectorAll('[data-testid="hapcard-timeline-bar"]');
     expect(bars).toHaveLength(7);
+    expect(screen.getByText('05.10 오늘 38.25°C, 직전 기록보다 +0.25°C 변했어요.')).toBeInTheDocument();
+    expect(screen.getAllByText('38.25°C')).not.toHaveLength(0);
+    expect(screen.getAllByText('+0.25°C')).not.toHaveLength(0);
+    expect(screen.getByText('4회')).toBeInTheDocument();
+    expect(screen.getAllByTestId('hapcard-timeline-row')).toHaveLength(7);
+    expect(screen.getByText('05.07 · 3일 전')).toBeInTheDocument();
+    expect(screen.getByText('05.10 · 오늘')).toBeInTheDocument();
+    expect(screen.getByText('05.11 · 1일 후')).toBeInTheDocument();
+    expect(screen.getAllByText('예정')).not.toHaveLength(0);
   });
 });
 
@@ -78,6 +87,9 @@ describe('HapcardTimeline — empty (모두 null)', () => {
 
     const bars = document.querySelectorAll('[data-testid="hapcard-timeline-bar"]');
     expect(bars).toHaveLength(7);
+    expect(screen.getByText('오늘 흐름 기록은 아직 준비 중이에요.')).toBeInTheDocument();
+    expect(screen.getByText('0회')).toBeInTheDocument();
+    expect(screen.getAllByText('기록 없음')).not.toHaveLength(0);
   });
 });
 

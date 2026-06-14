@@ -262,6 +262,25 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(resolveFeatureCharge).not.toHaveBeenCalled(); // idempotency hit 은 게이트 미진입
   });
 
+  it('200 → idempotency hit row 에 cache_key 가 없어도 HapcardReplayResult 형태로 복원한다', async () => {
+    const { cache_key: _cacheKey, ...replayRow } = REPLAY_RESULT;
+    const userClient = makeUserClient({ idempotencyRow: replayRow as never });
+    const { client: svcClient } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(isFeatureUnlocked).mockResolvedValue(true);
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.replay_id).toBe('replay-uuid-001');
+    expect(body.relation_id).toBe(HAPCARD_ROW.relation_id);
+    expect(body.cache_key).toBe(HAPCARD_ROW.cache_key);
+    expect(body.content.main_text).toBe(REPLAY_RESULT.content.main_text);
+    expect(buildReplay).not.toHaveBeenCalled();
+  });
+
   it('402 → idempotency row 존재하나 미잠금(선생성 미결제) → 재빌드 없이 PAYMENT_REQUIRED', async () => {
     const userClient = makeUserClient({ idempotencyRow: REPLAY_RESULT });
     const { client: svcClient } = makeServiceClient();
@@ -362,6 +381,21 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.error.code).toBe('REPLAY_DURING_OUTAGE');
     expect(buildReplay).not.toHaveBeenCalled();
+  });
+
+  it('503 + refund → buildReplay 가 LLM_ALL_PROVIDERS_DOWN 을 throw 하면 replay outage 로 응답한다', async () => {
+    const userClient = makeUserClient({});
+    const { client: svcClient, refund } = makeServiceClient();
+    vi.mocked(createServerClient).mockResolvedValue(userClient as never);
+    vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
+    vi.mocked(buildReplay).mockRejectedValue(new Error('LLM_ALL_PROVIDERS_DOWN: openai / anthropic'));
+
+    const res = await POST(makeRequest({}), makeParams());
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error.code).toBe('REPLAY_DURING_OUTAGE');
+    expect(refund).toHaveBeenCalledTimes(1);
   });
 
   it('500 + refund → buildReplay 실패 시 refund_tokens 호출 후 500', async () => {

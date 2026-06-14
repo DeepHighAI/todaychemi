@@ -214,7 +214,8 @@ today_temperature = clamp(
   35.5,
   38.9
 )
-display_temperature = round(today_temperature, 1) + "°C"
+default_display_temperature = round(today_temperature, 1) + "°C"
+detailed_flow_temperature = round(today_temperature, 2) + "°C"
 ```
 
 표시 기준:
@@ -230,6 +231,7 @@ display_temperature = round(today_temperature, 1) + "°C"
 - 분석한 날의 관계 흐름이 좋으면 `37.5°C`를 초과한다.
 - 분석한 날의 관계 흐름이 나쁘면 `36.5°C` 미만으로 표시한다.
 - 변화량(`change_score`, `delta_vs_yesterday`)은 동일 기울기(`20점 = 1.0°C`)로 변환해 `+0.8°C`처럼 표시한다.
+- 관계 상세·합흐름처럼 날짜별 변화를 비교하는 화면은 2자리 상세 온도(`38.75°C`, `38.80°C`)를 사용한다. 1점 안팎의 근접 점수가 한 자리 반올림으로 같은 온도처럼 보이는 문제를 줄이기 위함이다.
 - LLM은 오늘온도 산출에도 개입하지 않는다. 오늘온도는 `compat_score`의 결정형 표시 변환이다.
 
 ---

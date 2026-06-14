@@ -91,7 +91,7 @@ describe('HapcardShare', () => {
       '/api/hapcards/hap-uuid-001/share',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ range: 'nickname-only', channel: 'copy_link' }),
+        body: JSON.stringify({ range: 'nickname-ohaeng', channel: 'copy_link' }),
       }),
     );
     expect(vi.mocked(fetch)).not.toHaveBeenCalledWith('/api/share/complete', expect.anything());
@@ -105,6 +105,21 @@ describe('HapcardShare', () => {
     fireEvent.click(screen.getByRole('button', { name: '인스타그램/카드' }));
 
     await waitFor(() => expect(shareCardOrDownload).toHaveBeenCalledOnce());
+    expect(shareCardOrDownload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        og_image_url: expect.stringContaining('layout=combined'),
+      }),
+    );
+    expect(shareCardOrDownload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        og_image_url: expect.stringContaining('ohaeng=1%2C2%2C1%2C3%2C1'),
+      }),
+    );
+    expect(shareCardOrDownload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        og_image_url: expect.stringContaining('v=5'),
+      }),
+    );
     expect(vi.mocked(fetch)).not.toHaveBeenCalledWith('/api/share/complete', expect.anything());
     await screen.findByText('공유했어요!');
   });

@@ -11,7 +11,7 @@
  */
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,12 +37,27 @@ import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
+import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { convertHanja } from '@/lib/glossary/post-process';
 import { formatDetailSummaryLines, formatHapcardActionItems, formatHeroCoachLines } from '@/lib/hapcard/hero-main-text';
 import { scoreDeltaToTemperatureDelta, scoreToTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
+import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 
-const RELATION_CHART_PENDING_CODES: HapcardErrorCode[] = ['RELATION_CHART_NOT_FOUND'];
+const RELATION_CHART_PENDING_CODES: string[] = [
+  'RELATION_CHART_NOT_FOUND',
+  'RELATION_CHART_LOOKUP_FAILED',
+];
+
+function readInitialEasyMode() {
+  if (typeof window === 'undefined') return true;
+  try {
+    const saved = window.localStorage.getItem('hapcard_easy_mode');
+    return saved === null ? true : saved === '1';
+  } catch {
+    return true;
+  }
+}
 
 async function callHapcard(relationId: string, mode: string): Promise<HapcardResult> {
   const res = await fetch('/api/hapcards', {
@@ -51,7 +66,7 @@ async function callHapcard(relationId: string, mode: string): Promise<HapcardRes
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const code: HapcardErrorCode = body?.error?.code ?? 'INTERNAL_ERROR';
+    const code = typeof body?.error?.code === 'string' ? body.error.code : 'INTERNAL_ERROR';
     // 402 PAYMENT_REQUIRED 는 결제 시트에 필요한 ref/amount 를 함께 실어 보낸다.
     throw Object.assign(new Error(code), {
       code,
@@ -68,6 +83,16 @@ async function deleteRelation(id: string) {
   if (!res.ok) throw new Error('DELETE_FAILED');
 }
 
+async function renameRelation({ id, nickname }: { id: string; nickname: string }) {
+  const res = await fetch(`/api/relations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname }),
+  });
+  if (!res.ok) throw new Error('RENAME_FAILED');
+  return (await res.json()) as { relation: { nickname: string } };
+}
+
 function getErrorCode(e: unknown): HapcardErrorCode | undefined {
   return (e as { code?: HapcardErrorCode })?.code;
 }
@@ -78,12 +103,17 @@ function isUserChartMissingError(e: unknown): boolean {
 
 function isRelationChartPendingError(e: unknown): boolean {
   const code = (e as { code?: string })?.code;
-  return RELATION_CHART_PENDING_CODES.includes(code as HapcardErrorCode);
+  return RELATION_CHART_PENDING_CODES.includes(code ?? '');
 }
 
 function getPaymentRef(e: unknown): string | null {
   const ref = (e as { ref?: unknown })?.ref;
   return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
+function getErrorCardCode(e: unknown): ErrorCode {
+  const code = (e as { code?: string })?.code;
+  return ERROR_CODES.includes(code as ErrorCode) ? (code as ErrorCode) : 'INTERNAL_ERROR';
 }
 
 type ExpandTab = 'summary' | 'ohaeng' | 'evidence' | 'area' | 'flow';
@@ -110,10 +140,11 @@ export default function HapcardView() {
   const [expandTab, setExpandTab] = useState<ExpandTab>('summary');
   const [deleted, setDeleted] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
-  // G-5 (D7): 쉽게 보기 — 본문 명리 용어를 평이어로 전환. 선호는 localStorage 보존
-  const [easyMode, setEasyMode] = useState(
-    () => typeof window !== 'undefined' && window.localStorage.getItem('hapcard_easy_mode') === '1',
-  );
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  // G-5 (D7): 쉽게 보기 — 기본 ON, 사용자가 바꾼 선호는 localStorage 보존
+  const [easyMode, setEasyMode] = useState(readInitialEasyMode);
   function toggleEasyMode() {
     setEasyMode((v) => {
       const next = !v;
@@ -136,6 +167,22 @@ export default function HapcardView() {
       qc.invalidateQueries({ queryKey: ['today'] });
     },
   });
+  const rename = useMutation({
+    mutationFn: renameRelation,
+    onSuccess: ({ relation }) => {
+      qc.setQueryData<HapcardResult>(['hapcard', id, mode, targetDate], (prev) => (
+        prev ? { ...prev, relation_nickname: relation.nickname } : prev
+      ));
+      qc.invalidateQueries({ queryKey: ['feed'] });
+      qc.invalidateQueries({ queryKey: ['relations'] });
+      qc.invalidateQueries({ queryKey: ['today'] });
+      qc.invalidateQueries({ queryKey: ['relation-detail', id] });
+      setRenameOpen(false);
+      setRenameError(null);
+    },
+    onError: () => setRenameError(t('rename.error')),
+  });
+  const canRename = renameValue.trim().length > 0 && renameValue.trim().length <= 20 && !rename.isPending;
 
   // 삭제 완료 후 1초 뒤 피드로
   useEffect(() => {
@@ -168,10 +215,18 @@ export default function HapcardView() {
     );
   }
 
-  if (!mode || (isError && !isUserChartMissingError(error) && !isRelationChartPendingError(error))) {
+  if (!mode) {
     return (
       <main className="bg-background min-h-screen px-4 pt-8">
         <p className="font-sub text-destructive text-center py-8">{t('errors.generic')}</p>
+      </main>
+    );
+  }
+
+  if (isError && !isUserChartMissingError(error) && !isRelationChartPendingError(error)) {
+    return (
+      <main className="bg-background min-h-screen px-4 pt-8">
+        <ErrorCard code={getErrorCardCode(error)} onRetry={() => { void refetch(); }} />
       </main>
     );
   }
@@ -196,9 +251,18 @@ export default function HapcardView() {
         <div className="rounded-2xl bg-card p-6 text-center space-y-3">
           <p className="font-h3 text-foreground">{t('errors.chartPending.title')}</p>
           <p className="font-sub text-muted-foreground">{t('errors.chartPending.body')}</p>
-          <Link href="/feed" className="inline-block text-sm text-primary underline">
-            {t('errors.chartPending.cta')}
-          </Link>
+          <div className="flex justify-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => { void refetch(); }}
+              className="text-sm font-semibold text-primary underline"
+            >
+              다시 시도
+            </button>
+            <Link href="/feed" className="inline-block text-sm text-primary underline">
+              {t('errors.chartPending.cta')}
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -226,7 +290,19 @@ export default function HapcardView() {
   const todayTemperature = scoreToTemperature(data.compat_score);
   // G-4: 시간 미상 시 12지 시나리오 ± 범위 — 기존 캐시 row 에는 없을 수 있음 (optional)
   const scenarioEstimate = data.score_breakdown?.scenario_estimate ?? null;
-  const headerNote = `${data.relation_nickname} · ${convertHanja(visuals.user.day_pillar)} ↔ ${convertHanja(visuals.relation.day_pillar)}`;
+  const relationNickname = data.relation_nickname ?? '';
+  const headerNote = `${relationNickname} · ${convertHanja(visuals.user.day_pillar)} ↔ ${convertHanja(visuals.relation.day_pillar)}`;
+  function openRenameDialog() {
+    setRenameValue(relationNickname);
+    setRenameError(null);
+    setMenuOpen(false);
+    setRenameOpen(true);
+  }
+  function submitRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!canRename) return;
+    rename.mutate({ id, nickname: renameValue.trim() });
+  }
   const heroCoachLines = formatHeroCoachLines({
     mainText: data.content.main_text,
     whyCards: data.content.why_cards,
@@ -258,7 +334,8 @@ export default function HapcardView() {
         <>
           <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
           <div className="absolute top-14 right-4 z-30 bg-card rounded-[14px] min-w-[180px] p-1.5 shadow-xl border border-border space-y-0.5">
-            <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-left text-[14px] text-foreground hover:bg-muted">
+            <button onClick={openRenameDialog}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-left text-[14px] text-foreground hover:bg-muted">
               <Edit2 size={16} /> {t('menu.rename')}
             </button>
             <button onClick={() => { setMenuOpen(false); setShareOpen(true); }}
@@ -282,7 +359,7 @@ export default function HapcardView() {
           <div className="relative z-[1]">
             <div className="flex items-start justify-between gap-2">
               <p className="text-[11px] font-bold text-white/85 uppercase tracking-[0.08em]">
-                {t(`mode.${mode}` as never)} · {data.relation_nickname}
+                {t(`mode.${mode}` as never)} · {relationNickname}
               </p>
               <AiDisclosureBadge tone="dark" />
             </div>
@@ -388,13 +465,72 @@ export default function HapcardView() {
         />
       </main>
 
+      {/* ── 별명 수정 ── */}
+      {renameOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-6"
+          onClick={() => setRenameOpen(false)}
+        >
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hapcard-rename-title"
+            aria-describedby="hapcard-rename-description"
+            className="bg-card rounded-[20px] p-5 w-full max-w-[320px] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitRename}
+          >
+            <div className="space-y-1">
+              <h2 id="hapcard-rename-title" className="font-h3 text-foreground">{t('rename.title')}</h2>
+              <p id="hapcard-rename-description" className="font-sub text-muted-foreground">{t('rename.body')}</p>
+            </div>
+            <label htmlFor="hapcard-rename-input" className="block text-[12px] font-semibold text-muted-foreground">
+              {t('rename.label')}
+            </label>
+            <input
+              id="hapcard-rename-input"
+              value={renameValue}
+              maxLength={20}
+              aria-label={t('rename.label')}
+              placeholder={t('rename.placeholder')}
+              onChange={(event) => {
+                setRenameValue(event.target.value);
+                setRenameError(null);
+              }}
+              className="w-full rounded-[12px] border border-border bg-background px-3 py-3 text-[16px] font-semibold text-foreground outline-none focus:border-[var(--p-40)]"
+            />
+            {renameError && (
+              <p role="alert" className="rounded-[var(--r-sm)] bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+                {renameError}
+              </p>
+            )}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setRenameOpen(false)}
+                className="flex-1 py-3 rounded-[12px] bg-muted text-foreground font-semibold"
+              >
+                {t('rename.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={!canRename}
+                className="flex-1 py-3 rounded-[12px] bg-[var(--p-40)] text-white font-bold disabled:opacity-60"
+              >
+                {rename.isPending ? t('rename.saving') : t('rename.save')}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* ── 삭제 확인 ── */}
       {confirmDel && (
         <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-6"
           onClick={() => setConfirmDel(false)}>
           <div className="bg-card rounded-[20px] p-5 w-full max-w-[320px] space-y-3"
             onClick={(e) => e.stopPropagation()}>
-            <p className="font-h3 text-foreground">{t('delete.confirmTitle', { nickname: data.relation_nickname ?? '' })}</p>
+            <p className="font-h3 text-foreground">{t('delete.confirmTitle', { nickname: relationNickname })}</p>
             <p className="font-sub text-muted-foreground">{t('delete.confirmBody')}</p>
             <div className="flex gap-2 pt-2">
               <button onClick={() => setConfirmDel(false)}
@@ -415,7 +551,7 @@ export default function HapcardView() {
 
       <HapcardShare
         hapcardId={data.hapcard_id} mode={mode!}
-        nickname={data.relation_nickname} score={data.compat_score}
+        nickname={relationNickname} score={data.compat_score}
         genderNormalized={data.relation_gender_normalized}
         visuals={visuals} open={shareOpen} onOpenChange={setShareOpen} />
       <GlossarySheet />

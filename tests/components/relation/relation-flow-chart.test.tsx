@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { RelationFlowChart } from '@/components/relation/relation-flow-chart';
 import type { FlowPoint } from '@/types/relation';
 
@@ -28,6 +28,38 @@ describe('RelationFlowChart', () => {
     const { container } = render(<RelationFlowChart points={points} />);
     expect(container.querySelector('polyline')).not.toBeNull();
     expect(container.querySelectorAll('[data-testid="flow-point"]')).toHaveLength(3);
+  });
+
+  it('최신 온도·직전 대비·최근 기록을 함께 표시한다', () => {
+    const points: FlowPoint[] = [
+      { date: '2026-06-05', score: 78 },
+      { date: '2026-06-06', score: 80 },
+      { date: '2026-06-13', score: 86 },
+    ];
+    render(<RelationFlowChart points={points} />);
+
+    expect(screen.getAllByText('38.80°C')).not.toHaveLength(0);
+    expect(screen.getAllByText('+0.30°C')).not.toHaveLength(0);
+    expect(screen.getByText(/2026\.06\.13 기준 38\.80°C/)).toBeInTheDocument();
+    expect(screen.getByText('3회')).toBeInTheDocument();
+    expect(screen.getByText('2026.06.06')).toBeInTheDocument();
+  });
+
+  it('근접 점수도 2자리 상세 온도로 구분해 날짜별 편차를 표시한다', () => {
+    const points: FlowPoint[] = [
+      { date: '2026-06-05', score: 85 },
+      { date: '2026-06-13', score: 86 },
+    ];
+    const { container } = render(<RelationFlowChart points={points} />);
+
+    expect(screen.getByText(/직전 기록보다 \+0\.05°C/)).toBeInTheDocument();
+    expect(screen.getAllByText('38.75°C')).not.toHaveLength(0);
+    expect(screen.getAllByText('38.80°C')).not.toHaveLength(0);
+    expect(screen.getAllByText('+0.05°C')).not.toHaveLength(0);
+    expect(screen.queryByText('+0.1°C')).toBeNull();
+
+    const markers = container.querySelectorAll('[data-testid="flow-point"]');
+    expect(markers[0].getAttribute('cy')).not.toBe(markers[1].getAttribute('cy'));
   });
 
   it('마지막 점 — data-today="true" 강조 마커', () => {

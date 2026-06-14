@@ -29,7 +29,6 @@ describe('InfoCard', () => {
     expect(screen.getByText('언어 변경')).toBeInTheDocument();
     expect(screen.getByText('개인정보처리방침')).toBeInTheDocument();
     expect(screen.getByText('이용약관')).toBeInTheDocument();
-    expect(screen.getByText('내 데이터 내려받기')).toBeInTheDocument();
     expect(screen.getByText('계정 삭제 요청')).toBeInTheDocument();
     expect(screen.getByText('회사소개')).toBeInTheDocument();
     expect(screen.getByText('로그아웃')).toBeInTheDocument();
@@ -58,11 +57,13 @@ describe('InfoCard', () => {
     expect(props.onLogout).toHaveBeenCalledTimes(1);
   });
 
-  it('데이터 내려받기·대표번호는 링크(href)로 렌더한다', () => {
+  it('데이터 내려받기와 대표번호는 노출하지 않는다', () => {
     renderWithIntl(<InfoCard {...makeProps()} />);
 
-    expect(screen.getByRole('link', { name: /내 데이터 내려받기/ })).toHaveAttribute('href', '/api/me/export');
-    expect(screen.getByRole('link', { name: /대표번호/ })).toHaveAttribute('href', 'tel:0234431028');
+    expect(screen.queryByText('내 데이터 내려받기')).not.toBeInTheDocument();
+    expect(screen.queryByText('JSON 파일로 저장')).not.toBeInTheDocument();
+    expect(screen.queryByText('대표번호')).not.toBeInTheDocument();
+    expect(screen.queryByText('02 3443 1028')).not.toBeInTheDocument();
   });
 
   it('logoutLoading=true면 로그아웃 버튼이 비활성화되고 로딩 문구를 보여준다', () => {

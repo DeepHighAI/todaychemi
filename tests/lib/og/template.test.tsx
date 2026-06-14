@@ -13,6 +13,10 @@ function payload(overrides: Partial<OgPayload>): OgPayload {
     mode: '친구 관계',
     layout: 'minimal',
     showGender: false,
+    ohaeng_counts: { 목: 3, 화: 1, 토: 2, 금: 1, 수: 1 },
+    area_scores: { talk: 80, attract: 74, speed: 62, money: 55, future: 68 },
+    headline: '동료감이 큰 사이예요',
+    flow_scores: [60, 65, 70, 78],
     ...overrides,
   };
 }
@@ -23,6 +27,24 @@ describe('OgTemplate — 공통 셸', () => {
     expect(getByText(/봄달/)).toBeInTheDocument();
     expect(getByText(/친구 관계/)).toBeInTheDocument();
     expect(getByText(/38\.4°C/)).toBeInTheDocument();
+  });
+});
+
+describe('OgTemplate — combined', () => {
+  it('온도·오행·영역·한 줄을 한 카드에 노출', () => {
+    const { container, getByText, queryByText } = render(
+      <OgTemplate payload={payload({ layout: 'combined' })} />,
+    );
+    expect(getByText(/케미온도 38\.4°C/)).toBeInTheDocument();
+    expect(getByText('오행')).toBeInTheDocument();
+    expect(getByText('3개')).toBeInTheDocument();
+    expect(getByText('38%')).toBeInTheDocument();
+    expect(getByText('영역')).toBeInTheDocument();
+    expect(getByText('38.5°')).toBeInTheDocument();
+    expect(getByText(/동료감이 큰 사이예요/)).toBeInTheDocument();
+    expect(queryByText('흐름')).toBeNull();
+    expect(container.querySelector('[data-testid="og-combined-flow-panel"]')).toBeNull();
+    expect(container.querySelector('svg[data-testid="og-flow"]')).toBeNull();
   });
 });
 
@@ -77,13 +99,16 @@ describe('OgTemplate — comment', () => {
 });
 
 describe('OgTemplate — flow', () => {
-  it('흐름 스파크라인 SVG 노출', () => {
-    const { container } = render(
+  it('흐름 스파크라인과 최신 온도·직전 대비 수치를 노출', () => {
+    const { container, getByText } = render(
       <OgTemplate payload={payload({ layout: 'flow', flow_scores: [60, 65, 70, 78] })} />,
     );
     const svg = container.querySelector('svg[data-testid="og-flow"]');
     expect(svg).not.toBeNull();
     expect(svg?.querySelector('polyline')).not.toBeNull();
+    expect(getByText('최근 38.4°C')).toBeInTheDocument();
+    expect(getByText('직전 +0.4°C')).toBeInTheDocument();
+    expect(getByText('이전 37.5°')).toBeInTheDocument();
   });
 });
 
@@ -111,7 +136,7 @@ function findSatoriViolations(root: Element): string[] {
 }
 
 describe('OgTemplate — Satori 다중자식 display:flex 제약', () => {
-  const LAYOUTS: OgPayload['layout'][] = ['minimal', 'ohaeng', 'radar', 'comment', 'flow'];
+  const LAYOUTS: OgPayload['layout'][] = ['combined', 'minimal', 'ohaeng', 'radar', 'comment', 'flow'];
   for (const layout of LAYOUTS) {
     it(`${layout} 레이아웃: 다중자식 비-SVG 요소가 모두 display:flex|contents|none`, () => {
       const { container } = render(

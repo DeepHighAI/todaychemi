@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DETAILED_TEMPERATURE_PRECISION,
+  formatTemperatureDeltaBetweenScores,
   formatTemperatureDelta,
   formatTodayTemperature,
   scoreDeltaToTemperatureDelta,
   scoreToTemperature,
+  temperatureDeltaBetweenScores,
   temperatureBandFromScore,
 } from '@/lib/scoring/temperature';
 
@@ -33,6 +36,20 @@ describe('scoreToTemperature', () => {
     expect(scoreDeltaToTemperatureDelta(-18)).toBe(-0.9);
     expect(formatTemperatureDelta(15)).toBe('+0.8°C');
     expect(formatTemperatureDelta(-18)).toBe('-0.9°C');
+  });
+
+  it('표시 온도끼리 비교할 때는 반올림 후 같은 온도를 0.0°C로 표시한다', () => {
+    expect(formatTodayTemperature(85)).toBe('38.8°C');
+    expect(formatTodayTemperature(86)).toBe('38.8°C');
+    expect(temperatureDeltaBetweenScores(85, 86)).toBe(0);
+    expect(formatTemperatureDeltaBetweenScores(85, 86)).toBe('0.0°C');
+  });
+
+  it('상세 온도는 근접 점수도 날짜별로 구분되도록 2자리까지 표시한다', () => {
+    expect(formatTodayTemperature(85, DETAILED_TEMPERATURE_PRECISION)).toBe('38.75°C');
+    expect(formatTodayTemperature(86, DETAILED_TEMPERATURE_PRECISION)).toBe('38.80°C');
+    expect(temperatureDeltaBetweenScores(85, 86, DETAILED_TEMPERATURE_PRECISION)).toBe(0.05);
+    expect(formatTemperatureDeltaBetweenScores(85, 86, DETAILED_TEMPERATURE_PRECISION)).toBe('+0.05°C');
   });
 
   it('체온 구간을 결정형으로 분류한다', () => {

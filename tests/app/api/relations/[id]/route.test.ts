@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 
 import { createClient } from '@/lib/supabase/server';
-import { GET } from '@/app/api/relations/[id]/route';
+import { GET, PATCH } from '@/app/api/relations/[id]/route';
 
 const REL_ID = 'rel-uuid-001';
 const USER_ID = 'user-uuid-001';
@@ -34,11 +34,17 @@ type SnapRow = { target_date: string; compat_score: number; created_at: string }
 function makeRelationsChain(
   row: typeof RELATION_ROW | null,
   error: { message: string } | null = null,
+  updateRow: typeof RELATION_ROW | null = row,
+  updateError: { message: string } | null = null,
 ) {
   const maybySingle = vi.fn().mockResolvedValue({ data: row, error });
   const eqChain = vi.fn().mockReturnValue({ maybeSingle: maybySingle });
   const select = vi.fn().mockReturnValue({ eq: eqChain });
-  return { select };
+  const updateMaybeSingle = vi.fn().mockResolvedValue({ data: updateRow, error: updateError });
+  const updateSelect = vi.fn().mockReturnValue({ maybeSingle: updateMaybeSingle });
+  const updateEq = vi.fn().mockReturnValue({ select: updateSelect });
+  const update = vi.fn().mockReturnValue({ eq: updateEq });
+  return { select, update, updateEq, updateSelect, updateMaybeSingle };
 }
 
 function makeRelationChartsChain(
@@ -76,6 +82,8 @@ function makeClient(opts: {
   userId?: string | null;
   relationRow?: typeof RELATION_ROW | null;
   relationError?: { message: string } | null;
+  updateRelationRow?: typeof RELATION_ROW | null;
+  updateRelationError?: { message: string } | null;
   chartRow?: typeof CHART_ROW | null;
   chartError?: { message: string } | null;
   snapRows?: SnapRow[];
@@ -85,6 +93,8 @@ function makeClient(opts: {
   const relChain = makeRelationsChain(
     opts.relationRow === undefined ? RELATION_ROW : opts.relationRow,
     opts.relationError ?? null,
+    opts.updateRelationRow === undefined ? RELATION_ROW : opts.updateRelationRow,
+    opts.updateRelationError ?? null,
   );
   const chartChain = makeRelationChartsChain(
     opts.chartRow === undefined ? CHART_ROW : opts.chartRow,
@@ -104,13 +114,21 @@ function makeClient(opts: {
     error: null,
   });
 
-  return { client: { auth: { getUser }, from }, snapChain };
+  return { client: { auth: { getUser }, from }, relChain, snapChain };
 }
 
 function makeRequest(id = REL_ID) {
   return new Request(`http://localhost/api/relations/${id}`, {
     method: 'GET',
   }) as unknown as Parameters<typeof GET>[0];
+}
+
+function makePatchRequest(body: unknown, id = REL_ID) {
+  return new Request(`http://localhost/api/relations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }) as unknown as Parameters<typeof PATCH>[0];
 }
 
 function makeParams(id = REL_ID) {
@@ -303,6 +321,86 @@ describe('GET /api/relations/[id] — flow', () => {
     vi.mocked(createClient).mockResolvedValue(client as never);
 
     const res = await GET(makeRequest(), makeParams());
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+});
+
+describe('PATCH /api/relations/[id] — 별명 수정', () => {
+  it('401 → 미인증 (user null)', async () => {
+    const { client } = makeClient({ userId: null });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await PATCH(makePatchRequest({ nickname: '새별명' }), makeParams());
+
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('400 → 빈 별명 또는 20자 초과 별명은 거부한다', async () => {
+    const { client } = makeClient();
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const empty = await PATCH(makePatchRequest({ nickname: '   ' }), makeParams());
+    const tooLong = await PATCH(makePatchRequest({ nickname: '가'.repeat(21) }), makeParams());
+
+    expect(empty.status).toBe(400);
+    expect((await empty.json()).error.code).toBe('INVALID_BODY');
+    expect(tooLong.status).toBe(400);
+    expect((await tooLong.json()).error.code).toBe('INVALID_BODY');
+  });
+
+  it('400 → nickname 외 PII 필드가 섞인 body 는 거부한다', async () => {
+    const { client } = makeClient();
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await PATCH(
+      makePatchRequest({ nickname: '새별명', birth_date: '1990-01-01' }),
+      makeParams(),
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_BODY');
+  });
+
+  it('200 → 별명을 trim 해서 저장하고 relation 필드만 반환한다', async () => {
+    const updated = { ...RELATION_ROW, nickname: '새별명' };
+    const { client, relChain } = makeClient({ updateRelationRow: updated });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await PATCH(makePatchRequest({ nickname: '  새별명  ' }), makeParams());
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.relation.nickname).toBe('새별명');
+    expect(body.relation).not.toHaveProperty('birth_date');
+    expect(relChain.update).toHaveBeenCalledWith({ nickname: '새별명' });
+    expect(relChain.updateEq).toHaveBeenCalledWith('relation_id', REL_ID);
+  });
+
+  it('404 → update 결과가 없으면 인연 미존재로 응답한다', async () => {
+    const { client } = makeClient({ updateRelationRow: null });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await PATCH(makePatchRequest({ nickname: '새별명' }), makeParams());
+
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error.code).toBe('RELATION_NOT_FOUND');
+  });
+
+  it('500 → update 오류는 internal error 로 응답한다', async () => {
+    const { client } = makeClient({
+      updateRelationRow: null,
+      updateRelationError: { message: 'update failed' },
+    });
+    vi.mocked(createClient).mockResolvedValue(client as never);
+
+    const res = await PATCH(makePatchRequest({ nickname: '새별명' }), makeParams());
 
     expect(res.status).toBe(500);
     const body = await res.json();

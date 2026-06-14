@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+import { SHARE_OG_HEIGHT, SHARE_OG_WIDTH } from '@/lib/og/dimensions';
 import { buildPublicShareOgPayload, getPublicShareByToken } from '@/lib/share/public-share';
 import { loadNotoSansKrRegularFont } from '@/lib/og/font';
 import { OgTemplate } from '@/lib/og/template';
@@ -21,8 +22,8 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
     const fontData = await loadNotoSansKrRegularFont(request.url);
 
     return new ImageResponse(<OgTemplate payload={payload} />, {
-      width: 1200,
-      height: 630,
+      width: SHARE_OG_WIDTH,
+      height: SHARE_OG_HEIGHT,
       fonts: [
         {
           name: 'Noto Sans KR',

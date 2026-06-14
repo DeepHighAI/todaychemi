@@ -60,6 +60,9 @@ describe('GET /api/og/share/[token]', () => {
     expect(res.headers.get('Content-Type')).toBe('image/png');
     expect(getPublicShareByToken).toHaveBeenCalledWith('share-token');
     expect(imageResponseSpy).toHaveBeenCalledOnce();
+    const opts = imageResponseSpy.mock.calls[0][1] as { width?: number; height?: number };
+    expect(opts.width).toBe(1080);
+    expect(opts.height).toBe(1350);
   });
 
   it('404 when token is invalid or expired', async () => {

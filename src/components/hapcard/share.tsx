@@ -4,10 +4,33 @@ import { useState } from 'react';
 import type { HapcardVisuals } from '@/types/hapcard';
 import { trackEvent } from '@/lib/analytics/ga';
 import type { ShareRange } from '@/lib/share/build-share-payload';
-import { layoutToShareRange, type ShareLayout } from '@/lib/og/render-payload';
+import {
+  layoutToShareRange,
+  serializeShareOhaengCounts,
+  type ShareLayout,
+} from '@/lib/og/render-payload';
 import { shareToKakao } from '@/lib/share/kakao-sdk';
 import { copyShareLink, shareCardOrDownload } from '@/lib/share/share-handler';
 import { ShareSheet, type ShareSheetAction } from '@/components/hapcard/share-sheet';
+
+const SHARE_CARD_VERSION = '5';
+
+function buildAuthedImageUrl(
+  origin: string,
+  hapcardId: string,
+  layout: ShareLayout,
+  showGender: boolean,
+  ohaengCounts: Record<string, number>,
+): string {
+  const params = new URLSearchParams({
+    layout,
+    gender: showGender ? '1' : '0',
+    v: SHARE_CARD_VERSION,
+  });
+  const ohaeng = serializeShareOhaengCounts(ohaengCounts);
+  if (ohaeng) params.set('ohaeng', ohaeng);
+  return `${origin}/api/og/hapcard/${encodeURIComponent(hapcardId)}?${params.toString()}`;
+}
 
 export interface HapcardShareProps {
   hapcardId: string;
@@ -72,7 +95,13 @@ export function HapcardShare({
       };
       // 저장/인스타는 사용자가 이미지 자체를 게시 → 선택 레이아웃의 인증 OG 이미지 사용(보이는 그대로).
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const authedImageUrl = `${origin}/api/og/hapcard/${encodeURIComponent(hapcardId)}?layout=${layout}&gender=${showGender ? 1 : 0}`;
+      const authedImageUrl = buildAuthedImageUrl(
+        origin,
+        hapcardId,
+        layout,
+        showGender,
+        hapcardInput.ohaeng_counts,
+      );
 
       if (action === 'kakao') {
         await shareToKakao({ ...payload, share_id: created.share_id });
@@ -98,7 +127,11 @@ export function HapcardShare({
         return;
       }
 
-      await copyShareLink(payload);
+      const result = await copyShareLink(payload);
+      if (result !== 'copied') {
+        setStatus('error');
+        return;
+      }
       trackEvent({ name: 'share', params: { method: 'link', content_type: 'hapcard' } });
       setStatus('copied');
       setSheetOpen(false);

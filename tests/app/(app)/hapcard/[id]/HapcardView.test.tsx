@@ -56,7 +56,7 @@ describe('HapcardView 402 결제 처리', () => {
     ).toBeNull();
   });
 
-  it('PAYMENT_REQUIRED(402) 이지만 ref 누락 → 결제 시트 대신 generic 안내', async () => {
+  it('PAYMENT_REQUIRED(402) 이지만 ref 누락 → 결제 시트 대신 코드별 에러 카드', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 402,
@@ -70,8 +70,9 @@ describe('HapcardView 402 결제 처리', () => {
     renderWithProviders(<HapcardView />);
 
     expect(
-      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('이번 사용은 결제가 필요해요. 결제하고 결과를 확인해보세요.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
     expect(screen.queryByTestId('feature-pay-sheet')).toBeNull();
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
@@ -89,7 +90,7 @@ describe('HapcardView 402 결제 처리', () => {
     expect(screen.queryByTestId('feature-pay-sheet')).toBeNull();
   });
 
-  it('일반 에러(INTERNAL_ERROR) → generic 안내, 결제 시트 미노출', async () => {
+  it('일반 에러(INTERNAL_ERROR) → 에러 카드와 재시도 버튼, 결제 시트 미노출', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
@@ -99,8 +100,9 @@ describe('HapcardView 402 결제 처리', () => {
     renderWithProviders(<HapcardView />);
 
     expect(
-      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
     expect(screen.queryByTestId('feature-pay-sheet')).toBeNull();
   });
 });
@@ -158,6 +160,96 @@ describe('HapcardView 인연 삭제 캐시 무효화', () => {
   });
 });
 
+describe('HapcardView 별명 수정', () => {
+  function renderWithQueryClient(queryClient: QueryClient) {
+    return render(
+      <NextIntlClientProvider locale="ko" messages={messages}>
+        <QueryClientProvider client={queryClient}>
+          <GlossaryProvider>
+            <HapcardView />
+          </GlossaryProvider>
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('별명 수정 메뉴를 누르면 현재 별명이 채워진 팝업을 연다', async () => {
+    const user = userEvent.setup();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => withVisuals({ relation_nickname: '민지' }),
+    });
+
+    renderWithProviders(<HapcardView />);
+
+    await user.click(await screen.findByRole('button', { name: 'more' }));
+    await user.click(await screen.findByRole('button', { name: '별명 수정' }));
+
+    expect(screen.getByRole('dialog', { name: '별명 수정' })).toBeInTheDocument();
+    expect(screen.getByLabelText('별명')).toHaveValue('민지');
+  });
+
+  it('별명 저장 성공 시 PATCH 호출 후 화면 별명과 관련 캐시를 갱신한다', async () => {
+    const user = userEvent.setup();
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/hapcards' && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => withVisuals({ relation_nickname: '민지' }),
+        });
+      }
+      if (url === '/api/relations/hap-1' && init?.method === 'PATCH') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            relation: {
+              relation_id: 'hap-1',
+              nickname: '새별명',
+              mode: '일합',
+              created_at: '2026-05-01T00:00:00Z',
+            },
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    renderWithQueryClient(queryClient);
+
+    await user.click(await screen.findByRole('button', { name: 'more' }));
+    await user.click(await screen.findByRole('button', { name: '별명 수정' }));
+    const input = screen.getByLabelText('별명');
+    await user.clear(input);
+    await user.type(input, '새별명');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() =>
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/relations/hap-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ nickname: '새별명' }),
+        }),
+      ),
+    );
+    expect(await screen.findByText(/일 관계 · 새별명/)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '별명 수정' })).toBeNull();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['feed'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['relations'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['relation-detail', 'hap-1'] });
+  });
+});
+
 describe('HapcardView AI 생성 고지 (1G)', () => {
   it('정상 렌더 시 케미카드 hero 에 AI 생성 배지를 노출한다', async () => {
     mockFetch.mockResolvedValue({
@@ -176,7 +268,7 @@ describe('HapcardView AI 생성 고지 (1G)', () => {
 describe('HapcardView 쉽게 보기 토글 (G-5)', () => {
   beforeEach(() => window.localStorage.clear());
 
-  it('펼침 패널에 쉽게 보기 토글이 노출되고, ON 시 본문 용어가 평이어로 바뀐다', async () => {
+  it('저장된 선호가 없으면 쉽게 보기가 기본 ON 으로 노출된다', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -195,21 +287,26 @@ describe('HapcardView 쉽게 보기 토글 (G-5)', () => {
     renderWithProviders(<HapcardView />);
     const user = userEvent.setup();
 
-    // 펼침 → 요약 탭 원문 용어 확인
     await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
-    expect(await screen.findByText(/비견 교차/)).toBeInTheDocument();
-
-    // 쉽게 보기 ON → 평이어 전환
-    await user.click(screen.getByRole('switch', { name: '쉽게 보기' }));
+    expect(screen.getByRole('switch', { name: '쉽게 보기' })).toHaveAttribute('aria-checked', 'true');
     expect(await screen.findByText(/나와 같은 기운 교차/)).toBeInTheDocument();
     expect(screen.queryByText(/비견 교차/)).toBeNull();
   });
 
-  it('토글 상태는 localStorage 에 보존된다', async () => {
+  it('OFF 토글 상태는 localStorage 에 보존된다', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => withVisuals({}),
+      json: async () =>
+        withVisuals({
+          content: {
+            main_text: '결론 = 비견 교차로 동료감이 큽니다.',
+            cause_factors: [],
+            classic_citation: [],
+            actions: [],
+            why_cards: [],
+          } as never,
+        }),
     });
 
     renderWithProviders(<HapcardView />);
@@ -217,7 +314,35 @@ describe('HapcardView 쉽게 보기 토글 (G-5)', () => {
     await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
     await user.click(screen.getByRole('switch', { name: '쉽게 보기' }));
 
-    expect(window.localStorage.getItem('hapcard_easy_mode')).toBe('1');
+    expect(window.localStorage.getItem('hapcard_easy_mode')).toBe('0');
+    expect(await screen.findByText(/비견 교차/)).toBeInTheDocument();
+    expect(screen.queryByText(/나와 같은 기운 교차/)).toBeNull();
+  });
+
+  it('저장된 OFF 선호가 있으면 원문 보기로 시작한다', async () => {
+    window.localStorage.setItem('hapcard_easy_mode', '0');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () =>
+        withVisuals({
+          content: {
+            main_text: '결론 = 비견 교차로 동료감이 큽니다.',
+            cause_factors: [],
+            classic_citation: [],
+            actions: [],
+            why_cards: [],
+          } as never,
+        }),
+    });
+
+    renderWithProviders(<HapcardView />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '더 자세히 펼쳐보기' }));
+
+    expect(screen.getByRole('switch', { name: '쉽게 보기' })).toHaveAttribute('aria-checked', 'false');
+    expect(await screen.findByText(/비견 교차/)).toBeInTheDocument();
+    expect(screen.queryByText(/나와 같은 기운 교차/)).toBeNull();
   });
 });
 

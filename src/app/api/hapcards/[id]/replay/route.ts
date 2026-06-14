@@ -20,6 +20,8 @@ import {
   type ReplayRequest,
   type ReplayErrorCode,
   type HapcardResult,
+  type HapcardReplayResult,
+  type LlmModel,
 } from '@/types/hapcard';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
@@ -44,6 +46,27 @@ function createLazyReplayDeps(
     },
     // W4: theory 버전 범프 직후 lazy 재계산용 — fast path(row 존재)에서는 미사용
     kasiServiceKey: process.env.KASI_SERVICE_KEY ?? '',
+  };
+}
+
+type ReplayDbRow = {
+  replay_id: string;
+  jinjin_date: string;
+  content: HapcardResult['content'];
+  prompt_version: string;
+  llm_model: string;
+  created_at: string;
+};
+
+function hydrateReplayResult(hapcard: HapcardResult, row: ReplayDbRow): HapcardReplayResult {
+  return {
+    ...hapcard,
+    replay_id: row.replay_id,
+    jinjin_date: row.jinjin_date,
+    content: row.content,
+    prompt_version: row.prompt_version,
+    llm_model: row.llm_model as LlmModel,
+    created_at: row.created_at,
   };
 }
 
@@ -113,7 +136,10 @@ export async function POST(
   }
   if (idempotencyRes.data) {
     if (await isFeatureUnlocked(serviceClient, userId, 'replay', ref)) {
-      return NextResponse.json(idempotencyRes.data, { status: 200 });
+      return NextResponse.json(
+        hydrateReplayResult(hapcard, idempotencyRes.data as unknown as ReplayDbRow),
+        { status: 200 },
+      );
     }
     return paymentRequiredResponse('replay', ref, FEATURE_PRICES_KRW.replay.amount_krw);
   }
@@ -156,6 +182,7 @@ export async function POST(
   } catch (err) {
     const message = toErrorMessage(err);
     const safeMessage = sanitizeErrorForLog(err);
+    const providersDown = message.startsWith('LLM_ALL_PROVIDERS_DOWN:');
     if (charged) {
       const { error: refundErr } = await serviceClient.rpc('refund_tokens_once', {
         uid: userId,
@@ -172,6 +199,9 @@ export async function POST(
           refund_error: sanitizeErrorForLog(refundErr.message),
         });
       }
+    }
+    if (providersDown) {
+      return apiErrorResponse('REPLAY_DURING_OUTAGE', safeMessage, 503);
     }
     return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }

@@ -170,10 +170,12 @@ export const HapcardRequestSchema = z
 
 export type HapcardRequest = z.infer<typeof HapcardRequestSchema>;
 
-// route.ts 에러 응답 code 허용값 — 8가지 (exhaustive)
+// route.ts 에러 응답 code 허용값 — API가 실제로 내려주는 코드와 동기화
 export const HAPCARD_ERROR_CODES = [
   'INVALID_BODY',
   'UNAUTHORIZED',
+  'PAYMENT_REQUIRED',
+  'RATE_LIMITED',
   'USER_CHART_LOOKUP_FAILED',
   'USER_CHART_NOT_FOUND',
   'RELATION_CHART_LOOKUP_FAILED',

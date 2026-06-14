@@ -83,6 +83,22 @@ describe('formatHeroCoachText', () => {
     expect(text).not.toContain('무타고난');
   });
 
+  it('합/파 관계 용어를 코치 문구에서 쉬운 표현으로 바꾼다', () => {
+    const text = formatHeroCoachText({
+      mainText: '결론: 함께 결정할 때 속도 조절이 필요합니다.',
+      whyCards: [
+        { title: '기준 공유', reason: '상대가 기준과 자원을 보고 빈틈을 채울 수 있어요.' },
+        { title: '엇박자 주의', reason: '합으로 추진이 붙지만 파도 함께 있어 급한 결정 땐 충돌이 나기 쉬워요.' },
+      ],
+      actions: ['회의 시작 10분 안에 우선순위 3가지만 함께 확정하세요.'],
+    });
+
+    expect(text).toContain(
+      '"조심!" 서로 잘 맞는 흐름으로 추진이 붙지만 어긋나는 흐름도 함께 있어 급한 결정 땐 충돌이 나기 쉬워요.',
+    );
+    expect(text).not.toMatch(/합으로|파도|합·파/);
+  });
+
   it('저장된 문구에 actions[0] 표기가 섞여도 히어로에 노출하지 않고 어미를 자연스럽게 정리한다', () => {
     const text = formatHeroCoachText({
       mainText: '결론: 편안합니다.',
@@ -110,6 +126,18 @@ describe('formatDetailSummaryLines', () => {
       { key: 'strength', label: '강점', body: '안정적인 실행과 빠른 아이디어가 서로 보완됩니다.' },
       { key: 'caution', label: '주의', body: '역할이 겹치지 않게 나누는 약속이 필요합니다.' },
     ]);
+  });
+
+  it('상세 요약에 합·파가 들어와도 쉬운 표현으로 바꾼다', () => {
+    const lines = formatDetailSummaryLines(
+      '주의: 합·파의 엇박자가 커지면 결정 전 속도를 맞춰야 합니다.',
+    );
+
+    expect(lines[0]).toEqual({
+      key: 'caution',
+      label: '주의',
+      body: '잘 맞는 부분과 어긋나는 부분의 속도 차이가 커지면 결정 전 속도를 맞춰야 합니다.',
+    });
   });
 });
 
@@ -147,5 +175,23 @@ describe('formatHapcardActionItems', () => {
       '상대의 먼저 다가오는 표현을 편하게 받아들이되 내 페이스로 한 번씩 리드해보자.',
     );
     expect(items).toHaveLength(3);
+  });
+
+  it('액션 카드의 합·파 표현을 쉬운 표현으로 바꾼다', () => {
+    const items = formatHapcardActionItems({
+      mainText: '결론: 함께 결정할 때 속도 조절이 필요합니다.',
+      whyCards: [],
+      actions: [
+        '회의 시작 10분 안에 우선순위 3가지만 함께 확정하세요.',
+        '주중 중간 점검 1회를 고정해 합·파의 엇박자를 조정하세요.',
+        '의견 충돌 시 대안 2가지와 결정 기준 1가지를 적어두세요.',
+        '다음 회의 전 역할을 한 줄로 나눠두세요.',
+      ],
+    });
+
+    expect(items[0]).toBe(
+      '주중 중간 점검 1회를 고정해 잘 맞는 부분과 어긋나는 부분의 속도 차이를 조정하세요.',
+    );
+    expect(items.join(' ')).not.toContain('합·파');
   });
 });

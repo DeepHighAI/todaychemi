@@ -176,7 +176,6 @@ export async function buildReplay(
       content,
       prompt_version: prompt.version,
       llm_model: llm.model,
-      cache_key: cacheKey,
     })
     .select('replay_id, created_at')
     .single();
@@ -197,7 +196,6 @@ export async function buildReplay(
           content: HapcardResult['content'];
           prompt_version: string;
           llm_model: string;
-          cache_key: string;
           created_at: string;
         };
         return {
@@ -207,7 +205,7 @@ export async function buildReplay(
           content: existing.content,
           prompt_version: existing.prompt_version,
           llm_model: existing.llm_model as LlmModel,
-          cache_key: existing.cache_key,
+          cache_key: cacheKey,
           created_at: existing.created_at,
         };
       }

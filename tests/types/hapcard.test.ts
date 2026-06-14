@@ -66,8 +66,8 @@ describe('HapcardRequestSchema', () => {
 });
 
 describe('HAPCARD_ERROR_CODES', () => {
-  it('contains all 8 error codes', () => {
-    expect(HAPCARD_ERROR_CODES).toHaveLength(8);
+  it('contains all 10 error codes', () => {
+    expect(HAPCARD_ERROR_CODES).toHaveLength(10);
   });
 
   it('includes INVALID_BODY', () => {
@@ -76,6 +76,14 @@ describe('HAPCARD_ERROR_CODES', () => {
 
   it('includes UNAUTHORIZED', () => {
     expect(HAPCARD_ERROR_CODES).toContain('UNAUTHORIZED');
+  });
+
+  it('includes PAYMENT_REQUIRED', () => {
+    expect(HAPCARD_ERROR_CODES).toContain('PAYMENT_REQUIRED');
+  });
+
+  it('includes RATE_LIMITED', () => {
+    expect(HAPCARD_ERROR_CODES).toContain('RATE_LIMITED');
   });
 
   it('includes USER_CHART_LOOKUP_FAILED', () => {

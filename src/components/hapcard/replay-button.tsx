@@ -27,7 +27,7 @@ interface Props {
 }
 
 type State = 'idle' | 'loading' | 'success' | 'error';
-type DisplayCode = Extract<ErrorCode, 'REPLAY_DURING_OUTAGE' | 'HAPCARD_NOT_FOUND' | 'INTERNAL_ERROR'>;
+type DisplayCode = Extract<ErrorCode, 'REPLAY_DURING_OUTAGE' | 'HAPCARD_NOT_FOUND' | 'RATE_LIMITED' | 'INTERNAL_ERROR'>;
 
 function getPaymentRef(e: unknown): string | null {
   const ref = (e as { ref?: unknown })?.ref;
@@ -87,7 +87,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       }
       const raw = e.code;
       const code: DisplayCode =
-        raw === 'REPLAY_DURING_OUTAGE' || raw === 'HAPCARD_NOT_FOUND'
+        raw === 'REPLAY_DURING_OUTAGE' || raw === 'HAPCARD_NOT_FOUND' || raw === 'RATE_LIMITED'
           ? (raw as DisplayCode)
           : 'INTERNAL_ERROR';
       setErrorCode(code);

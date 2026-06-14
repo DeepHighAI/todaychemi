@@ -76,6 +76,7 @@ export default function MePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
 
@@ -102,6 +103,7 @@ export default function MePage() {
       router.refresh();
     } catch {
       setLogoutError(t('info.logoutError'));
+      setLogoutOpen(false);
       setLogoutLoading(false);
     }
   }
@@ -153,7 +155,10 @@ export default function MePage() {
         onAbout={() => setAboutOpen(true)}
         onLang={() => setLangOpen(true)}
         onDeleteAccount={() => setDeleteOpen(true)}
-        onLogout={handleLogout}
+        onLogout={() => {
+          setLogoutError(null);
+          setLogoutOpen(true);
+        }}
         logoutLoading={logoutLoading}
       />
       {logoutError && (
@@ -163,6 +168,31 @@ export default function MePage() {
       )}
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
       <LangSheet open={langOpen} onOpenChange={setLangOpen} />
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>{t('info.logoutConfirmTitle')}</DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              className="rounded-[var(--r-sm)] px-4 py-2 text-sm font-bold text-muted-foreground"
+              disabled={logoutLoading}
+              onClick={() => setLogoutOpen(false)}
+            >
+              {t('info.logoutConfirmNo')}
+            </button>
+            <button
+              type="button"
+              className="rounded-[var(--r-sm)] bg-destructive px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              disabled={logoutLoading}
+              onClick={handleLogout}
+            >
+              {logoutLoading ? t('info.logoutLoading') : t('info.logoutConfirmYes')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>

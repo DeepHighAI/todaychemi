@@ -61,6 +61,8 @@ describe('RelationDetailPage', () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => DETAIL_OK });
     await renderDetailPage();
     expect(await screen.findByTestId('flow-chart')).toBeInTheDocument();
+    expect(await screen.findByText(/2026\.05\.02 기준 38\.00°C/)).toBeInTheDocument();
+    expect(screen.getAllByText('+0.50°C')).not.toHaveLength(0);
   });
 
   it('chart: null → 본명식 섹션 미표시', async () => {

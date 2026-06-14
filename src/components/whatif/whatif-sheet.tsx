@@ -27,10 +27,10 @@ export function WhatifSheet({ open, onOpenChange }: WhatifSheetProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent role="dialog" aria-labelledby="whatif-sheet-title" aria-describedby="whatif-sheet-desc">
+      <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle id="whatif-sheet-title">{t('sheet.title')}</DrawerTitle>
-          <DrawerDescription id="whatif-sheet-desc" className="sr-only">
+          <DrawerTitle>{t('sheet.title')}</DrawerTitle>
+          <DrawerDescription className="sr-only">
             {t('sheet.description')}
           </DrawerDescription>
         </DrawerHeader>

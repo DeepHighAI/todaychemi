@@ -302,11 +302,20 @@
     "change": {
       "eyebrow": "오늘 변화 큼"
     },
+    "select": {
+      "start": "선택 삭제",
+      "cancel": "취소",
+      "count": "{count}개 선택됨",
+      "delete": "삭제",
+      "itemLabel": "{nickname} 선택"
+    },
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
+      "bulkConfirmTitle": "{count}개 인연을 삭제할까요?",
       "confirmBody": "삭제하면 오늘 케미와 흐름 기록도 함께 사라져요.",
       "cancel": "취소",
-      "confirm": "삭제"
+      "confirm": "삭제",
+      "deleting": "삭제 중…"
     }
   },
   "hapcard": {
@@ -353,7 +362,7 @@
     "share": "공유하기",
     "shareSheet": {
       "title": "공유 카드 꾸미기",
-      "description": "카드 모양을 고르고 미리보기를 확인합니다",
+      "description": "공유 카드 미리보기를 확인합니다",
       "range": {
         "nicknameOnly": "별명만",
         "withOhaeng": "별명 + 오행",
@@ -397,7 +406,24 @@
       "caption": "최근 3일 ↔ 오늘 ↔ 앞으로 3일",
       "today": "오늘",
       "loading": "흐름 불러오는 중…",
-      "version_boundary": "점수 기준이 업데이트됐어요 — 이전 막대와 직접 비교는 어려워요"
+      "error": "흐름을 불러오지 못했어요",
+      "version_boundary": "점수 기준이 업데이트됐어요 — 이전 막대와 직접 비교는 어려워요",
+      "summary": {
+        "first": "{date} 오늘 {temperature}, 첫 흐름 기록이에요.",
+        "same": "{date} 오늘 {temperature}, 직전 기록과 같은 온도예요.",
+        "changed": "{date} 오늘 {temperature}, 직전 기록보다 {delta} 변했어요.",
+        "missingToday": "오늘 흐름 기록은 아직 준비 중이에요."
+      },
+      "stat": {
+        "today": "오늘",
+        "delta": "직전 대비",
+        "records": "기록",
+        "recordCount": "{count}회"
+      },
+      "status": {
+        "empty": "기록 없음",
+        "upcoming": "예정"
+      }
     },
     "changeIndicator": {
       "title": "직전 해석 대비 변화",
@@ -472,6 +498,16 @@
       "rename": "별명 수정",
       "share": "공유",
       "delete": "인연 삭제"
+    },
+    "rename": {
+      "title": "별명 수정",
+      "body": "이 인연을 알아보기 쉬운 별명으로 바꿀 수 있어요.",
+      "label": "별명",
+      "placeholder": "별명 입력",
+      "cancel": "취소",
+      "save": "저장",
+      "saving": "저장 중",
+      "error": "별명을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
     },
     "mode": {
       "일합": "일 관계",
@@ -654,15 +690,15 @@
       "privacySub": "시행일 2026.06.01",
       "terms": "이용약관",
       "termsSub": "시행일 2026.06.01",
-      "dataExport": "내 데이터 내려받기",
-      "dataExportSub": "JSON 파일로 저장",
       "deleteAccount": "계정 삭제 요청",
       "deleteAccountSub": "30일 후 영구 삭제",
       "about": "회사소개",
       "aboutSub": "(주) 딥하이",
-      "contact": "대표번호",
       "logout": "로그아웃",
       "logoutSub": "현재 계정에서 나가기",
+      "logoutConfirmTitle": "정말 로그아웃 하시겠습니까?",
+      "logoutConfirmYes": "예",
+      "logoutConfirmNo": "아니오",
       "logoutLoading": "로그아웃 중…",
       "logoutError": "로그아웃에 실패했어요. 잠시 후 다시 시도해주세요."
     },

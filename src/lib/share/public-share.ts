@@ -2,15 +2,24 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
 
 import { getAppOrigin } from '@/lib/app-url';
-import { buildOgPayload, rangeToLayoutOptions, type OgPayload } from '@/lib/og/render-payload';
+import {
+  buildOgPayload,
+  deriveShareAreaScores,
+  rangeToLayoutOptions,
+  type OgPayload,
+  type ShareAreaScores,
+} from '@/lib/og/render-payload';
+import { extractShareHeadline } from '@/lib/share/headline';
 import { buildPublicShareUrls } from '@/lib/share/build-share-payload';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import type { Database } from '@/types/database.types';
+import type { ScoreBreakdown } from '@/types/hapcard';
 
 import type { ShareRange } from './schema';
 import { hashShareToken } from './token';
 
 type ServiceClient = SupabaseClient<Database>;
+const FLOW_MAX = 7;
 
 export interface PublicShare {
   share_id: string;
@@ -27,6 +36,9 @@ export interface PublicShare {
   nickname: string;
   gender_normalized: 'F' | 'M';
   ohaeng_counts?: Record<string, number>;
+  area_scores?: ShareAreaScores;
+  headline?: string;
+  flow_scores?: number[];
 }
 
 export async function getPublicShareByToken(
@@ -59,7 +71,7 @@ export async function getPublicShareByToken(
 
   const { data: hapcardRow, error: hapcardError } = await serviceClient
     .from('hapcards')
-    .select('hapcard_id,mode,compat_score,relation_id')
+    .select('hapcard_id,mode,compat_score,score_breakdown,relation_id,content')
     .eq('hapcard_id', share.hapcard_id)
     .maybeSingle();
 
@@ -69,7 +81,9 @@ export async function getPublicShareByToken(
     hapcard_id: string;
     mode: string;
     compat_score: number;
+    score_breakdown?: ScoreBreakdown | null;
     relation_id: string;
+    content?: { main_text?: string; area_scores?: ShareAreaScores } | null;
   };
 
   const { data: relationRow, error: relationError } = await serviceClient
@@ -81,18 +95,10 @@ export async function getPublicShareByToken(
   if (relationError || !relationRow) return null;
 
   const relation = relationRow as { nickname?: string | null; gender?: string | null };
-  let ohaengCounts: Record<string, number> | undefined;
-
-  if (share.range === 'nickname-ohaeng') {
-    const { data: chartRow } = await serviceClient
-      .from('relation_charts')
-      .select('chart_core')
-      .eq('relation_id', share.relation_id)
-      .maybeSingle();
-
-    const chart = chartRow as { chart_core?: { five_elements_counts?: Record<string, number> } } | null;
-    ohaengCounts = chart?.chart_core?.five_elements_counts;
-  }
+  const [ohaengCounts, flowScores] = await Promise.all([
+    loadOhaengCounts(serviceClient, share.relation_id),
+    loadFlowScores(serviceClient, share.relation_id, hapcard.mode),
+  ]);
 
   const urls = buildPublicShareUrls(origin, token);
 
@@ -111,6 +117,13 @@ export async function getPublicShareByToken(
     nickname: relation.nickname ?? '인연',
     gender_normalized: relation.gender === 'M' ? 'M' : 'F',
     ohaeng_counts: ohaengCounts,
+    area_scores: hapcard.content?.area_scores ?? deriveShareAreaScores(
+      hapcard.compat_score,
+      hapcard.score_breakdown,
+      hapcard.mode,
+    ),
+    headline: extractShareHeadline(hapcard.content?.main_text ?? ''),
+    flow_scores: flowScores,
   };
 }
 
@@ -123,8 +136,42 @@ export function buildPublicShareOgPayload(share: PublicShare): OgPayload {
       score: share.compat_score,
       mode: share.mode,
       ohaeng_counts: share.ohaeng_counts,
+      area_scores: share.area_scores,
+      headline: share.headline,
+      flow_scores: share.flow_scores,
       gender_normalized: share.gender_normalized,
     },
     rangeToLayoutOptions(share.range),
   );
+}
+
+async function loadOhaengCounts(
+  serviceClient: ServiceClient,
+  relationId: string,
+): Promise<Record<string, number> | undefined> {
+  const { data } = await serviceClient
+    .from('relation_charts')
+    .select('chart_core')
+    .eq('relation_id', relationId)
+    .maybeSingle();
+
+  const chart = data as { chart_core?: { five_elements_counts?: Record<string, number> } } | null;
+  return chart?.chart_core?.five_elements_counts;
+}
+
+async function loadFlowScores(
+  serviceClient: ServiceClient,
+  relationId: string,
+  mode: string,
+): Promise<number[]> {
+  const { data } = await serviceClient
+    .from('hapcard_score_snapshots')
+    .select('compat_score')
+    .eq('relation_id', relationId)
+    .eq('mode', mode)
+    .order('target_date', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  const rows = (data ?? []) as Array<{ compat_score: number }>;
+  return rows.slice(-FLOW_MAX).map((r) => Number(r.compat_score));
 }

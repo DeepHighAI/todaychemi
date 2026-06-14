@@ -341,6 +341,74 @@ describe('FeedPage', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['relations'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
   });
+
+  it('선택 삭제 모드에서 여러 인연을 선택해 삭제한다', async () => {
+    const user = userEvent.setup();
+    const items: FeedItem[] = [
+      {
+        relation_id: 'r-a',
+        nickname: '첫인연',
+        mode: '친구합',
+        compat_score: 65,
+        change_score: 0,
+        has_significant_change: false,
+        created_at: '2026-06-05T10:00:00Z',
+      },
+      {
+        relation_id: 'r-b',
+        nickname: '둘인연',
+        mode: '돈합',
+        compat_score: 70,
+        change_score: 0,
+        has_significant_change: false,
+        created_at: '2026-06-06T10:00:00Z',
+      },
+    ];
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/feed') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ items }),
+        });
+      }
+      if ((url === '/api/relations/r-a' || url === '/api/relations/r-b') && init?.method === 'DELETE') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await renderFeedPageWithQueryClient(queryClient);
+
+    await user.click(await screen.findByRole('button', { name: '선택 삭제' }));
+    await user.click(screen.getByRole('button', { name: '첫인연 선택' }));
+    await user.click(screen.getByRole('button', { name: '둘인연 선택' }));
+    expect(screen.getByText('2개 선택됨')).toBeInTheDocument();
+    expect(mockRouterPush).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    expect(await screen.findByText('2개 인연을 삭제할까요?')).toBeInTheDocument();
+    const confirmButtons = screen.getAllByRole('button', { name: '삭제' });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/relations/r-a', { method: 'DELETE' });
+      expect(mockFetch).toHaveBeenCalledWith('/api/relations/r-b', { method: 'DELETE' });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['feed'] });
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['relations'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today'] });
+  });
 });
 
 describe('FeedPage — paid=relation_slot draft reset (A2, 이중결제 차단)', () => {

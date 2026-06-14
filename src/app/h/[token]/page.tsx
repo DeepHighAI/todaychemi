@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
+import { SHARE_OG_ASPECT_CLASS, SHARE_OG_HEIGHT, SHARE_OG_WIDTH } from '@/lib/og/dimensions';
 import { getCachedPublicShareByToken } from '@/lib/share/public-share';
 
 interface Props {
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: share.title,
       description: share.text,
-      images: [{ url: share.og_image_url, width: 1200, height: 630 }],
+      images: [{ url: share.og_image_url, width: SHARE_OG_WIDTH, height: SHARE_OG_HEIGHT }],
     },
     twitter: { card: 'summary_large_image' },
   };
@@ -36,10 +37,10 @@ export default async function PublicHapcardSharePage({ params }: Props) {
         <Image
           src={share.og_image_url}
           alt={share.title}
-          width={1200}
-          height={630}
+          width={SHARE_OG_WIDTH}
+          height={SHARE_OG_HEIGHT}
           unoptimized
-          className="aspect-[1200/630] w-full rounded-[var(--r-xl)] border border-border bg-card object-cover shadow-[var(--e-2)]"
+          className={`${SHARE_OG_ASPECT_CLASS} max-h-[72vh] w-auto max-w-full self-center rounded-[var(--r-xl)] border border-border bg-card object-contain shadow-[var(--e-2)]`}
         />
         <div className="space-y-3">
           <p className="font-eyebrow text-primary">{share.mode}</p>

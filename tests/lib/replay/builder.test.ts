@@ -282,6 +282,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
     const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const citations = insertCall.content.classic_citation as Array<{ source: string; original: string; modern: string }>;
     expect(callArgs.model).toBe('gpt-5');
+    expect(insertCall).not.toHaveProperty('cache_key');
     expect(citations).toHaveLength(1);
     // source_title '적천수(滴天髓)' → '적천수', source_chapter '通神頌' → '통신송'
     expect(citations[0].source).toBe('적천수 통신송');
@@ -382,7 +383,6 @@ describe('buildReplay — classic_citation Korean 변환', () => {
       content: { main_text: '기존 재해석', cause_factors: [], classic_citation: [], actions: [], why_cards: [] },
       prompt_version: 'v0.3',
       llm_model: 'gpt-5',
-      cache_key: 'existing-cache-key',
       created_at: '2026-05-06T02:00:00Z',
     };
 
@@ -434,7 +434,7 @@ describe('buildReplay — classic_citation Korean 변환', () => {
 
       // 기존 persisted row 가 진실의 원천 — 재조회된 row 의 값 반환
       expect(result.replay_id).toBe('existing-replay-999');
-      expect(result.cache_key).toBe('existing-cache-key');
+      expect(result.cache_key).toHaveLength(64);
       expect(result.created_at).toBe('2026-05-06T02:00:00Z');
       expect(result.content.main_text).toBe('기존 재해석');
       // base 필드는 input hapcard 에서

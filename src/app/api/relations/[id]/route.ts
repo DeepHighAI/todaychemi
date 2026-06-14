@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import type { FlowPoint, RelationDetailResponse } from '@/types/relation';
 
 const FLOW_MAX = 30;
+const RelationNicknamePatchSchema = z.object({
+  nickname: z.string().trim().min(1).max(20),
+}).strict();
 
 // GET /api/relations/[id] — 인연 디테일(별명·모드·합흐름·본명식 차트) 조회
 // RLS relations_own(for all) 이 소유자 스코프를 enforce.
@@ -83,6 +87,37 @@ export async function GET(
     { relation, chart, flow } satisfies RelationDetailResponse,
     { status: 200 },
   );
+}
+
+// PATCH /api/relations/[id] — 인연 별명만 수정 (ADR-011: 별명만, 실명 수집 금지)
+// RLS relations_own(for all) 이 소유자 스코프를 enforce.
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  const { id } = await params;
+  const body = await request.json().catch(() => null);
+  const parsed = RelationNicknamePatchSchema.safeParse(body);
+  if (!parsed.success) return apiErrorResponse('INVALID_BODY', '', 400);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return apiErrorResponse('UNAUTHORIZED', '', 401);
+
+  const { data, error } = await supabase
+    .from('relations')
+    .update({ nickname: parsed.data.nickname })
+    .eq('relation_id', id)
+    .select('relation_id, nickname, mode, created_at')
+    .maybeSingle();
+
+  if (error) return apiErrorResponse('INTERNAL_ERROR', error.message, 500);
+  if (!data) return apiErrorResponse('RELATION_NOT_FOUND', `relation ${id} not found`, 404);
+
+  const relation = data as RelationDetailResponse['relation'];
+  return NextResponse.json({ relation } satisfies Pick<RelationDetailResponse, 'relation'>);
 }
 
 // DELETE /api/relations/[id] — 인연 하드 삭제

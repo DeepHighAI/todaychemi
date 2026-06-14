@@ -203,8 +203,21 @@ describe('HapcardPage', () => {
     expect(
       screen.getByText('인연의 사주맵 계산이 아직 준비되지 않았어요. 곧 자동으로 생성됩니다.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
     const cta = screen.getByRole('link', { name: '피드로 돌아가기' });
     expect(cta).toHaveAttribute('href', '/feed');
+  });
+
+  it('shows chartPending retry card on RELATION_CHART_LOOKUP_FAILED', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: { code: 'RELATION_CHART_LOOKUP_FAILED', message: 'temporary chart failure' } }),
+    });
+    await renderHapcardPage();
+    expect(await screen.findByText('오늘 케미 준비 중')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+    expect(screen.queryByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')).toBeNull();
   });
 
   it('shows chartPending card on USER_CHART_NOT_FOUND', async () => {
@@ -220,7 +233,7 @@ describe('HapcardPage', () => {
     expect(cta).toHaveAttribute('href', '/onboarding');
   });
 
-  it('shows generic error on 401', async () => {
+  it('shows retryable error card on 401', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 401,
@@ -228,11 +241,12 @@ describe('HapcardPage', () => {
     });
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 
-  it('shows generic error on 500', async () => {
+  it('shows retryable error card on 500', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
@@ -240,15 +254,53 @@ describe('HapcardPage', () => {
     });
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 
-  it('shows generic error on network failure', async () => {
+  it('shows retryable error card on network failure', async () => {
     mockFetch.mockRejectedValue(new Error('Network Error'));
     await renderHapcardPage();
     expect(
-      await screen.findByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'),
+      await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+  });
+
+  it('retry button refetches after transient INTERNAL_ERROR and renders the result', async () => {
+    const user = userEvent.setup();
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'temporary failure' } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => withVisuals({ relation_nickname: '테스트1' }),
+      });
+
+    await renderHapcardPage();
+    await screen.findByText('잠시 문제가 생겼어요. 다시 시도해주세요.');
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(await screen.findByTestId('ai-disclosure-badge')).toBeInTheDocument();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows GROUNDING_FAILED copy instead of generic hidden failure', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: { code: 'GROUNDING_FAILED', message: 'grounding failed' } }),
+    });
+
+    await renderHapcardPage();
+
+    expect(await screen.findByText('고전 문헌 검증에 실패했어요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(screen.queryByText('오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')).toBeNull();
   });
 });

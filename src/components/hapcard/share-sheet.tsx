@@ -13,7 +13,8 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import type { ShareLayout } from '@/lib/og/render-payload';
+import { SHARE_OG_HEIGHT, SHARE_OG_WIDTH } from '@/lib/og/dimensions';
+import { serializeShareOhaengCounts, type ShareLayout } from '@/lib/og/render-payload';
 import type { SharePayloadInput } from '@/lib/share/build-share-payload';
 
 export type ShareSheetAction = 'kakao' | 'instagram' | 'copy_link';
@@ -26,28 +27,33 @@ interface ShareSheetProps {
   busyAction?: ShareSheetAction | null;
 }
 
-const LAYOUT_OPTIONS: Array<{ value: ShareLayout; labelKey: string }> = [
-  { value: 'minimal', labelKey: 'minimal' },
-  { value: 'ohaeng', labelKey: 'ohaeng' },
-  { value: 'radar', labelKey: 'radar' },
-  { value: 'comment', labelKey: 'comment' },
-  { value: 'flow', labelKey: 'flow' },
-];
+const SHARE_CARD_LAYOUT: ShareLayout = 'combined';
+const SHARE_CARD_VERSION = '5';
+
+function buildPreviewSrc(hapcard: SharePayloadInput, showGender: boolean): string {
+  const params = new URLSearchParams({
+    layout: SHARE_CARD_LAYOUT,
+    gender: showGender ? '1' : '0',
+    v: SHARE_CARD_VERSION,
+  });
+  const ohaeng = serializeShareOhaengCounts(hapcard.ohaeng_counts);
+  if (ohaeng) params.set('ohaeng', ohaeng);
+  return `/api/og/hapcard/${encodeURIComponent(hapcard.hapcard_id)}?${params.toString()}`;
+}
 
 export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = null }: ShareSheetProps) {
   const t = useTranslations('hapcard.shareSheet');
-  const [layout, setLayout] = useState<ShareLayout>('minimal');
   const [showGender, setShowGender] = useState(false);
 
-  // 프리뷰 = 실제 인증 OG 이미지 (선택 레이아웃·성별). "보이는 그대로 공유" (§1.1).
-  const previewSrc = `/api/og/hapcard/${encodeURIComponent(hapcard.hapcard_id)}?layout=${layout}&gender=${showGender ? 1 : 0}`;
+  // 프리뷰 = 실제 인증 OG 이미지 (통합 카드·성별). "보이는 그대로 공유" (§1.1).
+  const previewSrc = buildPreviewSrc(hapcard, showGender);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent role="dialog" aria-labelledby="share-sheet-title" aria-describedby="share-sheet-desc">
+      <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle id="share-sheet-title">{t('title')}</DrawerTitle>
-          <DrawerDescription id="share-sheet-desc" className="sr-only">
+          <DrawerTitle>{t('title')}</DrawerTitle>
+          <DrawerDescription className="sr-only">
             {t('description')}
           </DrawerDescription>
         </DrawerHeader>
@@ -60,33 +66,10 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
             src={previewSrc}
             alt={t('preview')}
             aria-label="공유 미리보기"
-            width={1200}
-            height={630}
-            className="aspect-[1200/630] w-full rounded-[var(--radius-xl)] border border-border bg-card object-cover shadow-md"
+            width={SHARE_OG_WIDTH}
+            height={SHARE_OG_HEIGHT}
+            className="mx-auto max-h-[56vh] w-auto max-w-full rounded-[var(--radius-xl)] border border-border bg-card object-contain shadow-md"
           />
-        </div>
-
-        {/* 레이아웃 탭 5종 */}
-        <div
-          role="group"
-          aria-label={t('layoutGroupLabel')}
-          className="px-4 pb-2 flex flex-wrap gap-2"
-        >
-          {LAYOUT_OPTIONS.map(({ value, labelKey }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={layout === value}
-              onClick={() => setLayout(value)}
-              className={`min-h-[40px] rounded-[var(--radius-pill)] px-3.5 text-sm font-semibold ${
-                layout === value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {t(`layout.${labelKey}`)}
-            </button>
-          ))}
         </div>
 
         {/* 성별 표시 토글 (ADR-024 옵트인) */}
@@ -105,7 +88,7 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
         <DrawerFooter>
           <Button
             className="w-full gap-2 border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-[var(--kakao-foreground)] hover:bg-[var(--kakao-yellow-hover)]"
-            onClick={() => onShare(layout, showGender, 'kakao')}
+            onClick={() => onShare(SHARE_CARD_LAYOUT, showGender, 'kakao')}
             disabled={busyAction !== null}
           >
             <MessageCircle size={18} />
@@ -114,7 +97,7 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
           <Button
             variant="outline"
             className="w-full gap-2"
-            onClick={() => onShare(layout, showGender, 'instagram')}
+            onClick={() => onShare(SHARE_CARD_LAYOUT, showGender, 'instagram')}
             disabled={busyAction !== null}
           >
             <ImageDown size={18} />
@@ -123,7 +106,7 @@ export function ShareSheet({ open, onOpenChange, hapcard, onShare, busyAction = 
           <Button
             variant="outline"
             className="w-full gap-2"
-            onClick={() => onShare(layout, showGender, 'copy_link')}
+            onClick={() => onShare(SHARE_CARD_LAYOUT, showGender, 'copy_link')}
             disabled={busyAction !== null}
           >
             <Copy size={18} />

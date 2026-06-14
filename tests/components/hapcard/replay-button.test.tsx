@@ -249,6 +249,22 @@ describe('HapcardReplayButton — error paths', () => {
     await userEvent.click(retryBtn);
     expect(screen.getByRole('button', { name: '케미 다시 맞추기' })).not.toBeDisabled();
   });
+
+  it('RATE_LIMITED(429) → 한도 초과 안내를 generic 오류로 숨기지 않는다', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: { code: 'RATE_LIMITED', message: 'daily limit' } }),
+    } as Response);
+
+    renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
+    await userEvent.click(screen.getByRole('button', { name: /케미 다시 맞추기/ }));
+    await screen.findByText('케미 다시 맞춰 볼까요?');
+    await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
+
+    expect(await screen.findByText('오늘 미리보기 생성 한도에 도달했어요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(screen.queryByText('잠시 문제가 생겼어요. 다시 시도해주세요.')).toBeNull();
+  });
 });
 
 describe('HapcardReplayButton — ?replay=1 결제 후 복귀', () => {

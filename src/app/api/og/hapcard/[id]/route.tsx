@@ -2,19 +2,24 @@ import { ImageResponse } from 'next/og';
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+import { SHARE_OG_HEIGHT, SHARE_OG_WIDTH } from '@/lib/og/dimensions';
 import { loadNotoSansKrRegularFont } from '@/lib/og/font';
 import {
   buildOgPayload,
+  deriveShareAreaScores,
+  parseShareOhaengCountsParam,
   rangeToLayoutOptions,
   type OgPayloadInput,
   type OgPayloadOptions,
+  type ShareAreaScores,
   type ShareLayout,
 } from '@/lib/og/render-payload';
 import { OgTemplate } from '@/lib/og/template';
 import { extractShareHeadline } from '@/lib/share/headline';
 import type { ShareRange } from '@/lib/share/build-share-payload';
+import type { ScoreBreakdown } from '@/types/hapcard';
 
-const VALID_LAYOUTS: ShareLayout[] = ['minimal', 'ohaeng', 'radar', 'comment', 'flow'];
+const VALID_LAYOUTS: ShareLayout[] = ['combined', 'minimal', 'ohaeng', 'radar', 'comment', 'flow'];
 const VALID_RANGES: ShareRange[] = ['nickname-only', 'nickname-ohaeng', 'nickname-gender'];
 const FLOW_MAX = 7;
 
@@ -49,6 +54,7 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
     if (!options) {
       return new Response('invalid layout', { status: 400 });
     }
+    const queryOhaengCounts = parseShareOhaengCountsParam(url.searchParams.get('ohaeng'));
 
     const { id } = await ctx.params;
 
@@ -63,7 +69,7 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
 
     const { data: hapcardRow } = await supabase
       .from('hapcards')
-      .select('hapcard_id, mode, compat_score, relation_id, content')
+      .select('hapcard_id, mode, compat_score, score_breakdown, relation_id, content')
       .eq('hapcard_id', id)
       .maybeSingle();
 
@@ -75,8 +81,9 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       hapcard_id: string;
       mode: string;
       compat_score: number;
+      score_breakdown?: ScoreBreakdown | null;
       relation_id: string;
-      content?: { main_text?: string } | null;
+      content?: { main_text?: string; area_scores?: ShareAreaScores } | null;
     };
 
     const { data: relRow } = await supabase
@@ -93,9 +100,18 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
       gender_normalized: rel.gender === 'M' ? 'M' : 'F',
     };
 
-    // 레이아웃별 데이터 — 비-PII (오행 수치·나vs인연 오행·요약 코멘트·점수 흐름)
-    if (options.layout === 'ohaeng') {
-      input.ohaeng_counts = await loadOhaengCounts(supabase, hap.relation_id);
+    // 레이아웃별 데이터 — 비-PII (오행 수치·영역 온도·요약 코멘트)
+    if (options.layout === 'combined') {
+      const ohaengCounts = await loadOhaengCounts(supabase, hap.relation_id);
+      input.ohaeng_counts = ohaengCounts ?? queryOhaengCounts;
+      input.area_scores = hap.content?.area_scores ?? deriveShareAreaScores(
+        hap.compat_score,
+        hap.score_breakdown,
+        hap.mode,
+      );
+      input.headline = extractShareHeadline(hap.content?.main_text ?? '');
+    } else if (options.layout === 'ohaeng') {
+      input.ohaeng_counts = (await loadOhaengCounts(supabase, hap.relation_id)) ?? queryOhaengCounts;
     } else if (options.layout === 'radar') {
       const [userCounts, relationCounts] = await Promise.all([
         loadUserOhaengCounts(supabase, user.id),
@@ -112,8 +128,8 @@ export async function GET(request: Request, ctx: RouteContext): Promise<Response
     const fontData = await loadNotoSansKrRegularFont(request.url);
 
     return new ImageResponse(<OgTemplate payload={payload} />, {
-      width: 1200,
-      height: 630,
+      width: SHARE_OG_WIDTH,
+      height: SHARE_OG_HEIGHT,
       fonts: [{ name: 'Noto Sans KR', data: fontData, style: 'normal', weight: 400 }],
     });
   } catch (err) {

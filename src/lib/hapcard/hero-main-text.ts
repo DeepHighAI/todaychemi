@@ -25,6 +25,11 @@ const LABEL_START =
 
 const CAUTION_PATTERN = /주의|조심|경계|부족|충돌|부딪|긴장|오해|불안|불확실|중복|약점|피로|마찰|소모|부담|어색|느릴|느림|엇갈/;
 const GOOD_PATTERN = /강점|좋|장점|편안|보완|시너지|매력|신뢰|안정|끌림|케미|성장|활기|유대|공감/;
+const WORD_CHAR_CLASS = '가-힣A-Za-z0-9';
+const RELATION_PAIR_PATTERN = new RegExp(
+  `(^|[^${WORD_CHAR_CLASS}])합\\s*[·ㆍ・/]\\s*파(으로|이란|이라|이다|이며|이고|이|가|은|는|을|를|과|와|도|만|의|로)?(?=$|[^${WORD_CHAR_CLASS}])`,
+  'g',
+);
 
 function normalizeInline(text: string): string {
   return text.replace(/[ \t\f\v]+/g, ' ').trim();
@@ -52,6 +57,73 @@ function stripLeadLabel(text: string): string {
     .trim();
 }
 
+function hasFinalConsonant(text: string): boolean {
+  const code = text.charCodeAt(text.length - 1);
+  return code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 > 0;
+}
+
+function harmonizeJosa(replacement: string, josa: string): string {
+  const batchim = hasFinalConsonant(replacement);
+  const code = replacement.charCodeAt(replacement.length - 1);
+  const isRieul = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 === 8;
+
+  switch (josa) {
+    case '이':
+    case '가':
+      return batchim ? '이' : '가';
+    case '은':
+    case '는':
+      return batchim ? '은' : '는';
+    case '을':
+    case '를':
+      return batchim ? '을' : '를';
+    case '과':
+    case '와':
+      return batchim ? '과' : '와';
+    case '으로':
+    case '로':
+      return batchim && !isRieul ? '으로' : '로';
+    case '이란':
+    case '란':
+      return batchim ? '이란' : '란';
+    case '이라':
+    case '라':
+      return batchim ? '이라' : '라';
+    default:
+      return josa;
+  }
+}
+
+function replaceStandaloneRelationTerm(
+  text: string,
+  term: '합' | '파',
+  replacement: string,
+): string {
+  const pattern = new RegExp(
+    `(^|[^${WORD_CHAR_CLASS}])${term}(으로|이란|이라|이다|이며|이고|이|가|은|는|을|를|과|와|도|만|의|로)?(?=$|[^${WORD_CHAR_CLASS}])`,
+    'g',
+  );
+
+  return text.replace(pattern, (_match, prefix: string, josa?: string) => (
+    `${prefix}${replacement}${josa ? harmonizeJosa(replacement, josa) : ''}`
+  ));
+}
+
+function softenRelationMechanicTerms(text: string): string {
+  const pairReplacement = '잘 맞는 부분과 어긋나는 부분';
+  const paired = text
+    .replace(/합\s*[·ㆍ・/]\s*파의\s*엇박자/g, `${pairReplacement}의 속도 차이`)
+    .replace(RELATION_PAIR_PATTERN, (_match, prefix: string, josa?: string) => (
+      `${prefix}${pairReplacement}${josa ? harmonizeJosa(pairReplacement, josa) : ''}`
+    ));
+
+  return replaceStandaloneRelationTerm(
+    replaceStandaloneRelationTerm(paired, '합', '서로 잘 맞는 흐름'),
+    '파',
+    '어긋나는 흐름',
+  );
+}
+
 function parseDetailSummaryLine(line: string, index: number): DetailSummaryLine {
   const fallback = [
     { key: 'conclusion', label: '결론' },
@@ -76,7 +148,7 @@ function parseDetailSummaryLine(line: string, index: number): DetailSummaryLine 
 }
 
 function simplifyTerms(text: string): string {
-  return convertHanja(text)
+  return softenRelationMechanicTerms(convertHanja(text))
     .replace(/ⓘ/g, '')
     .replace(/actions\[\d+\]\s*(?:처럼|같이|로|으로|을|를|은|는)?/gi, '')
     .replace(/비견(?:\([^)]+\))?/g, '비슷한 성향')
@@ -282,7 +354,7 @@ export function formatHapcardActionItems({
 }
 
 export function formatHeroMainText(mainText: string): string {
-  const converted = convertHanja(mainText).replace(/\r\n/g, '\n');
+  const converted = softenRelationMechanicTerms(convertHanja(mainText)).replace(/\r\n/g, '\n');
   const sourceLines = converted
     .split('\n')
     .map(normalizeInline)
