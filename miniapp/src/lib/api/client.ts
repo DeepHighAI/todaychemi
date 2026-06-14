@@ -19,12 +19,21 @@ const API_BASE_URL =
 // 에러 타입
 // ---------------------------------------------------------------------------
 
+/** 402 PAYMENT_REQUIRED 응답이 운반하는 결제 정보 (P5 IAP 시트용) */
+export interface PaymentRequiredInfo {
+  feature: string;
+  ref: string;
+  amount_krw: number;
+}
+
 /** API 호출 실패를 나타내는 타입드 에러 */
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
     message: string,
+    /** 402 PAYMENT_REQUIRED 시 상위 레벨 결제 페이로드 */
+    public readonly payment?: PaymentRequiredInfo,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -74,20 +83,44 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!response.ok) {
-    // 서버가 JSON 에러 페이로드를 반환하는지 시도
+    // 웹 API 표준 에러 봉투: { error: { code, message } } (route-response.ts apiErrorResponse).
+    // 402 PAYMENT_REQUIRED 는 상위 레벨에 { feature, ref, amount_krw } 동반(paymentRequiredResponse).
     let code = 'UNKNOWN_ERROR';
     let message = `HTTP ${response.status}`;
+    let payment: PaymentRequiredInfo | undefined;
     try {
       const errBody = (await response.json()) as {
-        error?: string;
+        error?: { code?: string; message?: string } | string;
         message?: string;
+        feature?: string;
+        ref?: string;
+        amount_krw?: number;
       };
-      code = errBody.error ?? code;
-      message = errBody.message ?? message;
+      if (typeof errBody.error === 'string') {
+        // 레거시 문자열 형태 방어
+        code = errBody.error;
+      } else if (errBody.error && typeof errBody.error === 'object') {
+        code = errBody.error.code ?? code;
+        message = errBody.error.message ?? message;
+      }
+      if (errBody.message) message = errBody.message;
+      // 402 결제 필요 — IAP 시트(P5)가 필요로 하는 페이로드 운반
+      if (
+        response.status === 402 &&
+        typeof errBody.feature === 'string' &&
+        typeof errBody.ref === 'string' &&
+        typeof errBody.amount_krw === 'number'
+      ) {
+        payment = {
+          feature: errBody.feature,
+          ref: errBody.ref,
+          amount_krw: errBody.amount_krw,
+        };
+      }
     } catch {
-      // JSON 파싱 실패 시 기본 메시지 유지
+      // JSON 파싱 실패 시 기본값 유지
     }
-    throw new ApiError(response.status, code, message);
+    throw new ApiError(response.status, code, message, payment);
   }
 
   // 204 No Content — 빈 응답

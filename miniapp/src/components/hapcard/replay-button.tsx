@@ -1,0 +1,282 @@
+/**
+ * replay-button.tsx — 케미 다시 맞추기 버튼 (미니앱 포트)
+ *
+ * 웹앱 원본: src/components/hapcard/replay-button.tsx
+ *
+ * 변경:
+ *   - useSearchParams(next/navigation) → useSearchParams(react-router-dom)
+ *   - useRouter(next/navigation) → 미사용 (결제 후 복귀는 useSearchParams 감지)
+ *   - FeaturePaySheet 제거 → 402 시 TODO(P5 IAP) 플레이스홀더
+ *   - fetch('/api/...') → apiFetch(path, { token })
+ *   - next-intl useTranslations 유지 (App.tsx 의 NextIntlClientProvider 통해 제공됨)
+ */
+
+import { useState, useEffect, useRef } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { ERROR_COPY } from '@/lib/errors/error-codes';
+import type { HapcardResult } from '@/types/hapcard';
+
+interface Props {
+  hapcardId: string;
+  relationId: string;
+  mode: string;
+  targetDate: string;
+}
+
+type State = 'idle' | 'loading' | 'success' | 'error' | 'pay_required';
+
+// API 기본 URL (client.ts 와 동일 패턴)
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
+
+/** 웹앱 { error: { code, message } } 봉투 파싱 래퍼 */
+async function postReplay(hapcardId: string, token: string | null): Promise<HapcardResult> {
+  const res = await fetch(`${API_BASE}/api/hapcards/${hapcardId}/replay`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as {
+      error?: { code?: string; message?: string } | string;
+      ref?: string;
+      amount_krw?: number;
+    };
+    const nested = typeof body.error === 'object' ? body.error : null;
+    const code = nested?.code ?? (typeof body.error === 'string' ? body.error : 'INTERNAL_ERROR');
+    throw Object.assign(new Error(code), {
+      status: res.status,
+      code,
+      ref: body.ref,
+      amount_krw: body.amount_krw,
+    });
+  }
+  return res.json() as Promise<HapcardResult>;
+}
+
+// 402 응답에서 결제 ref 추출
+function getPaymentRef(e: unknown): string | null {
+  const ref = (e as { ref?: unknown })?.ref;
+  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+}
+
+export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }: Props) {
+  const t = useTranslations('hapcard');
+  const qc = useQueryClient();
+  const { token } = useAuth();
+  // react-router-dom: useSearchParams 반환은 [params, setParams] 튜플
+  const [searchParams] = useSearchParams();
+  const replayParam = searchParams.get('replay');
+
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<State>('idle');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // 결제 필요 상태 — P5 IAP 연결 전 안내 표시용
+  const [payRef, setPayRef] = useState<string | null>(null);
+  const [autoReplay, setAutoReplay] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoFired = useRef(false);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const mutation = useMutation({
+    mutationFn: (): Promise<HapcardResult> => postReplay(hapcardId, token),
+    onSuccess: (result) => {
+      // 케시 갱신 — HapcardView 의 useQuery 와 동일 키
+      qc.setQueryData(['hapcard', relationId, mode, targetDate], result);
+      qc.invalidateQueries({ queryKey: ['hapcard-snapshots', hapcardId] });
+      setState('success');
+      timerRef.current = setTimeout(() => {
+        setOpen(false);
+        setState('idle');
+      }, 1500);
+    },
+    onError: (err: unknown) => {
+      const e = err as { status?: number; code?: string; ref?: string };
+      // 402 PAYMENT_REQUIRED — P5 IAP 전까지 안내 메시지만 표시
+      if (e.status === 402 || e.code === 'PAYMENT_REQUIRED') {
+        const ref = getPaymentRef(e);
+        setPayRef(ref);
+        setState('pay_required');
+        return;
+      }
+      // 그 외 에러: error-codes 카탈로그에서 복사본 검색
+      const rawCode = e.code ?? 'INTERNAL_ERROR';
+      const msg =
+        (rawCode in ERROR_COPY)
+          ? ERROR_COPY[rawCode as keyof typeof ERROR_COPY]
+          : ERROR_COPY.INTERNAL_ERROR;
+      setErrorMsg(msg);
+      setState('error');
+    },
+  });
+
+  // 결제 완료 후 복귀(?replay=1) → 다이얼로그 자동 재오픈 + 1회 재발화.
+  // 재POST 는 잠금해제된 row 반환(200) — 재과금 없음.
+  useEffect(() => {
+    if (replayParam === '1' && !autoFired.current) {
+      autoFired.current = true;
+      setAutoReplay(true);
+      setOpen(true);
+      setState('loading');
+      mutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayParam]);
+
+  function handleOpen(v: boolean) {
+    if (!v) {
+      setState('idle');
+      setErrorMsg(null);
+      setAutoReplay(false);
+      setPayRef(null);
+    }
+    setOpen(v);
+  }
+
+  function handleConfirm() {
+    setState('loading');
+    mutation.mutate();
+  }
+
+  function handleRetry() {
+    setState('idle');
+    setErrorMsg(null);
+    setPayRef(null);
+  }
+
+  const isLoading = state === 'loading';
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      {/* 트리거 버튼 */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          borderRadius: 12,
+          border: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-card)',
+          padding: '10px 16px',
+          fontSize: 14,
+          fontWeight: 500,
+          color: 'var(--text-primary)',
+          cursor: 'pointer',
+          width: '100%',
+          justifyContent: 'center',
+        }}
+      >
+        <RefreshCw style={{ width: 16, height: 16 }} aria-hidden />
+        {t('replayButton.label')}
+      </button>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('replayButton.confirmTitle')}</DialogTitle>
+          <DialogDescription>
+            {autoReplay
+              ? t('replayButton.afterPayLoading')
+              : t('replayButton.confirmBody')}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* 성공 */}
+        {state === 'success' && (
+          <p style={{ fontSize: 14, textAlign: 'center', color: 'var(--primary)', padding: '8px 0' }}>
+            {t('replayButton.successToast')}
+          </p>
+        )}
+
+        {/* 오류 */}
+        {state === 'error' && (
+          <div
+            role="alert"
+            style={{
+              borderRadius: 12,
+              backgroundColor: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+              padding: 12,
+              fontSize: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <p style={{ margin: 0, color: 'var(--destructive)' }}>{errorMsg}</p>
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              다시 시도
+            </Button>
+          </div>
+        )}
+
+        {/* 결제 필요 — P5 IAP 연결 전 안내 */}
+        {state === 'pay_required' && (
+          <div
+            role="alert"
+            style={{
+              borderRadius: 12,
+              backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+              padding: 12,
+              fontSize: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <p style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>
+              케미 다시 맞추기는 ₩600이 필요해요.
+            </p>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
+              {/* TODO(P5 IAP): Toss IAP 시트 연결 */}
+              앱 내 결제 연동 준비 중이에요. 웹에서 이용해주세요.
+            </p>
+            {payRef && (
+              <p style={{ margin: 0, color: 'var(--outline)', fontSize: 11, fontFamily: 'monospace' }}>
+                ref: {payRef}
+              </p>
+            )}
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              닫기
+            </Button>
+          </div>
+        )}
+
+        {/* 확인/취소 푸터 — 성공/페이/autoReplay 상태가 아닐 때 */}
+        {state !== 'success' && state !== 'pay_required' && !autoReplay && (
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => handleOpen(false)}
+              disabled={isLoading}
+            >
+              {t('replayButton.cancel')}
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={isLoading || state === 'error'}
+            >
+              {isLoading ? '처리 중…' : t('replayButton.confirmCta')}
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
