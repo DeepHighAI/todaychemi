@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      pinch-zoom 비활성화: iOS WebView 에서 의도치 않은 줌이 발생하지 않도록 막음.
+      viewport-fit=cover: 노치/홈 인디케이터 영역까지 배경을 채움(safe-area 이용 가능).
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>오늘케미</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

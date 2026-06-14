@@ -1,0 +1,80 @@
+/**
+ * AppNav.tsx
+ *
+ * 하단 탭바 추상화 레이어.
+ *
+ * NOTE: TDS Navigation 바 검수 의무 여부는 채널톡 확인 대기 —
+ * 이 추상화로 TDS NavigationBar 교체 가능하게 유지.
+ *
+ * 현재는 자체 디자인 하단 탭(오늘 / 피드 / 나)을 렌더링한다.
+ */
+
+import { NavLink } from 'react-router-dom';
+import type { ReactNode } from 'react';
+
+interface NavItem {
+  /** 라우트 경로 */
+  to: string;
+  /** 탭 레이블 */
+  label: string;
+  /** 탭 아이콘 (ReactNode) */
+  icon: ReactNode;
+}
+
+interface AppNavProps {
+  items: NavItem[];
+}
+
+/** 하단 탭 네비게이션 바 — TDS NavigationBar 교체 진입점 */
+export function AppNav({ items }: AppNavProps) {
+  return (
+    <nav
+      role="tablist"
+      aria-label="메인 탭"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 'var(--tabbar-h)',
+        // safe-area-inset-bottom 을 추가로 확보 (iOS 홈 인디케이터)
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        background: 'var(--bg-card)',
+        borderTop: '1px solid var(--hairline)',
+        display: 'flex',
+        alignItems: 'stretch',
+        zIndex: 100,
+        boxShadow: 'var(--e-2)',
+      }}
+    >
+      {items.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.to === '/'}
+          role="tab"
+          style={({ isActive }) => ({
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 3,
+            color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+            textDecoration: 'none',
+            fontSize: 10,
+            fontWeight: isActive ? 600 : 400,
+            letterSpacing: 'var(--ls-snug)',
+            paddingTop: 8,
+            paddingBottom: 4,
+            transition: 'color 0.15s',
+          })}
+          aria-selected={undefined} // NavLink 의 aria-current="page" 로 관리
+        >
+          {item.icon}
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}

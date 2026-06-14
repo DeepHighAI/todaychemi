@@ -1,0 +1,228 @@
+/*
+ * 오늘케미 디자인 토큰 — miniapp 포트
+ *
+ * 원본: C:\DEV\SAJU\src\app\globals.css (라이트/다크 모두 포함)
+ * Tailwind 어노테이션(@theme inline)은 제거하고 CSS 변수만 유지.
+ * shadcn/ui 의존 없이 동일한 --color-* 값을 바닐라 CSS 변수로 정의한다.
+ */
+
+/* ===========================================================================
+ * 라이트 모드
+ * =========================================================================== */
+:root {
+  /* 오늘케미 브랜드 surface */
+  --bg-canvas:         #fbf8f3;
+  --bg-card:           #ffffff;
+  --text-primary:      #1a1b23;
+  --text-secondary:    #5a5b66;
+  --hairline:          #e8e4db;
+
+  /* 5 오행(五行) 컬러 */
+  --accent-wood:       #6fb59a;
+  --accent-fire:       #e07a5f;
+  --accent-earth:      #c9a47a;
+  --accent-metal:      #c0c5ce;
+  --accent-water:      #5b7db1;
+
+  /* M3 purple — 브랜드 primary */
+  --p-10: #21005d;
+  --p-20: #381e72;
+  --p-30: #4f378b;
+  --p-40: #6750a4;
+  --p-60: #9a82db;
+  --p-80: #d0bcff;
+  --p-90: #eaddff;
+  --p-95: #f6edff;
+  --p-98: #fef7ff;
+
+  /* M3 secondary tonal */
+  --s-30: #4a4458;
+  --s-40: #625b71;
+  --s-90: #e8def8;
+  --s-95: #f7f2fa;
+
+  /* M3 tertiary tonal */
+  --t-30: #633B48;
+  --t-40: #7D5260;
+  --t-90: #FFD8E4;
+
+  /* shadcn/semantic 호환 별칭 */
+  --background:             var(--bg-canvas);
+  --foreground:             var(--text-primary);
+  --card:                   var(--bg-card);
+  --card-foreground:        var(--text-primary);
+  --popover:                var(--bg-card);
+  --popover-foreground:     var(--text-primary);
+  --primary:                var(--p-40);
+  --primary-foreground:     #ffffff;
+  --secondary:              var(--p-95);
+  --secondary-foreground:   var(--p-40);
+  --muted:                  #f4f1ec;
+  --muted-foreground:       var(--text-secondary);
+  --accent:                 var(--p-90);
+  --accent-foreground:      var(--p-40);
+  --destructive:            #b3261e;
+  --border:                 var(--hairline);
+  --input:                  var(--hairline);
+  --ring:                   var(--p-40);
+
+  /* 오행 → chart alias (recharts) */
+  --chart-1: var(--accent-wood);
+  --chart-2: var(--accent-fire);
+  --chart-3: var(--accent-earth);
+  --chart-4: var(--accent-metal);
+  --chart-5: var(--accent-water);
+
+  /* Semantic */
+  --ok:      #386a20;
+  --ok-bg:   #d7e8da;
+  --warn:    #b3261e;
+  --warn-bg: #ffdad6;
+  --info:    #0066ff;
+  --info-bg: #eaf2fe;
+
+  /* Liquid Glass 그라디언트 스톱 */
+  --lg-1: #4f46e5;
+  --lg-2: #6541f2;
+  --lg-3: #9333ea;
+  --lg-4: #ff5e00;
+
+  /* 기본 radius (M3 Expressive) */
+  --radius:  0.75rem;
+  --r-xs:    8px;
+  --r-sm:    12px;
+  --r-md:    16px;
+  --r-lg:    20px;
+  --r-xl:    24px;
+  --r-pill:  999px;
+
+  /* M3 surface container levels */
+  --surface:    #fffbfe;
+  --surface-1:  #f7f2fa;
+  --surface-2:  #f0e9f5;
+  --surface-3:  var(--p-90);
+  --on-surface:     var(--text-primary);
+  --on-surface-var: var(--text-secondary);
+  --outline:         #79747e;
+  --outline-variant: #cac4d0;
+
+  /* Layout height tokens */
+  --tabbar-h:              76px;
+  --ctabar-h:              72px;
+  --ctabar-h-with-safe-area: calc(72px + env(safe-area-inset-bottom));
+
+  /* Type scale */
+  --t-display-l: 800 32px/1.2 system-ui, sans-serif;
+  --t-display:   800 28px/1.24 system-ui, sans-serif;
+  --t-h1:        800 24px/1.32 system-ui, sans-serif;
+  --t-h2:        700 18px/1.36 system-ui, sans-serif;
+  --t-h3:        600 15px/1.4  system-ui, sans-serif;
+  --t-body:      400 14px/1.5  system-ui, sans-serif;
+  --t-sub:       400 13px/1.45 system-ui, sans-serif;
+  --t-cap:       500 12px/1.4  system-ui, sans-serif;
+
+  /* Letter-spacing */
+  --ls-tight: -0.022em;
+  --ls-snug:  -0.016em;
+
+  /* Spacing scale */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+
+  /* Elevation */
+  --e-1: 0 1px 2px rgba(0,0,0,0.03), 0 1px 3px 1px rgba(0,0,0,0.04);
+  --e-2: 0 1px 2px rgba(0,0,0,0.04), 0 2px 6px 2px rgba(0,0,0,0.05);
+  --e-3: 0 4px 8px 3px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* ===========================================================================
+ * 다크 모드
+ * =========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-canvas:      #14151c;
+    --bg-card:        #1c1d26;
+    --text-primary:   #ece6d6;
+    --text-secondary: #a8a8b5;
+    --hairline:       #2a2b36;
+
+    --accent-wood:  #5a9580;
+    --accent-fire:  #bd6650;
+    --accent-earth: #a88862;
+    --accent-metal: #9da3ac;
+    --accent-water: #4a6896;
+
+    --p-10: #eaddff;
+    --p-20: #d0bcff;
+    --p-30: #b69df8;
+    --p-40: #cfbcff;
+    --p-60: #9a82db;
+    --p-80: #4f378b;
+    --p-90: #381e72;
+    --p-95: #2b1761;
+    --p-98: #21005d;
+
+    --s-30: #ccc2dc;
+    --s-40: #ccc2dc;
+    --s-90: #4a4458;
+    --s-95: #332d41;
+
+    --t-30: #FFD8E4;
+    --t-40: #EFB8C8;
+    --t-90: #633B48;
+
+    --primary-foreground: #1a1b23;
+    --muted:              #232430;
+    --destructive:        #f2b8b5;
+
+    --ok:      #91d29e;
+    --ok-bg:   #1f3a24;
+    --warn:    #f2b8b5;
+    --warn-bg: #4a1e1b;
+    --info:    #a8c7ff;
+    --info-bg: #1b2841;
+
+    --lg-1: #6b5be5;
+    --lg-2: #7b5bf2;
+    --lg-3: #a93bea;
+    --lg-4: #ff6b1a;
+
+    --surface:   #141218;
+    --surface-1: #1d1b20;
+    --surface-2: #211f26;
+    --surface-3: #2b2930;
+    --outline:         #938f99;
+    --outline-variant: #49454f;
+  }
+}
+
+/* ===========================================================================
+ * 전역 기본 스타일
+ * =========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* iOS WebView 에서 탭바 safe-area 지원 */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font: var(--t-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* iOS WebView 바운스 스크롤 억제 */
+  overscroll-behavior: none;
+}
