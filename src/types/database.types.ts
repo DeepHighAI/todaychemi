@@ -1258,6 +1258,36 @@ export type Database = {
           },
         ]
       }
+      // interim stub — 마이그레이션 20260614154823_toss_connections.sql 적용 후 pnpm dlx supabase gen types 로 재생성할 것
+      toss_connections: {
+        Row: {
+          id: string
+          toss_user_key: number
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          toss_user_key: number
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          toss_user_key?: number
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toss_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
