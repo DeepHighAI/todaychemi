@@ -19,6 +19,7 @@ import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -179,7 +180,7 @@ export function WhatifPage() {
       return (
         <div style={{ padding: 16 }}>
           <PayRequiredBlock
-            amountKrw={info?.amount_krw ?? 800}
+            amountKrw={info?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.whatif}
             isPurchasing={isPurchasing}
             purchaseError={iapError}
             onPurchase={() => {

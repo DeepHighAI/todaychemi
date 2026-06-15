@@ -17,12 +17,12 @@ import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem } from '@/types/relation';
 
-// 가격 상수 — 웹앱 feature-prices.ts 와 동기화 (ADR-039 Amended, 2026-06-07 D6).
-// 웹앱 단일 출처가 변경되면 여기도 갱신 필요 (§1.3 TODO: 단일 출처 파생 방법 검토).
-const RELATION_SLOT_PRICE_KRW = 1_000;
+// 가격 표시 — 단일 출처 IAP_DISPLAY_PRICE_KRW (오픈초기 50% 할인 적용가, 웹·미니앱 통일).
+const RELATION_SLOT_PRICE_KRW = IAP_DISPLAY_PRICE_KRW.relation_slot;
 const FREE_RELATION_SLOTS = 2;
 
 const MODE_META: { value: Exclude<DraftMode, ''>; emoji: string }[] = [

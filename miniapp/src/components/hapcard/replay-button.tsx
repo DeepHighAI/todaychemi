@@ -20,6 +20,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -123,7 +124,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       // 402 PAYMENT_REQUIRED — Toss IAP 시트 연결
       if (e.status === 402 || e.code === 'PAYMENT_REQUIRED') {
         const ref = getPaymentRef(e);
-        const amount = (e as { amount_krw?: number }).amount_krw ?? 600;
+        const amount = (e as { amount_krw?: number }).amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay;
         setPayInfo(ref ? { feature: 'replay', ref, amount_krw: amount } : null);
         setState('pay_required');
         return;
@@ -256,7 +257,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             }}
           >
             <p style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>
-              케미 다시 맞추기는 ₩{(payInfo?.amount_krw ?? 600).toLocaleString()}이 필요해요.
+              케미 다시 맞추기는 ₩{(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()}이 필요해요.
             </p>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
               결제 후 바로 새 케미카드를 확인할 수 있어요.
@@ -276,7 +277,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
                   if (payInfo) openIapPurchase(payInfo);
                 }}
               >
-                {isPurchasing ? '결제 중…' : `₩${(payInfo?.amount_krw ?? 600).toLocaleString()} 결제하기`}
+                {isPurchasing ? '결제 중…' : `₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()} 결제하기`}
               </Button>
               <Button variant="outline" size="sm" onClick={handleRetry}>
                 닫기
