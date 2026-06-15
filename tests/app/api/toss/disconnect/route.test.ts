@@ -34,34 +34,44 @@ function makeAdminClient(opts: {
   connData?: { user_id: string } | null;
   connError?: unknown;
   signOutError?: { message: string } | null;
+  /** users 행(삭제 마킹 select 결과). null = 미온보딩 */
+  userProfile?: { deletion_requested_at: string | null } | null;
 } = {}) {
   const {
     connData = null,
     connError = null,
     signOutError = null,
+    userProfile = { deletion_requested_at: null },
   } = opts;
 
-  const maybeSingle = vi.fn().mockResolvedValue({
-    data: connData,
-    error: connError,
-  });
-  const eqConn = vi.fn().mockReturnValue({ maybeSingle });
-  const selectFn = vi.fn().mockReturnValue({ eq: eqConn });
+  // ── toss_connections 체인 ──
+  const connMaybeSingle = vi.fn().mockResolvedValue({ data: connData, error: connError });
+  const connEq = vi.fn().mockReturnValue({ maybeSingle: connMaybeSingle });
+  const connSelect = vi.fn().mockReturnValue({ eq: connEq });
 
-  // delete 메서드 — 호출 여부를 단언하기 위해 spy 로 노출
+  // ── users 체인 (deletion_requested_at select + update) ──
+  const userMaybeSingle = vi.fn().mockResolvedValue({ data: userProfile, error: null });
+  const userSelectEq = vi.fn().mockReturnValue({ maybeSingle: userMaybeSingle });
+  const userSelect = vi.fn().mockReturnValue({ eq: userSelectEq });
+  const updateEq = vi.fn().mockResolvedValue({ data: null, error: null });
+  const updateFn = vi.fn().mockReturnValue({ eq: updateEq });
+
+  // delete 메서드 — 매핑 행 미삭제 단언용 spy
   const eqDelete = vi.fn().mockResolvedValue({ data: null, error: null });
   const deleteFn = vi.fn().mockReturnValue({ eq: eqDelete });
 
   const signOut = vi.fn().mockResolvedValue({ error: signOutError });
 
-  const from = vi.fn().mockReturnValue({
-    select: selectFn,
-    delete: deleteFn,
-  });
+  const from = vi.fn().mockImplementation((table: string) =>
+    table === 'users'
+      ? { select: userSelect, update: updateFn, delete: deleteFn }
+      : { select: connSelect, delete: deleteFn },
+  );
 
   return {
     from,
-    deleteFn, // 호출 여부 단언용
+    deleteFn, // 매핑 삭제 단언용
+    updateFn, // deletion_requested_at 설정 단언용
     auth: {
       admin: { signOut },
     },
@@ -155,7 +165,7 @@ describe('POST /api/toss/disconnect', () => {
   });
 
   describe('referrer 분기', () => {
-    it('UNLINK — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
+    it('UNLINK — 세션 무효화 + 데이터 보존(삭제 마킹 안 함) + 2xx', async () => {
       const adminMock = makeAdminClient({ connData: { user_id: 'uid-001' } });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -167,11 +177,12 @@ describe('POST /api/toss/disconnect', () => {
       expect(res.status).toBe(200);
       // 세션 무효화는 수행
       expect(adminMock.auth.admin.signOut).toHaveBeenCalledWith('uid-001', 'global');
-      // 매핑 행(toss_connections) 삭제는 하지 않음 (재로그인 시 재사용)
+      // 매핑 삭제·삭제 마킹 모두 없음 (재로그인 시 이어쓰기)
       expect(adminMock.deleteFn).not.toHaveBeenCalled();
+      expect(adminMock.updateFn).not.toHaveBeenCalled();
     });
 
-    it('WITHDRAWAL_TERMS — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
+    it('WITHDRAWAL_TERMS — 세션 무효화 + 데이터 보존(삭제 마킹 안 함) + 2xx', async () => {
       const adminMock = makeAdminClient({ connData: { user_id: 'uid-002' } });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
@@ -181,14 +192,17 @@ describe('POST /api/toss/disconnect', () => {
       ));
 
       expect(res.status).toBe(200);
-      // 세션 무효화는 수행
+      // 세션 무효화는 수행, 데이터/매핑 보존 (서버 처리는 UNLINK 와 동일)
       expect(adminMock.auth.admin.signOut).toHaveBeenCalled();
-      // 매핑 행 삭제 없음 — 데이터 라이프사이클은 §1.1 D-CALLBACK 대기
       expect(adminMock.deleteFn).not.toHaveBeenCalled();
+      expect(adminMock.updateFn).not.toHaveBeenCalled();
     });
 
-    it('WITHDRAWAL_TOSS — 세션 무효화 수행 + 매핑 행 삭제 안 함 + 2xx', async () => {
-      const adminMock = makeAdminClient({ connData: { user_id: 'uid-003' } });
+    it('WITHDRAWAL_TOSS — 세션 무효화 + deletion_requested_at 설정(30일 grace) + 2xx', async () => {
+      const adminMock = makeAdminClient({
+        connData: { user_id: 'uid-003' },
+        userProfile: { deletion_requested_at: null }, // 아직 삭제 미요청
+      });
       vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
 
       const res = await POST(makePostRequest(
@@ -198,7 +212,44 @@ describe('POST /api/toss/disconnect', () => {
 
       expect(res.status).toBe(200);
       expect(adminMock.auth.admin.signOut).toHaveBeenCalled();
+      // 계정삭제 정책 적용: deletion_requested_at UPDATE 호출
+      expect(adminMock.updateFn).toHaveBeenCalledTimes(1);
+      const updateArg = adminMock.updateFn.mock.calls[0][0] as Record<string, unknown>;
+      expect(updateArg.deletion_requested_at).toEqual(expect.any(String));
+      // 매핑은 직접 삭제하지 않음 (purge cron cascade 에 위임)
       expect(adminMock.deleteFn).not.toHaveBeenCalled();
+    });
+
+    it('WITHDRAWAL_TOSS — 이미 삭제 요청된 사용자면 멱등(중복 UPDATE 안 함)', async () => {
+      const adminMock = makeAdminClient({
+        connData: { user_id: 'uid-004' },
+        userProfile: { deletion_requested_at: '2026-06-01T00:00:00.000Z' }, // 이미 요청됨
+      });
+      vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
+
+      const res = await POST(makePostRequest(
+        { userKey: 443731103, referrer: 'WITHDRAWAL_TOSS' },
+        VALID_AUTH,
+      ));
+
+      expect(res.status).toBe(200);
+      expect(adminMock.updateFn).not.toHaveBeenCalled();
+    });
+
+    it('WITHDRAWAL_TOSS — 미온보딩(프로필 없음)이면 삭제 마킹 생략 + 2xx', async () => {
+      const adminMock = makeAdminClient({
+        connData: { user_id: 'uid-005' },
+        userProfile: null, // 미온보딩
+      });
+      vi.mocked(createServiceRoleClient).mockReturnValue(adminMock as never);
+
+      const res = await POST(makePostRequest(
+        { userKey: 443731103, referrer: 'WITHDRAWAL_TOSS' },
+        VALID_AUTH,
+      ));
+
+      expect(res.status).toBe(200);
+      expect(adminMock.updateFn).not.toHaveBeenCalled();
     });
   });
 

@@ -14,11 +14,13 @@
  *   - userKey 에 대응하는 Supabase 세션 무효화(auth.admin.signOut)
  *   - 멱등(이미 연결 없어도 2xx 반환)
  *
- * // TODO(§1.1 D-CALLBACK): referrer 별 데이터 라이프사이클 결정 대기.
- *   - UNLINK: 세션 무효화만(현재 구현)
- *   - WITHDRAWAL_TERMS: 약관 철회 후처리 (법무 결정 필요)
- *   - WITHDRAWAL_TOSS: 토스 탈퇴 후처리 (법무 결정 필요)
- *   현재 구현은 모든 referrer 에 대해 세션 무효화만 수행하고 데이터는 보존한다.
+ * referrer 별 데이터 라이프사이클 (§1.1 D-CALLBACK 사용자 확정 2026-06-15):
+ *   - UNLINK: 세션 무효화만 + 데이터/매핑 보존 (재로그인 시 이어쓰기).
+ *   - WITHDRAWAL_TERMS: 세션 무효화만 + 데이터/매핑 보존 (재로그인 시 약관 재동의는
+ *     토스 로그인 흐름에서 재노출). 서버 처리는 UNLINK 와 동일.
+ *   - WITHDRAWAL_TOSS: 토스 회원 탈퇴 = 인앱 계정삭제 정책과 동일하게
+ *     users.deletion_requested_at 설정 → 30일 grace 후 purge_deleted_users cron 이
+ *     auth.users 삭제(cascade 로 toss_connections·소유 데이터 일괄 삭제, 0020_deletion_grace).
  *
  * ⚠️ PII / userKey 로깅 금지 (CLAUDE.md §5).
  *
@@ -91,17 +93,53 @@ function verifyBasicAuth(authHeader: string | null): boolean {
 // ---------------------------------------------------------------------------
 
 /**
- * userKey 에 대응하는 Supabase 유저의 세션을 무효화한다.
+ * 토스 회원 탈퇴(WITHDRAWAL_TOSS) 시 인앱 계정삭제 정책과 동일하게
+ * users.deletion_requested_at 을 설정한다(30일 grace 후 purge cron 이 cascade 삭제).
  *
- * // TODO(§1.1 D-CALLBACK): UNLINK=세션 무효화만(현행), WITHDRAWAL_TERMS/WITHDRAWAL_TOSS=매핑/소유데이터 처리 정책 결정 후 분기
+ * 멱등: 프로필이 없거나(미온보딩) 이미 삭제 요청된 경우 noop.
+ * 실패는 경고 로그만 — disconnect 콜백은 멱등 2xx 를 유지해야 하므로 throw 하지 않는다.
+ */
+async function markUserForDeletion(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+): Promise<void> {
+  const { data: profile, error: selectErr } = await admin
+    .from('users')
+    .select('deletion_requested_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (selectErr) {
+    console.error('[toss/disconnect] users 조회 실패 (삭제 마킹 생략):', selectErr.message);
+    return;
+  }
+  // 미온보딩(프로필 없음) 또는 이미 삭제 요청됨 → 멱등 noop
+  if (!profile || profile.deletion_requested_at) return;
+
+  const now = new Date().toISOString();
+  const { error: updateErr } = await admin
+    .from('users')
+    .update({ deletion_requested_at: now, updated_at: now })
+    .eq('user_id', userId);
+
+  if (updateErr) {
+    console.error('[toss/disconnect] deletion_requested_at 설정 실패:', updateErr.message);
+  }
+}
+
+/**
+ * userKey 에 대응하는 Supabase 유저를 referrer 정책에 따라 처리한다.
  *
  * 처리 순서:
- *   1. toss_connections 에서 user_id 조회
- *   2. auth.admin.signOut(userId, 'global') 호출 — referrer 와 무관하게 세션만 무효화
+ *   1. toss_connections 에서 user_id 조회 (없으면 멱등 성공)
+ *   2. auth.admin.signOut(userId, 'global') — 모든 referrer 공통(세션 무효화)
+ *   3. referrer 분기:
+ *        - WITHDRAWAL_TOSS → markUserForDeletion (30일 grace 삭제 예약)
+ *        - UNLINK / WITHDRAWAL_TERMS → 추가 처리 없음(데이터·매핑 보존)
  *
- * ⚠️ toss_connections 매핑 행은 삭제하지 않는다.
- *   UNLINK = 로그아웃(사용자가 재로그인하면 기존 매핑 재사용).
- *   WITHDRAWAL_TERMS / WITHDRAWAL_TOSS 의 데이터 라이프사이클은 §1.1 D-CALLBACK 대기.
+ * ⚠️ toss_connections 매핑 행은 직접 삭제하지 않는다.
+ *   UNLINK / WITHDRAWAL_TERMS = 재로그인 시 매핑 재사용.
+ *   WITHDRAWAL_TOSS = purge cron 의 auth.users 삭제가 on-delete-cascade 로 매핑까지 제거.
  *
  * 멱등: toss_connections 행이 없으면 조용히 성공 처리.
  */
@@ -129,7 +167,7 @@ async function handleDisconnect(payload: DisconnectPayload): Promise<void> {
 
   const userId = conn.user_id;
 
-  // ── 2. Supabase 세션 무효화 ──────────────────────────────────────────────
+  // ── 2. Supabase 세션 무효화 (모든 referrer 공통) ─────────────────────────
   // referrer 를 로깅하되 PII 포함 없음(§5).
   // 'global' scope: 해당 유저의 모든 세션 토큰을 일괄 무효화한다.
   console.info('[toss/disconnect] 세션 무효화 시작, referrer:', referrer);
@@ -139,10 +177,12 @@ async function handleDisconnect(payload: DisconnectPayload): Promise<void> {
     console.error('[toss/disconnect] signOut 실패 (계속 진행):', signOutErr.message);
   }
 
-  // ── 매핑 행 삭제 없음 ────────────────────────────────────────────────────
-  // UNLINK = 로그아웃(재로그인 시 매핑 재사용 가능).
-  // WITHDRAWAL_TERMS / WITHDRAWAL_TOSS 의 매핑·소유 데이터 삭제는
-  // §1.1 D-CALLBACK 결정 후 이 분기에서 처리한다.
+  // ── 3. referrer 별 데이터 라이프사이클 ───────────────────────────────────
+  // WITHDRAWAL_TOSS = 토스 회원 탈퇴 → 인앱 계정삭제 정책(30일 grace) 동일 적용.
+  // UNLINK / WITHDRAWAL_TERMS = 데이터·매핑 보존(세션 무효화만).
+  if (referrer === 'WITHDRAWAL_TOSS') {
+    await markUserForDeletion(admin, userId);
+  }
 }
 
 // ---------------------------------------------------------------------------
