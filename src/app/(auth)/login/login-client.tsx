@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
 import Link from 'next/link';
 
@@ -72,6 +73,16 @@ export function LoginClient({ next }: LoginClientProps) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm rounded-[var(--r-xl)] bg-card p-8 shadow">
+        <div className="mb-5 flex justify-center">
+          <Image
+            src="/apps-in-toss/twoday_thumbnail_1932x828.png"
+            alt="오늘케미 서비스 아이콘"
+            width={260}
+            height={112}
+            priority
+            className="h-auto w-[min(260px,100%)] rounded-[18px] shadow-[var(--e-1)]"
+          />
+        </div>
 
         <h1 className="mb-6 text-center text-xl font-semibold text-foreground">{t('title')}</h1>
 

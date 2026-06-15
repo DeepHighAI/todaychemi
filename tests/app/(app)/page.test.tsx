@@ -26,10 +26,12 @@ const mockPush = vi.fn();
 const mockReplace = vi.fn();
 
 const mockFetch = vi.fn();
+const HOME_INTRO_TITLE = '머릿속을 맴도는 그 질문 — "이 사람과 나, 잘 맞을까?"';
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockTodayKST.mockReturnValue('2026-05-07');
+  window.localStorage.clear();
   vi.stubGlobal('fetch', mockFetch);
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
     matches: false,
@@ -131,6 +133,27 @@ describe('TodayPage (composition)', () => {
     setupRoutes({});
     await renderTodayPage();
     expect(await screen.findByRole('heading', { level: 1, name: '오늘의 케미' })).toBeInTheDocument();
+  });
+
+  it('서비스 소개를 인라인 히어로로 렌더 (모달 아님, WelcomePopup 과 중첩 회피)', async () => {
+    setupRoutes({});
+    await renderTodayPage();
+
+    expect(await screen.findByText(HOME_INTRO_TITLE)).toBeInTheDocument();
+    expect(screen.getByText('케미(궁합)')).toBeInTheDocument();
+    expect(screen.getByText(/시간과 마음을 쏟기 전에, 먼저 흐름부터 확인해 보세요/)).toBeInTheDocument();
+    // 모달이 아니라 인라인이므로 dialog 역할·닫기 버튼이 없다
+    expect(screen.queryByRole('dialog', { name: HOME_INTRO_TITLE })).toBeNull();
+    expect(screen.queryByRole('button', { name: '오늘 케미 보기' })).toBeNull();
+  });
+
+  it('서비스 소개 인라인 히어로는 localStorage 와 무관하게 항상 렌더된다', async () => {
+    window.localStorage.setItem('home_intro_popup_seen_date_v2', '2026-05-07');
+    setupRoutes({});
+    await renderTodayPage();
+
+    expect(await screen.findByText(HOME_INTRO_TITLE)).toBeInTheDocument();
+    expect(await screen.findByText('좋은 에너지가 흐르는 날')).toBeInTheDocument();
   });
 
   it('TodayHero headline을 card.headline에서 가져와 렌더', async () => {

@@ -130,6 +130,18 @@ export default function TodayPageClient() {
     <div className="space-y-4 pb-24">
       <TodayAppBar />
 
+      {/* 서비스 소개 — 모달 대신 인라인 히어로 (WelcomePopup 과의 모달 중첩 회피) */}
+      <section className="px-4">
+        <div className="space-y-2 rounded-[var(--r-xl)] bg-card p-5">
+          <p className="font-h3 leading-tight text-foreground">{t('intro.question')}</p>
+          <p className="text-[15px] leading-7 text-foreground/85">
+            {t('intro.prefix')}
+            <strong className="font-semibold text-foreground">{t('intro.emphasis')}</strong>
+            {t('intro.suffix')}
+          </p>
+        </div>
+      </section>
+
       {todayQuery.isLoading && (
         <div className="px-4"><LoadingState /></div>
       )}

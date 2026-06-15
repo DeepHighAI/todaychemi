@@ -28,6 +28,9 @@ describe('/start', () => {
 
     render(await StartPage());
 
+    const serviceIcon = screen.getByRole('img', { name: '오늘케미 서비스 아이콘' });
+    expect(serviceIcon).toHaveAttribute('src', expect.stringContaining('twoday_thumbnail_1932x828.png'));
+    expect(serviceIcon.parentElement).toHaveClass('w-full');
     expect(screen.getByRole('link', { name: /처음이세요/ })).toHaveAttribute(
       'href',
       '/guest/start',

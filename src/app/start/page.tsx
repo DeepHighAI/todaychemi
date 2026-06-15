@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { Sparkles, UserRound } from 'lucide-react';
 
@@ -15,6 +16,17 @@ export default async function StartPage() {
   return (
     <main className="min-h-screen bg-background px-5 py-8">
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center gap-8">
+        <div className="relative aspect-[1932/828] w-full overflow-hidden rounded-[18px] shadow-[var(--e-1)]">
+          <Image
+            src="/apps-in-toss/twoday_thumbnail_1932x828.png"
+            alt="오늘케미 서비스 아이콘"
+            fill
+            priority
+            sizes="(max-width: 768px) calc(100vw - 2.5rem), 448px"
+            className="object-cover"
+          />
+        </div>
+
         <div className="space-y-3">
           <p className="font-eyebrow text-primary">오늘케미</p>
           <h1 className="text-3xl font-black leading-tight text-foreground">

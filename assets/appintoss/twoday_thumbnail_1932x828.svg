@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1932" height="828" viewBox="0 0 1932 828">
+<defs><linearGradient id="gt" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1932" y2="828">
+<stop offset="0" stop-color="#FFC453"/><stop offset="0.5" stop-color="#FF6A88"/><stop offset="1" stop-color="#6541F2"/>
+</linearGradient></defs>
+<rect width="1932" height="828" fill="url(#gt)"/>
+<g transform="translate(510,414) scale(1.6)">
+  <circle cx="-60" cy="-41" r="40" fill="#ffffff"/>
+  <circle cx="60" cy="-41" r="40" fill="#ffffff"/>
+  <path d="M -60 -26 Q 0 68 60 -26" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round"/>
+</g>
+<text x="742" y="430" font-family="Noto Sans CJK KR" font-weight="700" font-size="210" fill="#ffffff">오늘케미</text>
+<text x="748" y="548" font-family="Noto Sans CJK KR" font-weight="400" font-size="76" fill="#ffffff" fill-opacity="0.92">오늘, 우리 사이의 케미</text>
+</svg>

@@ -64,6 +64,8 @@ describe('LoginPage', () => {
   it('renders title and OAuth button texts from ko.json', async () => {
     await renderLoginPage();
 
+    const serviceIcon = screen.getByRole('img', { name: '오늘케미 서비스 아이콘' });
+    expect(serviceIcon).toHaveAttribute('src', expect.stringContaining('twoday_thumbnail_1932x828.png'));
     expect(screen.getByRole('heading', { name: '오늘케미 로그인' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
