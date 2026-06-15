@@ -37,7 +37,7 @@ function url(params: Record<string, string>) {
 const OK_PARAMS = {
   paymentKey: 'pay-key',
   orderId: 'twoday_1_abcd12',
-  amount: '1000',
+  amount: '500',
   feature: 'hapcard',
   ref: REF,
   next: '/hapcard/abc',
@@ -63,7 +63,7 @@ describe('GET /api/payments/feature/confirm', () => {
       userId: USER_ID,
       orderId: 'twoday_1_abcd12',
       paymentKey: 'pay-key',
-      amount: 1000,
+      amount: 500,
       feature: 'hapcard',
       ref: REF,
     });
@@ -170,7 +170,7 @@ describe('GET /api/payments/feature/confirm — relation_slot 머티리얼라이
   const SLOT_PARAMS = {
     paymentKey: 'pay-key',
     orderId: 'twoday_1_slot001',
-    amount: '1000',
+    amount: '500',
     feature: 'relation_slot',
     ref: SLOT_REF,
     next: '/feed',

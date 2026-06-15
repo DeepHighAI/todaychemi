@@ -1,6 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import {
+  FEATURE_PRICES_KRW,
+  OPENING_DISCOUNT_PERCENT,
+  FREE_RELATION_SLOTS,
+} from '../src/lib/payments/feature-prices';
+
 interface CheckResult {
   label: string;
   ok: boolean;
@@ -43,20 +49,25 @@ function main() {
   console.log('');
 
   const results: CheckResult[] = [];
-  const featurePrices = readRequired('src/lib/payments/feature-prices.ts');
   const featureMigration = 'supabase/migrations/20260601000000_feature_pay_per_use.sql';
 
+  // feature-prices.ts 를 직접 import 해 런타임 값으로 검증한다.
+  // (텍스트 regex 는 `list_amount_krw: 1000` 의 부분문자열 `amount_krw: 1000` 에 오매칭되어
+  //  2026-06-14 오픈할인 도입 후 실제 과금액을 검증하지 못했음 — 회귀 차단.)
   addResult(
     results,
-    'feature price catalog matches pay-per-use prices',
-    hasAll(featurePrices, [
-      /hapcard:\s*\{[^}]*amount_krw:\s*1000/,
-      /whatif:\s*\{[^}]*amount_krw:\s*800/,
-      /replay:\s*\{[^}]*amount_krw:\s*600/,
-      /relation_slot:\s*\{[^}]*amount_krw:\s*1000/,
-      /FREE_RELATION_SLOTS\s*=\s*2/,
-    ]),
-    'feature-prices.ts: hapcard 1000 / whatif 800 / replay 600 / relation_slot 1000 KRW, free slots 2',
+    'feature price catalog matches pay-per-use prices (list + opening discount charge)',
+    FEATURE_PRICES_KRW.hapcard.list_amount_krw === 1000 &&
+      FEATURE_PRICES_KRW.whatif.list_amount_krw === 800 &&
+      FEATURE_PRICES_KRW.replay.list_amount_krw === 600 &&
+      FEATURE_PRICES_KRW.relation_slot.list_amount_krw === 1000 &&
+      OPENING_DISCOUNT_PERCENT === 50 &&
+      FEATURE_PRICES_KRW.hapcard.amount_krw === 500 &&
+      FEATURE_PRICES_KRW.whatif.amount_krw === 400 &&
+      FEATURE_PRICES_KRW.replay.amount_krw === 300 &&
+      FEATURE_PRICES_KRW.relation_slot.amount_krw === 500 &&
+      FREE_RELATION_SLOTS === 2,
+    'list 1000/800/600/1000, opening -50% → charge 500/400/300/500 KRW, free slots 2',
   );
 
   addResult(
@@ -165,7 +176,7 @@ function main() {
   console.log('');
   console.log('Pay-per-use billing policy (ADR-039):');
   console.log('- Token-bundle purchase removed; paid features charge at point of use.');
-  console.log('- Prices: hapcard 1000 / whatif 800 / replay 600 / relation_slot 1000 KRW (feature-prices.ts single source).');
+  console.log('- List prices: 1000/800/600/1000 KRW; opening -50% charge: 500/400/300/500 KRW (feature-prices.ts single source).');
   console.log('- Free 부적 path refunds on build failure; cash path withholds body until paid.');
   console.log('- Relations: first 2 free, 3rd+ charges relation_slot via staged pending drafts.');
 

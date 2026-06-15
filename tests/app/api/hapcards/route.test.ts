@@ -401,7 +401,7 @@ describe('POST /api/hapcards', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('hapcard');
     expect(body.ref).toBe('cache-key-abc');
-    expect(body.amount_krw).toBe(1000);
+    expect(body.amount_krw).toBe(500);
     // 선생성: buildHapcard 는 호출되되 본문은 반환하지 않음
     expect(buildHapcard).toHaveBeenCalledOnce();
     // 현금 경로는 부적 차감/환불 없음
@@ -518,7 +518,7 @@ describe('POST /api/hapcards', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('hapcard');
-    expect(body.amount_krw).toBe(1000);
+    expect(body.amount_krw).toBe(500);
   });
 
   it('buildHapcard 호출 시 input은 정확하고 LLM deps는 lazy wrapper로 전달', async () => {

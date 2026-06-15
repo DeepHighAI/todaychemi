@@ -17,6 +17,31 @@ const FeatureInitSchema = z.object({
   ref: z.string().min(1).max(200),
 });
 
+// 재사용 pending 의 금액을 현재 가격으로 맞춘다 (할인/가격 변경 후 stale 주문 방지).
+// 에러 가드를 헬퍼 안으로 접어 호출부는 `if (err) return err;` 한 줄로 처리한다.
+async function syncPendingAmount(
+  service: ReturnType<typeof createServiceRoleClient>,
+  input: {
+    userId: string;
+    feature: z.infer<typeof FeatureIdSchema>;
+    ref: string;
+    currentAmountKrw: number | null;
+    nextAmountKrw: number;
+  },
+): Promise<NextResponse | null> {
+  if (input.currentAmountKrw === input.nextAmountKrw) return null;
+
+  const { error } = await service
+    .from('payments')
+    .update({ amount_krw: input.nextAmountKrw })
+    .eq('user_id', input.userId)
+    .eq('feature_id', input.feature)
+    .eq('feature_ref', input.ref)
+    .eq('status', 'pending');
+  if (error) return apiErrorResponse('INTERNAL_ERROR', error.message, 500);
+  return null;
+}
+
 export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
   const parsed = FeatureInitSchema.safeParse(json);
@@ -61,7 +86,7 @@ export async function POST(request: Request) {
   // 동일 (user, feature, ref) 의 열린 주문(pending/confirmed)은 하나만 — 중복 청구 방지(부분 unique).
   const { data: existing, error: lookupErr } = await service
     .from('payments')
-    .select('toss_order_id, toss_customer_key, status')
+    .select('toss_order_id, toss_customer_key, status, amount_krw')
     .eq('user_id', user.id)
     .eq('feature_id', feature)
     .eq('feature_ref', ref)
@@ -82,6 +107,14 @@ export async function POST(request: Request) {
 
   if (existing) {
     // 미결제 pending 재사용 (더블탭/재시도).
+    const syncErr = await syncPendingAmount(service, {
+      userId: user.id,
+      feature,
+      ref,
+      currentAmountKrw: existing.amount_krw,
+      nextAmountKrw: price.amount_krw,
+    });
+    if (syncErr) return syncErr;
     orderId = existing.toss_order_id;
     customerKey = existing.toss_customer_key ?? createTossCustomerKey();
   } else {
@@ -112,7 +145,7 @@ export async function POST(request: Request) {
       }
       const retry = await service
         .from('payments')
-        .select('toss_order_id, toss_customer_key, status')
+        .select('toss_order_id, toss_customer_key, status, amount_krw')
         .eq('user_id', user.id)
         .eq('feature_id', feature)
         .eq('feature_ref', ref)
@@ -125,6 +158,14 @@ export async function POST(request: Request) {
       if (!retry.data) {
         return apiErrorResponse('INTERNAL_ERROR', insertErr.message, 500);
       }
+      const syncErr = await syncPendingAmount(service, {
+        userId: user.id,
+        feature,
+        ref,
+        currentAmountKrw: retry.data.amount_krw,
+        nextAmountKrw: price.amount_krw,
+      });
+      if (syncErr) return syncErr;
       orderId = retry.data.toss_order_id;
       customerKey = retry.data.toss_customer_key ?? newCustomerKey;
     } else if (!inserted) {
@@ -142,7 +183,9 @@ export async function POST(request: Request) {
       order_id: orderId,
       customer_key: customerKey,
       client_key: clientKey,
+      list_amount_krw: price.list_amount_krw,
       amount_krw: price.amount_krw,
+      discount_label: price.discount_label,
       order_name: price.order_name,
       feature,
       ref,

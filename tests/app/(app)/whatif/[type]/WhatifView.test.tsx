@@ -73,7 +73,7 @@ describe('WhatifView', () => {
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'whatif',
         ref: 'cache-xyz',
-        amount_krw: 500,
+        amount_krw: 400,
       }),
     });
     renderWithProviders(<WhatifView />);
@@ -88,7 +88,7 @@ describe('WhatifView', () => {
       json: async () => ({
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'whatif',
-        amount_krw: 500,
+        amount_krw: 400,
       }),
     });
     renderWithProviders(<WhatifView />);

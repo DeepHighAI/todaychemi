@@ -29,7 +29,7 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
 
     expect(res.mode).toBe('unlocked');
     expect(res.charged).toBe(false);
-    expect(res.price.amount_krw).toBe(1000);
+    expect(res.price.amount_krw).toBe(500);
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -67,7 +67,7 @@ describe('resolveFeatureCharge (하이브리드 과금 분기)', () => {
 
     expect(res.mode).toBe('pay_required');
     expect(res.charged).toBe(false);
-    expect(res.price.amount_krw).toBe(600);
+    expect(res.price.amount_krw).toBe(300);
     expect(res.price.token_cost).toBe(6);
   });
 

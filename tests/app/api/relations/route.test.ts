@@ -388,7 +388,7 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('relation_slot');
     expect(body.ref).toBe('relation_slot:pend-new-001');
-    expect(body.amount_krw).toBe(1000);
+    expect(body.amount_krw).toBe(500);
     expect(materializeRelationSlot).not.toHaveBeenCalled();
     expect(client._insert).not.toHaveBeenCalled();
   });

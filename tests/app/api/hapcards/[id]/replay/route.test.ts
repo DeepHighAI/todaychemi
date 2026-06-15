@@ -295,7 +295,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
     expect(body.ref).toBe(REF);
-    expect(body.amount_krw).toBe(600);
+    expect(body.amount_krw).toBe(300);
     expect(buildReplay).not.toHaveBeenCalled();
     expect(resolveFeatureCharge).not.toHaveBeenCalled();
   });
@@ -314,7 +314,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
     expect(body.ref).toBe(REF);
-    expect(body.amount_krw).toBe(600);
+    expect(body.amount_krw).toBe(300);
     expect(buildReplay).toHaveBeenCalledOnce(); // 선생성
     expect(refund).not.toHaveBeenCalled();
   });
@@ -541,7 +541,7 @@ describe('POST /api/hapcards/[id]/replay', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('replay');
-    expect(body.amount_krw).toBe(600);
+    expect(body.amount_krw).toBe(300);
   });
 
   it('500 → DB row score_breakdown에 yunse_adjustment 누락 시 INTERNAL_ERROR', async () => {

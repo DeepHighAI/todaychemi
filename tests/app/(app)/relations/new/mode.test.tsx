@@ -157,7 +157,7 @@ describe('RelationsModePage — 유료 슬롯 402 (ADR-039 Amended)', () => {
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'relation_slot',
         ref: 'relation_slot:pend-uuid-1',
-        amount_krw: 1000,
+        amount_krw: 500,
       }),
     });
   }
@@ -252,7 +252,7 @@ describe('RelationsModePage — 사전 가격 고지 (UX 보조, 권위는 서�
   it('보유 인연 2건(캐시) → 세 번째부터 결제 고지 노출', async () => {
     await renderWithFeedCache(2);
     expect(screen.getByText(/세 번째 인연부터/)).toBeTruthy();
-    expect(screen.getByText(/1,000원/)).toBeTruthy();
+    expect(screen.getByText(/500원/)).toBeTruthy();
   });
 
   it('보유 인연 1건 → 고지 숨김', async () => {

@@ -7,7 +7,9 @@ export interface FeaturePaymentInit {
   order_id: string;
   customer_key: string;
   client_key: string;
+  list_amount_krw: number;
   amount_krw: number;
+  discount_label: string;
   order_name: string;
   feature: FeatureId;
   ref: string;

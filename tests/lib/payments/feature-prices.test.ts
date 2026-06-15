@@ -4,15 +4,26 @@ import {
   FEATURE_PRICES_KRW,
   FeatureIdSchema,
   FREE_RELATION_SLOTS,
+  OPENING_DISCOUNT_LABEL,
+  OPENING_DISCOUNT_PERCENT,
   getFeaturePrice,
 } from '@/lib/payments/feature-prices';
 
 describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
-  it('확정 1회 가격: 케미카드 1000 / 또 다른 나 800 / 케미 다시 맞추기 600 / 인연 등록 1000', () => {
-    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(1000);
-    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(800);
-    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(600);
-    expect(FEATURE_PRICES_KRW.relation_slot.amount_krw).toBe(1000);
+  it('오픈초기 50% 할인 현금가: 케미카드 500 / 또 다른 나 400 / 케미 다시 맞추기 300 / 인연 등록 500', () => {
+    expect(OPENING_DISCOUNT_PERCENT).toBe(50);
+    expect(OPENING_DISCOUNT_LABEL).toBe('오픈초기 50% 할인');
+    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(500);
+    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(400);
+    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(300);
+    expect(FEATURE_PRICES_KRW.relation_slot.amount_krw).toBe(500);
+  });
+
+  it('정가 기준 금액은 결제창 원가 표시용으로 보존한다', () => {
+    expect(FEATURE_PRICES_KRW.hapcard.list_amount_krw).toBe(1000);
+    expect(FEATURE_PRICES_KRW.whatif.list_amount_krw).toBe(800);
+    expect(FEATURE_PRICES_KRW.replay.list_amount_krw).toBe(600);
+    expect(FEATURE_PRICES_KRW.relation_slot.list_amount_krw).toBe(1000);
   });
 
   it('token_cost 는 1부적 = 100원 등가 (10 / 8 / 6 / 10)', () => {
@@ -26,6 +37,7 @@ describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
     for (const f of ['hapcard', 'whatif', 'replay', 'relation_slot'] as const) {
       expect(FEATURE_PRICES_KRW[f].feature_id).toBe(f);
       expect(FEATURE_PRICES_KRW[f].order_name.length).toBeGreaterThan(0);
+      expect(FEATURE_PRICES_KRW[f].discount_label).toBe(OPENING_DISCOUNT_LABEL);
     }
   });
 

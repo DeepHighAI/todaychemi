@@ -5,6 +5,7 @@
 **Deciders:** batisututu
 **Amended:** 2026-06-07 — 가격 800/500/400 → **1,000/800/600원**, 부적 차감 8/5/4 → **10/8/6p** (§1.1 D6 확정. 사유: 앱인토스 인앱결제 수수료 약 20% 반영 + 웹·미니앱 가격 통일. 1부적=100원 등가 유지)
 **Amended:** 2026-06-10 — **인연 등록 슬롯 과금 추가(모델 B)**: 인연 2명까지 무료 등록, 3번째부터 `relation_slot` 1,000원/10부적. 기존 기능별 과금 유지·병행 (§1.1 승인, 본 문서 §9)
+**Amended:** 2026-06-14 — **오픈초기 50% 할인 이벤트**: 현금 결제 금액만 케미카드 500원 / 만약에 우리 400원 / 케미 다시 맞추기 300원 / 인연 등록 500원으로 적용. 정가와 무료 부적 차감량은 유지 (§1.1 사용자 확정)
 
 ## Context
 
@@ -25,8 +26,9 @@ UX 마찰(별도 충전 화면·번들 선택), 미사용 잔액 누적, 결제 
 잔액 부족 시 **1회성 현금 결제**(웹: Toss Payment Widget V2 / 앱인토스 미니앱: 인앱결제 IAP — 2026-06-07 D3)로 전환한다. 구독·번들 없음.
 
 ### 2. 가격 단일 출처
-케미카드 1,000원 / 만약에 우리 800원 / 케미 다시 맞추기 600원 / 인연 등록(3번째+) 1,000원
-(2026-06-07·06-10 개정, 웹·미니앱 통일). 유일 출처는
+정가: 케미카드 1,000원 / 만약에 우리 800원 / 케미 다시 맞추기 600원 / 인연 등록(3번째+) 1,000원.
+오픈초기 이벤트 현금가: 케미카드 500원 / 만약에 우리 400원 / 케미 다시 맞추기 300원 / 인연 등록(3번째+) 500원
+(2026-06-07·06-10·06-14 개정, 웹·미니앱 통일). 유일 출처는
 `src/lib/payments/feature-prices.ts`의 `FEATURE_PRICES_KRW`(+`FREE_RELATION_SLOTS`).
 DB·문서·클라이언트는 이 값을 참조하며 별도 상품 카탈로그 테이블을 두지 않는다.
 
@@ -72,7 +74,7 @@ HTTP 402로 결제를 요구한다. 클라이언트는 결제 시트를 열고, 
   `FREE_RELATION_SLOTS`(=2) 미만이면 무료, 이상이면 `relation_slot` 과금. 인연을 삭제하면
   슬롯이 회복된다(평생 누적 추적 없음). 기존 유저(이미 3명+ 보유)는 자연 grandfather —
   보유분은 그대로, 다음 등록부터 게이트 적용. 백필 없음.
-- **하이브리드**: 무료 부적 10p 우선 차감 → 부족 시 현금 1,000원 (§1과 동일, 1부적=100원 등가).
+- **하이브리드**: 무료 부적 10p 우선 차감 → 부족 시 오픈초기 현금 500원(정가 1,000원, §1과 동일, 1부적=100원 등가).
 - **원자성 = draft-stage 변형 (비-LLM 모델 C)**: 등록은 CREATE 액션인데 현금 결제는 비동기
   리다이렉트이므로, 검증된 draft 를 `pending_relation_registrations`(JSONB)에 **스테이징**한 뒤
   부적 경로는 즉시, 현금 경로는 confirm 직후 **머티리얼라이즈**(relations INSERT)한다.
@@ -134,7 +136,7 @@ ref 에서 pending_id 를 직접 추출해(테이블 무순서 스캔 아님) �
 
 ## Implementation
 
-- `src/lib/payments/feature-prices.ts` — `FEATURE_PRICES_KRW` 단일 출처(1,000/800/600 · 10/8/6p).
+- `src/lib/payments/feature-prices.ts` — `FEATURE_PRICES_KRW` 단일 출처(오픈초기 현금가 500/400/300/500, 정가 1,000/800/600/1,000, 무료 부적 10/8/6/10p).
 - `src/lib/payments/feature-unlock.ts` — `isFeatureUnlocked` 잠금 단일 진실.
 - `src/lib/payments/feature-gate.ts` — `resolveFeatureCharge`(free|unlocked|pay_required, charged). 게이트 2중 판별(P0001+INSUFFICIENT_TOKENS만 pay_required).
 - `src/lib/payments/feature-complete.ts` — `confirmFeaturePaymentForUser`(토큰 적립 X·멱등).
