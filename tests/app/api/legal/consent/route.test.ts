@@ -74,8 +74,8 @@ describe('POST /api/legal/consent', () => {
       expect.objectContaining({
         flow: 'email',
         provider: null,
-        terms_version: '2026-06-01',
-        privacy_version: '2026-06-01',
+        terms_version: '2026-06-15',
+        privacy_version: '2026-06-15',
         age_confirmed: true,
       }),
     );

@@ -1,4 +1,6 @@
-export const LEGAL_VERSION = '2026-06-01';
+// 2026-06-15: 앱인토스 런칭 대응 개정 — 토스 로그인/IAP 반영, 폐지된 토큰 번들 충전 모델 삭제,
+// 카카오 로그인 제거, 환불정책 pay-per-use 재작성. 내용 실질 변경이므로 버전 상향(기존 이용자 재동의 트리거).
+export const LEGAL_VERSION = '2026-06-15';
 export const LEGAL_TERMS_VERSION = LEGAL_VERSION;
 export const LEGAL_PRIVACY_VERSION = LEGAL_VERSION;
 

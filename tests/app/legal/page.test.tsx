@@ -27,6 +27,7 @@ describe('legal pages', () => {
     render(await RefundPage());
 
     expect(screen.getByRole('heading', { name: '오늘케미 환불 정책' })).toBeInTheDocument();
-    expect(screen.getByText(/유상으로 충전한 부적/)).toBeInTheDocument();
+    // pay-per-use 재작성(2026-06-15): 폐지된 "부적 충전" 대신 청약철회 기준을 검증
+    expect(screen.getAllByText(/청약철회/).length).toBeGreaterThan(0);
   });
 });

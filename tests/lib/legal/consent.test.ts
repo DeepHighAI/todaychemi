@@ -9,8 +9,8 @@ import {
 
 describe('legal consent helpers', () => {
   it('keeps separated terms/privacy versions aligned to legal effective date', () => {
-    expect(LEGAL_TERMS_VERSION).toBe('2026-06-01');
-    expect(LEGAL_PRIVACY_VERSION).toBe('2026-06-01');
+    expect(LEGAL_TERMS_VERSION).toBe('2026-06-15');
+    expect(LEGAL_PRIVACY_VERSION).toBe('2026-06-15');
   });
 
   it('starts with all required consent items unchecked', () => {

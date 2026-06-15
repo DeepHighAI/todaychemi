@@ -65,8 +65,8 @@ describe('server legal consent helpers', () => {
     expect(capture.row?.token_hash).not.toBe(result.token);
     expect(capture.row).not.toHaveProperty('token');
     expect(result.consent).toEqual({
-      termsVersion: '2026-06-01',
-      privacyVersion: '2026-06-01',
+      termsVersion: '2026-06-15',
+      privacyVersion: '2026-06-15',
       ageConfirmed: true,
       consentedAt: '2026-06-01T00:00:00.000Z',
     });
