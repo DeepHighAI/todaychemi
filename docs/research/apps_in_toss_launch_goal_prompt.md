@@ -297,6 +297,13 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 ### ✅ 보안 검토 — IAP IDOR 수정 (커밋 `b7fc6609`)
 - 자동 보안 리뷰 HIGH: unlock 라우트가 `x-toss-user-key` 없이 order-status 조회 → 타인 주문 claim 가능. 수정: 호출자 `toss_connections.toss_user_key` 조회 후 Toss 가 구매자 본인 주문만 반환하도록 헤더 전달(연결 없으면 401) + 23505 충돌 시 본인 행 재-SELECT 후에만 unlock(타인 행 충돌→402). 테스트 3건 추가.
 
+### ✅ Vercel 프로덕션 배포 확인 (2026-06-15)
+- 도메인 `https://todaychemi.vercel.app` 라이브(미니앱 하드코딩 기본주소와 일치 → 미니앱 URL 수정 불요).
+- 약관 3종 웹페이지 전부 **200 + 실제 내용 렌더**: `/legal/terms`·`/legal/privacy`·`/legal/refund` → 토스 콘솔 약관 칸 등록 가능.
+- 프로덕션 브랜치 = `main`(`53a76964`). apps-in-toss 작업(`feature/apps-in-toss-miniapp`, P3~P7)은 **미머지/미배포** → `/api/legal/documents/refund` 404(refund slug 가 feature 브랜치에만 있음). 이는 미니앱 인앱 환불뷰어에만 영향(웹 URL·토스 콘솔 무관). 브랜치 머지+배포 시 해소.
+- 정정: `/api/legal/documents/terms` 는 main(next.config 트레이스 수정 전)에서도 200+정상 본문 → 해당 라우트는 Vercel 에서 이미 동작. `outputFileTracingIncludes` 수정은 *방어적 명시*(불필요했으나 무해, 명시 보장 유지).
+- 후속: Vercel + `.env.local` 에 `NEXT_PUBLIC_APP_URL=https://todaychemi.vercel.app` 설정(웹 OG/정규 URL 용, 현재 미설정).
+
 ### 📊 코드 DONE 바 (§8) 현황 — 빌드/정적 검증 한도 내 전부 GREEN
 - ✅ `ait build` → `todaychemi.ait` ~3.99MB(<100MB). ✅ root tsc 0 · lint 0 · 백엔드 2823/2823 · miniapp tsc 0 + build. ✅ AI고지·공유 딥링크·뒤로가기/가시성·인앱 정책 뷰. ✅ 미니앱에 토스페이먼츠/구글·이메일 OAuth/next-* 부재(grep 0). ✅ PII/ZDR 무변경(LLM 페이로드 미접촉). ✅ §5 게이트 반영.
 - 🔒 **디바이스/콘솔 게이트(P1 선행)**: 샌드박스/QR 8플로우 실동작 · IAP 3종(결제/복원/환불) 실결제 · 토스 로그인 실세션 · `checklist/app-nongame.md` 대조 · 대표 검수 제출 인수인계.
