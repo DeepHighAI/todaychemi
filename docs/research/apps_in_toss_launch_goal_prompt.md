@@ -294,6 +294,9 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 ### ✅ P7 — 콜드스타트 딥링크 라우팅 (커밋 `5dacffa1`)
 - `getSchemeUri()` 초기 스킴 → HashRouter 경로 매핑(`parseSchemeToPath`), 모듈 싱글톤 가드로 세션당 1회(그룹 재마운트 시 재적용 버그 차단). allowlist prefix(hapcard/whatif/feed/me/onboarding/relations/legal)로 임의 경로 차단. 운영/테스트 스킴 모두 지원. **P6 공유 흐름 완성**(공유받은 케미카드 링크가 해당 카드로 진입). 파서 11/11 케이스 검증.
 
+### ✅ 보안 검토 — IAP IDOR 수정 (커밋 `b7fc6609`)
+- 자동 보안 리뷰 HIGH: unlock 라우트가 `x-toss-user-key` 없이 order-status 조회 → 타인 주문 claim 가능. 수정: 호출자 `toss_connections.toss_user_key` 조회 후 Toss 가 구매자 본인 주문만 반환하도록 헤더 전달(연결 없으면 401) + 23505 충돌 시 본인 행 재-SELECT 후에만 unlock(타인 행 충돌→402). 테스트 3건 추가.
+
 ### 📊 코드 DONE 바 (§8) 현황 — 빌드/정적 검증 한도 내 전부 GREEN
 - ✅ `ait build` → `todaychemi.ait` ~3.99MB(<100MB). ✅ root tsc 0 · lint 0 · 백엔드 2823/2823 · miniapp tsc 0 + build. ✅ AI고지·공유 딥링크·뒤로가기/가시성·인앱 정책 뷰. ✅ 미니앱에 토스페이먼츠/구글·이메일 OAuth/next-* 부재(grep 0). ✅ PII/ZDR 무변경(LLM 페이로드 미접촉). ✅ §5 게이트 반영.
 - 🔒 **디바이스/콘솔 게이트(P1 선행)**: 샌드박스/QR 8플로우 실동작 · IAP 3종(결제/복원/환불) 실결제 · 토스 로그인 실세션 · `checklist/app-nongame.md` 대조 · 대표 검수 제출 인수인계.
