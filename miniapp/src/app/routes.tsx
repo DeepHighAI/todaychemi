@@ -9,8 +9,14 @@
  */
 
 import { useEffect } from 'react';
-import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { createHashRouter, RouterProvider, useNavigate } from 'react-router-dom';
 import { getSchemeUri } from '@apps-in-toss/web-framework';
+import { parseSchemeToPath } from '../lib/deeplink/parse-scheme';
+
+// 모듈 레벨 싱글톤 가드 — 콜드스타트 딥링크는 앱 세션당 정확히 1회만 적용한다.
+// (SchemeUriRouter 가 라우트 그룹 전환마다 재마운트되어도 재적용 금지 — 사용자가
+//  딥링크 화면을 벗어나려 할 때 다시 끌려가는 버그 방지.)
+let coldStartDeeplinkHandled = false;
 import { AppShell } from '../components/shell/AppShell';
 import { FeedPage } from './pages/FeedPage';
 import { HapcardPage } from './pages/HapcardPage';
@@ -27,23 +33,31 @@ import { LegalPage } from './pages/LegalPage';
 // ---------------------------------------------------------------------------
 
 /**
- * 앱 최초 마운트 시 스킴 URI 를 콘솔에 출력하는 일회성 컴포넌트.
+ * 앱 최초 마운트 시 콜드스타트 딥링크 스킴을 라우트로 매핑하는 일회성 컴포넌트.
  * 렌더링 결과는 없다.
  *
- * TODO(P4): 여기서 파싱한 스킴 URI 를 실제 라우트 경로로 매핑.
- *   예) intoss://todaychemi/hapcard/abc123 → /hapcard/abc123
+ * 토스는 공유 링크로 미니앱을 실행할 때 getSchemeUri() 에 초기 경로를 전달한다.
+ * WebView 는 항상 기본 URL(#/)에서 시작하므로, 여기서 경로를 파싱해 1회 navigate 한다.
+ *   예) intoss://todaychemi/hapcard/abc123 → navigate('/hapcard/abc123')
  */
-function SchemeUriLogger() {
+function SchemeUriRouter() {
+  const navigate = useNavigate();
+
   useEffect(() => {
+    // 콜드스타트 1회만 — 이후 재마운트·StrictMode 이중 마운트 시 무시.
+    if (coldStartDeeplinkHandled) return;
+    coldStartDeeplinkHandled = true;
+
     try {
       const schemeUri = getSchemeUri();
-      // TODO(P4): map cold-entry deeplink to route
-      console.log('[todaychemi] 초기 진입 스킴 URI:', schemeUri);
-    } catch (err) {
-      // 웹 dev 환경에서는 getSchemeUri() 가 없을 수 있음
-      console.warn('[todaychemi] getSchemeUri() 미지원 환경:', err);
+      const target = parseSchemeToPath(schemeUri);
+      if (target) {
+        navigate(target, { replace: true });
+      }
+    } catch {
+      // 웹 dev 환경에서는 getSchemeUri() 가 없을 수 있음 — 무시(루트 유지).
     }
-  }, []);
+  }, [navigate]);
 
   return null;
 }
@@ -57,7 +71,7 @@ const router = createHashRouter([
     // 탭바 있는 메인 레이아웃
     element: (
       <>
-        <SchemeUriLogger />
+        <SchemeUriRouter />
         <AppShell showNav />
       </>
     ),
@@ -72,7 +86,7 @@ const router = createHashRouter([
     // 탭바 없는 단독 화면 레이아웃 (온보딩, 케미카드 뷰어, 진단)
     element: (
       <>
-        <SchemeUriLogger />
+        <SchemeUriRouter />
         <AppShell showNav={false} />
       </>
     ),
