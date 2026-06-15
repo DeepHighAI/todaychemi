@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import { AppNav } from './AppNav';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { restorePendingOrders } from '@/lib/iap/purchase';
 
 // ---------------------------------------------------------------------------
 // 탭 정의
@@ -114,6 +116,13 @@ interface AppShellProps {
 
 export function AppShell({ showNav = true }: AppShellProps) {
   const navigate = useNavigate();
+  const { token, isAuthed } = useAuth();
+
+  // 미결 IAP 주문 복구 — 앱 마운트 + 인증 완료 시 best-effort
+  useEffect(() => {
+    if (!isAuthed) return;
+    void restorePendingOrders(token);
+  }, [isAuthed, token]);
 
   // 네이티브 뒤로 가기 버튼 → 라우터 히스토리 뒤로 이동
   useEffect(() => {

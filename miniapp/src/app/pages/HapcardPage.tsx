@@ -40,6 +40,7 @@ import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
+import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
@@ -210,6 +211,14 @@ export function HapcardPage() {
   const [expandTab, setExpandTab] = useState<ExpandTab>('summary');
   const [deleted, setDeleted] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
+
+  // IAP 결제 훅 — PAYMENT_REQUIRED(402) 시 Toss IAP 시트 오픈 후 쿼리 무효화
+  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+    onSuccess: () => {
+      setPayDismissed(false);
+      void refetch();
+    },
+  });
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -281,8 +290,9 @@ export function HapcardPage() {
     );
   }
 
-  // 402 결제 필요 — P5 IAP 전까지 인라인 안내
+  // 402 결제 필요 — Toss IAP 시트 연결
   if (isError && isPaymentRequiredError(error) && !payDismissed) {
+    const payInfo = (error as { payment?: { feature: string; ref: string; amount_krw: number } })?.payment;
     return (
       <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
         <div
@@ -299,27 +309,55 @@ export function HapcardPage() {
             케미카드는 ₩1,000이 필요해요
           </p>
           <p style={{ font: 'var(--t-sub)', margin: 0, color: 'var(--text-secondary)' }}>
-            {/* TODO(P5 IAP): Toss IAP 시트 연결 */}
-            앱 내 결제 연동 준비 중이에요. 웹에서 이용해주세요.
+            결제 후 바로 케미카드를 확인할 수 있어요.
           </p>
-          <button
-            type="button"
-            onClick={() => setPayDismissed(true)}
-            style={{
-              marginTop: 4,
-              padding: '8px 16px',
-              borderRadius: 10,
-              border: '1px solid var(--border)',
-              backgroundColor: 'transparent',
-              color: 'var(--text-primary)',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              alignSelf: 'flex-start',
-            }}
-          >
-            닫기
-          </button>
+          {iapError && (
+            <p style={{ font: 'var(--t-cap)', margin: 0, color: 'var(--destructive)' }}>
+              결제 중 오류가 발생했어요. 다시 시도해 주세요.
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={() => {
+                clearIapError();
+                if (payInfo) {
+                  openIapPurchase(payInfo);
+                }
+              }}
+              disabled={isPurchasing || !payInfo}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                borderRadius: 10,
+                border: 'none',
+                backgroundColor: 'var(--primary)',
+                color: 'white',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: isPurchasing || !payInfo ? 'not-allowed' : 'pointer',
+                opacity: isPurchasing || !payInfo ? 0.6 : 1,
+              }}
+            >
+              {isPurchasing ? '결제 중…' : '₩1,000 결제하기'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { clearIapError(); setPayDismissed(true); }}
+              style={{
+                padding: '10px 16px',
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                backgroundColor: 'transparent',
+                color: 'var(--text-primary)',
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              닫기
+            </button>
+          </div>
         </div>
       </main>
     );

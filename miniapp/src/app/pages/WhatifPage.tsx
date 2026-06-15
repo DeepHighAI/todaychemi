@@ -6,7 +6,7 @@
  * 변경 사항:
  * - useParams: next/navigation → react-router-dom
  * - fetch → apiFetch (apiFetch 는 Bearer 자동 첨부)
- * - FeaturePaySheet 제거 → 402 시 TODO(P5 IAP) 플레이스홀더
+ * - FeaturePaySheet 제거 → 402 시 Toss IAP 시트(useFeaturePurchase) 연결
  * - 'use client' 제거 (Vite SPA — 전체 클라이언트)
  * - Tailwind → 인라인 스타일
  */
@@ -14,10 +14,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
 
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -42,15 +42,18 @@ async function callWhatif(type: DiagnosticType, token: string | null): Promise<W
 }
 
 // ---------------------------------------------------------------------------
-// 402 전용 플레이스홀더 (P5 IAP 연결 예정)
+// 402 결제 필요 UI — Toss IAP 시트 연결
 // ---------------------------------------------------------------------------
 
-interface PayRequiredPlaceholderProps {
-  onRetry: () => void;
+interface PayRequiredBlockProps {
+  amountKrw: number;
+  onPurchase: () => void;
+  onDismiss: () => void;
+  isPurchasing: boolean;
+  purchaseError: Error | null;
 }
 
-function PayRequiredPlaceholder({ onRetry }: PayRequiredPlaceholderProps) {
-  const t = useTranslations('whatif.result');
+function PayRequiredBlock({ amountKrw, onPurchase, onDismiss, isPurchasing, purchaseError }: PayRequiredBlockProps) {
   return (
     <div
       data-testid="whatif-pay-required"
@@ -66,29 +69,51 @@ function PayRequiredPlaceholder({ onRetry }: PayRequiredPlaceholderProps) {
       }}
     >
       <p style={{ font: 'var(--t-body)', color: 'var(--text-primary)', margin: 0 }}>
-        {/* 또 다른 나 1회 ₩800 */}
         또 다른 나 결과를 보려면 결제가 필요해요.
       </p>
       <p style={{ font: 'var(--t-cap)', color: 'var(--text-secondary)', margin: 0 }}>
-        ₩800 / 1회
+        ₩{amountKrw.toLocaleString()} / 1회
       </p>
-      {/* TODO(P5 IAP): Toss IAP 시트 연결 — 현재는 재시도 안내만 */}
-      <button
-        type="button"
-        onClick={onRetry}
-        style={{
-          borderRadius: 'var(--r-md)',
-          backgroundColor: 'var(--primary)',
-          color: 'var(--primary-foreground)',
-          font: 'var(--t-sub)',
-          fontWeight: 600,
-          padding: '10px 20px',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        {t('error')}
-      </button>
+      {purchaseError && (
+        <p style={{ font: 'var(--t-cap)', color: 'var(--destructive)', margin: 0 }}>
+          결제 중 오류가 발생했어요. 다시 시도해 주세요.
+        </p>
+      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          type="button"
+          onClick={onPurchase}
+          disabled={isPurchasing}
+          style={{
+            borderRadius: 'var(--r-md)',
+            backgroundColor: 'var(--primary)',
+            color: 'var(--primary-foreground)',
+            font: 'var(--t-sub)',
+            fontWeight: 600,
+            padding: '10px 20px',
+            border: 'none',
+            cursor: isPurchasing ? 'not-allowed' : 'pointer',
+            opacity: isPurchasing ? 0.6 : 1,
+          }}
+        >
+          {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          style={{
+            borderRadius: 'var(--r-md)',
+            backgroundColor: 'transparent',
+            color: 'var(--text-secondary)',
+            font: 'var(--t-sub)',
+            padding: '10px 16px',
+            border: '1px solid var(--border)',
+            cursor: 'pointer',
+          }}
+        >
+          닫기
+        </button>
+      </div>
     </div>
   );
 }
@@ -112,6 +137,16 @@ export function WhatifPage() {
   });
 
   const [payDismissed, setPayDismissed] = useState(false);
+  const [payInfo, setPayInfo] = useState<{ amount_krw: number; feature: string; ref: string } | null>(null);
+
+  // IAP 결제 훅 — 성공 시 쿼리 재실행
+  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+    onSuccess: () => {
+      setPayDismissed(false);
+      setPayInfo(null);
+      void refetch();
+    },
+  });
 
   // 유효하지 않은 type
   if (!type) {
@@ -133,11 +168,23 @@ export function WhatifPage() {
   if (isError) {
     const err = error as ApiError;
 
-    // 402 PAYMENT_REQUIRED → P5 IAP 플레이스홀더
+    // 402 PAYMENT_REQUIRED → Toss IAP 시트 연결
     if (err.status === 402 && !payDismissed) {
+      // 402 발생 시 payment 정보 저장
+      const info = err.payment ?? payInfo;
+      if (info && !payInfo) setPayInfo(info);
       return (
         <div style={{ padding: 16 }}>
-          <PayRequiredPlaceholder onRetry={() => { setPayDismissed(true); refetch(); }} />
+          <PayRequiredBlock
+            amountKrw={info?.amount_krw ?? 800}
+            isPurchasing={isPurchasing}
+            purchaseError={iapError}
+            onPurchase={() => {
+              clearIapError();
+              if (info) openIapPurchase(info);
+            }}
+            onDismiss={() => { clearIapError(); setPayDismissed(true); }}
+          />
         </div>
       );
     }

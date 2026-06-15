@@ -2,7 +2,7 @@
  * Step3ModeConsent.tsx — 스텝 3: 관계 모드 선택 + 동의 + 제출
  *
  * 웹앱 src/app/(app)/relations/new/mode/page.tsx 포트.
- * - FeaturePaySheet → 미니앱에서는 TODO(P5 IAP) 플레이스홀더 UI.
+ * - FeaturePaySheet → 402 시 Toss IAP 시트(useFeaturePurchase) 연결.
  * - useMutation(apiFetch) 사용.
  * - 402 PAYMENT_REQUIRED 시 relation_slot 고지 모달 표시.
  * - 성공 시 /feed 내비게이션 (useNavigate).
@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem } from '@/types/relation';
 
@@ -70,11 +71,21 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
   const [mode, setMode] = useState<DraftMode>(initialMode);
   const [consent, setConsent] = useState(initialConsent);
 
-  // 402 수신 시 결제 정보 보관 — P5 IAP 시트가 연결될 때까지 placeholder UI 사용
+  // 402 수신 시 결제 정보 보관 — IAP 시트 오픈용
   const [paywallInfo, setPaywallInfo] = useState<{
+    feature: string;
     ref: string;
     amount_krw: number;
   } | null>(null);
+
+  // IAP 결제 훅 — 성공 시 relation 생성 재시도
+  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+    onSuccess: () => {
+      setPaywallInfo(null);
+      // 결제 완료 후 서버가 unlock row 를 가지고 있으므로 재제출
+      mutation.mutate();
+    },
+  });
 
   // ['feed'] 캐시에서 현재 보유 인연 수를 추정 — 사전 고지 표시 결정
   const ownedCount = useMemo(() => {
@@ -109,8 +120,12 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     },
     onError: (err: ApiError) => {
       if (err.status === 402 && err.payment) {
-        // 인연 슬롯 과금 — P5 IAP 시트 연결 전까지 placeholder UI 표시
-        setPaywallInfo({ ref: err.payment.ref, amount_krw: err.payment.amount_krw });
+        // 인연 슬롯 과금 — Toss IAP 시트 연결
+        setPaywallInfo({
+          feature: err.payment.feature || 'relation_slot',
+          ref: err.payment.ref,
+          amount_krw: err.payment.amount_krw,
+        });
       }
       // 그 외 에러는 mutation.error 로 자동 전달
     },
@@ -209,7 +224,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
         </p>
       )}
 
-      {/* 402 결제 필요 — P5 IAP 연결 전 플레이스홀더 */}
+      {/* 402 결제 필요 — Toss IAP 시트 연결 */}
       {paywallInfo && (
         <div
           style={{
@@ -227,25 +242,32 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
             인연 등록 비용: {paywallInfo.amount_krw.toLocaleString()}원
           </p>
-          {/* TODO(P5 IAP): Toss IAP 시트 연결. 현재는 안내만 표시. */}
-          <p
-            style={{
-              fontSize: 11,
-              color: 'var(--text-secondary)',
-              fontStyle: 'italic',
-              margin: 0,
-            }}
-          >
-            [IAP 결제 시트 — P5 연결 예정]
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPaywallInfo(null)}
-            style={{ alignSelf: 'flex-start' }}
-          >
-            닫기
-          </Button>
+          {iapError && (
+            <p style={{ fontSize: 12, color: 'var(--destructive)', margin: 0 }}>
+              결제 중 오류가 발생했어요. 다시 시도해 주세요.
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              size="sm"
+              disabled={isPurchasing}
+              onClick={() => {
+                clearIapError();
+                openIapPurchase(paywallInfo);
+              }}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              {isPurchasing ? '결제 중…' : `₩${paywallInfo.amount_krw.toLocaleString()} 결제하기`}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { clearIapError(); setPaywallInfo(null); }}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              닫기
+            </Button>
+          </div>
         </div>
       )}
 

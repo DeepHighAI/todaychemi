@@ -6,7 +6,7 @@
  * 변경:
  *   - useSearchParams(next/navigation) → useSearchParams(react-router-dom)
  *   - useRouter(next/navigation) → 미사용 (결제 후 복귀는 useSearchParams 감지)
- *   - FeaturePaySheet 제거 → 402 시 TODO(P5 IAP) 플레이스홀더
+ *   - FeaturePaySheet 제거 → 402 시 Toss IAP 시트(useFeaturePurchase) 연결
  *   - fetch('/api/...') → apiFetch(path, { token })
  *   - next-intl useTranslations 유지 (App.tsx 의 NextIntlClientProvider 통해 제공됨)
  */
@@ -18,6 +18,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -86,9 +87,18 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<State>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // 결제 필요 상태 — P5 IAP 연결 전 안내 표시용
-  const [payRef, setPayRef] = useState<string | null>(null);
+  // 결제 필요 상태 — IAP 연결용 payment 정보 보관
+  const [payInfo, setPayInfo] = useState<{ feature: string; ref: string; amount_krw: number } | null>(null);
   const [autoReplay, setAutoReplay] = useState(false);
+
+  // IAP 결제 훅 — 성공 시 replay 재시도 (unlock row 있으면 200, 재과금 없음)
+  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+    onSuccess: () => {
+      setPayInfo(null);
+      setState('loading');
+      mutation.mutate();
+    },
+  });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoFired = useRef(false);
 
@@ -108,10 +118,11 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
     },
     onError: (err: unknown) => {
       const e = err as { status?: number; code?: string; ref?: string };
-      // 402 PAYMENT_REQUIRED — P5 IAP 전까지 안내 메시지만 표시
+      // 402 PAYMENT_REQUIRED — Toss IAP 시트 연결
       if (e.status === 402 || e.code === 'PAYMENT_REQUIRED') {
         const ref = getPaymentRef(e);
-        setPayRef(ref);
+        const amount = (e as { amount_krw?: number }).amount_krw ?? 600;
+        setPayInfo(ref ? { feature: 'replay', ref, amount_krw: amount } : null);
         setState('pay_required');
         return;
       }
@@ -144,7 +155,8 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       setState('idle');
       setErrorMsg(null);
       setAutoReplay(false);
-      setPayRef(null);
+      setPayInfo(null);
+      clearIapError();
     }
     setOpen(v);
   }
@@ -157,7 +169,8 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   function handleRetry() {
     setState('idle');
     setErrorMsg(null);
-    setPayRef(null);
+    setPayInfo(null);
+    clearIapError();
   }
 
   const isLoading = state === 'loading';
@@ -226,7 +239,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
           </div>
         )}
 
-        {/* 결제 필요 — P5 IAP 연결 전 안내 */}
+        {/* 결제 필요 — Toss IAP 시트 연결 */}
         {state === 'pay_required' && (
           <div
             role="alert"
@@ -241,20 +254,31 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             }}
           >
             <p style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>
-              케미 다시 맞추기는 ₩600이 필요해요.
+              케미 다시 맞추기는 ₩{(payInfo?.amount_krw ?? 600).toLocaleString()}이 필요해요.
             </p>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
-              {/* TODO(P5 IAP): Toss IAP 시트 연결 */}
-              앱 내 결제 연동 준비 중이에요. 웹에서 이용해주세요.
+              결제 후 바로 새 케미카드를 확인할 수 있어요.
             </p>
-            {payRef && (
-              <p style={{ margin: 0, color: 'var(--outline)', fontSize: 11, fontFamily: 'monospace' }}>
-                ref: {payRef}
+            {iapError && (
+              <p style={{ margin: 0, color: 'var(--destructive)', fontSize: 12 }}>
+                결제 중 오류가 발생했어요. 다시 시도해 주세요.
               </p>
             )}
-            <Button variant="outline" size="sm" onClick={handleRetry}>
-              닫기
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                size="sm"
+                disabled={isPurchasing || !payInfo}
+                onClick={() => {
+                  clearIapError();
+                  if (payInfo) openIapPurchase(payInfo);
+                }}
+              >
+                {isPurchasing ? '결제 중…' : `₩${(payInfo?.amount_krw ?? 600).toLocaleString()} 결제하기`}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleRetry}>
+                닫기
+              </Button>
+            </div>
           </div>
         )}
 
