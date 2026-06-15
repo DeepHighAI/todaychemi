@@ -45,6 +45,7 @@ import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { shareHapcard } from '@/lib/share/toss-share';
+import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import { HapcardLoadingState } from '@/components/hapcard/loading-state';
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
@@ -212,6 +213,7 @@ export function HapcardPage() {
   const [expandTab, setExpandTab] = useState<ExpandTab>('summary');
   const [deleted, setDeleted] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
+  const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — PAYMENT_REQUIRED(402) 시 Toss IAP 시트 오픈 후 쿼리 무효화
   const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
@@ -317,6 +319,7 @@ export function HapcardPage() {
               결제 중 오류가 발생했어요. 다시 시도해 주세요.
             </p>
           )}
+          <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             <button
               type="button"
@@ -326,7 +329,7 @@ export function HapcardPage() {
                   openIapPurchase(payInfo);
                 }
               }}
-              disabled={isPurchasing || !payInfo}
+              disabled={isPurchasing || !payInfo || !refundConsent}
               style={{
                 flex: 1,
                 padding: '10px 16px',
@@ -336,8 +339,8 @@ export function HapcardPage() {
                 color: 'white',
                 fontSize: 14,
                 fontWeight: 700,
-                cursor: isPurchasing || !payInfo ? 'not-allowed' : 'pointer',
-                opacity: isPurchasing || !payInfo ? 0.6 : 1,
+                cursor: isPurchasing || !payInfo || !refundConsent ? 'not-allowed' : 'pointer',
+                opacity: isPurchasing || !payInfo || !refundConsent ? 0.6 : 1,
               }}
             >
               {isPurchasing ? '결제 중…' : '₩1,000 결제하기'}

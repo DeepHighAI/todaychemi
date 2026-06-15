@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
+import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem } from '@/types/relation';
 
@@ -77,6 +78,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     ref: string;
     amount_krw: number;
   } | null>(null);
+  const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — 성공 시 relation 생성 재시도
   const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
@@ -247,10 +249,15 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
               결제 중 오류가 발생했어요. 다시 시도해 주세요.
             </p>
           )}
+          <RefundRestrictionConsent
+            checked={refundConsent}
+            onCheckedChange={setRefundConsent}
+            notice="인연 등록이 완료되면 「전자상거래법」상 청약철회가 제한됩니다."
+          />
           <div style={{ display: 'flex', gap: 8 }}>
             <Button
               size="sm"
-              disabled={isPurchasing}
+              disabled={isPurchasing || !refundConsent}
               onClick={() => {
                 clearIapError();
                 openIapPurchase(paywallInfo);

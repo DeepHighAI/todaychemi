@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
+import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -90,6 +91,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   // 결제 필요 상태 — IAP 연결용 payment 정보 보관
   const [payInfo, setPayInfo] = useState<{ feature: string; ref: string; amount_krw: number } | null>(null);
   const [autoReplay, setAutoReplay] = useState(false);
+  const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — 성공 시 replay 재시도 (unlock row 있으면 200, 재과금 없음)
   const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
@@ -264,10 +266,11 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
                 결제 중 오류가 발생했어요. 다시 시도해 주세요.
               </p>
             )}
+            <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
             <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 size="sm"
-                disabled={isPurchasing || !payInfo}
+                disabled={isPurchasing || !payInfo || !refundConsent}
                 onClick={() => {
                   clearIapError();
                   if (payInfo) openIapPurchase(payInfo);

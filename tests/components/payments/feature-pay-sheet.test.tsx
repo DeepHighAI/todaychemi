@@ -30,7 +30,9 @@ const PAYMENT = {
   order_id: 'twoday_feat_1',
   customer_key: 'cust_feat_1',
   client_key: 'test_gck_feat',
-  amount_krw: 1000,
+  list_amount_krw: 1000,
+  amount_krw: 500,
+  discount_label: '오픈초기 50% 할인',
   order_name: '케미카드 보기',
   feature: 'hapcard',
   ref: 'cache-abc',
@@ -87,7 +89,7 @@ describe('FeaturePaySheet', () => {
     await waitFor(() =>
       expect(trackEvent).toHaveBeenCalledWith({
         name: 'begin_checkout',
-        params: { feature_id: 'hapcard', value: 1000, currency: 'KRW' },
+        params: { feature_id: 'hapcard', value: 500, currency: 'KRW' },
       }),
     );
   });
@@ -110,7 +112,10 @@ describe('FeaturePaySheet', () => {
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
     await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('test_gck_feat'));
-    expect(toss.setAmount).toHaveBeenCalledWith({ value: 1000, currency: 'KRW' });
+    expect(toss.setAmount).toHaveBeenCalledWith({ value: 500, currency: 'KRW' });
+    expect(screen.getByText('오픈초기 50% 할인')).toBeInTheDocument();
+    expect(screen.getByText('₩500')).toBeInTheDocument();
+    expect(screen.getByText('₩1,000')).toBeInTheDocument();
     expect(toss.renderPaymentMethods).toHaveBeenCalledWith({
       selector: '#feature-payment-methods',
       variantKey: 'DEFAULT',
@@ -126,6 +131,7 @@ describe('FeaturePaySheet', () => {
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
     const payBtn = await screen.findByRole('button', { name: /결제하기/ });
+    fireEvent.click(screen.getByRole('checkbox')); // 청약철회 제한 동의
     fireEvent.click(payBtn);
 
     await waitFor(() => expect(toss.requestPayment).toHaveBeenCalledOnce());
@@ -149,7 +155,8 @@ describe('FeaturePaySheet', () => {
         ...PAYMENT,
         feature: 'replay',
         order_name: '케미 다시 맞추기',
-        amount_krw: 600,
+        list_amount_krw: 600,
+        amount_krw: 300,
         ref: 'replay:hap-1:2026-06-02',
       },
     });
@@ -165,10 +172,22 @@ describe('FeaturePaySheet', () => {
     );
 
     const payBtn = await screen.findByRole('button', { name: /결제하기/ });
+    fireEvent.click(screen.getByRole('checkbox')); // 청약철회 제한 동의
     fireEvent.click(payBtn);
 
     await waitFor(() => expect(toss.requestPayment).toHaveBeenCalledOnce());
     expect(toss.requestPayment.mock.calls[0][0].successUrl).toContain('&replay=1');
+  });
+
+  it('청약철회 제한 동의 전에는 결제 버튼이 비활성화된다 (전자상거래법 §17)', async () => {
+    mockInit({ ok: true, unlocked: false, payment: PAYMENT });
+    renderWithProviders(<FeaturePaySheet {...baseProps} />);
+
+    const payBtn = await screen.findByRole('button', { name: /결제하기/ });
+    expect(payBtn).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('checkbox')); // 동의
+    expect(payBtn).toBeEnabled();
   });
 
   it('init 실패(404) → 위젯 마운트 없이 에러 표시', async () => {

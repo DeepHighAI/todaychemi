@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
+import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -54,6 +55,7 @@ interface PayRequiredBlockProps {
 }
 
 function PayRequiredBlock({ amountKrw, onPurchase, onDismiss, isPurchasing, purchaseError }: PayRequiredBlockProps) {
+  const [refundConsent, setRefundConsent] = useState(false);
   return (
     <div
       data-testid="whatif-pay-required"
@@ -79,11 +81,12 @@ function PayRequiredBlock({ amountKrw, onPurchase, onDismiss, isPurchasing, purc
           결제 중 오류가 발생했어요. 다시 시도해 주세요.
         </p>
       )}
+      <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           type="button"
           onClick={onPurchase}
-          disabled={isPurchasing}
+          disabled={isPurchasing || !refundConsent}
           style={{
             borderRadius: 'var(--r-md)',
             backgroundColor: 'var(--primary)',
@@ -92,8 +95,8 @@ function PayRequiredBlock({ amountKrw, onPurchase, onDismiss, isPurchasing, purc
             fontWeight: 600,
             padding: '10px 20px',
             border: 'none',
-            cursor: isPurchasing ? 'not-allowed' : 'pointer',
-            opacity: isPurchasing ? 0.6 : 1,
+            cursor: isPurchasing || !refundConsent ? 'not-allowed' : 'pointer',
+            opacity: isPurchasing || !refundConsent ? 0.6 : 1,
           }}
         >
           {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}

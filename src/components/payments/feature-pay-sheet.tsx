@@ -54,6 +54,8 @@ export function FeaturePaySheet({
   const [payment, setPayment] = useState<FeaturePaymentInit | null>(null);
   const [errorMessage, setErrorMessage] = useState(getInitErrorMessage());
   const [retryNonce, setRetryNonce] = useState(0);
+  // 결제 전 청약철회 제한 고지·동의 (전자상거래법 §17) — 동의해야 결제 버튼 활성화.
+  const [refundConsent, setRefundConsent] = useState(false);
   const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
 
   // G-8: 결제 시트 노출 = 결제 퍼널 진입 이벤트
@@ -74,6 +76,7 @@ export function FeaturePaySheet({
       setStatus('loading');
       setPayment(null);
       setErrorMessage(getInitErrorMessage());
+      setRefundConsent(false);
       widgetsRef.current = null;
       clearWidgetContainers();
       try {
@@ -174,12 +177,20 @@ export function FeaturePaySheet({
             </div>
             {payment && (
               <div className="relative mt-4 text-white">
+                <p className="inline-flex rounded-full bg-white/20 px-2 py-1 text-xs font-bold text-white">
+                  {payment.discount_label}
+                </p>
                 <p className="text-xs font-bold uppercase tracking-[0.04em] text-white/80">
                   {payment.order_name}
                 </p>
-                <p className="mt-1 text-3xl font-extrabold leading-none">
-                  ₩{payment.amount_krw.toLocaleString()}
-                </p>
+                <div className="mt-1 flex items-end gap-2">
+                  <p className="text-3xl font-extrabold leading-none">
+                    ₩{payment.amount_krw.toLocaleString()}
+                  </p>
+                  <p className="text-sm font-bold text-white/65 line-through">
+                    ₩{payment.list_amount_krw.toLocaleString()}
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -207,10 +218,30 @@ export function FeaturePaySheet({
               </p>
             )}
 
+            {status === 'ready' && (
+              <label className="flex cursor-pointer items-start gap-2 rounded-[var(--r-sm)] bg-[var(--surface-1)] px-3 py-2.5 text-left">
+                <input
+                  type="checkbox"
+                  checked={refundConsent}
+                  onChange={(e) => setRefundConsent(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
+                />
+                <span className="text-xs leading-relaxed text-muted-foreground">
+                  생성·열람 즉시 제공되는 디지털콘텐츠로, 제공이 시작되면 「전자상거래법」상 청약철회가 제한됩니다.{' '}
+                  <strong className="font-bold text-foreground">위 내용을 확인했으며 동의합니다.</strong>
+                </span>
+              </label>
+            )}
+
             <Button
               type="button"
               className="h-12 w-full"
-              disabled={status === 'idle' || status === 'loading' || status === 'paying'}
+              disabled={
+                status === 'idle' ||
+                status === 'loading' ||
+                status === 'paying' ||
+                (status === 'ready' && !refundConsent)
+              }
               onClick={status === 'error' ? retryInit : handlePay}
             >
               {status === 'ready' && payment
