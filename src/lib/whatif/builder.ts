@@ -10,6 +10,7 @@ import { retrieveClassics } from '@/lib/rag/classics';
 import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { resolveDerivedForLlm, type LlmDerived } from '@/lib/llm/payload';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
+import { sanitizeWhatifContent } from '@/lib/whatif/content-sanitize';
 
 export interface BuildWhatifResult {
   result: WhatifResult;
@@ -104,7 +105,7 @@ function mapDbRow(data: unknown): WhatifResult {
     id: r.whatif_id,
     user_id: r.user_id,
     type: r.type,
-    content: r.content,
+    content: sanitizeWhatifContent(r.content),
     prompt_version: r.prompt_version,
     llm_model: r.llm_model,
     cache_key: r.cache_key,
@@ -223,13 +224,13 @@ export async function buildWhatif(
   const insertRow = {
     user_id: input.user_id,
     type: input.type,
-    content: {
+    content: sanitizeWhatifContent({
       body: llmResult.output.body,
       keywords: llmResult.output.keywords,
       do_first: llmResult.output.do_first,
       ...(llmResult.output.first_meet_tips && { first_meet_tips: llmResult.output.first_meet_tips }),
       ...(llmResult.output.classic_citation?.length && { classic_citation: llmResult.output.classic_citation }),
-    } satisfies WhatifContent,
+    } satisfies WhatifContent),
     prompt_version: prompt.version,
     llm_model: modelId,
     cache_key: cacheKey,

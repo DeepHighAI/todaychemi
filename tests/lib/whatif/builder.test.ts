@@ -45,6 +45,10 @@ const EXPECTED_CACHE_KEY = deriveCacheKey({
 
 const MOCK_EMBEDDING = Array(1536).fill(0.1) as number[];
 const MOCK_RAG_HITS: never[] = [];
+const RAW_DERIVED_BODY =
+  '일간이 토(일간: 토)이며 십신에서 비겁·식상이 우세하고(derived: dominant_sipsin = ["비겁","식상"]) 지장간·오행 분포에서 토가 중심인 신강(derived: sinkang.verdict = "신강")인 경우, 재성·관성·인성이 부족(derived: missing_sipsin = ["재성","관성","인성"])하므로 용신(derived: yongsin_candidates = ["금","목","수"])을 의식하면 좋다.';
+const SANITIZED_DERIVED_BODY =
+  '일간이 토이며 십신에서 비겁·식상이 우세하고 지장간·오행 분포에서 토가 중심인 신강인 경우, 재성·관성·인성이 부족하므로 용신을 의식하면 좋다.';
 
 function makeMockUserClient(opts: {
   cacheHit?: boolean;
@@ -131,6 +135,20 @@ describe('buildWhatif', () => {
     expect(result.id).toBeDefined();
   });
 
+  it('cache hit body에 raw derived 주석이 있으면 응답에서 제거한다', async () => {
+    const cachedRow = {
+      ...makeMockInsertedRow(EXPECTED_CACHE_KEY),
+      content: { ...MOCK_LLM_OUTPUT, body: RAW_DERIVED_BODY },
+    };
+    const { client } = makeMockUserClient({ cacheHit: true, cachedRow });
+
+    const { result } = await buildWhatif(BASE_INPUT, makeDeps(client));
+
+    expect(result.content.body).toBe(SANITIZED_DERIVED_BODY);
+    expect(result.content.body).not.toContain('derived');
+    expect(result.content.body).not.toContain('dominant_sipsin');
+  });
+
   it('cache hit row가 요청 type과 다르면 stale cache로 보고 반환하지 않는다', async () => {
     const staleRow = {
       ...makeMockInsertedRow(EXPECTED_CACHE_KEY),
@@ -181,6 +199,22 @@ describe('buildWhatif', () => {
     expect(insertFn).toHaveBeenCalledTimes(1);
     expect(result.id).toBe('whatif-uuid-1234');
     expect(result.type).toBe('work');
+  });
+
+  it('cache miss LLM body에 raw derived 주석이 있으면 INSERT content에서 제거한다', async () => {
+    mockCallOpenAi.mockResolvedValue({
+      output: { ...MOCK_LLM_OUTPUT, body: RAW_DERIVED_BODY },
+      usage: { token_in: 100, token_out: 200, total_usd: 0 },
+      model: 'gpt-5',
+    });
+    const { client, insertFn } = makeMockUserClient({ cacheHit: false });
+
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+
+    const content = insertFn.mock.calls[0][0].content;
+    expect(content.body).toBe(SANITIZED_DERIVED_BODY);
+    expect(content.body).not.toContain('sinkang.verdict');
+    expect(content.body).not.toContain('yongsin_candidates');
   });
 
   it('cache_key = deriveCacheKey(chart_hash, type, prompt_version, model_id)', async () => {
