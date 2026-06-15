@@ -263,7 +263,7 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 - 커밋: `f5823d5`(foundation) · `646f43b`(auth bridge), branch `feature/apps-in-toss-miniapp`, **origin 미push**. 무관 WIP 32파일 미스테이징 보존.
 
 ### ⚠️ 알려진 이슈 / 잔여 결정
-- **D-CALLBACK 버그(수정 대기)**: `/api/toss/disconnect` 가 모든 referrer(UNLINK 포함)에서 `toss_connections` 매핑 삭제 → UNLINK(로그아웃)은 매핑 보존해야 재로그인 시 데이터 연속성 유지. **UNLINK=세션무효화만, WITHDRAWAL_*=매핑/데이터 처리**로 분기 수정 필요(§1.1 D-CALLBACK 결정과 함께).
+- ~~**D-CALLBACK 버그(수정 대기)**~~ → **✅ 해소(2026-06-15)**: 버그(UNLINK 매핑 삭제)는 `bccca30` 수정. 라이프사이클 §1.1 결정 확정+구현(`74b0bc37`): UNLINK/WITHDRAWAL_TERMS=세션무효화만+데이터 보존, WITHDRAWAL_TOSS=인앱 계정삭제 정책(`deletion_requested_at`→30일 grace→purge cron cascade) 재사용. 멱등. 테스트 15/15.
 - 미적용 마이그 `20260614154823_toss_connections.sql` → 배포 시 `db:push` + types regen(임시 stub 대체).
 - **31라우트 Bearer 듀얼auth+CORS 미수행**(별도, 신중): 현재 세션-민팅이 진짜 Supabase 토큰이라 라우트 무변경으로도 Bearer 동작하나, CORS(tossmini 2도메인) 헤더 + preflight 는 미들웨어 추가 필요.
 
