@@ -6,12 +6,13 @@
  * 언어 변경(onLang)·앱 정보(onAbout)는 미니앱에서 시트 없이 no-op 처리.
  */
 
-import { ChevronRight, FileText, Globe2, Info, LogOut, Shield, Trash2 } from 'lucide-react';
+import { ChevronRight, FileText, Globe2, Info, LogOut, Receipt, Shield, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface InfoCardProps {
   onPrivacy: () => void;
   onTerms: () => void;
+  onRefund: () => void;
   onAbout: () => void;
   onLang: () => void;
   onDeleteAccount: () => void;
@@ -22,6 +23,7 @@ interface InfoCardProps {
 export function InfoCard({
   onPrivacy,
   onTerms,
+  onRefund,
   onAbout,
   onLang,
   onDeleteAccount,
@@ -57,6 +59,7 @@ export function InfoCard({
       <InfoRow Icon={Globe2} label={t('language')} sub={t('languageSub')} onClick={onLang} />
       <InfoRow Icon={Shield} label={t('privacy')} sub={t('privacySub')} onClick={onPrivacy} />
       <InfoRow Icon={FileText} label={t('terms')} sub={t('termsSub')} onClick={onTerms} />
+      <InfoRow Icon={Receipt} label={t('refund')} sub={t('refundSub')} onClick={onRefund} />
       <InfoRow Icon={Trash2} label={t('deleteAccount')} sub={t('deleteAccountSub')} onClick={onDeleteAccount} danger />
       <InfoRow Icon={Info} label={t('about')} sub={t('aboutSub')} onClick={onAbout} />
       <InfoRow

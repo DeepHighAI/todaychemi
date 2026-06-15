@@ -193,8 +193,9 @@ export function MePage() {
 
       {/* 앱 정보 / 설정 */}
       <InfoCard
-        onPrivacy={() => openExternal('https://todaychemi.vercel.app/legal/privacy')}
-        onTerms={() => openExternal('https://todaychemi.vercel.app/legal/terms')}
+        onPrivacy={() => navigate('/legal/privacy')}
+        onTerms={() => navigate('/legal/terms')}
+        onRefund={() => navigate('/legal/refund')}
         onAbout={() => openExternal('https://deephalabs.com')}
         onLang={() => {
           // 미니앱: 언어 KO 고정 — 추후 다국어 지원 시 시트로 교체 (TODO P5)

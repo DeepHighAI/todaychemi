@@ -10,6 +10,7 @@
 
 import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import { AppNav } from './AppNav';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -116,6 +117,7 @@ interface AppShellProps {
 
 export function AppShell({ showNav = true }: AppShellProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { token, isAuthed } = useAuth();
 
   // 미결 IAP 주문 복구 — 앱 마운트 + 인증 완료 시 best-effort
@@ -123,6 +125,18 @@ export function AppShell({ showNav = true }: AppShellProps) {
     if (!isAuthed) return;
     void restorePendingOrders(token);
   }, [isAuthed, token]);
+
+  // 포그라운드 복귀(가시성 visible) 시 데이터 새로고침 + 미결 IAP 주문 재복구.
+  // WebView 에서 'focus' 는 불안정하므로 'visibilitychange' 로 앱 재개를 감지한다.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState !== 'visible') return;
+      void queryClient.invalidateQueries();
+      if (isAuthed) void restorePendingOrders(token);
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [queryClient, isAuthed, token]);
 
   // 네이티브 뒤로 가기 버튼 → 라우터 히스토리 뒤로 이동
   useEffect(() => {

@@ -37,12 +37,21 @@ describe('GET /api/legal/documents/[slug]', () => {
     expect(getLegalDocument).toHaveBeenCalledWith('privacy');
   });
 
-  it('404 for unsupported legal document slugs', async () => {
+  it('refund 슬러그도 허용해 문서를 반환한다 (앱인토스 IAP 검수 요건, P6)', async () => {
     const res = await GET(new Request('https://hap.plae/api/legal/documents/refund') as never, {
       params: Promise.resolve({ slug: 'refund' }),
     });
 
+    expect(res.status).toBe(200);
+    expect(getLegalDocument).toHaveBeenCalledWith('refund');
+  });
+
+  it('404 for unsupported legal document slugs', async () => {
+    const res = await GET(new Request('https://hap.plae/api/legal/documents/cookies') as never, {
+      params: Promise.resolve({ slug: 'cookies' }),
+    });
+
     expect(res.status).toBe(404);
-    expect(getLegalDocument).not.toHaveBeenCalledWith('refund');
+    expect(getLegalDocument).not.toHaveBeenCalledWith('cookies');
   });
 });

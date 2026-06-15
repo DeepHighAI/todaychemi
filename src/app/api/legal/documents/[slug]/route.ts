@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { getLegalDocument, type LegalDocumentSlug } from '@/lib/legal/documents';
 
-const ALLOWED_SLUGS = new Set<LegalDocumentSlug>(['terms', 'privacy']);
+// refund: 앱인토스 미니앱(유료 IAP) 검수 요건 — 환불 정책 인앱 노출용 (P6).
+const ALLOWED_SLUGS = new Set<LegalDocumentSlug>(['terms', 'privacy', 'refund']);
 
 export async function GET(
   _request: NextRequest,

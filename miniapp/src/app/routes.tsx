@@ -20,6 +20,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { RelationDetailPage } from './pages/RelationDetailPage';
 import { RelationsNewPage } from './pages/RelationsNewPage';
 import { WhatifPage } from './pages/WhatifPage';
+import { LegalPage } from './pages/LegalPage';
 
 // ---------------------------------------------------------------------------
 // 딥링크 마운트 로깅
@@ -80,6 +81,7 @@ const router = createHashRouter([
       { path: '/relations/new',           element: <RelationsNewPage /> },
       { path: '/hapcard/:id',             element: <HapcardPage /> },
       { path: '/whatif/:type',            element: <WhatifPage /> },
+      { path: '/legal/:slug',             element: <LegalPage /> },
     ],
   },
 ]);

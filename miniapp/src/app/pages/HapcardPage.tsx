@@ -22,7 +22,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MoreHorizontal, Trash2, Edit2, Check } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, Check, Share2 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { toEasyText } from '@/lib/glossary/easy-term-map';
@@ -44,6 +44,7 @@ import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
+import { shareHapcard } from '@/lib/share/toss-share';
 import { HapcardLoadingState } from '@/components/hapcard/loading-state';
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
@@ -502,6 +503,17 @@ export function HapcardPage() {
     setRenameOpen(true);
   }
 
+  // 케미카드 공유 — 토스 네이티브 공유 시트. 사용자 취소/미지원은 조용히 무시.
+  async function handleShare() {
+    setMenuOpen(false);
+    if (!id) return;
+    try {
+      await shareHapcard(id);
+    } catch {
+      // 사용자가 공유를 취소했거나 SDK 미지원 환경 — 별도 처리 없음.
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 렌더
   // ---------------------------------------------------------------------------
@@ -614,6 +626,26 @@ export function HapcardPage() {
               }}
             >
               <Edit2 style={{ width: 16, height: 16 }} /> {t('menu.rename')}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleShare()}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: 'none',
+                backgroundColor: 'transparent',
+                textAlign: 'left',
+                fontSize: 14,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+              }}
+            >
+              <Share2 style={{ width: 16, height: 16 }} /> {t('menu.share')}
             </button>
             <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '2px 8px' }} />
             <button
