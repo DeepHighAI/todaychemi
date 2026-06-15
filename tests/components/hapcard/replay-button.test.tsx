@@ -202,6 +202,7 @@ describe('HapcardReplayButton — error paths', () => {
     await userEvent.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
     const payButton = await screen.findByRole('button', { name: /결제하기/ });
+    await userEvent.click(screen.getByRole('checkbox')); // 청약철회 제한 동의 (b4430a7e: 결제 전 consent gate)
     await userEvent.click(payButton);
 
     await waitFor(() => expect(toss.requestPayment).toHaveBeenCalledOnce());
