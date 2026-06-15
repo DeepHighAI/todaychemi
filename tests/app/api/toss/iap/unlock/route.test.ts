@@ -56,24 +56,44 @@ function makeAuthClient(userId: string | null = USER_ID) {
   };
 }
 
-/** service-role 클라이언트 insert mock */
+/** 기본 Toss userKey (toss_connections 조회 mock) */
+const TOSS_USER_KEY = 1234567;
+
+/** service-role 클라이언트 mock — 테이블별(toss_connections / payments) 분기 */
 function makeServiceClient(opts: {
   insertError?: { code: string; message: string };
-  /** 조기 멱등 단락: SELECT.maybeSingle() 이 반환할 값 (null = 기존 row 없음, 기본값) */
+  /** 조기 멱등 단락: payments SELECT 첫 호출이 반환할 값 (null = 기존 row 없음, 기본값) */
   existingRow?: { id: string } | null;
+  /** 23505 충돌 후 재-SELECT 가 반환할 값 (null = 타인 주문 충돌 → 402, 기본값) */
+  ownRowAfter23505?: { id: string } | null;
+  /** toss_connections 조회 결과 userKey (null = 연결 없음 → 401) */
+  tossUserKey?: number | null;
 } = {}) {
-  const insert = vi.fn().mockResolvedValue({
-    error: opts.insertError ?? null,
-  });
-  const maybeSingle = vi.fn().mockResolvedValue({
-    data: opts.existingRow ?? null,
+  const tossUserKey = opts.tossUserKey === undefined ? TOSS_USER_KEY : opts.tossUserKey;
+
+  // ── toss_connections 체인 ──
+  const connMaybeSingle = vi.fn().mockResolvedValue({
+    data: tossUserKey === null ? null : { toss_user_key: tossUserKey },
     error: null,
   });
-  const eq = vi.fn().mockReturnThis();
-  const select = vi.fn().mockReturnValue({ eq, maybeSingle });
-  // from('payments') → select 또는 insert
-  const from = vi.fn().mockReturnValue({ insert, select, eq, maybeSingle });
-  return { client: { from } as never, from, insert, select, maybeSingle };
+  const connEq = vi.fn().mockReturnThis();
+  const connSelect = vi.fn().mockReturnValue({ eq: connEq, maybeSingle: connMaybeSingle });
+  const connTable = { select: connSelect, eq: connEq, maybeSingle: connMaybeSingle };
+
+  // ── payments 체인 (early idempotency SELECT → insert → 23505 재-SELECT) ──
+  const insert = vi.fn().mockResolvedValue({ error: opts.insertError ?? null });
+  const paymentsMaybeSingle = vi.fn()
+    .mockResolvedValueOnce({ data: opts.existingRow ?? null, error: null }) // 조기 멱등
+    .mockResolvedValue({ data: opts.ownRowAfter23505 ?? null, error: null }); // 23505 재-SELECT
+  const paymentsEq = vi.fn().mockReturnThis();
+  const paymentsSelect = vi.fn().mockReturnValue({ eq: paymentsEq, maybeSingle: paymentsMaybeSingle });
+  const paymentsTable = { insert, select: paymentsSelect, eq: paymentsEq, maybeSingle: paymentsMaybeSingle };
+
+  const from = vi.fn().mockImplementation((table: string) =>
+    table === 'toss_connections' ? connTable : paymentsTable,
+  );
+
+  return { client: { from } as never, from, insert, select: paymentsSelect, maybeSingle: paymentsMaybeSingle, connMaybeSingle };
 }
 
 // ---------------------------------------------------------------------------
@@ -178,9 +198,10 @@ describe('POST /api/toss/iap/unlock — 정상 흐름', () => {
 // ---------------------------------------------------------------------------
 
 describe('POST /api/toss/iap/unlock — 멱등성', () => {
-  it('동일 orderId 재요청(23505 충돌) → 200 { unlocked: true } (이중 삽입 없음)', async () => {
+  it('동일 orderId 재요청(23505 충돌, 본인 행) → 200 { unlocked: true } (이중 삽입 없음)', async () => {
     const { client } = makeServiceClient({
       insertError: { code: '23505', message: 'duplicate key value' },
+      ownRowAfter23505: { id: 'payments-own-row-001' }, // 재-SELECT 에서 본인 행 확인
     });
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
 
@@ -214,6 +235,48 @@ describe('POST /api/toss/iap/unlock — 멱등성', () => {
     expect(body.unlocked).toBe(true);
     // mTLS 조회 없이 처리됐음을 확인 (getOrderStatus 미호출)
     expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IDOR 방어 — 타인 주문 claim 차단
+// ---------------------------------------------------------------------------
+
+describe('POST /api/toss/iap/unlock — IDOR 방어', () => {
+  it('order-status 호출 시 x-toss-user-key(본인 userKey) 를 전달한다', async () => {
+    await POST(makeRequest({ orderId: ORDER_ID, feature: 'hapcard', ref: REF }));
+
+    expect(vi.mocked(getOrderStatus)).toHaveBeenCalledWith(
+      ORDER_ID,
+      expect.objectContaining({ tossUserKey: TOSS_USER_KEY }),
+    );
+  });
+
+  it('Toss 연결 없는 사용자 → 401 UNAUTHORIZED (Toss IAP 주체 불가)', async () => {
+    const { client } = makeServiceClient({ tossUserKey: null });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID, feature: 'hapcard', ref: REF }));
+
+    expect(res.status).toBe(401);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('UNAUTHORIZED');
+    // mTLS 주문 조회 이전에 차단 — getOrderStatus 미호출
+    expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+  });
+
+  it('23505 충돌이 타인 주문 행과 발생(본인 행 부재) → 402 IAP_ORDER_NOT_GRANTABLE', async () => {
+    const { client } = makeServiceClient({
+      insertError: { code: '23505', message: 'duplicate key value' },
+      ownRowAfter23505: null, // 재-SELECT 에서 본인 행 없음 → 권한 없음
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID, feature: 'hapcard', ref: REF }));
+
+    expect(res.status).toBe(402);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('IAP_ORDER_NOT_GRANTABLE');
   });
 });
 

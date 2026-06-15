@@ -118,6 +118,28 @@ export async function POST(
   }
 
   // ------------------------------------------------------------------
+  // 2.1. Toss userKey 조회 — IDOR 방어(타인 주문 claim 차단)
+  //       order-status 호출 시 x-toss-user-key 를 실어 Toss 가 "구매자 본인의 주문"만
+  //       PURCHASED 로 반환하게 한다. 타인 orderId 면 NOT_FOUND/MINIAPP_MISMATCH 류로
+  //       내려와 isGrantableStatus 분기에서 거부된다.
+  //       미니앱 IAP 는 Toss 로그인 선행이 필수이므로 매핑이 없으면 잠금해제 불가.
+  // ------------------------------------------------------------------
+  const tossUserKey = await (async (): Promise<number | null> => {
+    const svc = createServiceRoleClient();
+    const { data } = await svc
+      .from('toss_connections')
+      .select('toss_user_key')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    return data?.toss_user_key ?? null;
+  })();
+
+  if (tossUserKey === null) {
+    // Toss 연결이 없는 사용자(웹 전용 계정 등) — Toss IAP 주문 주체가 될 수 없음.
+    return apiErrorResponse('UNAUTHORIZED', 'no toss connection for user', 401);
+  }
+
+  // ------------------------------------------------------------------
   // 2.5. 조기 멱등 단락 — 기존 confirmed 행이 있으면 즉시 200 반환
   //       (restorePendingOrders 복구 경로: feature='hapcard', ref='' 전송)
   //       SKU 검증·mTLS 호출 없이 처리 — 이미 서버가 한 번 검증하고 삽입한 행임.
@@ -143,7 +165,7 @@ export async function POST(
   // ------------------------------------------------------------------
   let orderStatus: Awaited<ReturnType<typeof getOrderStatus>>;
   try {
-    orderStatus = await getOrderStatus(orderId, { transport: _transport });
+    orderStatus = await getOrderStatus(orderId, { tossUserKey, transport: _transport });
   } catch (err) {
     if (err instanceof IapOrderError) {
       // NOT_FOUND / MINIAPP_MISMATCH / ERROR 등
@@ -214,9 +236,23 @@ export async function POST(
 
   if (insertErr) {
     if (insertErr.code === '23505') {
-      // 멱등: 동일 orderId 로 이미 잠금해제됨 — 성공 재반환
-      const unlocked: IapUnlockResponse = { unlocked: true };
-      return NextResponse.json(unlocked, { status: 200 });
+      // UNIQUE 충돌 — 동일 toss_order_id 행이 이미 존재. IDOR 방어를 위해
+      // 그 행이 "이 사용자" 소유인지 재확인한 뒤에만 성공 반환한다.
+      // (타인 주문 행과의 충돌이면 이 사용자에겐 잠금해제하지 않음.)
+      const { data: ownRow } = await service
+        .from('payments')
+        .select('id')
+        .eq('toss_order_id', iapOrderId)
+        .eq('user_id', user.id)
+        .eq('status', 'confirmed')
+        .maybeSingle();
+
+      if (ownRow) {
+        const unlocked: IapUnlockResponse = { unlocked: true };
+        return NextResponse.json(unlocked, { status: 200 });
+      }
+      // 타인 주문과 충돌 — 이 사용자에겐 권한 없음.
+      return apiErrorResponse('IAP_ORDER_NOT_GRANTABLE', 'order belongs to another user', 402);
     }
     return apiErrorResponse('INTERNAL_ERROR', insertErr.message, 500);
   }
