@@ -255,3 +255,47 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 - 스파이크+셸: `miniapp/` (origin 미커밋, 로컬 isolated). 빌드 아티팩트(node_modules/dist/*.ait) gitignore.
 - 빌드 바이블: `docs/research/apps_in_toss_implementation_reference.md`.
 - 본 목표 프롬프트: `docs/research/apps_in_toss_launch_goal_prompt.md`.
+
+### ✅ P3 — 인증 브릿지 Option A (build-only, 커밋 완료)
+- §1.1 확정: **Option A** — Toss userKey ↔ Supabase Auth 유저(`toss_connections` 매핑), 기존 `auth.uid()` RLS 무변경.
+- `src/lib/toss/{mtls-client,login,session}.ts` + `src/types/toss.ts` · `/api/toss/login` · `/api/toss/disconnect` · `toss_connections` 마이그(미적용) · miniapp AuthProvider 실 appLogin 배선 · database.types 임시 stub. **72 tests GREEN, tsc 0(root+miniapp).**
+- 세션 발급: service-role ghost 유저 + `HMAC(userKey, TOSS_USER_PASSWORD_SECRET)` 비번 → `signInWithPassword` → 진짜 Supabase 세션 토큰 반환 → **31 라우트가 miniapp Bearer 를 무변경 검증**(getUser).
+- 커밋: `f5823d5`(foundation) · `646f43b`(auth bridge), branch `feature/apps-in-toss-miniapp`, **origin 미push**. 무관 WIP 32파일 미스테이징 보존.
+
+### ⚠️ 알려진 이슈 / 잔여 결정
+- **D-CALLBACK 버그(수정 대기)**: `/api/toss/disconnect` 가 모든 referrer(UNLINK 포함)에서 `toss_connections` 매핑 삭제 → UNLINK(로그아웃)은 매핑 보존해야 재로그인 시 데이터 연속성 유지. **UNLINK=세션무효화만, WITHDRAWAL_*=매핑/데이터 처리**로 분기 수정 필요(§1.1 D-CALLBACK 결정과 함께).
+- 미적용 마이그 `20260614154823_toss_connections.sql` → 배포 시 `db:push` + types regen(임시 stub 대체).
+- **31라우트 Bearer 듀얼auth+CORS 미수행**(별도, 신중): 현재 세션-민팅이 진짜 Supabase 토큰이라 라우트 무변경으로도 Bearer 동작하나, CORS(tossmini 2도메인) 헤더 + preflight 는 미들웨어 추가 필요.
+
+### 다음 빌드 후보 (모두 build-only, cert 전 검증 불가)
+- **P4 8 플로우 이식**(bulk, ~2-3주, §7.3): 셸+apiFetch+AuthProvider 위에 src/ 컴포넌트 이식.
+- **CORS 미들웨어**(tossmini 2도메인) + disconnect D-CALLBACK 분기 수정.
+- **P5 IAP**(sku+processProductGrant→payments confirmed insert) · **P6 정책**(AI라벨/공유/정책뷰) · **P7 QA/검수**.
+
+### 🔴 실 검증·출시의 임계경로 = 사용자 P1 (코드 무관, 캘린더 시간 소요)
+사업자 등록 → 콘솔 appName → mTLS cert → IAP sku → 토스로그인 scope+콜백 → 앱내기능 → 채널톡(TDS 필수여부 1순위). **cert 전까지 위 모든 코드는 빌드만 가능, 실동작/검수 불가.**
+
+### ✅ P3 후속 — CORS + disconnect 수정 (커밋 완료)
+- `bccca30`: 미들웨어 CORS(/api/* → TOSS_ALLOWED_ORIGINS echo, OPTIONS 204 preflight, Vary: Origin) + disconnect UNLINK 매핑 보존 수정(D-CALLBACK 버그 해소 — UNLINK=세션무효화만).
+
+### ✅ P4 — 8 플로우 화면 이식 (커밋 완료, build GREEN)
+- `c0f96f1`(wave 1: today/feed/hapcard/me/whatif) + `7320a80`(wave 2: onboarding/relations-new). 13섹션 케미카드(1191줄) 포함 8 플로우 전부 실 UI 이식. apiFetch 에러봉투(`{error:{code,message}}` + 402 payment 운반) 중앙 수정. AI 고지 배지/노티스 4결과면 이식 완료. root tsc 0(miniapp을 root tsconfig/eslint exclude 처리해 `**/*.tsx` 오염 제거). miniapp tsc 0 + ait build GREEN.
+
+### ✅ P5 — IAP 결제 통합 (ADR-039 모델 C, 커밋 `8f3a29d`)
+- 서버 `POST /api/toss/iap/unlock`(runtime nodejs): mTLS `getOrderStatus` → PURCHASED/PAYMENT_COMPLETED 검증 + SKU↔feature 일치 가드(위변조 차단) + `payments status='confirmed'` 멱등 insert(`toss_order_id='iap_'+orderId`) → 기존 `isFeatureUnlocked` 게이트 무변경 재사용. `src/lib/toss/iap.ts`(order-status 8값 enum + SKU map).
+- 클라 `IAP.createOneTimePurchaseOrder`/`processProductGrant`(30초창) → 서버 unlock · `getPendingOrders`/`completeProductGrant` 복원(AppShell 마운트+포그라운드). feature→SKU = `VITE_TOSS_IAP_SKU_*` 단일출처. 4 결제지점(케미카드/또다른나/다시맞추기/인연슬롯) 402→IAP 시트.
+- **SDK 시그니처 4종 공식 MCP 문서 라이브 재확인 일치**(createOneTimePurchaseOrder/completeProductGrant 이중중첩/getPendingOrders/order-status). 백엔드 131 tests GREEN, tsc 0.
+
+### ✅ P6 — 정책 요건 (커밋 `35a01d14`)
+- 공유: Toss `getTossShareLink`+`share`(케미카드 딥링크 `intoss://todaychemi/hapcard/{id}`) → ⋯ 메뉴 배선. **OG 미리보기 이미지 deferred** — 웹 OG 라우트가 인증 게이트(401 크롤러 차단)라 공개 OG 토큰(별도 PR) 선행 필요.
+- 인앱 정책 뷰: `LegalPage`(약관/개인정보/환불) react-markdown 렌더, 웹 `/api/legal/documents/:slug` 단일출처 재사용. MePage 외부브라우저→인앱 라우트 전환 + 환불 행 추가. 웹 API `refund` slug 허용(IAP 검수 요건, 테스트 동기화).
+- 가시성: AppShell `visibilitychange`(포그라운드 복귀) → 쿼리 invalidate + 미결 IAP 주문 재복원. AI 고지+뒤로가기는 P4 이식 완료. 백엔드 2823 tests GREEN.
+
+### ✅ P7 — 콜드스타트 딥링크 라우팅 (커밋 `5dacffa1`)
+- `getSchemeUri()` 초기 스킴 → HashRouter 경로 매핑(`parseSchemeToPath`), 모듈 싱글톤 가드로 세션당 1회(그룹 재마운트 시 재적용 버그 차단). allowlist prefix(hapcard/whatif/feed/me/onboarding/relations/legal)로 임의 경로 차단. 운영/테스트 스킴 모두 지원. **P6 공유 흐름 완성**(공유받은 케미카드 링크가 해당 카드로 진입). 파서 11/11 케이스 검증.
+
+### 📊 코드 DONE 바 (§8) 현황 — 빌드/정적 검증 한도 내 전부 GREEN
+- ✅ `ait build` → `todaychemi.ait` ~3.99MB(<100MB). ✅ root tsc 0 · lint 0 · 백엔드 2823/2823 · miniapp tsc 0 + build. ✅ AI고지·공유 딥링크·뒤로가기/가시성·인앱 정책 뷰. ✅ 미니앱에 토스페이먼츠/구글·이메일 OAuth/next-* 부재(grep 0). ✅ PII/ZDR 무변경(LLM 페이로드 미접촉). ✅ §5 게이트 반영.
+- 🔒 **디바이스/콘솔 게이트(P1 선행)**: 샌드박스/QR 8플로우 실동작 · IAP 3종(결제/복원/환불) 실결제 · 토스 로그인 실세션 · `checklist/app-nongame.md` 대조 · 대표 검수 제출 인수인계.
+- 📌 **코더블 잔여(별도 PR, 비차단)**: ① 공개 OG 토큰 라우트(공유 미리보기 이미지) ② 31라우트 명시적 CORS는 미들웨어로 충족하나 라우트별 검증 권장 ③ MePage "회사소개→deephalabs.com" 외부링크 = `miniapp-external-link.md` 정책 대조 필요(제거/인앱 중 §1.1) ④ 미니앱 자체 테스트 인프라(vitest) 부재 — 현재 tsc+build+tsx 단발 검증으로 대체.
+- ⚠️ **배포 선행**: `20260614154823_toss_connections.sql` 미적용 → `db:push` + database.types regen(임시 stub 대체)은 cert 수령·배포 시점에. (`feedback_migration_before_deploy` 준수)
