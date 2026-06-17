@@ -40,5 +40,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/((?!_next/static|_next/image|favicon.ico).*)'],
+  // 정적 자산(이미지·폰트 등)은 미들웨어 인증 리다이렉트에서 제외한다.
+  // 미제외 시 /fonts/*·/apps-in-toss/* 같은 public 자산이 307 로 로그인 페이지로
+  // 리다이렉트되어 히어로 이미지·한글 폰트·OG 폰트가 깨진다.
+  matcher: [
+    '/',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico|otf|ttf|woff2?)).*)',
+  ],
 };
