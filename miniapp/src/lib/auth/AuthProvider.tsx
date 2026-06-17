@@ -122,7 +122,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // 초기 토큰 복원이 끝나기 전에는 children 을 렌더하지 않는다.
+  // (children 의 useQuery 들이 토큰 주입 전에 발화해 401 을 받고 retry 를 소진하는
+  //  경쟁 상태 방지 — 실기기 appLogin() 비동기 복원에서도 동일하게 적용된다.)
+  return (
+    <AuthContext.Provider value={value}>
+      {isLoading ? null : children}
+    </AuthContext.Provider>
+  );
 }
 
 // ---------------------------------------------------------------------------

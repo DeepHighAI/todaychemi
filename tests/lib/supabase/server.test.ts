@@ -11,8 +11,17 @@ const cookieStore = {
   }),
 };
 
+// next/headers headers() 모킹 — Authorization 헤더(미니앱 Bearer 경로) 제어용. 기본 null.
+const headerStore = {
+  _auth: null as string | null,
+  get: vi.fn((name: string) =>
+    name.toLowerCase() === 'authorization' ? headerStore._auth : null,
+  ),
+};
+
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => cookieStore),
+  headers: vi.fn(async () => headerStore),
 }));
 
 describe('Supabase server client', () => {
@@ -21,6 +30,8 @@ describe('Supabase server client', () => {
     cookieStore._bag = [];
     cookieStore.getAll.mockClear();
     cookieStore.set.mockClear();
+    headerStore._auth = null;
+    headerStore.get.mockClear();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
   });
@@ -85,6 +96,37 @@ describe('Supabase server client', () => {
     expect(calls).toContain('birth_date=[redacted]');
     expect(calls).toContain('birth_time=[redacted]');
     expect(calls).toContain('gender=[redacted]');
+
+    vi.doUnmock('@supabase/ssr');
+  });
+
+  it('Bearer 경로: Authorization 헤더로 토큰 기반 클라이언트 + getUser 위임', async () => {
+    vi.resetModules();
+    let capturedOptions:
+      | { global?: { headers?: Record<string, string> }; cookies: { getAll: () => unknown[] } }
+      | undefined;
+    const getUserMock = vi.fn(async (jwt?: string) => ({
+      data: { user: jwt ? { id: 'u1' } : null },
+      error: null,
+    }));
+    vi.doMock('@supabase/ssr', () => ({
+      createServerClient: vi.fn((_url: string, _anonKey: string, options: unknown) => {
+        capturedOptions = options as typeof capturedOptions;
+        return { auth: { getUser: getUserMock }, from: vi.fn() };
+      }),
+    }));
+    headerStore._auth = 'Bearer test-jwt-123';
+
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+
+    // global Authorization 헤더로 PostgREST(RLS)가 토큰을 사용한다.
+    expect(capturedOptions?.global?.headers?.Authorization).toBe('Bearer test-jwt-123');
+    // 쿠키 미사용 — 세션은 Bearer 토큰에서만 온다.
+    expect(capturedOptions?.cookies.getAll()).toEqual([]);
+    // getUser()(인자 없음)가 Bearer 토큰 검증(getUser(token))으로 위임된다.
+    await supabase.auth.getUser();
+    expect(getUserMock).toHaveBeenCalledWith('test-jwt-123');
 
     vi.doUnmock('@supabase/ssr');
   });
