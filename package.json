@@ -20,6 +20,7 @@
     "seed:prompts": "tsx scripts/seed-prompts.ts",
     "seed:classics": "tsx scripts/seed-classics.ts",
     "seed:test-user": "tsx scripts/seed-test-user.ts",
+    "mint:dev-bearer": "tsx scripts/mint-dev-bearer.ts",
     "db:link": "pnpm dlx supabase link --project-ref jamhkucluhiibqpjsiov",
     "db:status": "pnpm dlx supabase projects list",
     "db:push:dry": "tsx scripts/db-push-dry-run.ts",
