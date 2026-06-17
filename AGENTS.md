@@ -81,76 +81,29 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-05-31 기준)
+## 2. 프로젝트 상태 (2026-06-17 기준)
 
-- **Launch readiness audit handoff 작성 ✅ (2026-05-30)** — Vercel/Supabase/Auth/OpenAI ZDR/Toss token paid launch readiness 복원 중 컨텍스트 압축 발생. `C:\Users\batis\.codex\memories\C--DEV-SAJU\session_launch_readiness_handoff_2026-05-30.md`에 현재 검증 결과, P0/P1/P2 리스크 초안, §1.1 승인 질문, 다음 재개 절차 기록 완료. 예비 판정: P0 해결 전 **오픈 보류**.
-- **Launch readiness P0 개발 보강 진행 ✅ (2026-05-31)** — D1+D2 Supabase payment migration + protected RPC security migration 라이브 적용. PRD 기준 billing policy(10/55/120부적 = 1,000/4,500/8,000원) canonical 확정 반영. 합카드 생성/다시합/만약합 token spend/refund/idempotency 적용. OpenAI production `OPENAI_PROJECT_ID` routing, Claude fallback, OpenAI circuit breaker, `LLM_DAILY_BUDGET_USD` runtime budget enforcement 구현. Supply-chain 보강: `next`/`eslint-config-next` 16.2.6, `@sentry/nextjs` 10.55.0, `shadcn` devDependency, `fast-uri` override 3.1.2. 로컬 품질·결제·LLM resilience·supply-chain gates PASS. 외부 설정(Vercel/Auth/OpenAI ZDR/Toss live/Sentry/prod E2E) 완료 전 판정은 **오픈 보류**.
-- **Launch readiness 운영 스크립트 보강 ✅ (2026-05-31)** — `pnpm db:push:dry`가 PATH 설치된 Supabase CLI 없이도 `pnpm dlx supabase db push --dry-run --linked`로 실행되도록 수정. 검증 결과 remote database up to date.
-- **Launch readiness 문서/검증 정합성 보강 ✅ (2026-05-31)** — launch-critical specs/runbooks/source comments의 stale `CLAUDE.md`·구형 Claude fallback 참조를 현재 `AGENTS.md`/`claude-fallback`/`ANTHROPIC_FALLBACK_MODEL` 기준으로 정리. `pnpm verify:supply-chain-readiness`는 high/critical 0이면 PASS하되, non-blocking moderate 3건(`postcss`, `brace-expansion`, `ws`)을 상세 출력하도록 보강. 추가 override remediation은 §1.1 승인 필요.
-- **Launch readiness local evidence snapshot ✅ (2026-05-31)** — `pnpm verify:launch-readiness -- --summary-json docs/qa/launch_gate_2026-05-31_local.json` 실행 후 `docs/qa/launch_evidence_2026-05-31_local.md` 생성. Integrated gate는 `pnpm verify:launch-audit-readiness`, `pnpm tsc --noEmit`, `pnpm lint`, `pnpm vitest run`(238 files / 1870 tests), `pnpm build`, `pnpm db:push:dry`, `pnpm e2e` public smoke, `pnpm e2e:auth` authenticated smoke를 모두 required로 실행한다. `pnpm verify:launch-evidence-readiness` PASS로 secret/PII artifact scan 확인. Go/No-Go는 **오픈 보류**이며 required failures는 외부 설정 6개(launch env, Auth readiness, OpenAI/ZDR readiness, Toss live readiness, Vercel readiness, Operations/E2E readiness)로 유지.
-- **GitHub remote 정책 확정 ✅ (2026-06-04, 2026-06-08 재확인)** — canonical GitHub repo는 `git@github.com:DeepHighAI/twoday.git`. 이외의 remote는 사용하지 않는다.
-- **MVP production origin 정책 확정 ✅ (2026-06-01)** — 사용자 확인: MVP는 별도 custom domain 없이 Vercel Production `*.vercel.app` 고정 origin으로 오픈하고, 시장 반응 확인 후 custom domain 구매를 검토한다. `docs/runbooks/external_launch_settings.md`와 `docs/qa/external_settings_checklist.md`는 한국어 가이드/체크리스트로 정리됨. `pnpm verify:external-settings-checklist`는 dashboard 설정 증거의 `TBD`가 남아 있는 동안 의도적으로 FAIL한다.
+> 본 §2는 `CLAUDE.md` §2(Claude Code 측 현황 로그)의 미러다. 작업 귀속 표기(Claude Code/Cowork)는 "다른 에이전트가 한 작업" 신호로 보존한다. 두 문서가 어긋나면 git history와 더 최근 갱신본을 우선한다 (§12 동기화 의무).
+
 - **Phase 0 G0 게이트 ✅ 100% PASS** — KASI vs ssaju 100/100 (normal 50/50, boundary 30/30, edge 20/20). normalize.ts ssaju 프로덕션 승격 완료(年/月/時柱). 야자시 = 조자시 통합 학파.
-- **PR-1 완료** — Next.js 스캐폴드 생성됨. 현재 런칭 기준 dependency는 Next.js 16.2.6이며 `pnpm dev` 정상 동작.
-- **PR-3 완료** — KASI 진본 검증 라이브러리 + 100건 픽스처 + G0 verify 100% PASS.
-- **PR-2 완료 ✅** — C-4(SQL 20개) + C-7(RLS 통합 39개) + C-5(Auth 전체 구현) + C-6(prompt_versions 시드 6건) 전체 완료. **154/154 tests PASS** (17 files). tsc 0 errors. Supabase Free `jamhkucluhiibqpjsiov` 적용 완료.
-  - C-5: `src/lib/auth/kakao.ts` + `src/app/auth/callback/route.ts` + `src/app/login/page.tsx` 완료.
-  - C-6: `scripts/seed-prompts.ts` + `pnpm seed:prompts` → 6모드 v0.2 active 시드 완료.
-- **F3 완료** — `prompts/system/` 6모드 system prompt v0.2 작성 완료 (commit `5f9625e`). 명리 specialist 검수 대기.
-- **`.env.local` 완성** — KASI_SERVICE_KEY, OPENAI_API_KEY, Supabase 키 6개, KAKAO 3개 모두 입력 완료. `KAKAO_REDIRECT_URI` = `jamhkucluhiibqpjsiov` (2026-05-04 수정).
-- `UIDesign/` 는 Babel CDN 기반 참조 프로토타입 — **수정 금지**, 프로덕션 코드는 `src/app/`에 작성
-
-**F4 완료 ✅ + G4 RAG 시드 완료 (2026-05-05)** — **508/508 PASS**, 0 TS errors.
-- Step 1~14 전체 완료. 주요 커밋: Step 11(`060e74f`) · Step 12(`335bb68`) · Step 13(`d922182`) · 이슈 수정(`ac0885e`) · docs 메모리 갱신(`daf7e1e`).
-- `supabase db push 0021_classics` ✅ — RLS 통합 41/41 PASS.
-- `rag_content/classics/` YAML 20건 시드 완료 (`approved_ai_pending_human`) — §7.2 명리 specialist 크라우드 검수 미수행, 향후 필요.
-
-**F5 Sprint 진행 중 (2026-05-06)** — **767/767 PASS**, 0 TS errors.
-- B1+B3 완료(jsdom+testing-library, route groups). B5(타입 리프트) + S-00(Kakao→Google OAuth) + S-01-A(로그인 polish) 완료. S-01-B+S-02(온보딩 단일 페이지) 완료. S-03(인연 등록 단일 페이지) 완료. S-04(합피드 페이지) 완료. S-05(합카드 호출 + 에러 UX) 완료. S-06(합카드 9섹션) 완료. S-06c-a(glossary tooltip) + S-06c-b(glossary bottom sheet) 완료. **S-06b(mini_radar 오각형 오버레이) 완료**. **chart 컴퓨트 A-eager 완료 — chartPending 영구 차단 해소** ✅.
-- 완료 커밋: `6abc2a4`(B5 types) · `ab1c87e`(S-00 Google OAuth) · `199b89f`(S-01-A 로그인) · `7e21788`(onboarding types) · `0731125`(onboarding page+route) · `c44059b`(relation types) · `9935f32`(relations page+route) · `b6bb288`(GET /api/relations) · `e707d11`(feed page+grid) · `c3e07bf`(theory version const) · `ef30b5a`(feed mode query) · `dd10783`(hapcard page S-05) · `0c65f52`(S-06 9 sections compose) · `138b778`(S-06c-a glossary tooltip) · `a520141`(S-06c-b glossary bottom sheet) · `6f8bd68`(S-06b mini_radar) · `fcab0ee`(chart-hash) · `02ac388`(compute) · `72e149b`(onboarding eager) · `f4ad43f`(relations eager).
-- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요).
-- **S-07a share 완료 ✅** — build-share-payload + share-handler(Web Share+clipboard) + ShareSheet(Drawer) + HapcardShare 통합 + page 배선. `docs/specs/replay.md` 작성 완료(§1.1 D1~D4 결정 매트릭스).
-- S-07a 커밋: `99628c0`(build-share-payload) · `f4667eb`(share-handler) · `153d277`(ShareSheet) · `17bd916`(type fix) · `389b901`(HapcardShare+page wiring) · `0e2a8fa`(replay spec).
-- §1.3 별도 이슈 잔여: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. Kakao redirect_uri 동기화(사용자 보류). Supabase Google provider 활성화(Dashboard 수동). PR-2 시점 untracked 파일 정리(§1.1 결정 필요). `relation_nickname`/`relation_gender_normalized` builder.ts JOIN → **✅ 완료(7a0cb8c)**.
-- **S-07b Replay 완료 ✅ (2026-05-06)** — buildReplay async 함수 + POST /api/hapcards/[id]/replay route handler GREEN. 커밋 `c69acff`. **805/805 PASS**, 0 TS errors.
-- **`supabase db push 0022+0023` 적용 완료 ✅ (2026-05-06)** — `deduct_tokens` / `refund_tokens` RPC + `hapcard_replays_idempotency` UNIQUE 제약 라이브 반영. 검증 스크립트 `scripts/verify-replay-migrations.ts`.
-- **후속 작업 완료 ✅ (2026-05-06)**:
-  - Task 1 (`b9e4e72`): `database.types.ts` 재생성 → route.ts tokenRpc 캐스트 제거.
-  - Task 2 (`7a0cb8c`): `relation_nickname`/`relation_gender_normalized` builder.ts JOIN 연결 + vitest testTimeout 15s 상향 (jsdom cold-load 회귀 해소). **810/810 PASS**, 0 TS errors.
-  - Task 4 (`aa729ff`): `docs/specs/payments.md:271` `'hapcard'` → `'hapcard_use'` 정정.
-- **§1.3 별도 이슈 잔여**: ESLint 9 다운그레이드 별도 PR → **✅ 완료(12ae939)**. `payments.md:271` `'refund'` ↔ `'bonus'` 불일치 → **✅ 완료(e3a6a03)**. 라우트 `'replay_refund'` reason → **✅ 완료(route.ts:115 canonical)**.
-- **다음**: F5 sprint 이후 작업 §1.1 결정 대기.
-- **§1.1 결정 2건 완료 ✅ (2026-05-06)**:
-  - Decision 2 (`e3a6a03`): `token_ledger.reason` enum 6값 doc-only 동기화 — `db_schema.md:319` + `payments.md:271` + `0009_token_ledger.sql:6`. **810/810 PASS**, 0 TS errors.
-  - Decision 1 (`12ae939`): ESLint flat config 마이그레이션 — `eslint.config.mjs` 신규 + `package.json` lint 스크립트 `eslint .` + eslint `10→9` 다운그레이드(typescript-eslint v8 호환). `pnpm lint` PASS (0 errors, 7 warnings). **810/810 PASS**, 0 TS errors.
-- **§1.3 별도 이슈 추가**: 7개 파일 unused `eslint-disable @typescript-eslint/no-explicit-any` 경고 → **✅ 완료(9ac5bfa, 4 tracked + 3 untracked auto-fix). pnpm lint 0/0.**
-- **PR-B(S-99) 완료 ✅ (2026-05-06)** — ErrorCard/LoadingState/EmptyState + global error/loading/not-found + error-codes 카탈로그. 커밋 `cec5038`. **833/833 PASS**, 0 TS errors.
-- **PR-A1(S-03 today 백엔드) 완료 ✅ (2026-05-06)** — GET /api/today route + cache-key(sha256) + builder(3-tier fallback) + openai(GPT-5 mini) + kst-date + types + daily_hap.md system prompt. 커밋 `77a90ef`. **850/850 PASS**, 0 TS errors.
-- **PR-C(S-96 OG 이미지) 완료 ✅ (2026-05-06)** — buildOgPayload(PII 0건) + OgTemplate(1200x630 Edge) + GET /api/og/hapcard/[id] + buildSharePayload URL에 range 추가 + page.tsx server wrapper(generateMetadata) + HapcardView.tsx 분리. 커밋 `acc94c6`. **866/866 PASS**, 0 TS errors. Auth 401 유지(메신저 크롤러 차단) — 공유 토큰 별도 PR.
-- **PR-A2(Today UI + TabBar) 완료 ✅ (2026-05-06)** — §1.6 UIDesign 준수 규칙 + globals.css M3 토큰 + TabBar + layout.tsx 통합 + Today 6 컴포넌트 + /api/me/chart route + (app)/page.tsx Today 조립 (3 useQuery + Top-N=5 최근순 + chart=null guard) + /me placeholder. **911/918 PASS** (full suite; 7 실패는 jsdom cold-load 사전 flake — 단독 실행 시 18/18 GREEN). PR-A2 영역 단독: layout 3/3 + Today 컴포넌트 28/28 + /api/me/chart 4/4 + (app)/page 8/8 + /me 2/2 = **45/45 PASS**, 0 TS errors, 0 lint errors.
-- §1.1 PR-A2 Phase 4 결정 사용자 확정: (1) /api/relations Top-N=5 (서버 created_at desc 그대로) (2) /api/me/chart 신규 호출 (user_charts 최신 1건).
-- §1.3 별도 이슈 추가: jsdom cold-load 시 hookTimeout 부족 → **✅ 완료(72ba226, vitest.config.ts:34 hookTimeout:15000). 923/923 full suite GREEN.**
-- **Phase 6 manual smoke 완료 ✅ (2026-05-06)** — Bug 1(globals.css @import 순서, caba530) + Bug 2(라우트/미들웨어 exclusion-list 재작성 + /app 리다이렉트 삭제, bda3033) 수정. **923/923 PASS**, 0 TS, 0 lint. /login 200 ✓, / Today 화면 도달 ✓, TabBar 3탭 ✓, /me placeholder ✓. §1.3 잔여: API 401(만료 쿠키 Playwright 세션 한정). hookTimeout flake → ✅ 완료(72ba226).
-- **F5 /me 본명식 본 화면 완료 ✅ (2026-05-07)** — PillarGrid + DayMasterCard + MeHero + YunsePlaceholder + page composition(5섹션 + useQuery). **942/942 PASS**, 0 TS, 0 lint. 커밋: `eb3b05b`(ko.json) · `b146ce5`(컴포넌트 4종) · `0ad0b9e`(page 조립).
-- **QA /me 본명식 완료 ✅ (2026-05-07)** — Email/Password 로그인 추가(영구 기능) + 테스트 계정 시드(Test1@test.com) + /me 5섹션 브라우저 시각 검증. OhaengBars 바 비가시 버그 수정. **948/948 PASS**, 0 TS, 0 lint. 커밋: `390d8f8`(email auth) · `23ae3c7`(ohaeng fix). §1.1 후속: Google SSO 진단(별도) · email auth 프로덕션 정책 결정 필요.
-- **Email/Password 프로덕션 강화 완료 ✅ (2026-05-07)** — 비밀번호 정책(8자+letters_digits) + rate limit(30→10/5min) + signUp 흐름(/signup 페이지) + TDD 20건 신규. **969/969 PASS**, 0 TS, 0 lint. 커밋: `b9aaea9`(supabase config) · `7f35599`(password-policy) · `8747ff7`(signUpWithEmail) · `7510008`(i18n) · `9b45b4f`(signup page) · `b8267c9`(login link) · `22187a1`(auth.md). §사용자 수동 절차: Supabase Dashboard → Auth 정책 동기화 필요(jamhkucluhiibqpjsiov). Google SSO 별도 세션.
-- **E1+E2 완료 ✅ (2026-05-07)** — UI 4토큰 소프트 변환(합→끌림/형→긴장/충→부딪힘/해→소모) + LLM v0.3 prompts + migration 0024. **1033/1033 PASS**, 0 TS, 0 lint. branch: `feature/e1-ui-term-conversion` (Cycles 1-12) + `feature/e2-llm-prompts-v0.3` (Cycles 13-15). §사용자 수동 절차: `pnpm db:push`(0024) → `pnpm seed:prompts` → v0.3 active 확인.
-- **Y4 완료 ✅ (2026-05-09)** — ADR-033/036 합피드 자동 정렬 + 흐름 변화 큼 배지 전체 완료 (Cycles 1-14). hapcard_score_snapshots 테이블 + computeChangeScore + /api/feed(정렬) + FeedPage 전환 + ChangeBadge + i18n(feed.badge.change_significant). **1068/1068 PASS**, 0 TS, 0 lint. 커밋: `dbb7939`(Phase 1+2) · `c98f764`(feed route) · `b62ea17`(feed page+badge) · `bd50a6d`(i18n). §사용자 수동 절차: `pnpm db:push`(0025 migration 이미 dbb7939 시점 적용 완료). branch: `feature/y4-change-score-feed-sort`.
-- **§1.3 cleanup 완료 ✅ (2026-05-09)** — `yunse_adjustment` fixture 3건 + replay route Zod parse. 0 TS errors 달성. 커밋: `287ec28`. ScoreBreakdownSchema + HapcardDbRowSchema 추가 (`src/types/hapcard.ts`). §1.3 잔여: vitest default-reporter 환경 이슈(별도 세션). 기타 §1.3 baseline 4건 → ✅ 완료.
-- **S-08 만약합(Whatif) 기능 전체 구현 완료 ✅ (2026-05-09)** — 6모드 백엔드+UI 전체 완성. 주요 산출물: `src/types/diagnostic.ts`(6모드 타입) · `src/lib/whatif/`(builder/cache-key/output-schema/prompt-loader/query-text) · `/api/whatif/[type]` route · WhatifSheet + WhatifTrigger + 5개 섹션 컴포넌트 · WhatifView 4-state. **1174/1174 PASS**. §사용자 수동 절차: `pnpm db:push`(0026_whatif_results) 필요. 커밋 키: `518aa7e`(D1 supporting files) · `43945c6`(route) · `fffc024`(WhatifView) · `60fa445`(PII guard).
-- **S-08 followups #1-#5 완료 ✅ (2026-05-09)** — `chore/s08-followups` → `master` fast-forward 병합. #1(`b6f7765`) DEFAULT_LLM_MODEL 통합 · #2.1(`4cd4057`) 에러 코드 카탈로그 6건 · #2.2(`6b14193`) WhatifView ErrorCard 매핑 · #3(`07a7060`) ClassicCitation 스키마 일원화(`src/lib/rag/citation-schema.ts`) · #4(`281a425`) refund_tokens 실패 로깅 · #5(`901291a`) ErrorCard CTA + INSUFFICIENT_TOKENS "충전하러 가기"→`/me`. **1192/1192 PASS**, 0 TS, 0 lint.
-- **§1.3 cleanup 2차 완료 ✅ (2026-05-09)** — (1) Replay route 환불 catch 로깅(`313a2bb`, TDD 2건) (2) `messages/ko.json` `whatif.error.*` 블록 4키 전체 제거 (3) `0009_token_ledger.sql:6` 주석 whatif_use/whatif_refund 동기화(`05fedcf`). **1194/1194 PASS**, 0 TS, 0 lint.
-- **§1.3 잔여 1건**: `INSUFFICIENT_TOKENS` CTA href `/me` → 충전 페이지 구현 시 `/payments/charge` 업데이트(`src/lib/errors/error-codes.ts:40`). 별도 PR.
-- **B1 DB push 확인 완료 ✅ (2026-05-09)** — `0024_prompt_v0_3_rollback` + `0026_whatif_results` 이미 라이브 반영 확인(`supabase db push --dry-run` → "up to date"). `pnpm seed:prompts` v0.3 active 6/6 확인. `whatif_results` 테이블 쿼리 가능 확인. `scripts/verify-b1-migrations.ts` 신규 추가. **1194/1194 PASS**, 0 TS, 0 lint.
-- **로컬 E2E manual smoke 가이드 완료 ✅ (2026-05-09)** — `docs/qa/local_e2e_smoke.md` 신규(454줄). 8 핵심 flow(회원가입/온보딩/인연등록/합피드/합카드/오늘홈/본명식/만약합) + LLM 비용 경고 + 알려진 제약. 커밋 `4b2a62f`.
-- **P0 working tree 정리 완료 ✅ (2026-05-09)** — 19개 base migration(0001~0020) + supabase/.gitignore + G0 KASI toolchain(scripts 7종·tests 11건·fixtures) + PR-A2 layout/styles tests + DB contract/RLS tests + seed-prompts 커밋. UIDesign/ → .gitignore(로컬 전용). master clone 재현 가능 상태 회복. **1194/1194 PASS**, 0 TS, 0 lint. 커밋: `2f4948d`·`dc7bede`·`99f64b5`·`a74330b`·`f186817`·`89438c0`·`10f7539`. stale 브랜치 3개 삭제 완료(feature/e1·e2·s08).
-- **Yunse Y0/Y1 완료 확인 ✅ (2026-05-09, 재검증)** — `src/types/chart.ts` YunseCore(4레이어: 대운·세운·월운·일운) + `src/lib/kasi/normalize.ts:mapSsajuToYunse()` + `src/components/me/yunse-card.tsx` YunseCard(실구현, placeholder 아님) + 테스트 passing. 메모리 stale 항목 해소.
-- **P1/P2 정리 완료 ✅ (2026-05-09)** — C4 stale 브랜치 3개 삭제(feature/e1·e2·s08). C5 vitest reporter = non-issue(pnpm test 1194/1194 정상). C1 Yunse 완료 확인. 잔여: C2(D1 결제 페이지 의존) · B1(pnpm db:push 0024+0026 사용자 수동) · B2(Supabase Dashboard 수동).
-- **§1.6 UI design-review 완료 ✅ (2026-05-10)** — /login·/signup·/feed·/onboarding·/relations/new 5개 화면 감사 + 5개 finding 수정(FINDING-001~005). 커밋 `ffcad13`·`365ebf6`·`0526aac`·`43af94b`. **1203/1203 PASS**, 0 TS, 0 lint. §1.3 잔여: time-accuracy Seg pill 변환·rounded-2xl 토큰화·Seg pill DRY·필터 매직픽셀(별도 PR).
-- **Hapcard design-review Phase 0-9 완료 ✅ (2026-05-10)** — 13섹션 composition lock + AppBar/CtaBar/Timeline/ReplayButton/SharePreviewTile/MiniRadar 신규 + replayHint footer 제거 → ReplayButton 컴포넌트로 대체. commits `982ea52`~`6bd7ea6`(13개). **1252/1252 PASS**, 0 TS, 0 lint. /qa-only DONE_WITH_CONCERNS(6 PASS · 1 BLOCKED hapcard 500 · 1 INFO). 로컬 `main` 브랜치 fast-forward 완료. GitHub PR 생성 보류(git remote 미설정). §1.3 잔여: 테스트 계정 onboarding 시드 추가 → hapcard 브라우저 E2E #1-#13 별도 PR.
-- **Phase B 완료 ✅ (2026-05-11)** — Hanja 노출 제거 + LLM 프롬프트 한글 친화 (ADR-038). 주요 산출물: `src/lib/glossary/hanja-readings.ts` + `post-process.ts` + `banned-phrases.containsClassicalHanja()` + builder UI 매핑 + 6모드 prompts v0.8 + 4 컴포넌트 safety-net. **1324/1324 PASS**, 0 TS, 0 lint. §1.3 잔여: evidence.tsx compound regex 확장 + SHINSAL_READINGS sort 강화 + `cause_factors` 렌더 컴포넌트 구현 시 `convertHanja()` 필수 + `containsClassicalHanja()` 런타임 연결 결정(§1.1 대기) (모두 별도 PR). §사용자 수동 절차: `pnpm seed:prompts` → v0.7 6건 rolled_back, v0.8 6건 active.
-- **Phase B §1.3 잔여 정리 완료 ✅ (2026-05-13)** — 4건 중 3건 머지(`HapcardCauseFactors`는 backlog). PR1 `eac2fbb`(SHINSAL sort) · PR2 `49dad3c`(evidence compound regex + GLOSSARY_TERMS 6→18) · PR3 `bd4ed56`(containsClassicalHanja Option C warn-and-pass). **1335/1335 PASS**, 0 TS, 0 lint. §1.1 결정(2026-05-13): containsClassicalHanja = Option C(경고 로그 + 통과), 진행 방식 = 독립 3 PR 순차, `cause_factors` 렌더 컴포넌트 = 백로그(ADR-038:45 의무 명시).
-- **Hapcard E2E #1-#13 브라우저 검증 완료 ✅ (2026-05-13)** — 11/13 PASS (84.6%). 4건 §1.3 이슈 수정: PR-X1 `043e166`(IljuChip ADR-038 convertHanja) · PR-X2 `8b2b665`(gauge breakdown Math.round) · PR-X3 `3f1831c`(OG try-catch 500 반환). **1338/1338 PASS**, 0 TS, 0 lint. §1.3 잔여: ISSUE-3(Body eyebrow "전체 해석"으로 변경 — ✅ 완료 `4233bda`) · ISSUE-4(OG Noto Sans KR 폰트 등록 + Edge 런타임 복원 — ✅ 완료 `dcf5b88`). 모든 §1.3 잔여 해소.
+- **PR-1/2/3 완료 ✅** — Next.js 스캐폴드(런칭 dependency 16.2.6) + KASI 진본 검증 라이브러리 + G0 100% PASS + Supabase 마이그레이션(SQL 20개)·RLS 통합·Auth 전체 구현·prompt_versions 시드. Supabase Free `jamhkucluhiibqpjsiov`.
+- **F4(Hapcard 백엔드) + F5 Sprint(등록 플로우·합카드 UI 9섹션·glossary·mini_radar·share·replay) 완료 ✅** — chart 컴퓨트 A-eager로 chartPending 영구 차단 해소. `supabase db push 0022+0023`(deduct/refund_tokens RPC + replay idempotency) 라이브.
+- **/me 본명식 본 화면 + Email/Password 프로덕션 강화 완료 ✅ (2026-05-07)** — 비밀번호 정책(8자+letters_digits) + rate limit + signUp 흐름. **969/969 PASS**.
+- **E1+E2 / Y4 완료 ✅** — UI 4토큰 소프트 변환(합→끌림/형→긴장/충→부딪힘/해→소모) + LLM v0.3 prompts. ADR-033/036 합피드 자동 정렬 + 흐름 변화 큼 배지(hapcard_score_snapshots + computeChangeScore).
+- **S-08 만약합(Whatif/또 다른 나) 6모드 + followups 완료 ✅ (2026-05-09)** — 백엔드+UI 전체. `0026_whatif_results` 라이브. **1194/1194 PASS**.
+- **Hapcard design-review(13섹션 composition lock) + Phase B(Hanja 노출 제거, ADR-038) + Hapcard E2E #1-#13 완료 ✅ (2026-05-10~13)** — `hanja-readings.ts` + `post-process.ts` + `convertHanja()` safety-net + 6모드 prompts v0.8. **1338/1338 PASS**.
+- **Launch readiness 보강 ✅ (2026-05-30~31)** — Supabase payment migration + protected RPC security migration 라이브. OpenAI production `OPENAI_PROJECT_ID` routing + Claude fallback(`claude-sonnet-4-5`) + circuit breaker + `LLM_DAILY_BUDGET_USD` runtime budget enforcement. Supply-chain 보강. `pnpm verify:launch-readiness` 통합 게이트 + 로컬 evidence snapshot. Go/No-Go는 외부 설정 6개(launch env·Auth·OpenAI/ZDR·Toss live·Vercel·Operations/E2E) 완료 전 **오픈 보류**. MVP origin = Vercel Production `*.vercel.app` 고정(custom domain 후속 검토).
+- **오늘사이→오늘케미 리브랜드 + 컨텍스트 동기화 + main 정렬 완료 ✅ (2026-06-08)** — Claude Works(Cowork)·Claude Code desync 해소. 검증 베이스라인 **2153/2153 PASS**(264 files)·tsc 0·lint 0. `chore/twoday-rebrand-cycle` 26커밋 `origin/main` ff-push(`b414e23..4f2a0fc`).
+- **Phase 1 커버리지+QA+용어 통일 완료 ✅ (2026-06-08)** — §1.1 용어 결정: hapcard=**케미카드** · whatif=**또 다른 나** · replay=**케미 다시 맞추기** · today=**오늘 케미**(§8 동기). 1B 컴포넌트 테스트 · 1C 라우트 감사 · 1D E2E depth · 1F cause_factors(`HapcardCauseFactors`) · 1G AI 생성 고지(`AiDisclosureBadge`/`AiDisclosureNotice`) · 1I /review+/codex CLEAN. `feature/phase1-coverage-qa` → `origin/main` ff-push. **2202/2202 PASS**.
+- **pay-per-use 결제 전환(ADR-039) Phase 1~8 완료 ✅ (2026-06-01~03)** — 부적 충전 폐지 → 유료 기능 사용 시 즉시 결제. `feature-prices.ts` 단일출처 · 원자성 모델 C(선생성→성공 시 결제) · `isFeatureUnlocked` 잠금 단일진실(쓰기+read-path 본문 라우트 게이트) · 서버 하드닝(#4 ref 소유검증·#6 RPC error 재throw·#7 23505 recovery) · 클라이언트 `feature-pay-sheet.tsx`(402 처리) · 레거시 토큰충전 경로 전체 제거 · `20260601000000` 라이브(drop `confirm_token_purchase`). ADR-039 신규(비협상). **1994/1994 PASS**.
+- **인연 등록 슬롯 과금(relation_slot, ADR-039 Amended §9) 완료 ✅ (2026-06-10)** — 모델 B: 인연 2명 무료, 3번째부터 `relation_slot` 1,000원/10부적. draft 스테이징→머티리얼라이즈(claim-first 멱등+lazy recovery) · `insert_relation_if_under_free_cap` 원자 RPC(무료 슬롯 TOCTOU 차단) · open-pending 캡 10 · draft PII purge cron. 마이그레이션 4종(`20260610000000`·`120000`·`130000`·`140000`) 라이브 적용+repair. /code-review 3건 수정. **2283/2283 PASS**.
+- **사주 분석 엔진 고도화(파생층+교차분석, ADR-040) 완료 + 배포 ✅ (2026-06-11~12)** — `chart_core.derived`(theory v3: 십신·지장간·신강약·용신/희신·음양·띠) + `cross_analysis`(cross-v1, 비영속, 양방향 십신 교차·궁위 귀속·운세 교차·PII 연령차 밴드) + LLM 프롬프트 14파일(환각 가드 "제공 필드 외 단정 금지"). C1 버그픽스(yunseAdjustment 한자 매칭, `SCORING_VERSION 1→2`). main ff-push `5898dcf..1a4215b`(48커밋, Vercel 배포) + `seed:prompts` 15행(v0.17 active 6+v0.18 canary) + classics 34 rows. ADR-040 신규(비협상). **2474/2474 PASS**.
+- **명리 RAG 검수 + lexical 하이브리드 인용 fix ✅ (2026-06-12~13)** — 고전 원문 14건 RAG 자산화(public domain) + curator 14/14 PASS. ISSUE-001(고전 인용 0건, 유사도 < 0.60) → `query-tags.ts`(buildRagQueryTags) + `retrieveClassics` queryTags + builder 배선으로 retrieval 0→5 hits, 실 생성 citations grounding 통과(§1.1 결정 ③ lexical 하이브리드). **2514/2514 PASS**.
+- **잔여 개발 계획 승인 + T2/T3 리텐션 + Flow A 완료 ✅ (2026-06-13)** — §1.1 6결정(T1 런치 P0+T2 Phase1 마감+T3 Phase1.5 병행 · Flow A 절충 · S-06 진단 폼 폐기). **T2**: GA4 계측(`ga.ts`, PII 금지, env 부재 시 no-op) · G-4 시나리오 추정 표시 · G-5 쉽게 보기(`easy-term-map.ts`). **T3**: H-1 인연 타임라인(`/api/relations/[id]/timeline`) · H-2 변화 폭 인디케이터(`/api/hapcards/[id]/change`, ADR-036 게이팅) · H-4 공유 5종 레이아웃(미니멀/오행/레이더/코멘트/흐름, ADR-024 Amend). G-10 인연 0건 hero + Track B 분기. T2+T3 누적 23커밋 `origin/main` push(`451396d..33f62d7`). ISSUE-001(OG Satori 다중자식 div flex 위반) 라이브 수정(`e98c6c3`·`73a3bf6`). **2625/2625 PASS**.
+- **시주 진태양시 보정 도입 ✅ (ADR-021 Amended)** — 시주만 경도+균시차(Spencer 1971) 보정(서울 126.978°E 기본), 년/월/일주 KASI 앵커 유지. `solar-time.ts` + `DEFAULT_THEORY_PROFILE_VERSION v1→v2`(캐시 분리) + lazy 재계산. §1.3: ADR-021 번호 충돌(FGI↔manseryeok_theory) 리넘버링 §1.1 대기.
+- **T6(c) 소형 기술부채 4건 + 배포 완료 ✅ (2026-06-13)** — #4 wallet LedgerReason(relation_slot_use/refund) · #1 glossary 단일글자 경계 · #2 error_events owner SELECT 마이그(`20260613000000`) · #5 FK 인덱스(`20260613000100`). `db:push` 라이브 + `git push origin main`(`1353167`, Vercel). **2638/2638 PASS**.
+- **앱인토스 검토 + P0 가격 개정 (2026-06-07) + 검증 (2026-06-08)** — 앱인토스 연동 검토 보고서 + §1.1 D1~D6 확정(Vite SPA 신규·IAP+웹 병행·**가격 1,000/800/600 웹·미니앱 통일 + 부적 10/8/6p**). `feature-prices.ts`·ADR-039·payments.md·FGI·PRD 16+곳 동기. 가격 테스트 동기화 완료. 재검증: 앱인토스 SDK 2.6.x(3.x 미존재)·TDS 선택·웹/미니앱 계정 분리(CRITICAL).
+- **미니앱 Bearer auth `main` 머지 + 프로덕션 LLM 복구 완료 ✅ (2026-06-17, Claude Code)** — ① **머지**: `feature/apps-in-toss-miniapp` → `main` clean ff(`9e091f26..4ded0068`, 3커밋: ait devtools+typecheck · 미니앱 Bearer 토큰 API 인증(`src/lib/supabase/server.ts`) · dev bearer 툴링) → `origin/main` push, Vercel 프로덕션 자동 배포. 풀게이트: tsc 0 · lint 0 · **2831/2831 PASS**(314 files). 프로덕션 API가 미니앱 Bearer 토큰 인증(웹 무영향=Authorization 헤더 없으면 쿠키 경로 유지). ② **프로덕션 LLM 장애 복구**: OpenAI 키 로테이션 + Vercel Production env `OPENAI_PROJECT_ID`/`LLM_DAILY_BUDGET_USD=20` 추가 — 둘 다 `VERCEL_ENV=production|preview` 전용 가드(`clients.ts`/`budget.ts`)라 로컬 `verify:openai-readiness` PASS여도 prod만 순차 실패(메모리 `feedback_vercel_prod_llm_env_gates.md`). 합카드 라이브 생성 정상 확인. ③ **§사용자 잔여(외부 대시보드, 비차단)**: Vercel `TOSS_ALLOWED_ORIGINS` localhost 제거 · `NEXT_PUBLIC_APP_URL=https://todaychemi.vercel.app` 설정 · 구 OpenAI 키 `sk-proj-wnKN…` revoke.
 
 ---
 
@@ -160,8 +113,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 | 핵심 | 위치 | ADR |
 |---|---|---|
-| §4.2 관계 사주 해석 (합카드 8p) | `fluttering-gathering-island.md` §4.2 / `PRD.md` §6 | ADR-010, ADR-016, ADR-026 |
-| §4.3 관계 진화 타임라인 재해석 (4p) | 같은 문서 §4.3 (Phase 1.5) | ADR-033 |
+| §4.2 관계 사주 해석 (합카드 ₩1,000/10부적) | `fluttering-gathering-island.md` §4.2 / `PRD.md` §6 | ADR-010, ADR-016, ADR-026 |
+| §4.3 관계 진화 타임라인 재해석 (₩600/6부적) | 같은 문서 §4.3 (Phase 1.5) | ADR-033 |
 
 ### 비협상 ADR (변경 시 §1.1 승인 필수)
 
@@ -174,6 +127,8 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **ADR-035** 점수 결정형 — LLM은 점수 산출에 개입 금지 (`compatibility_scoring_spec.md` 참조)
 - **ADR-037** 기술 스택 잠금 (`tech_stack.md` 참조)
 - **ADR-038** Hanja 노출 금지 — UI display layer에서 한자 제거. RAG/DB verbatim 유지. `convertHanja()` safety-net 의무.
+- **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). **Amended 2026-06-10 §9**: 인연 등록 슬롯(모델 B) — 2명까지 무료, 3번째부터 `relation_slot` 1,000원/10부적, 현재 보유 수 게이트(삭제 시 회복), draft 스테이징→머티리얼라이즈(claim-first 멱등+lazy recovery), cash-gen 한도 미적용. (`docs/adr/ADR-039-pay-per-use-billing.md`)
+- **ADR-040** 파생·교차분석층 = LLM 해석 근거 전용, 점수 무개입 — `chart_core.derived`(theory v3) + `cross_analysis`(cross-v1, 비영속). 순수 결정형(1000회 테스트 의무) + 프롬프트 환각 가드("제공 필드 외 단정 금지") + PII 연령차 밴드만. 신강약·용신 룰은 specialist 검수 전 잠정(`manseryeok_theory.md` §6.7). (`docs/adr/ADR-040-derivation-cross-analysis-layer.md`)
 
 ---
 
@@ -282,7 +237,7 @@ C:\DEV\SAJU\
 | 사용자 | `user` | `member`, `account` |
 | 인연 (CRM 대상) | `relation` | `contact`, `friend`, `partner`, `target` |
 | 인연 별명 | `nickname` | `name`, `displayName` (UI 라벨도 "별명") |
-| 합카드 (결과 카드) | `hapcard` | `result-card`, `compat-card` |
+| 케미카드 (결과 카드) | `hapcard` | `result-card`, `compat-card`, `합카드` |
 | 합점수 | `compatScore` (코드) / "합게이지" (UI) | `score`, `rating` |
 | 6모드 | `mode` — `'일합' \| '친구합' \| '돈합' \| '첫합' \| '썸합' \| '오래합'` | `category`, `type` |
 | 본명식 | `chart` — `chart_core`, `userChart` | `birthChart`, `natal` |
@@ -292,16 +247,22 @@ C:\DEV\SAJU\
 | 만세력 | `manseryeok` | `lunarCalendar` |
 | 합·형·충·해 | `hapChungHyungHae` (코드 키) | 영문 분리 식별자 |
 | UI 소프트 alias | `끌림/긴장/부딪힘/소모` (display_label) — 합→끌림, 형→긴장, 충→부딪힘, 해→소모. GlossaryKey는 classical(`합\|형\|충\|해`) 유지, UI 표면만 소프트 용어 | — |
-| 오늘합 | `todayHap` | `dailyFortune` |
+| 오늘 케미 | `todayHap` | `dailyFortune`, `오늘합` |
 | 딥합 (깊이 리포트) | `deepHap` | `report`, `deepReport` |
-| 합피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키) |
-| 다시합 (재해석) | `replay` | `reInterpret` |
+| 케미피드 (인연 그리드) | `feed` | `list`, `grid` (라우트 키), `합피드` |
+| 케미 다시 맞추기 (재해석) | `replay` | `reInterpret`, `다시합`, `그럴리 없어! 다시` |
+| 또 다른 나 (자기진단 6모드) | `whatif` (DiagnosticType) | `만약에 우리`, `마이플레이`, `만약합` |
+| 인연 슬롯 / 등록비 (3번째+ 1,000원) | `relation_slot` (feature_id) | `사람칸`, `person-slot`, `seat`, `quota` |
+| 지장간 | `jijanggan` | `hiddenStems`, `장간` (코드 식별자) |
+| 신강약 | `sinkang` — `'신강' \| '중화' \| '신약'` | `dayStrength`, `strength` |
+| 용신 | `yongsin` (희신 `huisin`) | `usefulGod`, `favorableElement` |
+| 궁위 | `gungwi` — 년주/월주/일주/시주 | `palace`... 단 LLM payload 키 `palace`/`palace_meaning`은 전송용 영문 키로 예외 (`palace_name` 금지 — PII 키 스캔) |
 
 새로운 도메인 용어 추가 시 본 표를 갱신하며 §1.1 승인 절차 적용.
 
 ---
 
-## 9. 미결정 항목 (R1-R8)
+## 9. 미결정 항목 (R1-R7)
 
 `MEMORY.md` 의 `project_open_questions.md` 가 권위 있는 출처. 미결정 항목과 관련된 코드는 **결정 전까지 구현 보류**한다 (스텁·플레이스홀더 금지). 해당 영역 작업 요청 시 §1.1 적용하여 결정 시점부터 확인.
 
@@ -332,7 +293,7 @@ C:\DEV\SAJU\
 - 활성 ADR 번호와 결정 상태
 - `C:\DEV\CLAUDE.md` 및 본 파일 내용
 - `fluttering-gathering-island.md` v1.1 갱신 진행 상황
-- `MEMORY.md` 의 미결정 항목 (R1-R8) 변동
+- `MEMORY.md` 의 미결정 항목 (R1-R7) 변동
 - 미해결 사용자 질문
 
 압축 산출물은 메모리 시스템(`C:\Users\batis\.Codex\projects\C--DEV-SAJU\memory\`)에 작성하며, `MEMORY.md` 인덱스에 한 줄 추가.
@@ -350,6 +311,7 @@ C:\DEV\SAJU\
 | 도메인 용어 추가 | 본 파일 §8 + `C:\DEV\CLAUDE.md` 해당 표 |
 | LLM 모델 매핑 변경 | `tech_stack.md` §3 + `prompt_versions` 테이블 + 카나리 절차 |
 | 6모드 taxonomy | `fluttering-gathering-island.md` §4.2 + `PRD.md` §6 + `types/relation.ts` (`mode` enum) |
+| `CLAUDE.md` §2/§3/§8 등 변경 | 본 파일(`AGENTS.md`) 대응 섹션 동시 갱신 (Claude Code ↔ Codex 공유 진실 유지) |
 
 부분 갱신 후 PR 제출 금지. 동시 갱신 누락 발견 시 §1.1 적용.
 
@@ -379,7 +341,7 @@ C:\DEV\SAJU\
 
 ## 15. Git 저장소
 
-- **Remote**: `origin` = `git@github.com:DeepHighAI/twoday.git` (canonical, 유일 remote).
+- **Remote**: `origin` = `git@github.com:DeepHighAI/todaychemi.git` (canonical, 유일 remote — 2026-06-10 `twoday`에서 리네임, 구 주소는 GitHub redirect)
 - **기본 브랜치**: `main` (배포 Production 브랜치 — `docs/specs/secrets.md` §3)
 - **커밋 규칙**: `C:\DEV\CLAUDE.md` "Git Conventions" 준수 — English, imperative mood, `type: description` (feat|fix|refactor|test|docs|chore), 72자 이내
 - **시크릿 금지**: `.env.local` 등 런타임 시크릿은 `.gitignore` 등록 완료. 추적 파일에 실제 키 값 commit 절대 금지 (`docs/specs/secrets.md` 참조)

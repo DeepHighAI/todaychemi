@@ -399,6 +399,7 @@ C:\DEV\SAJU\
 | 도메인 용어 추가 | 본 파일 §8 + `C:\DEV\CLAUDE.md` 해당 표 |
 | LLM 모델 매핑 변경 | `tech_stack.md` §3 + `prompt_versions` 테이블 + 카나리 절차 |
 | 6모드 taxonomy | `fluttering-gathering-island.md` §4.2 + `PRD.md` §6 + `types/relation.ts` (`mode` enum) |
+| `CLAUDE.md` §2/§3/§8 등 변경 | `AGENTS.md` 대응 섹션 동시 갱신 (Claude Code ↔ Codex 공유 진실 유지) |
 
 부분 갱신 후 PR 제출 금지. 동시 갱신 누락 발견 시 §1.1 적용.
 
