@@ -49,7 +49,7 @@
 - 100% 결정형(LLM/Date/random 없음). 1000회 동일 입력 = 동일 출력 테스트(ADR-040 의무).
 - **명리 검수 전 잠정** — ADR-040 §6.7 "신강약·용신 룰 잠정"과 동일 지위.
 
-**오행→음식 매핑 자산** — 신규 `src/lib/saju/element-food-map.ts`:
+**오행→음식 매핑 자산** — 신규 `src/lib/hapcard/element-food-map.ts`(구현 정정: `saju/`→`hapcard/`. `energy-food.ts` 빌더 헬퍼도 `src/lib/hapcard/`. `pair-complement.ts` 만 `src/lib/saju/`):
 - 고전 오행-맛: 목=신맛 / 화=쓴맛 / 토=단맛 / 금=매운맛 / 수=짠맛.
 - 맛 → 큐레이션된 한국 친화 식재료·음식류(원소당 소수 항목).
 - 정적 const(잠금 자산). RAG classics처럼 명리 specialist `review_status` 검수 대상.
@@ -61,7 +61,7 @@
 - 결정형 음식/원소/분위기를 **grounded 입력**으로 메인 케미카드 프롬프트에 주입.
 - LLM은 신규 출력 필드 `energy_food`(전 모드) + `meeting_vibe`(첫/썸 optional)에 **문구만** 작성. 음식명·원소·분위기 값은 제공된 결정형 값에서만.
 - **이름 제약 가드**(레드팀 핵심 보완 — 기존 validator는 classic_citation만 검증): 후처리에서 `energy_food`가 결정형 음식 목록 밖 항목을 도입하면 차단 → 1회 재시도 → 실패 시 **결정형 템플릿 폴백**(LLM 없이 고정 문구). `src/lib/rag/grounding-validator.ts` 확장 또는 신규 post-process 모듈. 기존 `banned-phrases`(특히 health_medical "병이 낫는다" 류) 재사용.
-- **프롬프트 버전 범프 v0.18**(현재 v0.17 active, v0.18 canary 존재). 6모드 + 첫/썸 프롬프트에 출력 필드/규칙 추가.
+- **프롬프트 버전 범프 → v0.18 active / v0.19 canary**(구현 시점 정정: 신규 본문을 v0.18 active 로 승격, v0.18 옛 canary 충돌 회피). 6모드 + 첫/썸 프롬프트에 출력 필드/규칙 추가.
 - **트레이드오프(확정)**: 메인 호출 통합 → 케미카드 캐시 1회 재생성(gpt-5). 런치 기능의 정상 비용이며 신규 카드부터 자동 포함. *기각 대안*: 별도 lazy 라우트(캐시 무효화 0이나 별도 LLM 호출 + 보이스 분리) — 일관성·단순성 위해 미채택.
 
 ### 3.3 UI (ADR-016 additive, ADR-010 보조 위계)
@@ -132,5 +132,5 @@ self.derived.ohaeng_weighted + relation.derived.ohaeng_weighted
 ## 8. 미해결/후속
 
 - UI 정확 배치(탭 vs hero 하단) — design-review 확정.
-- 캐시 재생성 롤아웃(canary v0.18 비율) — 구현 시 ADR-008 절차.
+- 캐시 재생성 롤아웃 — **구현 정정: seed-prompts 가 active·canary 를 같은 본문으로 시드하므로 canary 5% 콘텐츠 게이팅은 불가**(canary = ADR-008 라우팅 검증 전용, 콘텐츠 A/B 아님). v0.18 active 승격 시 신규 카드부터 energy_food 포함, LLM 윤문은 ~100% 노출되며 이름 제약 가드+결정형 폴백이 보호. 결정형 energy_food 는 builder 주입이라 프롬프트 버전과 무관하게 100% 노출.
 - 명리 검수 2건은 런치 후 specialist 발주 가능(잠정 자산으로 선출시 가능, ADR-040 선례).

@@ -129,7 +129,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **ADR-037** 기술 스택 잠금 (`tech_stack.md` 참조)
 - **ADR-038** Hanja 노출 금지 — UI display layer에서 한자 제거. RAG/DB verbatim 유지. `convertHanja()` safety-net 의무.
 - **ADR-039** Pay-per-use 결제 — 부적 충전 폐지, 유료 기능 사용 시 즉시 결제. 하이브리드(무료 부적 우선→부족 시 현금)·가격 1,000/800/600(부적 10/8/6p, 2026-06-07 D6 개정 — 웹·미니앱 통일) 단일출처(`feature-prices.ts`)·원자성 모델 C(선생성→성공 시 결제)·잠금 단일진실 `isFeatureUnlocked`(쓰기+read-path 본문 라우트 모두 게이트). **Amended 2026-06-10 §9**: 인연 등록 슬롯(모델 B) — 2명까지 무료, 3번째부터 `relation_slot` 1,000원/10부적, 현재 보유 수 게이트(삭제 시 회복), draft 스테이징→머티리얼라이즈(claim-first 멱등+lazy recovery), cash-gen 한도 미적용. (`docs/adr/ADR-039-pay-per-use-billing.md`)
-- **ADR-040** 파생·교차분석층 = LLM 해석 근거 전용, 점수 무개입 — `chart_core.derived`(theory v3) + `cross_analysis`(cross-v1, 비영속). 순수 결정형(1000회 테스트 의무) + 프롬프트 환각 가드("제공 필드 외 단정 금지") + PII 연령차 밴드만. 신강약·용신 룰은 specialist 검수 전 잠정(`manseryeok_theory.md` §6.7). (`docs/adr/ADR-040-derivation-cross-analysis-layer.md`)
+- **ADR-040** 파생·교차분석층 = LLM 해석 근거 전용, 점수 무개입 — `chart_core.derived`(theory v3) + `cross_analysis`(cross-v1, 비영속). 순수 결정형(1000회 테스트 의무) + 프롬프트 환각 가드("제공 필드 외 단정 금지") + PII 연령차 밴드만. 신강약·용신 룰은 specialist 검수 전 잠정(`manseryeok_theory.md` §6.7). **Amended 2026-06-18 (기운 케어)**: 케미카드 보조 추천층 `energy_food`(전 6모드 공통 보완 원소 음식) + `meeting_vibe`(첫/썸 만남 분위기) — 결정형 파생(`saju/pair-complement.ts` + `hapcard/element-food-map.ts`, 점수 무개입), 음식 선택은 서버·LLM은 `energy_food.copy` 한 문장만 윤문(이름 제약 가드→결정형 폴백), UI = ADR-016 잠금 1~6 위 additive "기운 케어" 탭, seed-prompts active=canary 동본문(콘텐츠 게이팅 불가). (`docs/adr/ADR-040-derivation-cross-analysis-layer.md`)
 
 ---
 
