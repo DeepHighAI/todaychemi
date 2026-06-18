@@ -14,19 +14,29 @@ import { Storage } from '@apps-in-toss/web-framework';
 const TOKEN_KEY = 'ait:session:token';
 
 /**
- * Storage SDK 가 실제 네이티브 환경인지 여부를 감지한다.
- * 웹 개발 서버에서는 getItem 이 즉시 null 을 반환하거나 reject 될 수 있다.
+ * Toss WebView 네이티브 환경 여부. 전역 주입 플래그(`__AIT_NATIVE__`)로 감지한다.
+ * 자동 로그인(appLogin)·Storage 사용 분기에 공통으로 쓴다.
  */
-function isNativeStorage(): boolean {
+export function isNativeTossEnv(): boolean {
   // Toss WebView 전역 주입 플래그 — 런타임에서 확인
   return typeof (globalThis as Record<string, unknown>).__AIT_NATIVE__ !== 'undefined';
 }
 
+/**
+ * Storage SDK 가 실제 네이티브 환경인지 여부를 감지한다.
+ * 웹 개발 서버에서는 getItem 이 즉시 null 을 반환하거나 reject 될 수 있다.
+ */
+function isNativeStorage(): boolean {
+  return isNativeTossEnv();
+}
+
 /** 저장된 Bearer 토큰을 반환한다. 없으면 null. */
 export async function getToken(): Promise<string | null> {
-  // 개발 환경 오버라이드: VITE_DEV_BEARER 환경변수가 있으면 그것을 사용한다
-  // (실기기 없이 API 호출을 테스트할 때 편리)
-  const devBearer = import.meta.env.VITE_DEV_BEARER as string | undefined;
+  // 개발 환경 오버라이드: dev(serve) 빌드에서만 VITE_DEV_BEARER 를 사용한다.
+  // import.meta.env.DEV 게이트로 프로덕션(.ait) 빌드에서는 사용/인라인되지 않는다(보안).
+  const devBearer = import.meta.env.DEV
+    ? (import.meta.env.VITE_DEV_BEARER as string | undefined)
+    : undefined;
   if (devBearer) return devBearer;
 
   try {
