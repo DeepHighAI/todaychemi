@@ -8,18 +8,25 @@
  * localStorage 폴백을 사용한다.
  */
 
-import { Storage } from '@apps-in-toss/web-framework';
+import { Storage, getOperationalEnvironment } from '@apps-in-toss/web-framework';
 
 /** Storage 키 상수 */
 const TOKEN_KEY = 'ait:session:token';
 
 /**
- * Toss WebView 네이티브 환경 여부. 전역 주입 플래그(`__AIT_NATIVE__`)로 감지한다.
+ * Toss WebView(네이티브) 환경 여부. SDK `getOperationalEnvironment()` 로 감지한다.
  * 자동 로그인(appLogin)·Storage 사용 분기에 공통으로 쓴다.
+ *
+ * - `'toss'`(실기기) / `'sandbox'`(QA) 모두 실제 토스 브릿지가 살아있어 appLogin 이 동작 → true.
+ * - 브라우저 dev 프리뷰에는 브릿지가 없어 호출이 throw → catch 로 false(비네이티브).
  */
 export function isNativeTossEnv(): boolean {
-  // Toss WebView 전역 주입 플래그 — 런타임에서 확인
-  return typeof (globalThis as Record<string, unknown>).__AIT_NATIVE__ !== 'undefined';
+  try {
+    const env = getOperationalEnvironment();
+    return env === 'toss' || env === 'sandbox';
+  } catch {
+    return false;
+  }
 }
 
 /**
