@@ -48,36 +48,29 @@ export async function POST(request: Request) {
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 
-  // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 INSERT (users 테이블 타입 해소 우회)
+  // builder.ts 패턴 동일: Zod 검증 완료 후 untyped client로 write (users 테이블 타입 해소 우회).
+  // upsert(onConflict: user_id) — 재온보딩/재로그인(로그아웃→/onboarding) 시 PK 충돌(23505)로
+  // 막히지 않도록 멱등 처리(user_charts 의 upsert 패턴과 동일). 본인 데이터 갱신이라 안전.
   const db = supabase;
-  const { error } = await db.from('users').insert({
-    user_id: user.id,
-    nickname: parsed.data.nickname,
-    birth_date: parsed.data.birth_date,
-    birth_date_calendar: parsed.data.birth_date_calendar,
-    is_lunar_leap: parsed.data.is_lunar_leap,
-    birth_time_knowledge: parsed.data.birth_time_knowledge,
-    birth_time: parsed.data.birth_time,
-    gender: parsed.data.gender,
-    consented_at: legalConsent.consentedAt,
-    consented_tos_version: legalConsent.termsVersion,
-    consented_privacy_version: legalConsent.privacyVersion,
-    age_confirmed: legalConsent.ageConfirmed,
-  });
+  const { error } = await db.from('users').upsert(
+    {
+      user_id: user.id,
+      nickname: parsed.data.nickname,
+      birth_date: parsed.data.birth_date,
+      birth_date_calendar: parsed.data.birth_date_calendar,
+      is_lunar_leap: parsed.data.is_lunar_leap,
+      birth_time_knowledge: parsed.data.birth_time_knowledge,
+      birth_time: parsed.data.birth_time,
+      gender: parsed.data.gender,
+      consented_at: legalConsent.consentedAt,
+      consented_tos_version: legalConsent.termsVersion,
+      consented_privacy_version: legalConsent.privacyVersion,
+      age_confirmed: legalConsent.ageConfirmed,
+    },
+    { onConflict: 'user_id' },
+  );
 
   if (error) {
-    if (error.code === '23505') {
-      const { data: existingChart, error: existingChartError } = await db
-        .from('user_charts')
-        .select('chart_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (existingChartError || !existingChart) {
-        return apiErrorResponse('INTERNAL_ERROR', '', 500);
-      }
-      return apiErrorResponse('USER_ALREADY_ONBOARDED', '', 409);
-    }
     return apiErrorResponse('INTERNAL_ERROR', '', 500);
   }
 

@@ -46,10 +46,8 @@ const MOCK_CHART_HASH = 'a'.repeat(64);
 
 function makeClient(opts: {
   userId?: string | null;
-  insertError?: { code: string; message: string } | null;
+  upsertUsersError?: { code: string; message: string } | null;
   upsertChartError?: { code: string; message: string } | null;
-  existingChartRow?: { chart_id: string } | null;
-  existingChartError?: { code: string; message: string } | null;
 }) {
   const userId = opts.userId === undefined ? 'user-uuid-001' : opts.userId;
 
@@ -62,9 +60,9 @@ function makeClient(opts: {
     error: null,
   });
 
-  const insertUsers = vi.fn().mockResolvedValue({
+  const upsertUsers = vi.fn().mockResolvedValue({
     data: null,
-    error: opts.insertError ?? null,
+    error: opts.upsertUsersError ?? null,
   });
 
   const upsertCharts = vi.fn().mockResolvedValue({
@@ -72,27 +70,17 @@ function makeClient(opts: {
     error: opts.upsertChartError ?? null,
   });
 
-  const existingChartMaybeSingle = vi.fn().mockResolvedValue({
-    data: opts.existingChartRow ?? null,
-    error: opts.existingChartError ?? null,
-  });
-  const existingChartLimit = vi.fn().mockReturnValue({ maybeSingle: existingChartMaybeSingle });
-  const existingChartEq = vi.fn().mockReturnValue({ limit: existingChartLimit });
-  const selectCharts = vi.fn().mockReturnValue({ eq: existingChartEq });
-
   const from = vi.fn().mockImplementation((table: string) => {
-    if (table === 'users') return { insert: insertUsers };
-    if (table === 'user_charts') return { upsert: upsertCharts, select: selectCharts };
+    if (table === 'users') return { upsert: upsertUsers };
+    if (table === 'user_charts') return { upsert: upsertCharts };
     return { insert: vi.fn(), upsert: vi.fn() };
   });
 
   return {
     auth: { getUser },
     from,
-    _insert: insertUsers,
+    _upsertUsers: upsertUsers,
     _upsertCharts: upsertCharts,
-    _selectCharts: selectCharts,
-    _existingChartEq: existingChartEq,
   };
 }
 
@@ -122,7 +110,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(client._insert).toHaveBeenCalledOnce();
+    expect(client._upsertUsers).toHaveBeenCalledOnce();
   });
 
   it('users INSERT 시 user_id, nickname, birth_date 모두 전달됨', async () => {
@@ -131,7 +119,7 @@ describe('POST /api/onboarding', () => {
 
     await POST(makeRequest(VALID_BODY));
 
-    const inserted = client._insert.mock.calls[0][0];
+    const inserted = client._upsertUsers.mock.calls[0][0];
     expect(inserted.user_id).toBe('user-uuid-001');
     expect(inserted.nickname).toBe('하늘달');
     expect(inserted.birth_date).toBe('1991-03-15');
@@ -153,7 +141,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error.code).toBe('LEGAL_CONSENT_REQUIRED');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
   });
 
   it('server consent resolver receives service client, cookies, and auth user id', async () => {
@@ -184,7 +172,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
   });
 
   it('400 → INVALID_BODY (birth_place 추가 필드 — PII strict 가드)', async () => {
@@ -212,7 +200,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
     expect(computeChart).not.toHaveBeenCalled();
   });
 
@@ -229,7 +217,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
     expect(computeChart).not.toHaveBeenCalled();
   });
 
@@ -246,7 +234,7 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.code).toBe('INVALID_BODY');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
     expect(computeChart).not.toHaveBeenCalled();
   });
 
@@ -259,41 +247,24 @@ describe('POST /api/onboarding', () => {
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error.code).toBe('UNAUTHORIZED');
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
   });
 
-  it('409 → USER_ALREADY_ONBOARDED (duplicate key)', async () => {
-    const client = makeClient({
-      insertError: { code: '23505', message: 'duplicate key' },
-      existingChartRow: { chart_id: 'chart-001' },
-    });
+  it('재온보딩(이미 존재하는 user) → upsert 멱등 성공 200 (onConflict user_id)', async () => {
+    // users 는 plain insert 가 아니라 upsert(onConflict:'user_id') 라 PK 충돌(23505)로
+    // 막히지 않는다. 로그아웃→/onboarding 재진입·재로그인 시에도 200.
+    const client = makeClient({});
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));
 
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error.code).toBe('USER_ALREADY_ONBOARDED');
-    expect(client._selectCharts).toHaveBeenCalledWith('chart_id');
-    expect(client._existingChartEq).toHaveBeenCalledWith('user_id', 'user-uuid-001');
+    expect(res.status).toBe(200);
+    expect(client._upsertUsers).toHaveBeenCalledOnce();
+    expect(client._upsertUsers.mock.calls[0][1]).toEqual({ onConflict: 'user_id' });
   });
 
-  it('duplicate users row에 chart가 없으면 409 성공으로 위장하지 않는다', async () => {
-    const client = makeClient({
-      insertError: { code: '23505', message: 'duplicate key' },
-      existingChartRow: null,
-    });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error.code).toBe('INTERNAL_ERROR');
-  });
-
-  it('500 → INTERNAL_ERROR (generic DB failure)', async () => {
-    const client = makeClient({ insertError: { code: 'PGRST000', message: 'DB down' } });
+  it('500 → INTERNAL_ERROR (users upsert 실패)', async () => {
+    const client = makeClient({ upsertUsersError: { code: 'PGRST000', message: 'DB down' } });
     vi.mocked(createServerClient).mockResolvedValue(client as never);
 
     const res = await POST(makeRequest(VALID_BODY));
@@ -343,7 +314,7 @@ describe('POST /api/onboarding', () => {
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(500);
-    expect(client._insert).not.toHaveBeenCalled();
+    expect(client._upsertUsers).not.toHaveBeenCalled();
   });
 
   it('user_charts upsert 실패 → 500', async () => {
@@ -357,17 +328,4 @@ describe('POST /api/onboarding', () => {
     expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 
-  it('duplicate users row의 chart 조회 실패도 409 성공으로 위장하지 않는다', async () => {
-    const client = makeClient({
-      insertError: { code: '23505', message: 'duplicate key' },
-      existingChartError: { code: 'PGRST000', message: 'lookup fail' },
-    });
-    vi.mocked(createServerClient).mockResolvedValue(client as never);
-
-    const res = await POST(makeRequest(VALID_BODY));
-
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error.code).toBe('INTERNAL_ERROR');
-  });
 });
