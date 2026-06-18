@@ -4,7 +4,8 @@ export const LEGAL_VERSION = '2026-06-15';
 export const LEGAL_TERMS_VERSION = LEGAL_VERSION;
 export const LEGAL_PRIVACY_VERSION = LEGAL_VERSION;
 
-export const LEGAL_CONSENT_FLOWS = ['email', 'oauth', 'guest'] as const;
+// 'toss' = 앱인토스 미니앱 Toss 로그인 사용자(Bearer, 쿠키 불가). createClaimedLegalConsentRecord 로 직접 기록.
+export const LEGAL_CONSENT_FLOWS = ['email', 'oauth', 'guest', 'toss'] as const;
 export const LEGAL_CONSENT_PROVIDERS = ['google', 'kakao'] as const;
 
 export interface LegalConsentState {

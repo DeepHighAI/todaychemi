@@ -19,6 +19,10 @@ const GUEST_LEGAL_CONSENTS = readFileSync(
   path.join(process.cwd(), 'supabase/migrations/20260526010000_guest_legal_consents.sql'),
   'utf8',
 );
+const TOSS_LEGAL_CONSENTS = readFileSync(
+  path.join(process.cwd(), 'supabase/migrations/20260618000000_legal_consents_toss_flow.sql'),
+  'utf8',
+);
 
 describe('legal consent migration contract', () => {
   it('adds separated privacy consent version to users', () => {
@@ -45,5 +49,10 @@ describe('legal consent migration contract', () => {
   it('adds guest legal consent flow without a provider', () => {
     expect(GUEST_LEGAL_CONSENTS).toContain("flow in ('email', 'oauth', 'guest')");
     expect(GUEST_LEGAL_CONSENTS).toContain("flow in ('email', 'guest') and provider is null");
+  });
+
+  it('adds toss legal consent flow without a provider', () => {
+    expect(TOSS_LEGAL_CONSENTS).toContain("flow in ('email', 'oauth', 'guest', 'toss')");
+    expect(TOSS_LEGAL_CONSENTS).toContain("flow in ('email', 'guest', 'toss') and provider is null");
   });
 });
