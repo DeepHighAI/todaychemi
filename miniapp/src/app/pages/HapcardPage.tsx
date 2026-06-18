@@ -25,6 +25,7 @@ import { MoreHorizontal, Trash2, Edit2, Check, Share2 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiFetch } from '@/lib/api/client';
+import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import { toEasyText } from '@/lib/glossary/easy-term-map';
 import { convertHanja } from '@/lib/glossary/post-process';
 import {
@@ -259,6 +260,8 @@ export function HapcardPage() {
   // 402 결제 필요 — Toss IAP 시트 연결
   if (isError && isPaymentRequiredError(error) && !payDismissed) {
     const payInfo = (error as { payment?: { feature: string; ref: string; amount_krw: number } })?.payment;
+    // 고지가 = 서버 제공 실청구액(오픈 할인가) 우선, 없으면 표시가 단일출처 폴백.
+    const amountKrw = payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.hapcard;
     return (
       <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
         <div
@@ -272,7 +275,7 @@ export function HapcardPage() {
           }}
         >
           <p style={{ font: 'var(--t-h3)', margin: 0, color: 'var(--text-primary)' }}>
-            케미카드는 ₩1,000이 필요해요
+            케미카드는 ₩{amountKrw.toLocaleString()}이 필요해요
           </p>
           <p style={{ font: 'var(--t-sub)', margin: 0, color: 'var(--text-secondary)' }}>
             결제 후 바로 케미카드를 확인할 수 있어요.
@@ -306,7 +309,7 @@ export function HapcardPage() {
                 opacity: isPurchasing || !payInfo || !refundConsent ? 0.6 : 1,
               }}
             >
-              {isPurchasing ? '결제 중…' : '₩1,000 결제하기'}
+              {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}
             </button>
             <button
               type="button"
