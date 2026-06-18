@@ -49,6 +49,25 @@ const RELATION_CHART_PENDING_CODES: string[] = [
   'RELATION_CHART_LOOKUP_FAILED',
 ];
 
+const HERO_COACH_LABEL_CLASS = [
+  'mr-1.5',
+  'inline-flex',
+  'align-middle',
+  'rounded-[var(--r-pill)]',
+  'border',
+  'border-white/45',
+  'bg-white/90',
+  'px-2.5',
+  'py-1',
+  'font-display',
+  'text-[13px]',
+  'font-black',
+  'leading-[1.45]',
+  'text-[var(--p-20)]',
+  'shadow-[var(--e-1)]',
+  'backdrop-blur-sm',
+].join(' ');
+
 function readInitialEasyMode() {
   if (typeof window === 'undefined') return true;
   try {
@@ -393,7 +412,7 @@ export default function HapcardView() {
                   data-testid={`hapcard-hero-line-${line.key}`}
                   className="text-[16px] leading-[1.55] font-semibold text-white/95"
                 >
-                  <strong className="font-black text-[var(--p-10)] drop-shadow-sm">{line.label}</strong>{' '}
+                  <strong className={HERO_COACH_LABEL_CLASS}>{line.label}</strong>{' '}
                   <span>{easyText(line.body)}</span>
                 </p>
               ))}

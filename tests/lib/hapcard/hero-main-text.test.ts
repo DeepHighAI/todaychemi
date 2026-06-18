@@ -113,6 +113,26 @@ describe('formatHeroCoachText', () => {
     expect(text).toContain('"조심!" 내 페이스로 한 번씩 리드하면 도움이 돼요.');
     expect(text).toContain('"이렇게 해봐!" 상대의 먼저 다가오는 표현을 편하게 받아들이되 내 페이스로 한 번씩 리드해보자.');
   });
+
+  it('actions[0]이 이렇게 해봐 라벨만 있으면 다음 실제 행동을 히어로에 표시한다', () => {
+    const text = formatHeroCoachText({
+      mainText:
+        '결론: 둘 다 신뢰를 쌓기 쉽습니다. 강점: 반함이 늦게 깊어집니다. 주의: 새로움이 둔해질 수 있습니다.',
+      whyCards: [
+        { title: '단단한 신뢰', reason: '둘 다 중심이 단단해 신뢰를 쌓기 쉽습니다.' },
+        { title: '새로움 주의', reason: '도가 많아 새로움이 둔해질 수 있습니다.' },
+      ],
+      actions: [
+        '"이렇게 해봐!"',
+        "주 1회 '배움 루틴' 만들기. 서로 번갈아 선택한 주제로 30분 공부, 공유.",
+        "의견이 부딪히면 10분 타임아웃 후 다시 말하기.",
+        "집, 돈, 시간 같이 안정감을 중시하는 일은 역할을 명확히 나누기.",
+      ],
+    });
+
+    expect(text).not.toContain('"이렇게 해봐!" 이렇게 해봐');
+    expect(text).toContain('"이렇게 해봐!" 주 1회 \'배움 루틴\' 만들기.');
+  });
 });
 
 describe('formatDetailSummaryLines', () => {
@@ -193,5 +213,24 @@ describe('formatHapcardActionItems', () => {
       '주중 중간 점검 1회를 고정해 잘 맞는 부분과 어긋나는 부분의 속도 차이를 조정하세요.',
     );
     expect(items.join(' ')).not.toContain('합·파');
+  });
+
+  it('actions[0] 라벨만 있는 4개 액션은 카드에 라벨을 노출하지 않고 실제 3개 행동을 유지한다', () => {
+    const items = formatHapcardActionItems({
+      mainText: '결론: 단단한 관계입니다. 강점: 신뢰가 쉽습니다. 주의: 루틴이 굳을 수 있습니다.',
+      whyCards: [],
+      actions: [
+        '이렇게 해봐!',
+        "주 1회 '배움 루틴' 만들기.",
+        '의견이 부딪히면 10분 타임아웃 후 다시 말하기.',
+        '집, 돈, 시간은 역할을 명확히 나누기.',
+      ],
+    });
+
+    expect(items).toEqual([
+      "주 1회 '배움 루틴' 만들기.",
+      '의견이 부딪히면 10분 타임아웃 후 다시 말하기.',
+      '집, 돈, 시간은 역할을 명확히 나누기.',
+    ]);
   });
 });

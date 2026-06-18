@@ -26,6 +26,8 @@ const LABEL_START =
 const CAUTION_PATTERN = /주의|조심|경계|부족|충돌|부딪|긴장|오해|불안|불확실|중복|약점|피로|마찰|소모|부담|어색|느릴|느림|엇갈/;
 const GOOD_PATTERN = /강점|좋|장점|편안|보완|시너지|매력|신뢰|안정|끌림|케미|성장|활기|유대|공감/;
 const WORD_CHAR_CLASS = '가-힣A-Za-z0-9';
+const ACTION_LABEL_PREFIX =
+  /^[\s"'“”‘’]*(?:이렇게\s*해봐|일단\s*이거\s*해봐)(?=$|[\s!！?."'“”‘’：:-])[\s!！?."'“”‘’]*(?:\s*[:：-]\s*)?/u;
 const RELATION_PAIR_PATTERN = new RegExp(
   `(^|[^${WORD_CHAR_CLASS}])합\\s*[·ㆍ・/]\\s*파(으로|이란|이라|이다|이며|이고|이|가|은|는|을|를|과|와|도|만|의|로)?(?=$|[^${WORD_CHAR_CLASS}])`,
   'g',
@@ -234,8 +236,26 @@ function isSameAction(first: string, second: string): boolean {
   return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
 }
 
+function actionBodyText(text: string): string {
+  let value = normalizeInline(stripLeadLabel(simplifyTerms(text)));
+  for (let i = 0; i < 2; i += 1) {
+    const next = normalizeInline(value.replace(ACTION_LABEL_PREFIX, ''));
+    if (next === value) break;
+    value = next;
+  }
+  return value;
+}
+
+function firstActionBody(actions: string[]): string {
+  for (const action of actions) {
+    const value = actionBodyText(action);
+    if (value) return value;
+  }
+  return '';
+}
+
 function normalizeActionItem(text: string): string {
-  const value = toFriendlySentence(text);
+  const value = toFriendlySentence(actionBodyText(text));
   if (!value) return '';
   return /[.!?。요]$/u.test(value) ? value : `${value}.`;
 }
@@ -305,7 +325,7 @@ export function formatHeroCoachLines({
     '서로 기대하는 속도나 표현 방식이 다를 수 있어요.',
   );
   const tip = ensureSentence(
-    toFriendlySentence(actions[0] ?? ''),
+    toFriendlySentence(firstActionBody(actions)),
     '초반에는 작은 약속부터 맞춰보면서 상대 반응을 천천히 확인해보세요.',
   );
 
@@ -337,7 +357,8 @@ export function formatHapcardActionItems({
 }): string[] {
   if (actions.length === 0) return [];
 
-  const heroAction = toFriendlySentence(actions[0] ?? '');
+  const heroActionSource = actionBodyText(actions[0] ?? '');
+  const heroAction = toFriendlySentence(heroActionSource || firstActionBody(actions));
   const sourceActions = actions.length >= CARD_ACTION_COUNT + 1
     ? actions.slice(1, CARD_ACTION_COUNT + 1)
     : actions.slice(0, CARD_ACTION_COUNT);
@@ -345,7 +366,7 @@ export function formatHapcardActionItems({
   return sourceActions
     .map((action, index) => {
       const actionText = normalizeActionItem(action);
-      if (index === 0 && isSameAction(actionText, heroAction)) {
+      if (index === 0 && heroActionSource && isSameAction(actionText, heroAction)) {
         return buildSpecificAction({ mainText, whyCards, heroAction });
       }
       return actionText;

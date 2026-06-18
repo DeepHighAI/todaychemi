@@ -118,9 +118,9 @@ describe('HapcardPage', () => {
     expect(screen.getByText('"좋아!"')).toHaveClass('font-black');
     expect(screen.getByText('"조심!"')).toHaveClass('font-black');
     expect(screen.getByText('"이렇게 해봐!"')).toHaveClass('font-black');
-    expect(screen.getByText('"좋아!"')).toHaveClass('text-[var(--p-10)]');
-    expect(screen.getByText('"조심!"')).toHaveClass('text-[var(--p-10)]');
-    expect(screen.getByText('"이렇게 해봐!"')).toHaveClass('text-[var(--p-10)]');
+    expect(screen.getByText('"좋아!"')).toHaveClass('bg-white/90', 'text-[var(--p-20)]');
+    expect(screen.getByText('"조심!"')).toHaveClass('bg-white/90', 'text-[var(--p-20)]');
+    expect(screen.getByText('"이렇게 해봐!"')).toHaveClass('bg-white/90', 'text-[var(--p-20)]');
 
     const actionList = screen.getByTestId('hapcard-actions');
     expect(actionList).not.toHaveTextContent('초반에는 약속을 작게 잡고 상대 반응을 천천히 확인하세요.');
