@@ -111,6 +111,22 @@ export interface RoleAnalysis {
   tip: string;
 }
 
+// 기운 음식 (energy_food) — 두 사람 공통 보완 원소 기반 음식 추천 (ADR-040 파생, ADR-015 근거 표시).
+// element/reason/foods 는 결정형(서버), copy 는 LLM 윤문(또는 결정형 폴백). ADR-038 한자 0.
+export interface EnergyFood {
+  element: '목' | '화' | '토' | '금' | '수';
+  reason: string;
+  foods: string[];
+  copy: string;
+}
+
+// 만남 분위기 (meeting_vibe) — 첫합·썸합 전용 추상 분위기. §5: 실제 지명·상호 금지.
+export interface MeetingVibe {
+  element: '목' | '화' | '토' | '금' | '수';
+  archetype: string;
+  copy: string;
+}
+
 // 오늘 케미 결과 — db_schema.md §5 hapcards 테이블 1:1 매핑
 // ADR-035: compat_score는 결정형 (LLM 점수 개입 금지). 본 인터페이스의 score 필드는 fortune-core 출력만 저장.
 export interface HapcardResult {
@@ -139,6 +155,9 @@ export interface HapcardResult {
       money?: number;
       future?: number;
     };
+    // 기운 케어 (additive 컴포넌트 7, ADR-016) — energy_food 전 모드, meeting_vibe 첫/썸 전용
+    energy_food?: EnergyFood;
+    meeting_vibe?: MeetingVibe;
   };
   prompt_version: string;
   llm_model: LlmModel;
