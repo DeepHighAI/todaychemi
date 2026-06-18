@@ -209,6 +209,41 @@ describe('HapcardLlmOutputSchema — strict Zod', () => {
     });
   });
 
+  describe('energy_food (optional, fail-soft)', () => {
+    it('정상 energy_food 통과', () => {
+      const r = HapcardLlmOutputSchema.safeParse({
+        ...VALID,
+        energy_food: { copy: '함께 매실차 한 잔 어때요?' },
+      });
+      expect(r.success).toBe(true);
+      if (r.success) expect(r.data.energy_food?.copy).toBe('함께 매실차 한 잔 어때요?');
+    });
+
+    it('energy_food 누락 통과 (optional)', () => {
+      const r = HapcardLlmOutputSchema.safeParse(VALID);
+      expect(r.success).toBe(true);
+      if (r.success) expect(r.data.energy_food).toBeUndefined();
+    });
+
+    it('energy_food 안의 unknown 키는 strip (전체 파싱 깨지 않음)', () => {
+      const r = HapcardLlmOutputSchema.safeParse({
+        ...VALID,
+        energy_food: { copy: '문구', place: '강남' },
+      });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data.energy_food?.copy).toBe('문구');
+        expect((r.data.energy_food as Record<string, unknown>).place).toBeUndefined();
+      }
+    });
+
+    it('malformed energy_food 는 undefined 로 폴백 (.catch, 전체 카드 미파손)', () => {
+      const r = HapcardLlmOutputSchema.safeParse({ ...VALID, energy_food: 'not-an-object' });
+      expect(r.success).toBe(true);
+      if (r.success) expect(r.data.energy_food).toBeUndefined();
+    });
+  });
+
   describe('strict mode (추가 키 거부)', () => {
     it('루트에 unknown 키 거부', () => {
       const r = HapcardLlmOutputSchema.safeParse({ ...VALID, score: 85 });

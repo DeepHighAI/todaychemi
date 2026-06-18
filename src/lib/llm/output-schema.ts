@@ -34,6 +34,12 @@ export const OhaengInterpretationSchema = z
   })
   .strict();
 
+// energy_food — LLM 윤문은 copy(문구)만. 음식 선택은 결정형(서버). 보조 필드라 fail-soft:
+// 알 수 없는 키는 strip(.strict 금지 — 의도치 않은 키가 전체 카드 파싱을 깨면 안 됨).
+export const EnergyFoodLlmSchema = z.object({
+  copy: z.string().min(1).max(200),
+});
+
 export const HapcardLlmOutputSchema = z
   .object({
     main_text: z.string().min(120).max(280),
@@ -42,6 +48,8 @@ export const HapcardLlmOutputSchema = z
     actions: z.array(z.string().min(1)).length(4),
     why_cards: z.array(WhyCardSchema).min(1),
     ohaeng_interpretation: OhaengInterpretationSchema,
+    // 누락/형식오류 시 undefined 로 폴백(.catch) → builder 가 결정형 energy_food 사용.
+    energy_food: EnergyFoodLlmSchema.optional().catch(undefined),
   })
   .strict();
 
