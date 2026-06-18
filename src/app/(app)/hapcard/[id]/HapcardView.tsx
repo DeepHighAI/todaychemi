@@ -26,6 +26,7 @@ import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
 import { HapcardRoleAnalysis } from '@/components/hapcard/role-analysis';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
 import { HapcardCauseFactors } from '@/components/hapcard/cause-factors';
+import { HapcardEnergyCare } from '@/components/hapcard/energy-care';
 import { HapcardActions } from '@/components/hapcard/actions';
 import { HapcardClassic } from '@/components/hapcard/classic';
 import { HapcardChangeIndicator } from '@/components/hapcard/change-indicator';
@@ -135,7 +136,7 @@ function getErrorCardCode(e: unknown): ErrorCode {
   return ERROR_CODES.includes(code as ErrorCode) ? (code as ErrorCode) : 'INTERNAL_ERROR';
 }
 
-type ExpandTab = 'summary' | 'ohaeng' | 'evidence' | 'area' | 'flow';
+type ExpandTab = 'summary' | 'ohaeng' | 'evidence' | 'area' | 'flow' | 'energyCare';
 
 export default function HapcardView() {
   const { id } = useParams<{ id: string }>();
@@ -602,6 +603,7 @@ function ExpandPanel({
     { k: 'evidence', label: t('tab.evidence') },
     { k: 'area', label: t('tab.area') },
     { k: 'flow', label: t('tab.flow') },
+    { k: 'energyCare', label: t('tab.energyCare') },
   ];
 
   return (
@@ -679,6 +681,12 @@ function ExpandPanel({
         )}
         {tab === 'flow' && (
           <HapcardTimeline hapcardId={data.hapcard_id} mode={mode} />
+        )}
+        {tab === 'energyCare' && (
+          <HapcardEnergyCare
+            energyFood={data.content.energy_food}
+            meetingVibe={data.content.meeting_vibe}
+          />
         )}
       </div>
     </section>
