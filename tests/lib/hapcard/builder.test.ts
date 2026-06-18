@@ -42,6 +42,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HapcardResult } from '@/types/hapcard';
 import type { BuildHapcardInput, BuildHapcardDeps } from '@/lib/hapcard/builder';
 import { MOCK_YUNSE_CORE } from '../../fixtures/hapcard';
+import { allowedFoodsFor } from '@/lib/hapcard/energy-food';
+import { ELEMENT_FOOD_MAP } from '@/lib/hapcard/element-food-map';
 
 // --- 픽스처 ---
 
@@ -854,6 +856,70 @@ describe('buildHapcard — 오늘 케미 빌더 오케스트레이터', () => {
     expect(citations[0].original).toBe('갑자');
     // modern은 그대로
     expect(citations[0].modern).toBe('갑자년');
+  });
+});
+
+// Phase 6 — 기운 음식(energy_food) / 만남 분위기(meeting_vibe) builder 배선
+describe('energy_food / meeting_vibe (기운 케어)', () => {
+  const ALL_ELEMENTS = ['목', '화', '토', '금', '수'];
+
+  it('cache miss → content.energy_food 결정형 폴백 (LLM 미제공 시 서버 음식+근거)', async () => {
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const ef = insert.mock.calls[0][0].content.energy_food;
+    expect(ef).toBeDefined();
+    expect(ALL_ELEMENTS).toContain(ef.element);
+    expect(ef.foods).toEqual(allowedFoodsFor(ef.element));
+    expect(ef.reason).toContain(ELEMENT_FOOD_MAP[ef.element as keyof typeof ELEMENT_FOOD_MAP].taste);
+    expect(ef.copy.length).toBeGreaterThan(0);
+  });
+
+  it('LLM 이 유효한 energy_food.copy 제공 → 그 copy 사용 (음식은 서버 소유)', async () => {
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...MOCK_LLM_RESULT,
+      output: { ...MOCK_LLM_OUTPUT, energy_food: { copy: '오늘은 같이 새콤한 음식 어때요?' } },
+    });
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const ef = insert.mock.calls[0][0].content.energy_food;
+    expect(ef.copy).toBe('오늘은 같이 새콤한 음식 어때요?');
+    expect(ef.foods).toEqual(allowedFoodsFor(ef.element));
+  });
+
+  it('LLM copy 에 실제 지명 → 결정형 copy 로 폴백 (throw 아님)', async () => {
+    (callOpenAi as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...MOCK_LLM_RESULT,
+      output: { ...MOCK_LLM_OUTPUT, energy_food: { copy: '강남에서 새콤한 음식 먹어요' } },
+    });
+    const { client, insert } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const ef = insert.mock.calls[0][0].content.energy_food;
+    expect(ef.copy).not.toContain('강남');
+  });
+
+  it('systemPrompt 에 기운 음식 grounded 섹션 주입', async () => {
+    const { client } = makeMockUserClient({ cachedRow: null });
+
+    await buildHapcard(BASE_INPUT, makeDeps(client));
+
+    const callArgs = (callOpenAi as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs.systemPrompt).toContain('기운 음식');
+  });
+
+  it('meeting_vibe 는 첫합/썸합에서만 content 에 포함된다', async () => {
+    const ilhap = makeMockUserClient({ cachedRow: null });
+    await buildHapcard(BASE_INPUT, makeDeps(ilhap.client));
+    expect(ilhap.insert.mock.calls[0][0].content.meeting_vibe).toBeUndefined();
+
+    const cheothap = makeMockUserClient({ cachedRow: null });
+    await buildHapcard({ ...BASE_INPUT, mode: '첫합' as Mode }, makeDeps(cheothap.client));
+    expect(cheothap.insert.mock.calls[0][0].content.meeting_vibe).toBeDefined();
   });
 });
 

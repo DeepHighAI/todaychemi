@@ -16,6 +16,7 @@ import { callOpenAi, type CallOpenAiDeps } from '@/lib/llm/openai';
 import { validateClassicCitations } from '@/lib/rag/grounding-validator';
 import { deriveVisuals } from '@/lib/hapcard/visuals';
 import { buildOhaengInterpretation } from '@/lib/hapcard/ohaeng-interpretation';
+import { buildEnergyFood, validateEnergyFoodCopy } from '@/lib/hapcard/energy-food';
 import { SCORING_VERSION } from '@/lib/scoring/constants';
 import { mapLlmCitation } from '@/lib/glossary/citation-mapper';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
@@ -267,6 +268,14 @@ export async function buildHapcardWithMeta(
     relation_birth_year: birthYearOf(datedCharts.relationBirth),
   });
 
+  // 5.7 기운 음식 (energy_food) — 결정형 산출(공통 보완 원소). LLM 은 copy 만 윤문(음식·원소 서버 소유).
+  //      meeting_vibe 는 첫합·썸합 전용 결정형 — LLM 미관여(§5 장소 환각 차단).
+  const builtEnergyFood = buildEnergyFood({
+    self: datedCharts.self,
+    relation: datedCharts.relation,
+    mode: input.mode,
+  });
+
   // 6. LLM payload 빌드 (PII 5필드 제외 — AGENTS.md §5)
   const payload = buildLlmPayload({
     self: datedCharts.self,
@@ -298,7 +307,9 @@ export async function buildHapcardWithMeta(
     ragHits.length === 0
       ? `## RAG hits\n\nNo classical references match this query.\nSet \`classic_citation: []\` in your response.\nDO NOT invent asset_ids — empty array is the correct output here.`
       : `## Available RAG hits — use ONLY these asset_ids verbatim\n\nAny asset_id NOT in this list will fail validation and the request will be rejected.\n\n<rag_hits>\n${JSON.stringify(ragHits, null, 2)}\n</rag_hits>`;
-  const systemPrompt = `${prompt.content}\n\n${ragSection}`;
+  // 8.5 기운 음식 grounded 섹션 — ragSection 패턴. 결정형 음식·원소를 주입, LLM 은 copy 만 작성.
+  const energyFoodSection = `## 기운 음식 (energy_food)\n\n두 사람의 공통 보완 기운: ${builtEnergyFood.energy_food.element}.\n추천 음식(고정 — 변경 금지): ${builtEnergyFood.energy_food.foods.join(', ')}.\n근거: ${builtEnergyFood.energy_food.reason}\n\n위 음식만 사용해 따뜻하게 권하는 한 문장을 energy_food.copy 에 작성하세요(60자 이내).\n다른 음식명·실제 장소·지명·한자는 절대 넣지 마세요.`;
+  const systemPrompt = `${prompt.content}\n\n${ragSection}\n\n${energyFoodSection}`;
 
   // 9. LLM 호출 + grounding 검증 (최대 1회 재시도)
   const callDeps = {
@@ -322,6 +333,17 @@ export async function buildHapcardWithMeta(
     }
   }
 
+  // 9.5 기운 음식 copy 가드 — LLM copy 가 유효하면 사용, 아니면 결정형 폴백(throw 아님, §5/ADR-038).
+  //     음식·원소·근거·meeting_vibe 는 항상 서버 결정형.
+  const llmFoodCopy = llmResult.output.energy_food?.copy;
+  const energyFood = {
+    ...builtEnergyFood.energy_food,
+    copy:
+      llmFoodCopy && validateEnergyFoodCopy(llmFoodCopy).valid
+        ? llmFoodCopy
+        : builtEnergyFood.energy_food.copy,
+  };
+
   // 10. LLM classic_citation 형식 → HapcardResult.content.classic_citation 형식 변환
   const content: HapcardResult['content'] = {
     main_text: llmResult.output.main_text,
@@ -339,6 +361,8 @@ export async function buildHapcardWithMeta(
       relation: datedCharts.relation,
       mode: input.mode,
     }),
+    energy_food: energyFood,
+    meeting_vibe: builtEnergyFood.meeting_vibe,
   };
 
   // 11. INSERT → HapcardResult 반환
