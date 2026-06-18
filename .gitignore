@@ -28,6 +28,10 @@ build/
 .env.production.local
 .vercel
 
+# Apps-in-Toss mTLS 클라이언트 인증서 (시크릿 — 절대 커밋 금지, 배포 시 env(PEM)로 주입)
+mTLS_*.zip
+*인증서*.zip
+
 # IDE
 .vscode/
 .idea/
