@@ -83,3 +83,27 @@ documented ±1 error near lunar new year (solar-year subtraction).
 
 **References:** `docs/specs/manseryeok_theory.md` §6 (algorithms + checklist),
 `compatibility_scoring_spec.md` (non-interference cross-ref), prompts v0.15 line.
+
+---
+
+## Amendment — 2026-06-18: 기운 케어 (energy_food / meeting_vibe) 보조 추천층
+
+**Status:** Accepted (brainstorming → writing-plans → 9-phase TDD).  
+**Decider:** batisututu. **Spec:** `docs/superpowers/specs/2026-06-18-energy-food-date-package-design.md`.
+
+케미카드에 **"기운 음식"(energy_food, 전 6모드)** + **"만남 분위기"(meeting_vibe, 첫합·썸합 한정)** 보조 추천 콘텐츠를 추가한다. 이 층은 ADR-040 본문 원칙(파생 결정형·점수 무개입·환각 가드·§5)을 그대로 따르며 다음을 명문화한다:
+
+1. **공통 보완 원소 = 결정형 파생.** `src/lib/saju/pair-complement.ts` 가 두 사람 `derived.ohaeng_weighted` 를 합산해 가장 약한 원소를 고른다(중화 분기 `yongsin.ts` 미러, tie-break `목화토금수`). 1000-run 결정성 의무. **점수 무개입**(ADR-035 불변). yongsin-겹침 2차 tie-break 은 명리 specialist 검수로 **연기(잠정)** — 본문 §6.7 신강약·용신 잠정과 동일 지위.
+2. **오행→음식 매핑 = 잠금 자산.** `src/lib/hapcard/element-food-map.ts`(고전 오행-맛 + 큐레이션 음식 + `MEETING_VIBE_ARCHETYPE`). RAG classics 와 동일하게 **명리 specialist 검수 대상**(`review_status: ai_pending_human`).
+3. **음식 선택은 서버, 문구만 LLM.** `energy_food`의 element/foods/reason 은 서버 결정형(`buildEnergyFood`). LLM 은 `energy_food.copy`(한 문장) 만 윤문한다. 출력 스키마는 optional + `.catch(undefined)` fail-soft — 누락/형식오류 시 결정형 폴백, 전체 카드 파싱 불파손.
+4. **이름 제약 가드 = 폴백(throw 아님).** `validateEnergyFoodCopy` 가 LLM copy 의 실제 지명(§5)·한자(ADR-038)·banned-phrase 를 검사해 위반 시 결정형 copy 로 폴백한다. RAG `GROUNDING_FAILED` 와 달리 하드 실패하지 않는다.
+5. **§5 위치 데이터 0.** `meeting_vibe` 는 추상 분위기 아키타입만(실제 지명·상호 절대 금지) — 위치 데이터가 시스템에 존재하지 않으므로 LLM 미관여 결정형으로 생성. energy_food copy 는 지명 가드로 이중 방어.
+6. **Cache-coupling(본문 §5 규칙 확장).** energy_food 는 `deriveCacheKey` 에 미포함(차트+프롬프트의 순수 함수). element-food-map **내용 변경 시 프롬프트 버전 범프 필수** — 그렇지 않으면 캐시된 카드가 옛 음식을 계속 서빙한다.
+7. **롤아웃 현실.** `seed-prompts` 는 active·canary 를 **같은 본문**으로 시드한다(canary = 라우팅 검증 전용, 콘텐츠 A/B 아님). 따라서 프롬프트 v0.18 승격 시 LLM 윤문은 ~100% 노출되며(가드+폴백 보호), canary 5% 콘텐츠 게이팅은 불가. 결정형 energy_food 는 builder 주입으로 프롬프트 버전과 무관하게 100% 노출.
+8. **UI = additive(ADR-016 컴포넌트 7).** ExpandPanel "기운 케어" 탭. 잠금된 1~6 컴포넌트 불변, 위에 얹음.
+
+**스케일 caveat:** `pairComplementForCharts` 는 한 쌍 안에서 스케일 혼용을 금지한다 — 한쪽이라도 `ohaeng_weighted` 해소(derived→deriveSaju) 실패 시 양쪽을 `five_elements_counts`(표면 카운트)로 통일. weighted/표면 스케일 차이로 보완 원소가 달라질 수 있으며, 이는 잠정 산식의 일부로 문서화한다.
+
+**Files:** `src/lib/saju/pair-complement.ts` · `src/lib/hapcard/element-food-map.ts` · `src/lib/hapcard/energy-food.ts` · `src/lib/llm/output-schema.ts`(EnergyFoodLlmSchema) · `src/types/hapcard.ts`(EnergyFood/MeetingVibe) · `src/lib/hapcard/builder.ts`(주입+가드+폴백) · `src/components/hapcard/energy-care.tsx` · `prompts/system/*.md`(v0.18/v0.19).
+
+**§사용자 수동(deploy):** `pnpm seed:prompts` → v0.18 active / v0.19 canary 6모드. **검수 대기:** 공통 보완 원소 규칙 + element-food-map 자산(명리 specialist).
