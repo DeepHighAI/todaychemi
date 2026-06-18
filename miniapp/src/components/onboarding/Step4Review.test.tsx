@@ -8,6 +8,7 @@ import { renderWithProviders } from '@/test/render';
 const { mockLogin } = vi.hoisted(() => ({ mockLogin: vi.fn().mockResolvedValue(undefined) }));
 const { mockReset } = vi.hoisted(() => ({ mockReset: vi.fn() }));
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+const { mockInvalidate } = vi.hoisted(() => ({ mockInvalidate: vi.fn().mockResolvedValue(undefined) }));
 
 vi.mock('@/lib/auth/AuthProvider', () => ({
   useAuth: () => ({ token: 'tok', isAuthed: true, isLoading: false, login: mockLogin, logout: vi.fn() }),
@@ -34,6 +35,12 @@ vi.mock('react-router-dom', async (importOriginal) => {
 vi.mock('@/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/client')>();
   return { ...actual, apiFetch: vi.fn() };
+});
+
+// useQueryClient 만 스텁(invalidate 호출 검증). QueryClientProvider 등 나머지는 실제 유지.
+vi.mock('@tanstack/react-query', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+  return { ...actual, useQueryClient: () => ({ invalidateQueries: mockInvalidate }) };
 });
 
 import { Step4Review } from './Step4Review';
@@ -84,6 +91,13 @@ describe('Step4Review — 제출 흐름', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/'));
     expect(mockReset).toHaveBeenCalled();
     expect(onSubmitSuccess).toHaveBeenCalled();
+  });
+
+  it('성공 시 ["me-chart"] 쿼리를 무효화한다(ProfileGate 재튕김 방지)', async () => {
+    renderWithProviders(<Step4Review onSubmitSuccess={vi.fn()} />);
+    await checkAllConsents();
+    await userEvent.click(screen.getByRole('button', { name: '시작하기' }));
+    await waitFor(() => expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['me-chart'] }));
   });
 
   it('consent POST 의 body 는 terms/privacy/age 모두 true 다', async () => {

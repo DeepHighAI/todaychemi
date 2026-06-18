@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { AiDisclosureNotice } from '@/components/ai-disclosure/ai-disclosure-notice';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -39,6 +40,7 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
   const t = useTranslations('onboarding');
   const navigate = useNavigate();
   const { token, login } = useAuth();
+  const queryClient = useQueryClient();
   const draft = useOnboardingDraft();
 
   const [submitting, setSubmitting] = useState(false);
@@ -92,6 +94,13 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
 
       // 2) 온보딩 저장 — 위 동의가 선행돼야 LEGAL_CONSENT_REQUIRED(403) 를 피한다.
       await apiFetch('/api/onboarding', { method: 'POST', token, body });
+
+      // 3) 새 프로필 반영 — ProfileGate 가 갱신된 chart 를 보고 홈 입장을 허용하도록 캐시 무효화.
+      //    ['me-chart'] 는 await — navigate 시점에 stale-null 로 남아 방금 끝낸 온보딩으로
+      //    다시 튕기는 레이스를 막는다. today/relations 는 fire-and-forget.
+      await queryClient.invalidateQueries({ queryKey: ['me-chart'] });
+      void queryClient.invalidateQueries({ queryKey: ['today'] });
+      void queryClient.invalidateQueries({ queryKey: ['relations'] });
 
       // 성공 — draft 초기화 후 홈으로
       draft.reset();

@@ -18,6 +18,7 @@ import { parseSchemeToPath } from '../lib/deeplink/parse-scheme';
 //  딥링크 화면을 벗어나려 할 때 다시 끌려가는 버그 방지.)
 let coldStartDeeplinkHandled = false;
 import { AppShell } from '../components/shell/AppShell';
+import { ProfileGate } from './ProfileGate';
 import { FeedPage } from './pages/FeedPage';
 import { HapcardPage } from './pages/HapcardPage';
 import { HomePage } from './pages/HomePage';
@@ -76,10 +77,17 @@ const router = createHashRouter([
       </>
     ),
     children: [
-      { path: '/',                        element: <HomePage /> },
-      { path: '/feed',                    element: <FeedPage /> },
-      { path: '/feed/:relationId',        element: <RelationDetailPage /> },
-      { path: '/me',                      element: <MePage /> },
+      {
+        // 프로필 강제 게이트 — chart 없는 로그인 사용자는 온보딩으로(§1.1).
+        // pathless layout route: 온보딩(탭바 없는 그룹)은 게이트 밖이라 루프 없음.
+        element: <ProfileGate />,
+        children: [
+          { path: '/',                    element: <HomePage /> },
+          { path: '/feed',                element: <FeedPage /> },
+          { path: '/feed/:relationId',    element: <RelationDetailPage /> },
+          { path: '/me',                  element: <MePage /> },
+        ],
+      },
     ],
   },
   {

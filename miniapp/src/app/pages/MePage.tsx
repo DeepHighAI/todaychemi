@@ -22,6 +22,7 @@ import { useTranslations } from 'next-intl';
 
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useMeChart } from '@/lib/me/use-me-chart';
 
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -47,7 +48,6 @@ import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
 import YunseCard from '@/components/me/yunse-card';
 
-import type { ChartCore } from '@/types/chart';
 import type { WalletResponse } from '@/types/wallet';
 
 // ---------------------------------------------------------------------------
@@ -60,14 +60,8 @@ export function MePage() {
   const queryClient = useQueryClient();
   const { token, logout } = useAuth();
 
-  // chart 데이터 조회
-  const { data: chart, isLoading, isError, refetch } = useQuery({
-    queryKey: ['me-chart'],
-    queryFn: () =>
-      apiFetch<{ ok: boolean; chart: ChartCore | null }>('/api/me/chart', { token }).then(
-        (r) => r.chart ?? null,
-      ),
-  });
+  // chart 데이터 조회 — ProfileGate·HomePage 와 ['me-chart'] 캐시 공유.
+  const { data: chart, isLoading, isError, refetch } = useMeChart(token);
 
   // 부적 지갑 조회 (chart 가 있을 때만)
   const { data: wallet } = useQuery({

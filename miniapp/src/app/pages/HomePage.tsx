@@ -30,6 +30,7 @@ import { Plus, ChevronRight, Lock } from 'lucide-react';
 
 import { apiFetch } from '../../lib/api/client';
 import { useAuth } from '../../lib/auth/AuthProvider';
+import { useMeChart } from '../../lib/me/use-me-chart';
 import { todayKST } from '../../lib/today/kst-date';
 import { formatTodayTemperature } from '../../lib/scoring/temperature';
 
@@ -73,14 +74,6 @@ function markHomeIntroSeen(date: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// API 응답 타입 (최소 shape)
-// ---------------------------------------------------------------------------
-
-interface ChartMinimal {
-  day_pillar: string;
-}
-
-// ---------------------------------------------------------------------------
 // 날짜 포맷
 // ---------------------------------------------------------------------------
 
@@ -120,20 +113,10 @@ export function HomePage() {
   });
 
   // -------------------------------------------------------------------------
-  // 쿼리 — GET /api/me/chart
+  // 쿼리 — GET /api/me/chart (ProfileGate 와 ['me-chart'] 캐시 공유)
   // -------------------------------------------------------------------------
 
-  const chartQuery = useQuery({
-    queryKey: ['me-chart'],
-    queryFn: async (): Promise<ChartMinimal | null> => {
-      try {
-        const res = await apiFetch<{ ok: boolean; chart: ChartMinimal | null }>('/api/me/chart', { token });
-        return res.chart ?? null;
-      } catch {
-        return null;
-      }
-    },
-  });
+  const chartQuery = useMeChart(token);
 
   // -------------------------------------------------------------------------
   // 쿼리 — GET /api/relations
@@ -176,17 +159,9 @@ export function HomePage() {
   const [confirmDelete, setConfirmDelete] = useState<FeedListItem | null>(null);
   const [introOpen, setIntroOpen] = useState(false);
 
-  // -------------------------------------------------------------------------
-  // UNAUTHORIZED → /onboarding 리다이렉트
-  // -------------------------------------------------------------------------
-
-  const todayErrorMsg = (todayQuery.error as Error | null)?.message;
-
-  useEffect(() => {
-    if (todayQuery.isError && todayErrorMsg === 'UNAUTHORIZED') {
-      navigate('/onboarding', { replace: true });
-    }
-  }, [todayQuery.isError, todayErrorMsg, navigate]);
+  // 인증(미로그인)은 AuthProvider 자동 로그인 + AuthRetryGate 가, 프로필 미등록은
+  // ProfileGate 가 전담한다. 따라서 홈에서 today 401 을 직접 리다이렉트하지 않는다.
+  // (구 코드는 ApiError.message 를 'UNAUTHORIZED' 와 비교해 사실상 미발화하던 죽은 코드.)
 
   // -------------------------------------------------------------------------
   // 환영 팝업 — 하루 1회 (localStorage 기반)
@@ -207,7 +182,7 @@ export function HomePage() {
   // 파생 값
   // -------------------------------------------------------------------------
 
-  const showFallbackToday = todayQuery.isError && todayErrorMsg !== 'UNAUTHORIZED';
+  const showFallbackToday = todayQuery.isError;
   const fallbackCard: DailyHapCard = {
     headline: t('fallback.headline'),
     headline_reason: t('fallback.headline_reason'),
