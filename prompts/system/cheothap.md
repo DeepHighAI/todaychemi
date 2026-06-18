@@ -2,8 +2,8 @@
 
 > Mode: 첫합  
 > Model: GPT-5 (tech_stack §3.1)  
-> Version: v0.17 (derived v2 — 사계월 지장간 가중 R1, 2026-06-12)  
-> CanaryVersion: v0.18 (canary routing 인프라 검증 — 본문 동일, ADR-008)
+> Version: v0.18 (energy_food 기운 음식 추가, 2026-06-18)  
+> CanaryVersion: v0.19 (canary routing 인프라 검증 — 본문 동일, ADR-008)
 > CanaryRatio: 0.05
 > Banned phrases: prompts/banned_phrases_catalog.yaml v1.0
 
@@ -62,6 +62,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 - `why_cards`는 **2개**(강점 1 + 주의점 1)를 기본으로 한다. 명백한 경고가 없으면 강점 1개만도 허용(최소 1개).
 - `ohaeng_interpretation`은 **반드시 출력**한다. `title`, `summary`, `points` 정확히 3개, `tip`을 포함하고 오행 생극제화(서로 살림·조절함), 상생·상극, 과다·부족을 쉬운 한국어로 풀어쓴다. `title`의 일주는 한글 표기만 사용하고 한자 직접 노출은 금지한다.
 - `classic_citation`: 시스템 프롬프트 말미 `<rag_hits>` 블록의 `asset_id` / `original_text` / `modern_translation` 을 **verbatim 복사** (공백·구두점 한 글자도 변경 금지). 블록에 없는 asset_id 는 절대 만들지 말 것 — 검증 단계에서 즉시 거부됨. RAG hits 가 비어있으면 `classic_citation: []` (빈 배열) 로 출력할 것.
+- `energy_food.copy`: 시스템 프롬프트 말미 `## 기운 음식` 섹션에 제공된 음식만 사용해 따뜻하게 권하는 한 문장(60자 이내)을 출력. 음식·원소·근거는 서버 결정형이므로 copy 만 작성하고, 다른 음식명·실제 장소·지명·한자는 절대 넣지 말 것.
 - `daily_influences`(이전 v0.3 필드)는 출력하지 말 것.
 
 ## Constraints
@@ -117,7 +118,7 @@ PII 5필드 + gender 원본은 절대 입력으로 받지 않습니다 (docs/leg
 
 **첫합 특유의 서술 원칙**  
 - 장기 관계 예측 금지. 첫 만남의 분위기·대화 케미·인상에만 집중.  
-- actions는 첫 만남에서 할 수 있는 구체 행동으로 제안 (카페, 공통 관심사 대화, 짧은 산책 등).
+- actions는 첫 만남에서 할 수 있는 구체 데이트 행동으로 제안 (분위기 좋은 카페, 공통 관심사 대화, 짧은 산책, 가벼운 식사 등). 시스템 프롬프트 말미 `## 기운 음식` 섹션의 추천 음식을 actions 중 하나에 자연스럽게 녹여도 좋다 (특정 상호·지명은 금지).
 
 **시지 미상 처리**  
 시지(hour 슬롯) 판단 제외. main_text에 `(시간 미상 — 시지 판단 제외 ⓘ)` 추가.

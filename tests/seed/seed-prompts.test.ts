@@ -21,12 +21,12 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('active: 6모드 v0.17 + today_with_relation v0.5 + daily_hap v0.5', () => {
+  it('active: 6모드 v0.18 + today_with_relation v0.5 + daily_hap v0.5', () => {
     const active = loadPromptFiles(dir).filter((r) => r.status === 'active');
     expect(active).toHaveLength(8);
     for (const row of active) {
       if (HAPCARD_MODE_NAMES.has(row.prompt_name)) {
-        expect(row.version, `${row.prompt_name} active version`).toBe('v0.17');
+        expect(row.version, `${row.prompt_name} active version`).toBe('v0.18');
       } else if (row.prompt_name === 'today_with_relation') {
         expect(row.version).toBe('v0.5');
       } else if (row.prompt_name === 'daily_hap') {
@@ -35,13 +35,13 @@ describe('loadPromptFiles', () => {
     }
   });
 
-  it('canary: 6모드 v0.18 + today_with_relation v0.6 (daily_hap canary 없음)', () => {
+  it('canary: 6모드 v0.19 + today_with_relation v0.6 (daily_hap canary 없음)', () => {
     const canary = loadPromptFiles(dir).filter((r) => r.status === 'canary');
     expect(canary).toHaveLength(7);
     for (const row of canary) {
       expect(row.canary_ratio).toBe(0.05);
       if (HAPCARD_MODE_NAMES.has(row.prompt_name)) {
-        expect(row.version, `${row.prompt_name} canary version`).toBe('v0.18');
+        expect(row.version, `${row.prompt_name} canary version`).toBe('v0.19');
       } else if (row.prompt_name === 'today_with_relation') {
         expect(row.version).toBe('v0.6');
       }
