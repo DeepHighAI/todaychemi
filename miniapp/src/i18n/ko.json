@@ -701,8 +701,6 @@
       "refundSub": "결제·환불 안내",
       "deleteAccount": "계정 삭제 요청",
       "deleteAccountSub": "30일 후 영구 삭제",
-      "about": "회사소개",
-      "aboutSub": "(주) 딥하이",
       "logout": "로그아웃",
       "logoutSub": "현재 계정에서 나가기",
       "logoutConfirmTitle": "정말 로그아웃 하시겠습니까?",

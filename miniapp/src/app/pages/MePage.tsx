@@ -7,7 +7,8 @@
  *   - useRouter(next) → useNavigate(react-router-dom)
  *   - fetch → apiFetch + useAuth 토큰
  *   - ThemeToggle → 제거 (미니앱: 시스템 다크모드 자동, 토글 없음)
- *   - AboutDialog / LangSheet → 제거 (미니앱 채널 — 언어 KO 고정, 회사소개 외부링크)
+ *   - AboutDialog / 회사소개 외부링크 → 제거 (앱인토스 외부링크 정책: 자사 웹사이트·홍보 랜딩 제한)
+ *   - LangSheet → 제거 (미니앱 채널 — 언어 KO 고정)
  *   - Dialog (shadcn/ui 기반) → miniapp/src/components/ui/dialog (base-ui 포트)
  *   - next-intl useTranslations → 유지 (provider 마운트됨)
  *   - Tailwind → 인라인 스타일
@@ -48,17 +49,6 @@ import YunseCard from '@/components/me/yunse-card';
 
 import type { ChartCore } from '@/types/chart';
 import type { WalletResponse } from '@/types/wallet';
-
-// ---------------------------------------------------------------------------
-// 헬퍼 — 법적 문서 링크 (앱인토스 채널: 외부 링크는 앱 정책상 브라우저로 열어야 함)
-// ---------------------------------------------------------------------------
-
-/** 외부 링크를 네이티브 브라우저로 여는 헬퍼 */
-function openExternal(url: string) {
-  // 앱인토스 WebView: window.open 또는 location.href 모두 내부 WebView에서 열림.
-  // 외부 브라우저가 필요하면 openExternalBrowser() SDK API 사용 (TODO P5).
-  window.open(url, '_blank', 'noopener');
-}
 
 // ---------------------------------------------------------------------------
 // MePage
@@ -196,7 +186,6 @@ export function MePage() {
         onPrivacy={() => navigate('/legal/privacy')}
         onTerms={() => navigate('/legal/terms')}
         onRefund={() => navigate('/legal/refund')}
-        onAbout={() => openExternal('https://deephalabs.com')}
         onLang={() => {
           // 미니앱: 언어 KO 고정 — 추후 다국어 지원 시 시트로 교체 (TODO P5)
         }}
