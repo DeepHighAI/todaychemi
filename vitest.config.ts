@@ -39,11 +39,14 @@ export default defineConfig({
     // fail before assertions run, so keep enough parallelism without saturating
     // child-process startup.
     maxWorkers: 4,
-    // Claude agent worktrees 는 자체 테스트 파일을 포함하므로 메인 repo
-    // vitest 발견에서 제외. configDefaults.exclude 보존 의무.
+    // Claude agent worktrees 와 미니앱(앱인토스 SPA)은 자체 테스트 파일·vitest 설정을
+    // 가진 독립 프로젝트이므로 메인 repo vitest 발견에서 제외한다.
+    // (미니앱은 `cd miniapp && pnpm test` 로 자체 jsdom/alias/의존성 하에 검증.)
+    // configDefaults.exclude 보존 의무.
     exclude: [
       ...configDefaults.exclude,
       '.claude/worktrees/**',
+      'miniapp/**',
       'tests/e2e/**',
       ...(includeIntegrationTests ? [] : ['**/*.integration.test.ts']),
     ],
