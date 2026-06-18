@@ -18,6 +18,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { apiFetch } from '@/lib/api/client';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
@@ -42,40 +43,9 @@ interface Props {
 
 type State = 'idle' | 'loading' | 'success' | 'error' | 'pay_required';
 
-// API 기본 URL (client.ts 와 동일 패턴)
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-
-/** 웹앱 { error: { code, message } } 봉투 파싱 래퍼 */
+/** 케미 다시 맞추기 호출 — apiFetch(중첩 { error:{code,message} } 봉투 + 402 payment 파싱). */
 async function postReplay(hapcardId: string, token: string | null): Promise<HapcardResult> {
-  const res = await fetch(`${API_BASE}/api/hapcards/${hapcardId}/replay`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as {
-      error?: { code?: string; message?: string } | string;
-      ref?: string;
-      amount_krw?: number;
-    };
-    const nested = typeof body.error === 'object' ? body.error : null;
-    const code = nested?.code ?? (typeof body.error === 'string' ? body.error : 'INTERNAL_ERROR');
-    throw Object.assign(new Error(code), {
-      status: res.status,
-      code,
-      ref: body.ref,
-      amount_krw: body.amount_krw,
-    });
-  }
-  return res.json() as Promise<HapcardResult>;
-}
-
-// 402 응답에서 결제 ref 추출
-function getPaymentRef(e: unknown): string | null {
-  const ref = (e as { ref?: unknown })?.ref;
-  return typeof ref === 'string' && ref.length > 0 ? ref : null;
+  return apiFetch<HapcardResult>(`/api/hapcards/${hapcardId}/replay`, { method: 'POST', token });
 }
 
 export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }: Props) {
@@ -120,12 +90,14 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       }, 1500);
     },
     onError: (err: unknown) => {
-      const e = err as { status?: number; code?: string; ref?: string };
-      // 402 PAYMENT_REQUIRED — Toss IAP 시트 연결
+      const e = err as {
+        status?: number;
+        code?: string;
+        payment?: { feature: string; ref: string; amount_krw: number };
+      };
+      // 402 PAYMENT_REQUIRED — Toss IAP 시트 연결 (apiFetch 가 .payment 를 채움)
       if (e.status === 402 || e.code === 'PAYMENT_REQUIRED') {
-        const ref = getPaymentRef(e);
-        const amount = (e as { amount_krw?: number }).amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay;
-        setPayInfo(ref ? { feature: 'replay', ref, amount_krw: amount } : null);
+        setPayInfo(e.payment ?? null);
         setState('pay_required');
         return;
       }

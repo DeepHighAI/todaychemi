@@ -45,7 +45,7 @@ export function App() {
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         {/* Bearer 토큰 세션 — iOS WebView Storage SDK 기반 */}
         <AuthProvider>
-          {/* HashRouter + 모든 페이지 stub */}
+          {/* HashRouter + 페이지 라우트 */}
           <AppRouter />
         </AuthProvider>
       </NextIntlClientProvider>

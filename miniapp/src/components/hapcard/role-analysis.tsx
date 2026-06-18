@@ -2,11 +2,12 @@
  * role-analysis.tsx — 역할 분석 (미니앱 포트)
  *
  * 웹앱 원본: src/components/hapcard/role-analysis.tsx
- * 변경: Tailwind → 인라인 스타일, 'use client' 제거, fetch → VITE_API_BASE_URL.
+ * 변경: Tailwind → 인라인 스타일, 'use client' 제거, fetch → apiFetch.
  */
 
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { apiFetch } from '@/lib/api/client';
 import type { RoleAnalysis } from '@/types/hapcard';
 
 interface HapcardRoleAnalysisProps {
@@ -17,13 +18,10 @@ interface HapcardRoleAnalysisProps {
 }
 
 async function fetchRoleAnalysis(hapcardId: string, token?: string | null): Promise<RoleAnalysis> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-  const res = await fetch(`${base}/api/hapcards/${hapcardId}/role-analysis`, { headers });
-  if (!res.ok) throw new Error('ROLE_ANALYSIS_FETCH_FAILED');
-  const body = await res.json() as { analysis?: RoleAnalysis };
+  const body = await apiFetch<{ analysis?: RoleAnalysis }>(
+    `/api/hapcards/${hapcardId}/role-analysis`,
+    { token },
+  );
   if (!body.analysis) throw new Error('ROLE_ANALYSIS_EMPTY');
   return body.analysis;
 }

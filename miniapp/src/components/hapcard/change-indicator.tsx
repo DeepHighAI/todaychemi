@@ -10,6 +10,7 @@
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
+import { apiFetch } from '@/lib/api/client';
 import { formatTemperatureDelta } from '@/lib/scoring/temperature';
 import type { HapcardChangeResponse } from '@/types/hapcard';
 
@@ -20,13 +21,7 @@ interface Props {
 }
 
 async function fetchChange(hapcardId: string, token?: string | null): Promise<HapcardChangeResponse> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-  const res = await fetch(`${base}/api/hapcards/${hapcardId}/change`, { headers });
-  if (!res.ok) throw new Error('change_fetch_failed');
-  return res.json() as Promise<HapcardChangeResponse>;
+  return apiFetch<HapcardChangeResponse>(`/api/hapcards/${hapcardId}/change`, { token });
 }
 
 // 부호 있는 원점수 표기 (요인 변화량)

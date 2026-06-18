@@ -6,16 +6,15 @@
  * 변경:
  *   - useParams / useSearchParams / useRouter (next/navigation) → react-router-dom
  *   - next/link <Link href> → <a> / navigate()
- *   - fetch('/api/...') → webFetch 래퍼 (중첩 { error: { code } } 봉투 파싱)
- *   - FeaturePaySheet → 402 시 인라인 안내(TODO P5 IAP)
+ *   - fetch('/api/...') → apiFetch (중첩 { error: { code, message } } 봉투 + 402 payment 파싱)
+ *   - FeaturePaySheet → 402 시 인라인 안내 + Toss IAP 시트(useFeaturePurchase)
  *   - trackEvent(ga) → 제거 (미니앱 GA 미연동)
  *   - Tailwind className → 인라인 스타일 + CSS 변수
  *   - 'use client' 제거
- *   - HapcardShare 제거 (공유는 Toss share() API; P4 별도 포팅 예정)
- *   - HapcardTimeline / HapcardChangeIndicator / HapcardOhaeng 등 미포팅 섹션은
- *     플레이스홀더 렌더 (기능 독립적 섹션, 별도 포팅 태스크)
+ *   - HapcardShare 제거 (공유는 Toss share() API — handleShare → shareHapcard)
  *
  * 케미 다시 맞추기(replay) 기능은 HapcardReplayButton 컴포넌트로 완전 구현됨.
+ * 펼침 패널 섹션(오행·근거·역할·흐름·변화)은 모두 포팅 완료.
  */
 
 import { useState, useEffect } from 'react';
@@ -25,6 +24,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, Trash2, Edit2, Check, Share2 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { apiFetch } from '@/lib/api/client';
 import { toEasyText } from '@/lib/glossary/easy-term-map';
 import { convertHanja } from '@/lib/glossary/post-process';
 import {
@@ -68,54 +68,17 @@ const RELATION_CHART_PENDING_CODES: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// API 함수
-//
-// NOTE: apiFetch 의 에러 파싱은 { error?: string } 를 가정하지만
-// 웹앱 API 는 { error: { code, message } } 중첩 구조를 반환한다.
-// 따라서 status 코드(ApiError.status) 로 1차 분류하고,
-// code 문자열은 중첩 body 를 직접 파싱하는 fetch 래퍼를 사용한다.
+// API 함수 — apiFetch 사용.
+// apiFetch 는 { error: { code, message } } 중첩 봉투를 ApiError(.status/.code)로 변환하고,
+// 402 PAYMENT_REQUIRED 시 .payment={ feature, ref, amount_krw } 를 채운다(IAP 시트용).
 // ---------------------------------------------------------------------------
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-
-/** 웹앱 { error: { code, message } } 봉투 + 최상위 ref/amount_krw 파싱 */
-async function webFetch<T>(
-  path: string,
-  options: { method?: string; body?: unknown; token?: string | null },
-): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: options.method ?? 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
-    },
-    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as {
-      error?: { code?: string; message?: string } | string;
-      ref?: string;
-      amount_krw?: number;
-    };
-    const nested = typeof body.error === 'object' ? body.error : null;
-    const code = nested?.code ?? (typeof body.error === 'string' ? body.error : 'INTERNAL_ERROR');
-    const err = Object.assign(new Error(code), {
-      status: res.status,
-      code,
-      ref: body.ref,
-      amount_krw: body.amount_krw,
-    });
-    throw err;
-  }
-  return res.json() as Promise<T>;
-}
 
 async function callHapcard(
   relationId: string,
   mode: string,
   token: string | null,
 ): Promise<HapcardResult> {
-  return webFetch<HapcardResult>('/api/hapcards', {
+  return apiFetch<HapcardResult>('/api/hapcards', {
     method: 'POST',
     token,
     body: {
@@ -127,14 +90,14 @@ async function callHapcard(
 }
 
 async function deleteRelation(id: string, token: string | null): Promise<void> {
-  await webFetch(`/api/relations/${id}`, { method: 'DELETE', token });
+  await apiFetch(`/api/relations/${id}`, { method: 'DELETE', token });
 }
 
 async function renameRelation(
   { id, nickname }: { id: string; nickname: string },
   token: string | null,
 ): Promise<{ relation: { nickname: string } }> {
-  return webFetch<{ relation: { nickname: string } }>(`/api/relations/${id}`, {
+  return apiFetch<{ relation: { nickname: string } }>(`/api/relations/${id}`, {
     method: 'PATCH',
     token,
     body: { nickname },
@@ -511,7 +474,7 @@ export function HapcardPage() {
     setMenuOpen(false);
     if (!id) return;
     try {
-      await shareHapcard(id);
+      await shareHapcard(id, token);
     } catch {
       // 사용자가 공유를 취소했거나 SDK 미지원 환경 — 별도 처리 없음.
     }

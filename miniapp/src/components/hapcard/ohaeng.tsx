@@ -3,13 +3,13 @@
  *
  * 웹앱 원본: src/components/hapcard/ohaeng.tsx
  * 변경: Tailwind → 인라인 스타일, 'use client' 제거, fetch → apiFetch.
- * apiFetch 는 Authorization 헤더를 자동 첨부하므로 token prop 불필요 (AuthProvider 에서 토큰 주입 불가 —
- * apiFetch 는 singleton base URL 래퍼라 훅에서 토큰 접근 불가. 이 컴포넌트는 인증 쿠키 없이 Bearer 필요 없는 읽기 전용 경로.
- * TODO(P5): HapcardView 에서 token 을 Context/prop 으로 전달해 apiFetch options 에 주입할 것.
+ * 해석 라우트는 인증이 필요하므로 token prop 을 apiFetch options 로 전달한다
+ * (HapcardPage → ExpandPanel 에서 주입).
  */
 
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/api/client';
 import type { OhaengInterpretation } from '@/types/hapcard';
 
 // 오행 요소 타입 (웹앱 src/lib/saju/elementLabel.ts 와 동일)
@@ -68,14 +68,10 @@ function ComparisonBar({ label, value, scaleMax, element, side }: ComparisonBarP
 }
 
 async function fetchOhaengInterpretation(hapcardId: string, token?: string | null): Promise<OhaengInterpretation> {
-  // apiFetch를 사용하지 않고 직접 fetch — 이 경로는 현재 Bearer 인증이 선택 사항
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-  const res = await fetch(`${base}/api/hapcards/${hapcardId}/ohaeng-interpretation`, { headers });
-  if (!res.ok) throw new Error('OHAENG_INTERPRETATION_FETCH_FAILED');
-  const body = await res.json() as { interpretation?: OhaengInterpretation };
+  const body = await apiFetch<{ interpretation?: OhaengInterpretation }>(
+    `/api/hapcards/${hapcardId}/ohaeng-interpretation`,
+    { token },
+  );
   if (!body.interpretation) throw new Error('OHAENG_INTERPRETATION_EMPTY');
   return body.interpretation;
 }

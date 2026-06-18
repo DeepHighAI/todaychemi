@@ -2,12 +2,13 @@
  * timeline.tsx — 합온도 7일 흐름 타임라인 (미니앱 포트)
  *
  * 웹앱 원본: src/components/hapcard/timeline.tsx
- * 변경: Tailwind → 인라인 스타일, 'use client' 제거, fetch → 직접 fetch + VITE_API_BASE_URL.
+ * 변경: Tailwind → 인라인 스타일, 'use client' 제거, fetch → apiFetch.
  * ADR-033/036: 7일 스냅샷 + scoring_version 경계 마커 유지.
  */
 
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/api/client';
 
 import {
   DETAILED_TEMPERATURE_PRECISION,
@@ -45,13 +46,7 @@ function findVersionBoundaryIndex(snapshots: HapcardSnapshotEntry[]): number | n
 }
 
 async function fetchSnapshots(hapcardId: string, token?: string | null): Promise<HapcardSnapshotsResponse> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://todaychemi.vercel.app';
-  const res = await fetch(`${base}/api/hapcards/${hapcardId}/snapshots`, { headers });
-  if (!res.ok) throw new Error('snapshots_fetch_failed');
-  return res.json() as Promise<HapcardSnapshotsResponse>;
+  return apiFetch<HapcardSnapshotsResponse>(`/api/hapcards/${hapcardId}/snapshots`, { token });
 }
 
 function formatShortDate(date: string): string {

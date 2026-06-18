@@ -7,13 +7,13 @@
  * - Auth: Authorization: Bearer <token> 헤더 자동 첨부
  * - 응답: JSON 파싱 + ApiError 던지기
  *
- * TODO(P4): 각 flow hook 에서 이 클라이언트를 사용해 실제 엔드포인트 연결.
+ * 모든 flow hook 이 이 클라이언트로 실제 엔드포인트를 호출한다.
  */
 
-// TODO(P4): .env.local 에 VITE_API_BASE_URL=https://todaychemi.vercel.app 추가
+// Base URL: VITE_API_BASE_URL 미설정 시 프로덕션 호스트로 폴백.
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  'https://todaychemi.vercel.app'; // TODO(P4): 프로덕션 URL 확정 시 교체
+  'https://todaychemi.vercel.app';
 
 // ---------------------------------------------------------------------------
 // 에러 타입
