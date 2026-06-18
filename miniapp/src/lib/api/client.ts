@@ -10,10 +10,26 @@
  * 모든 flow hook 이 이 클라이언트로 실제 엔드포인트를 호출한다.
  */
 
-// Base URL: VITE_API_BASE_URL 미설정 시 프로덕션 호스트로 폴백.
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  'https://todaychemi.vercel.app';
+const PROD_API_HOST = 'https://todaychemi.vercel.app';
+
+/**
+ * API base URL 을 결정한다.
+ *
+ * `VITE_API_BASE_URL` 이 명시되면 그것을 쓰고, **빈 문자열·미설정**이면:
+ *   - 프로덕션 빌드(.ait): 프로덕션 호스트로 폴백 (미니앱은 크로스오리진으로 웹 API 호출).
+ *   - dev(serve): 빈 base 유지 → 상대경로 `/api` → vite dev 프록시.
+ *
+ * `?? ` 가 아니라 빈문자도 거르는 분기를 쓴다 — `.env.local` 의 `VITE_API_BASE_URL=`(빈값)이
+ * 프로덕션 `.ait` 에 인라인돼 base 가 `''` 가 되면 로그인·API 가 미니앱 자기 오리진으로 가서
+ * 404 로 깨지기 때문(실기기 로그인 실패 근본원인).
+ */
+export function resolveApiBaseUrl(env: { VITE_API_BASE_URL?: string; PROD?: boolean }): string {
+  const explicit = env.VITE_API_BASE_URL?.trim();
+  if (explicit) return explicit;
+  return env.PROD ? PROD_API_HOST : '';
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(import.meta.env);
 
 // ---------------------------------------------------------------------------
 // 에러 타입

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, apiFetch } from './client';
+import { ApiError, apiFetch, resolveApiBaseUrl } from './client';
+
+const PROD_HOST = 'https://todaychemi.vercel.app';
 
 function mockFetchOnce(status: number, body: unknown) {
   vi.stubGlobal(
@@ -68,5 +70,28 @@ describe('apiFetch', () => {
 
     const [, init] = fetchSpy.mock.calls[0];
     expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer tok-123');
+  });
+});
+
+describe('resolveApiBaseUrl', () => {
+  it('명시값이 있으면 PROD 여부와 무관하게 그대로 사용', () => {
+    expect(resolveApiBaseUrl({ VITE_API_BASE_URL: 'https://x.example', PROD: true })).toBe('https://x.example');
+    expect(resolveApiBaseUrl({ VITE_API_BASE_URL: 'https://x.example', PROD: false })).toBe('https://x.example');
+  });
+
+  it('빈 문자열 + PROD → 프로덕션 호스트 (실기기 로그인 실패 회귀 차단)', () => {
+    expect(resolveApiBaseUrl({ VITE_API_BASE_URL: '', PROD: true })).toBe(PROD_HOST);
+  });
+
+  it('미설정 + PROD → 프로덕션 호스트', () => {
+    expect(resolveApiBaseUrl({ PROD: true })).toBe(PROD_HOST);
+  });
+
+  it('빈 문자열 + dev → 빈 base (상대경로 → vite 프록시)', () => {
+    expect(resolveApiBaseUrl({ VITE_API_BASE_URL: '', PROD: false })).toBe('');
+  });
+
+  it('공백만 있는 값 → trim 후 PROD 폴백', () => {
+    expect(resolveApiBaseUrl({ VITE_API_BASE_URL: '   ', PROD: true })).toBe(PROD_HOST);
   });
 });

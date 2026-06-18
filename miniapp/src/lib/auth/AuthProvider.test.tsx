@@ -38,6 +38,8 @@ beforeEach(() => {
   vi.stubEnv('VITE_DEV_BEARER', '');
   mockStorageGet.mockResolvedValue(null);
   setNative(false);
+  // 실패 진단 로그를 조용히 캡처(콘솔 노이즈 방지 + 호출 단언).
+  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -95,6 +97,9 @@ describe('AuthProvider — 자동 로그인', () => {
 
     expect(await screen.findByText('로그인에 실패했어요')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
+    // 실패 원인을 게이트에 보조 노출 + 콘솔에 기록(삼키지 않음).
+    expect(await screen.findByText('원인: appLogin failed')).toBeInTheDocument();
+    expect(console.error).toHaveBeenCalled();
   });
 
   it('비-네이티브(웹 프리뷰) → appLogin 미발화, 자식 렌더', async () => {

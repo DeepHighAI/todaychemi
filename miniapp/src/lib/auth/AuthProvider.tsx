@@ -26,6 +26,7 @@ import {
   useState,
 } from 'react';
 import { appLogin } from '@apps-in-toss/web-framework';
+import { API_BASE_URL } from '@/lib/api/client';
 import { clearToken, getToken, isNativeTossEnv, setToken } from './toss-session';
 
 // ---------------------------------------------------------------------------
@@ -64,9 +65,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   // 자동 로그인 실패 상태 — 컨텍스트에 노출하지 않고 Provider 자체 재시도 게이트에만 사용.
   const [authError, setAuthError] = useState(false);
+  // 실패 원인(에러 코드/메시지) — 재시도 게이트에 보조 노출해 실기기 진단을 돕는다.
+  const [authErrorDetail, setAuthErrorDetail] = useState<string | null>(null);
 
   const login = useCallback(async () => {
     setAuthError(false);
+    setAuthErrorDetail(null);
     // dev 오버라이드: dev(serve) 빌드 한정. 프로덕션(.ait)에서는 DEV=false → 미사용·미인라인.
     const devBearer = import.meta.env.DEV
       ? (import.meta.env.VITE_DEV_BEARER as string | undefined)
@@ -80,8 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 실제 Toss 로그인 흐름
     const { authorizationCode, referrer } = await appLogin();
 
-    const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
-    const res = await fetch(`${apiBase}/api/toss/login`, {
+    const res = await fetch(`${API_BASE_URL}/api/toss/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ authorizationCode, referrer }),
@@ -119,7 +122,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (isNativeTossEnv()) {
           await login();
         }
-      } catch {
+      } catch (err) {
+        // 에러를 삼키지 않고 콘솔 + 게이트 detail 로 표면화(실기기 진단).
+        console.error('[auth] auto-login failed', err);
+        setAuthErrorDetail((err as Error)?.message ?? null);
         setAuthError(true);
       } finally {
         setIsLoading(false);
@@ -139,10 +145,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   if (!isLoading && authError && token === null && isNativeTossEnv()) {
     return (
       <AuthRetryGate
+        detail={authErrorDetail}
         onRetry={() => {
           setIsLoading(true);
           login()
-            .catch(() => setAuthError(true))
+            .catch((err) => {
+              console.error('[auth] retry login failed', err);
+              setAuthErrorDetail((err as Error)?.message ?? null);
+              setAuthError(true);
+            })
             .finally(() => setIsLoading(false));
         }}
       />
@@ -162,7 +173,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 // 자동 로그인 실패 재시도 게이트 (Provider 전용 — 컨텍스트 불필요)
 // ---------------------------------------------------------------------------
 
-function AuthRetryGate({ onRetry }: { onRetry: () => void }) {
+function AuthRetryGate({ onRetry, detail }: { onRetry: () => void; detail?: string | null }) {
   return (
     <main
       style={{
@@ -183,6 +194,11 @@ function AuthRetryGate({ onRetry }: { onRetry: () => void }) {
       <p style={{ font: 'var(--t-sub)', color: 'var(--muted-foreground)', margin: 0 }}>
         잠시 후 다시 시도해 주세요.
       </p>
+      {detail && (
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0, opacity: 0.7 }}>
+          원인: {detail}
+        </p>
+      )}
       <button
         type="button"
         onClick={onRetry}
