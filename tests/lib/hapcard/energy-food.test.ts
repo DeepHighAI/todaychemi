@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { ELEMENT_FOOD_MAP } from '@/lib/hapcard/element-food-map';
-import { allowedFoodsFor, buildEnergyFood } from '@/lib/hapcard/energy-food';
+import {
+  allowedFoodsFor,
+  buildEnergyFood,
+  validateEnergyFoodCopy,
+} from '@/lib/hapcard/energy-food';
 import type { Element5 } from '@/lib/saju/ganji';
 
 import { mockChartCoreSelf, mockChartCoreRelation } from '../../fixtures/hapcard';
@@ -86,5 +90,30 @@ describe('allowedFoodsFor — 가드용 허용 음식 목록', () => {
     for (const element of ALL) {
       expect(allowedFoodsFor(element)).toEqual(ELEMENT_FOOD_MAP[element].foods);
     }
+  });
+});
+
+describe('validateEnergyFoodCopy — LLM 윤문 가드', () => {
+  it('정상 한글 문구는 통과한다', () => {
+    expect(validateEnergyFoodCopy('함께 매실차 한 잔 어때요?')).toEqual({ valid: true });
+  });
+
+  it('ADR-038: 한자가 있으면 차단한다', () => {
+    const result = validateEnergyFoodCopy('함께 茶 한 잔 어때요?');
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.reason).toBe('CONTAINS_HANJA');
+  });
+
+  it('§5: 실제 지명이 있으면 차단한다', () => {
+    const result = validateEnergyFoodCopy('강남에서 매실차 한 잔 어때요?');
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.reason).toBe('PLACE_NAME');
+  });
+
+  it('banned-phrases(의료 단정)는 catalog 제공 시 차단한다', () => {
+    const catalog = [{ category: 'health_medical', description: '', phrases: ['병이 낫는다'] }];
+    const result = validateEnergyFoodCopy('이 음식을 먹으면 병이 낫는다', catalog);
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.reason).toBe('BANNED_PHRASE');
   });
 });

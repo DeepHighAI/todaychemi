@@ -3,6 +3,11 @@
 // 이 빌더 결과로 폴백한다(ohaeng-interpretation.ts 패턴). allowedFoodsFor 는 이름 제약 가드의 출처.
 // ADR-015 명리 근거 동반. ADR-038 한자 0. §5 만남 분위기는 추상 atmosphere(첫합·썸합 전용).
 
+import {
+  containsClassicalHanja,
+  findBannedPhrase,
+  type BannedPhraseCategory,
+} from '@/lib/llm/banned-phrases';
 import { type Element5 } from '@/lib/saju/ganji';
 import { pairComplementForCharts } from '@/lib/saju/pair-complement';
 import type { ChartCore } from '@/types/chart';
@@ -47,4 +52,44 @@ export function buildEnergyFood(input: BuildEnergyFoodInput): BuiltEnergyFood {
   }
 
   return { energy_food };
+}
+
+// 이름 제약 가드 — LLM 윤문 copy 검증. 실패 시 builder 가 결정형 copy 로 폴백(throw 아님).
+// §5(실제 지명·상호 차단) + ADR-038(한자) + banned-phrases(의료 단정 등) 방어.
+export type EnergyFoodCopyReason = 'CONTAINS_HANJA' | 'PLACE_NAME' | 'BANNED_PHRASE';
+export type EnergyFoodCopyCheck =
+  | { valid: true }
+  | { valid: false; reason: EnergyFoodCopyReason; detail: string };
+
+// 휴리스틱 블록리스트(방어심층) — 핵심 차단은 프롬프트 가드 + 서버 소유 음식. 명백한 지명만.
+const PLACE_NAME_TOKENS = [
+  '스타벅스',
+  '강남',
+  '홍대',
+  '명동',
+  '이태원',
+  '신촌',
+  '성수',
+  '잠실',
+  '판교',
+  '분당',
+];
+
+export function validateEnergyFoodCopy(
+  copy: string,
+  bannedCatalog?: BannedPhraseCategory[],
+): EnergyFoodCopyCheck {
+  const hanja = containsClassicalHanja(copy);
+  if (hanja.found) return { valid: false, reason: 'CONTAINS_HANJA', detail: hanja.phrase };
+
+  for (const token of PLACE_NAME_TOKENS) {
+    if (copy.includes(token)) return { valid: false, reason: 'PLACE_NAME', detail: token };
+  }
+
+  if (bannedCatalog) {
+    const banned = findBannedPhrase(copy, bannedCatalog);
+    if (banned.found) return { valid: false, reason: 'BANNED_PHRASE', detail: banned.phrase };
+  }
+
+  return { valid: true };
 }
