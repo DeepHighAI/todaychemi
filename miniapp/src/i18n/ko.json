@@ -110,12 +110,25 @@
       "label": "개인정보 처리방침에 동의합니다",
       "requiredError": "동의가 필요해요"
     },
+    "consent": {
+      "title": "필수 동의",
+      "termsLabel": "이용약관",
+      "privacyLabel": "개인정보처리방침",
+      "agreeSuffix": "에 동의합니다",
+      "age": "만 14세 이상입니다",
+      "required": "(필수)",
+      "view": "보기",
+      "close": "닫기",
+      "docDescription": "약관·정책 전문을 확인할 수 있어요."
+    },
     "errors": {
       "nicknameRequired": "별명을 입력해주세요.",
       "dobRequired": "생년월일을 입력해주세요.",
       "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
       "genderRequired": "성별을 선택해주세요.",
-      "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요."
+      "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "session": "세션이 만료되었어요. 다시 시도해 주세요.",
+      "consent": "약관 동의가 필요해요. 다시 시도해 주세요."
     },
     "submitting": "저장 중...",
     "submit": "시작하기",

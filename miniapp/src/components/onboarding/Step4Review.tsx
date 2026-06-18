@@ -16,8 +16,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
 import { AiDisclosureNotice } from '@/components/ai-disclosure/ai-disclosure-notice';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { apiFetch } from '@/lib/api/client';
+import { apiFetch, ApiError } from '@/lib/api/client';
 import { useOnboardingDraft } from '@/lib/onboarding/draft-store';
+import { LegalConsentBlock, type LegalDocSlug } from '@/components/legal/legal-consent-block';
+import { LegalDocSheet } from '@/components/legal/legal-doc-sheet';
 
 interface OnboardingRequest {
   nickname: string;
@@ -36,11 +38,16 @@ interface Step4ReviewProps {
 export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
   const t = useTranslations('onboarding');
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, login } = useAuth();
   const draft = useOnboardingDraft();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 필수 동의(약관·개인정보·연령) + 문서 보기 시트
+  const [consent, setConsent] = useState({ terms: false, privacy: false, age: false });
+  const [docSlug, setDocSlug] = useState<LegalDocSlug | null>(null);
+
+  const allAgreed = consent.terms && consent.privacy && consent.age;
 
   const { nickname, birthDate, calendar, knowledge, birthTime, gender } = draft;
 
@@ -76,18 +83,33 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
         gender: gender as 'M' | 'F',
       };
 
-      await apiFetch('/api/onboarding', {
+      // 1) 법적 동의 기록(Bearer, flow='toss') — 미니앱은 쿠키 불가, /api/toss/consent 사용.
+      await apiFetch('/api/toss/consent', {
         method: 'POST',
         token,
-        body,
+        body: { terms: true, privacy: true, age: true },
       });
+
+      // 2) 온보딩 저장 — 위 동의가 선행돼야 LEGAL_CONSENT_REQUIRED(403) 를 피한다.
+      await apiFetch('/api/onboarding', { method: 'POST', token, body });
 
       // 성공 — draft 초기화 후 홈으로
       draft.reset();
       onSubmitSuccess();
       navigate('/');
-    } catch {
-      setError(t('errors.generic'));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        // 세션 만료 — Toss 재로그인 유도 후 재시도 가능하게 버튼 재활성.
+        // 재로그인 자체가 실패하면(드묾) 거부를 삼키지 않고 복구 가능한 안내로 폴백한다
+        // (stale token 으로 무한 수동 재시도에 갇히는 것 방지).
+        setError(t('errors.session'));
+        void login().catch(() => setError(t('errors.generic')));
+      } else if (err instanceof ApiError && err.status === 403) {
+        // 동의 미기록(방어적) — 동의 안내.
+        setError(t('errors.consent'));
+      } else {
+        setError(t('errors.generic'));
+      }
       setSubmitting(false);
     }
   }
@@ -161,6 +183,21 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
         {t('privacy')}
       </p>
 
+      {/* 필수 동의 (약관·개인정보·연령) — 제출 게이트 */}
+      <LegalConsentBlock
+        value={consent}
+        onChange={setConsent}
+        disabled={submitting}
+        onViewDocument={setDocSlug}
+      />
+      <LegalDocSheet
+        slug={docSlug}
+        open={docSlug !== null}
+        onOpenChange={(open) => {
+          if (!open) setDocSlug(null);
+        }}
+      />
+
       {/* 에러 메시지 */}
       {error && (
         <p
@@ -193,7 +230,7 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
       >
         <button
           type="button"
-          disabled={submitting}
+          disabled={submitting || !allAgreed}
           onClick={handleSubmit}
           style={{
             height: 48,
@@ -205,9 +242,9 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
             fontWeight: 700,
             fontSize: 16,
             border: 'none',
-            backgroundColor: submitting ? 'var(--muted)' : 'var(--primary)',
-            color: submitting ? 'var(--muted-foreground)' : 'var(--primary-foreground)',
-            cursor: submitting ? 'not-allowed' : 'pointer',
+            backgroundColor: submitting || !allAgreed ? 'var(--muted)' : 'var(--primary)',
+            color: submitting || !allAgreed ? 'var(--muted-foreground)' : 'var(--primary-foreground)',
+            cursor: submitting || !allAgreed ? 'not-allowed' : 'pointer',
           }}
         >
           {submitting ? t('submitting') : t('submit')}
