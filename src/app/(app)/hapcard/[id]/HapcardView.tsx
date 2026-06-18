@@ -7,7 +7,7 @@
  * After:
  *   메인: Liquid Glass hero(점수+결론+영역바) + 강점/주의 2분할 + CTA
  *   ⋯ 메뉴: 별명 수정 / 공유 / 인연 삭제 (확인 다이얼로그)
- *   "펼침" panel: 요약 · 오행 · 근거 · 영역 · 흐름 5탭
+ *   "펼침" panel: 요약 · 오행 · 근거 · 영역 · 흐름 · 기운 케어 6탭
  */
 
 import Link from 'next/link';
@@ -461,7 +461,7 @@ export default function HapcardView() {
           {expandOpen ? t('expand.collapse') : t('expand.cta')}
         </button>
 
-        {/* ── 인라인 펼침 panel: 5탭 ── */}
+        {/* ── 인라인 펼침 panel: 6탭 ── */}
         {expandOpen && (
           <ExpandPanel
             data={data}
@@ -579,7 +579,7 @@ export default function HapcardView() {
   );
 }
 
-/* ── 인라인 펼침 panel — 5개 탭 안에 기존 컴포넌트 재사용 ── */
+/* ── 인라인 펼침 panel — 6개 탭 안에 기존 컴포넌트 재사용 ── */
 function ExpandPanel({
   data, mode, tab, onTab, easyMode, onToggleEasyMode,
 }: {

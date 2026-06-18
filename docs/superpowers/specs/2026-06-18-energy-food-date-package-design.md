@@ -45,7 +45,7 @@
 
 **공통 보완 원소** — 신규 `src/lib/saju/pair-complement.ts` (cross.ts 비대화 방지, role-analysis/ohaeng-interpretation 결정형 패턴 차용):
 - 입력: self + relation 각각의 `derived.ohaeng_weighted`(ADR-040 파생층, `src/types/chart.ts`).
-- 규칙(잠정): 두 분포를 합산해 **가장 약한 원소** = 둘 다 보완되는 기운. 동률 시 `derived.yongsin` 겹침으로 tie-break, 그래도 동률이면 상생 우선순위 고정.
+- 규칙(잠정): 두 분포를 합산해 **가장 약한 원소** = 둘 다 보완되는 기운. 동률 시 **고정 순서 `목화토금수`** tie-break(구현 정정 — `derived.yongsin` 겹침·상생 2차 tie-break 은 명리 specialist 검수로 **연기(잠정)**, ADR-040 Amend §1 + `pair-complement.ts` 주석과 일치).
 - 100% 결정형(LLM/Date/random 없음). 1000회 동일 입력 = 동일 출력 테스트(ADR-040 의무).
 - **명리 검수 전 잠정** — ADR-040 §6.7 "신강약·용신 룰 잠정"과 동일 지위.
 
