@@ -231,4 +231,36 @@ describe('POST /api/toss/login', () => {
       expect(body.error.code).toBe('INTERNAL_ERROR');
     });
   });
+
+  describe('진단 로깅', () => {
+    it('실패 시 어느 단계(stage)에서 깨졌는지 콘솔에 기록한다', async () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // exchangeAuthCode 가 첫 await → stage='token_exchange'
+      vi.mocked(exchangeAuthCode).mockImplementation(() => throwTossApiError('invalid_grant'));
+
+      await POST(makeRequest({ authorizationCode: 'expired', referrer: 'DEFAULT' }));
+
+      expect(spy).toHaveBeenCalledWith(
+        '[POST /api/toss/login]',
+        expect.objectContaining({ stage: 'token_exchange', kind: 'toss_api_error', errorCode: 'invalid_grant' }),
+      );
+      spy.mockRestore();
+    });
+
+    it('mint 단계 실패 시 stage=mint_session, 로그에 authorizationCode(PII) 미포함', async () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const SECRET = 'auth-code-MUST-NOT-LEAK-xyz';
+      vi.mocked(findOrCreateSupabaseUserForTossUserKey).mockRejectedValue(new Error('mint failed'));
+
+      await POST(makeRequest({ authorizationCode: SECRET, referrer: 'DEFAULT' }));
+
+      expect(spy).toHaveBeenCalledWith(
+        '[POST /api/toss/login]',
+        expect.objectContaining({ stage: 'mint_session' }),
+      );
+      // 인가 코드는 절대 로그에 남기지 않는다(§5 PII/ZDR).
+      expect(JSON.stringify(spy.mock.calls)).not.toContain(SECRET);
+      spy.mockRestore();
+    });
+  });
 });

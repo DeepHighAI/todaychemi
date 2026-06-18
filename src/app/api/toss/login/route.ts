@@ -24,6 +24,7 @@ import { NextResponse } from 'next/server';
 import { exchangeAuthCode, fetchLoginMe } from '@/lib/toss/login';
 import { findOrCreateSupabaseUserForTossUserKey } from '@/lib/toss/session';
 import { apiErrorResponse } from '@/lib/errors/route-response';
+import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
 // ---------------------------------------------------------------------------
 // 요청 스키마
@@ -50,15 +51,20 @@ export async function POST(request: Request) {
 
   const { authorizationCode, referrer } = parsed.data;
 
+  // 실패 단계 마커 — Vercel 로그에서 mTLS/토스API/Supabase 중 어디서 깨졌는지 식별용.
+  let stage: 'token_exchange' | 'fetch_user_key' | 'mint_session' = 'token_exchange';
+
   try {
     // ── 2. Toss 토큰 교환 (mTLS) ─────────────────────────────────────────
     const tossToken = await exchangeAuthCode({ authorizationCode, referrer });
 
     // ── 3. userKey 조회 (mTLS) ──────────────────────────────────────────
+    stage = 'fetch_user_key';
     const loginMe = await fetchLoginMe(tossToken.accessToken);
     const { userKey } = loginMe; // PII 필드는 접근하지 않는다
 
     // ── 4. Supabase 세션 민팅 ────────────────────────────────────────────
+    stage = 'mint_session';
     const session = await findOrCreateSupabaseUserForTossUserKey(userKey);
 
     // ── 5. 미니앱에 세션 반환 ────────────────────────────────────────────
@@ -70,6 +76,15 @@ export async function POST(request: Request) {
   } catch (err) {
     // Toss API 에러 구조체 판별
     const tossErr = err as { kind?: string; errorCode?: string };
+
+    // 진단 로깅 — PII(authorizationCode/userKey/email) 금지(§5). sanitize 거친 메시지만.
+    console.error('[POST /api/toss/login]', {
+      stage,
+      kind: tossErr.kind,
+      errorCode: tossErr.errorCode,
+      error: sanitizeErrorForLog(err),
+    });
+
     if (tossErr.kind === 'toss_api_error') {
       const code = tossErr.errorCode ?? 'TOSS_API_ERROR';
 
