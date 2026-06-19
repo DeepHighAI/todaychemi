@@ -344,7 +344,7 @@ describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('whatif');
     expect(body.ref).toBe(WHATIF_RESULT.cache_key);
-    expect(body.amount_krw).toBe(400);
+    expect(body.amount_krw).toBe(440);
     expect(buildWhatif).toHaveBeenCalledOnce(); // 선생성
     expect(rpcFn).not.toHaveBeenCalled();
   });
@@ -391,7 +391,7 @@ describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
     expect(res.status).toBe(422);
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: USER_ID,
-      delta: 8,
+      delta: 9,
       reason: 'whatif_refund',
       ref: WHATIF_RESULT.cache_key,
     });
@@ -406,7 +406,7 @@ describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
     expect(res.status).toBe(500);
     expect(rpcFn).toHaveBeenCalledWith('refund_tokens_once', {
       uid: USER_ID,
-      delta: 8,
+      delta: 9,
       reason: 'whatif_refund',
       ref: WHATIF_RESULT.cache_key,
     });
@@ -501,6 +501,6 @@ describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
     const body = await res.json();
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('whatif');
-    expect(body.amount_krw).toBe(400);
+    expect(body.amount_krw).toBe(440);
   });
 });

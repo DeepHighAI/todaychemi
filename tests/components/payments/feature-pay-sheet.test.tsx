@@ -30,8 +30,8 @@ const PAYMENT = {
   order_id: 'twoday_feat_1',
   customer_key: 'cust_feat_1',
   client_key: 'test_gck_feat',
-  list_amount_krw: 1000,
-  amount_krw: 500,
+  list_amount_krw: 1100,
+  amount_krw: 550,
   discount_label: '오픈초기 50% 할인',
   order_name: '케미카드 보기',
   feature: 'hapcard',
@@ -89,7 +89,7 @@ describe('FeaturePaySheet', () => {
     await waitFor(() =>
       expect(trackEvent).toHaveBeenCalledWith({
         name: 'begin_checkout',
-        params: { feature_id: 'hapcard', value: 500, currency: 'KRW' },
+        params: { feature_id: 'hapcard', value: 550, currency: 'KRW' },
       }),
     );
   });
@@ -112,10 +112,10 @@ describe('FeaturePaySheet', () => {
     renderWithProviders(<FeaturePaySheet {...baseProps} />);
 
     await waitFor(() => expect(toss.loadTossPayments).toHaveBeenCalledWith('test_gck_feat'));
-    expect(toss.setAmount).toHaveBeenCalledWith({ value: 500, currency: 'KRW' });
+    expect(toss.setAmount).toHaveBeenCalledWith({ value: 550, currency: 'KRW' });
     expect(screen.getByText('오픈초기 50% 할인')).toBeInTheDocument();
-    expect(screen.getByText('₩500')).toBeInTheDocument();
-    expect(screen.getByText('₩1,000')).toBeInTheDocument();
+    expect(screen.getByText('₩550')).toBeInTheDocument();
+    expect(screen.getByText('₩1,100')).toBeInTheDocument();
     expect(toss.renderPaymentMethods).toHaveBeenCalledWith({
       selector: '#feature-payment-methods',
       variantKey: 'DEFAULT',
@@ -155,8 +155,8 @@ describe('FeaturePaySheet', () => {
         ...PAYMENT,
         feature: 'replay',
         order_name: '케미 다시 맞추기',
-        list_amount_krw: 600,
-        amount_krw: 300,
+        list_amount_krw: 880,
+        amount_krw: 440,
         ref: 'replay:hap-1:2026-06-02',
       },
     });

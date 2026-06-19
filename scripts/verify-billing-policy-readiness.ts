@@ -57,17 +57,17 @@ function main() {
   addResult(
     results,
     'feature price catalog matches pay-per-use prices (list + opening discount charge)',
-    FEATURE_PRICES_KRW.hapcard.list_amount_krw === 1000 &&
-      FEATURE_PRICES_KRW.whatif.list_amount_krw === 800 &&
-      FEATURE_PRICES_KRW.replay.list_amount_krw === 600 &&
-      FEATURE_PRICES_KRW.relation_slot.list_amount_krw === 1000 &&
+    FEATURE_PRICES_KRW.hapcard.list_amount_krw === 1100 &&
+      FEATURE_PRICES_KRW.whatif.list_amount_krw === 880 &&
+      FEATURE_PRICES_KRW.replay.list_amount_krw === 880 &&
+      FEATURE_PRICES_KRW.relation_slot.list_amount_krw === 1100 &&
       OPENING_DISCOUNT_PERCENT === 50 &&
-      FEATURE_PRICES_KRW.hapcard.amount_krw === 500 &&
-      FEATURE_PRICES_KRW.whatif.amount_krw === 400 &&
-      FEATURE_PRICES_KRW.replay.amount_krw === 300 &&
-      FEATURE_PRICES_KRW.relation_slot.amount_krw === 500 &&
+      FEATURE_PRICES_KRW.hapcard.amount_krw === 550 &&
+      FEATURE_PRICES_KRW.whatif.amount_krw === 440 &&
+      FEATURE_PRICES_KRW.replay.amount_krw === 440 &&
+      FEATURE_PRICES_KRW.relation_slot.amount_krw === 550 &&
       FREE_RELATION_SLOTS === 2,
-    'list 1000/800/600/1000, opening -50% → charge 500/400/300/500 KRW, free slots 2',
+    'list 1100/880/880/1100, opening -50% → charge 550/440/440/550 KRW, free slots 2',
   );
 
   addResult(
@@ -176,7 +176,7 @@ function main() {
   console.log('');
   console.log('Pay-per-use billing policy (ADR-039):');
   console.log('- Token-bundle purchase removed; paid features charge at point of use.');
-  console.log('- List prices: 1000/800/600/1000 KRW; opening -50% charge: 500/400/300/500 KRW (feature-prices.ts single source).');
+  console.log('- List prices: 1100/880/880/1100 KRW; opening -50% charge: 550/440/440/550 KRW (feature-prices.ts single source).');
   console.log('- Free 부적 path refunds on build failure; cash path withholds body until paid.');
   console.log('- Relations: first 2 free, 3rd+ charges relation_slot via staged pending drafts.');
 

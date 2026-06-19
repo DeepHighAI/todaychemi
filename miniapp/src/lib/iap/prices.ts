@@ -8,9 +8,10 @@ import type { IapFeature } from './sku';
 // 웹앱 단일 출처 src/lib/payments/feature-prices.ts 의 amount_krw(오픈초기 50% 할인 적용가)와
 // 동일하게 유지한다 — 웹·미니앱 가격 통일(ADR-039). 웹 단일 출처가 바뀌면 여기와 콘솔 SKU 도 갱신.
 // (§1.3 TODO: 빌드시 웹 출처에서 파생하는 방법 검토.)
+// 2026-06-19 §1.1 개정: 정가 1,100/880/880/1,100 → 오픈초기 50% 할인가.
 export const IAP_DISPLAY_PRICE_KRW: Record<IapFeature, number> = {
-  hapcard: 500,
-  whatif: 400,
-  replay: 300,
-  relation_slot: 500,
+  hapcard: 550,
+  whatif: 440,
+  replay: 440,
+  relation_slot: 550,
 };

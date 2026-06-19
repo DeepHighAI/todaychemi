@@ -388,7 +388,7 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     expect(body.error.code).toBe('PAYMENT_REQUIRED');
     expect(body.feature).toBe('relation_slot');
     expect(body.ref).toBe('relation_slot:pend-new-001');
-    expect(body.amount_krw).toBe(500);
+    expect(body.amount_krw).toBe(550);
     expect(materializeRelationSlot).not.toHaveBeenCalled();
     expect(client._insert).not.toHaveBeenCalled();
   });
@@ -428,7 +428,7 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     expect(res.status).toBe(500);
     expect(svc.rpc).toHaveBeenCalledWith('refund_tokens_once', {
       uid: 'user-uuid-001',
-      delta: 10,
+      delta: 11,
       reason: 'relation_slot_refund',
       ref: 'relation_slot:pend-new-001',
     });
@@ -681,7 +681,7 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     expect(body.feature).toBe('relation_slot');
     expect(localService.rpc).toHaveBeenCalledWith(
       'deduct_tokens_once',
-      expect.objectContaining({ reason: 'relation_slot_use', delta: -10 }),
+      expect.objectContaining({ reason: 'relation_slot_use', delta: -11 }),
     );
   });
 });

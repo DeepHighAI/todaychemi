@@ -10,27 +10,27 @@ import {
 } from '@/lib/payments/feature-prices';
 
 describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
-  it('오픈초기 50% 할인 현금가: 케미카드 500 / 또 다른 나 400 / 케미 다시 맞추기 300 / 인연 등록 500', () => {
+  it('오픈초기 50% 할인 현금가: 케미카드 550 / 또 다른 나 440 / 케미 다시 맞추기 440 / 인연 등록 550', () => {
     expect(OPENING_DISCOUNT_PERCENT).toBe(50);
     expect(OPENING_DISCOUNT_LABEL).toBe('오픈초기 50% 할인');
-    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(500);
-    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(400);
-    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(300);
-    expect(FEATURE_PRICES_KRW.relation_slot.amount_krw).toBe(500);
+    expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(550);
+    expect(FEATURE_PRICES_KRW.whatif.amount_krw).toBe(440);
+    expect(FEATURE_PRICES_KRW.replay.amount_krw).toBe(440);
+    expect(FEATURE_PRICES_KRW.relation_slot.amount_krw).toBe(550);
   });
 
   it('정가 기준 금액은 결제창 원가 표시용으로 보존한다', () => {
-    expect(FEATURE_PRICES_KRW.hapcard.list_amount_krw).toBe(1000);
-    expect(FEATURE_PRICES_KRW.whatif.list_amount_krw).toBe(800);
-    expect(FEATURE_PRICES_KRW.replay.list_amount_krw).toBe(600);
-    expect(FEATURE_PRICES_KRW.relation_slot.list_amount_krw).toBe(1000);
+    expect(FEATURE_PRICES_KRW.hapcard.list_amount_krw).toBe(1100);
+    expect(FEATURE_PRICES_KRW.whatif.list_amount_krw).toBe(880);
+    expect(FEATURE_PRICES_KRW.replay.list_amount_krw).toBe(880);
+    expect(FEATURE_PRICES_KRW.relation_slot.list_amount_krw).toBe(1100);
   });
 
-  it('token_cost 는 1부적 = 100원 등가 (10 / 8 / 6 / 10)', () => {
-    expect(FEATURE_PRICES_KRW.hapcard.token_cost).toBe(10);
-    expect(FEATURE_PRICES_KRW.whatif.token_cost).toBe(8);
-    expect(FEATURE_PRICES_KRW.replay.token_cost).toBe(6);
-    expect(FEATURE_PRICES_KRW.relation_slot.token_cost).toBe(10);
+  it('token_cost 는 1부적 ≈ 100원 등가 (11 / 9 / 9 / 11)', () => {
+    expect(FEATURE_PRICES_KRW.hapcard.token_cost).toBe(11);
+    expect(FEATURE_PRICES_KRW.whatif.token_cost).toBe(9);
+    expect(FEATURE_PRICES_KRW.replay.token_cost).toBe(9);
+    expect(FEATURE_PRICES_KRW.relation_slot.token_cost).toBe(11);
   });
 
   it('각 항목은 자기 feature_id 와 비어있지 않은 order_name 을 가진다', () => {

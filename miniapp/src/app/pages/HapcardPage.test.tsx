@@ -46,7 +46,7 @@ function mockFetch402() {
           error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
           feature: 'hapcard',
           ref: 'cache-key-abc',
-          amount_krw: 500,
+          amount_krw: 550,
         }),
     } as Response),
   );
@@ -75,7 +75,7 @@ describe('HapcardPage 402 결제 흐름', () => {
     await screen.findByRole('checkbox');
 
     // 고지가는 서버 제공 실청구액(오픈 할인가 ₩500)을 표시해야 한다 — 하드코딩 ₩1,000 아님.
-    expect(screen.getByText(/₩500이 필요해요/)).toBeInTheDocument();
+    expect(screen.getByText(/₩550이 필요해요/)).toBeInTheDocument();
 
     const payButton = screen.getByRole('button', { name: /결제하기/ });
     // 동의 전: 비활성

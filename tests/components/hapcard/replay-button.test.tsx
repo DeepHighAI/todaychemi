@@ -152,7 +152,7 @@ describe('HapcardReplayButton — error paths', () => {
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'replay',
         ref: 'replay:h1:2026-06-02',
-        amount_krw: 300,
+        amount_krw: 440,
       }),
     } as Response);
 
@@ -173,7 +173,7 @@ describe('HapcardReplayButton — error paths', () => {
           error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
           feature: 'replay',
           ref: 'replay:h1:2026-06-07',
-          amount_krw: 300,
+          amount_krw: 440,
         }),
       } as Response)
       .mockResolvedValueOnce({
@@ -186,8 +186,8 @@ describe('HapcardReplayButton — error paths', () => {
             order_id: 'twoday_replay_1',
             customer_key: 'cust_replay_1',
             client_key: 'test_client_key',
-            list_amount_krw: 600,
-            amount_krw: 300,
+            list_amount_krw: 880,
+            amount_krw: 440,
             discount_label: '오픈초기 50% 할인',
             order_name: '케미 다시 맞추기',
             feature: 'replay',
@@ -220,7 +220,7 @@ describe('HapcardReplayButton — error paths', () => {
       json: async () => ({
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'replay',
-        amount_krw: 300,
+        amount_krw: 440,
       }),
     } as Response);
 

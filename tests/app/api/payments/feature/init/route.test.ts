@@ -104,22 +104,22 @@ describe('POST /api/payments/feature/init', () => {
         charge_type: 'feature_use',
         feature_id: 'hapcard',
         feature_ref: REF,
-        amount_krw: 500,
+        amount_krw: 550,
         token_amount: null,
         product_id: null,
         status: 'pending',
       }),
     );
     expect(body.unlocked).toBe(false);
-    expect(body.payment.list_amount_krw).toBe(1000);
-    expect(body.payment.amount_krw).toBe(500);
+    expect(body.payment.list_amount_krw).toBe(1100);
+    expect(body.payment.amount_krw).toBe(550);
     expect(body.payment.discount_label).toBe('오픈초기 50% 할인');
     expect(body.payment.order_name).toBe('케미카드 보기');
     expect(body.payment.client_key).toBe('test_gck_abc');
     expect(body.payment.order_id).toBe('twoday_1_abcdef');
   });
 
-  it('relation_slot 신규 주문 — 인연 등록 오픈초기 500원 pending 주문 생성(201)', async () => {
+  it('relation_slot 신규 주문 — 인연 등록 오픈초기 550원 pending 주문 생성(201)', async () => {
     const service = makeServiceClient();
     vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
     vi.mocked(createServiceRoleClient).mockReturnValue(service.client);
@@ -133,7 +133,7 @@ describe('POST /api/payments/feature/init', () => {
         charge_type: 'feature_use',
         feature_id: 'relation_slot',
         feature_ref: 'relation_slot:pend-1',
-        amount_krw: 500,
+        amount_krw: 550,
         token_amount: null,
         status: 'pending',
       }),
@@ -149,7 +149,7 @@ describe('POST /api/payments/feature/init', () => {
     await POST(request({ feature: 'whatif', ref: REF, amount_krw: 1 }));
 
     expect(service.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ feature_id: 'whatif', amount_krw: 400 }),
+      expect.objectContaining({ feature_id: 'whatif', amount_krw: 440 }),
     );
   });
 
@@ -172,7 +172,7 @@ describe('POST /api/payments/feature/init', () => {
         status: 'pending',
         toss_order_id: 'twoday_old',
         toss_customer_key: 'customer_old',
-        amount_krw: 500,
+        amount_krw: 550,
       },
     });
     vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
@@ -195,7 +195,7 @@ describe('POST /api/payments/feature/init', () => {
         status: 'pending',
         toss_order_id: 'twoday_old',
         toss_customer_key: 'customer_old',
-        amount_krw: 1000,
+        amount_krw: 1100,
       },
     });
     vi.mocked(createClient).mockResolvedValue(makeServerClient() as never);
@@ -206,8 +206,8 @@ describe('POST /api/payments/feature/init', () => {
 
     expect(res.status).toBe(201);
     expect(body.payment.order_id).toBe('twoday_old');
-    expect(body.payment.amount_krw).toBe(500);
-    expect(service.update).toHaveBeenCalledWith({ amount_krw: 500 });
+    expect(body.payment.amount_krw).toBe(550);
+    expect(service.update).toHaveBeenCalledWith({ amount_krw: 550 });
   });
 
   it('알 수 없는 feature → 400', async () => {

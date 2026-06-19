@@ -44,7 +44,7 @@ describe('HapcardView 402 결제 처리', () => {
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'hapcard',
         ref: 'cache-abc',
-        amount_krw: 500,
+        amount_krw: 550,
       }),
     });
 
@@ -63,7 +63,7 @@ describe('HapcardView 402 결제 처리', () => {
       json: async () => ({
         error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
         feature: 'hapcard',
-        amount_krw: 500,
+        amount_krw: 550,
       }),
     });
 
