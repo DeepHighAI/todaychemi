@@ -17,7 +17,7 @@
  * Pay-per-use 402 분기는 HapcardPage 에서 처리 (피드는 메타데이터만).
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { Fragment, useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/SwipeRow';
+import { AdBanner } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
@@ -537,8 +538,9 @@ export function FeedPage() {
       {/* 인연 리스트 — swipe-to-delete */}
       {rest.length > 0 && (
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rest.map((item) => (
-            <li key={item.relation_id}>
+          {rest.map((item, i) => (
+            <Fragment key={item.relation_id}>
+            <li>
               {selectionMode ? (
                 <button
                   type="button"
@@ -558,6 +560,13 @@ export function FeedPage() {
                 </SwipeRow>
               )}
             </li>
+            {/* 인앱 광고 배너 — 목록 중간 4개마다 1개 (항목 4). 선택 모드에서는 숨김. */}
+            {!selectionMode && (i + 1) % 4 === 0 && i < rest.length - 1 && (
+              <li aria-label="광고">
+                <AdBanner />
+              </li>
+            )}
+            </Fragment>
           ))}
         </ul>
       )}

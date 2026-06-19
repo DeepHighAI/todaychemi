@@ -22,7 +22,7 @@
  *  - DELETE /api/relations/:id
  */
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -42,6 +42,7 @@ import { AvoidActionCards } from '../../components/today/avoid-action-cards';
 import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
+import { AdBanner } from '../../components/ads/ad-banner';
 
 import type { DailyHapCard } from '../../types/dailyHap';
 import type { FeedListItem, RelationChipItem } from '../../types/relation';
@@ -358,8 +359,9 @@ export function HomePage() {
             </Link>
           </div>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 0, margin: 0, listStyle: 'none' }}>
-            {topRelations.map((r) => (
-              <li key={r.relation_id}>
+            {topRelations.map((r, i) => (
+              <Fragment key={r.relation_id}>
+              <li>
                 <SwipeRow
                   onDelete={() => setConfirmDelete(r)}
                   onClick={() => {
@@ -417,6 +419,13 @@ export function HomePage() {
                   </div>
                 </SwipeRow>
               </li>
+              {/* 인앱 광고 배너 — 목록 중간 3개마다 1개 (항목 4) */}
+              {(i + 1) % 3 === 0 && i < topRelations.length - 1 && (
+                <li aria-label="광고">
+                  <AdBanner />
+                </li>
+              )}
+              </Fragment>
             ))}
           </ul>
         </section>

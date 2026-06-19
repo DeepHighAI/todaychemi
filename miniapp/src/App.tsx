@@ -35,6 +35,8 @@ const queryClient = new QueryClient({
 // ---------------------------------------------------------------------------
 
 export function App() {
+  // 인앱 광고 SDK 초기화는 AdBanner 가 컴포넌트별로 수행한다(SDK 중복 초기화 자동 무시).
+  // 앱 레벨 선초기화는 두지 않는다 — 단일 초기화 경로로 onInitialized 콜백 누락 위험 제거.
   return (
     <QueryClientProvider client={queryClient}>
       {/*
