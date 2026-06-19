@@ -32,7 +32,20 @@ export async function createClient() {
     // 라우트는 getUser()(인자 없음)를 호출한다. 쿠키 세션이 없으면 null 이 되므로,
     // 인자 없는 호출을 Bearer 토큰 검증(getUser(token))으로 위임한다.
     const getUser = client.auth.getUser.bind(client.auth);
-    client.auth.getUser = ((jwt?: string) => getUser(jwt ?? bearer)) as typeof client.auth.getUser;
+    client.auth.getUser = (async (jwt?: string) => {
+      const result = await getUser(jwt ?? bearer);
+      // 진단: getUser 실패 원인을 식별(만료 vs 서명 vs apikey)한다. 미니앱 만료 토큰 401 의
+      // 근본 원인 추적용 — 토큰·PII 는 절대 로그하지 않는다(status/code/sanitized message 만).
+      if (result.error) {
+        const authError = result.error as { status?: number; code?: string };
+        console.warn('[supabase] bearer getUser failed', {
+          status: authError.status,
+          code: authError.code,
+          error: sanitizeErrorForLog(result.error),
+        });
+      }
+      return result;
+    }) as typeof client.auth.getUser;
     return client;
   }
 
