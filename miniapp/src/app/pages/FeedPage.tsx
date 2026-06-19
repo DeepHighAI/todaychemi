@@ -25,7 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SwipeRow } from '@/components/layout/SwipeRow';
-import { AdBanner } from '@/components/ads/ad-banner';
+import { AdBanner, isAdSlotAvailable } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
@@ -560,8 +560,8 @@ export function FeedPage() {
                 </SwipeRow>
               )}
             </li>
-            {/* 인앱 광고 배너 — 목록 중간 4개마다 1개 (항목 4). 선택 모드에서는 숨김. */}
-            {!selectionMode && (i + 1) % 4 === 0 && i < rest.length - 1 && (
+            {/* 인앱 광고 배너 — 목록 중간 4개마다 1개 (항목 4). 선택 모드·광고 미지원/미설정 시 숨김. */}
+            {!selectionMode && (i + 1) % 4 === 0 && i < rest.length - 1 && isAdSlotAvailable() && (
               <li aria-label="광고">
                 <AdBanner />
               </li>

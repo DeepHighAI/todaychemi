@@ -8,10 +8,12 @@
  *   AppRouter             → HashRouter + 페이지들
  */
 
+import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { AuthProvider } from './lib/auth/AuthProvider';
 import { AppRouter } from './app/routes';
+import { ensureTossAdsInitialized } from './components/ads/ad-banner';
 import koMessages from './i18n/ko.json';
 
 // ---------------------------------------------------------------------------
@@ -35,8 +37,13 @@ const queryClient = new QueryClient({
 // ---------------------------------------------------------------------------
 
 export function App() {
-  // 인앱 광고 SDK 초기화는 AdBanner 가 컴포넌트별로 수행한다(SDK 중복 초기화 자동 무시).
-  // 앱 레벨 선초기화는 두지 않는다 — 단일 초기화 경로로 onInitialized 콜백 누락 위험 제거.
+  // 인앱 광고 SDK 는 앱 최상위에서 단 1회만 초기화한다(공식 BannerAd 문서 권장).
+  // 각 AdBanner 는 공유 ready 상태(useTossAdsReady)를 구독해 attach 한다 — 인스턴스별
+  // init + 자신의 onInitialized 안 attach 는 2번째 이후 배너가 누락될 수 있어 금지.
+  useEffect(() => {
+    ensureTossAdsInitialized();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/*

@@ -42,7 +42,7 @@ import { AvoidActionCards } from '../../components/today/avoid-action-cards';
 import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
-import { AdBanner } from '../../components/ads/ad-banner';
+import { AdBanner, isAdSlotAvailable } from '../../components/ads/ad-banner';
 
 import type { DailyHapCard } from '../../types/dailyHap';
 import type { FeedListItem, RelationChipItem } from '../../types/relation';
@@ -419,8 +419,8 @@ export function HomePage() {
                   </div>
                 </SwipeRow>
               </li>
-              {/* 인앱 광고 배너 — 목록 중간 3개마다 1개 (항목 4) */}
-              {(i + 1) % 3 === 0 && i < topRelations.length - 1 && (
+              {/* 인앱 광고 배너 — 목록 중간 3개마다 1개 (항목 4). 광고 미지원/미설정 시 숨김. */}
+              {(i + 1) % 3 === 0 && i < topRelations.length - 1 && isAdSlotAvailable() && (
                 <li aria-label="광고">
                   <AdBanner />
                 </li>
