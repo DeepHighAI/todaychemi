@@ -81,7 +81,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 
 ---
 
-## 2. 프로젝트 상태 (2026-06-17 기준)
+## 2. 프로젝트 상태 (2026-06-19 기준)
 
 > 본 §2는 `CLAUDE.md` §2(Claude Code 측 현황 로그)의 미러다. 작업 귀속 표기(Claude Code/Cowork)는 "다른 에이전트가 한 작업" 신호로 보존한다. 두 문서가 어긋나면 git history와 더 최근 갱신본을 우선한다 (§12 동기화 의무).
 
@@ -111,6 +111,7 @@ QA·디버깅·E2E 실행 중 발견한 *별개의* 이슈는:
 - **미니앱 온보딩 진입 플로우 수정 완료 ✅ (2026-06-18 8차, Claude Code)** — 실기기 "내 프로필 '시작하기'→홈으로 튕김" + "로그인 후 프로필 없어도 온보딩 안 뜸" 해소. 같은 `feature/miniapp-onboarding-consent` 브랜치 2 커밋(`d68d567`·`e291ad0`, **origin 미푸시·main 미머지**). Fix A: `isNativeTossEnv()`가 set 안 되는 가짜 전역 `__AIT_NATIVE__` 검사 → 실기기 false → 자동로그인 미발화 → 튕김. SDK `getOperationalEnvironment()`(`'toss'|'sandbox'`)+try/catch로 교체([[feedback-ait-native-env-detection]]). Fix B(§1.1 강제 게이트): 신규 `useMeChart`(['me-chart'] 단일출처·에러 비흡수·ChartCore) + `ProfileGate`(탭바 그룹 pathless layout: chart=null→/onboarding, error→fail-open, 온보딩은 게이트 밖→루프없음) + HomePage/MePage 소비 + Step4Review 성공 시 invalidate. Fix C: 죽은 today-401 리다이렉트 제거. miniapp tsc0/vitest 38(+12)/build OK/JWT0 · root tsc0/lint0. DB·루트 변경 0. §사용자 수동: Vercel Toss env · `.ait` 재빌드+재업로드 · 실기기 4케이스 E2E. 상세는 CLAUDE.md §2.
 - **미니앱 온보딩(consent 7차 + 진입플로우 8차) main 머지 + 프로덕션 배포 완료 ✅ (2026-06-18)** — `feature/miniapp-onboarding-consent` → `origin/main` clean ff `f62f366..6490ff7`(8커밋, Vercel 프로덕션 배포). 위 7차·8차 "미푸시·미머지" 표기는 stale(해소). 마이그 `20260618000000`은 머지 전 이미 라이브. 잔여(실기기, 코드 외): Vercel Toss env + `.ait` 재빌드·재업로드. 상세는 CLAUDE.md §2.
 - **미니앱 실기기 로그인 실패 + 온보딩 409 수정 + 배포 ✅ (2026-06-19, 9차)** — `fix/miniapp-login-base-url` 3커밋 → `origin/main` ff `b8ee504..0cc9dbd`(Vercel 배포). ① 로그인 실패: 프로덕션 `.ait`가 빈 `VITE_API_BASE_URL` 인라인(로컬 vite 빌드, Vercel env 무관)+`??` 빈문자 미처리 → 자기 오리진 404. `resolveApiBaseUrl()`(빈값→PROD prod호스트)로 수정([[feedback-miniapp-vite-build-env]]). ② 진단 관측성: AuthProvider 에러 비삼킴+게이트 `원인:` · `/api/toss/login` 단계별 sanitize 로깅. ③ 온보딩 409: `users` plain INSERT→`upsert(onConflict:'user_id')` 멱등화(재온보딩 200). Supabase Toss SQL=전부 라이브(import 불필요, 409는 코드 문제). miniapp tsc0/vitest43 · root tsc0/lint0/onboarding16·login16. 잔여(실기기): 동일 `.ait` 재테스트→온보딩 200. 상세 CLAUDE.md §2.
+- **미니앱 광고 SDK 레드팀 리뷰 + 수정 + 가격 문서 정합 ✅ (2026-06-19, Claude Code)** — `/code-review` 레드팀(오늘 배치 광고 배너·무료부적·IAP 가격·maxDuration) + 앱인토스 MCP(BannerAd 공식 문서) 교차검증. 머니패스·마이그레이션 클린. **F1[HIGH]**: 광고 `TossAds.initialize` 컴포넌트별 호출(공식 문서 ❌, 2번째+ 배너 attach 누락 위험) → 모듈 싱글톤 1회 init(`ensureTossAdsInitialized`, App 마운트) + `useTossAdsReady` 공유 구독 + `isAdSlotAvailable()` 빈 광고 li 가드 + 회귀 테스트(`61800b8`). 운영 광고 그룹 ID `miniapp/.env.production` `VITE_TOSS_AD_GROUP_ID=ait.v2.live...`(빌드타임 인라인, **Vercel env 아님**, 번들 인라인 ×2 검증)(`18053cb`). **F4**: replay 사용자 CTA/flow ₩880→₩440(오픈할인 실청구가) 통일, 정가 ₩880 유지(`0b010ea`). `fix/miniapp-ad-banner-init`→`origin/main` ff `22e279a..18053cb` + `0b010ea`·상태 로그(Vercel). miniapp vitest 63/63 · root tsc0/lint0. 상세 CLAUDE.md §2.
 
 ---
 
