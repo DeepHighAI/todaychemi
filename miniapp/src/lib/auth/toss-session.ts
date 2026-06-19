@@ -10,6 +10,8 @@
 
 import { Storage, getOperationalEnvironment } from '@apps-in-toss/web-framework';
 
+import { isJwtExpired } from './jwt';
+
 /** Storage 키 상수 */
 const TOKEN_KEY = 'ait:session:token';
 
@@ -47,11 +49,15 @@ export async function getToken(): Promise<string | null> {
   if (devBearer) return devBearer;
 
   try {
-    if (isNativeStorage()) {
-      return await Storage.getItem(TOKEN_KEY);
-    }
-    // 웹 폴백 — dev server / 브라우저 환경
-    return localStorage.getItem(TOKEN_KEY);
+    const raw = isNativeStorage()
+      ? await Storage.getItem(TOKEN_KEY)
+      : // 웹 폴백 — dev server / 브라우저 환경
+        localStorage.getItem(TOKEN_KEY);
+    // 만료된 저장 토큰은 "없음"으로 취급한다 — 그대로 복원하면 서버 getUser 가 403
+    // (bad_jwt: token is expired)으로 거부해 모든 API 가 영구 401 이 된다. 부트스트랩은
+    // null 을 받아 재로그인으로 이어진다.
+    if (raw && isJwtExpired(raw)) return null;
+    return raw;
   } catch {
     return null;
   }

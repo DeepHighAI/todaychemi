@@ -10,10 +10,18 @@ vi.mock('@apps-in-toss/web-framework', () => ({
 
 import { appLogin, Storage, getOperationalEnvironment } from '@apps-in-toss/web-framework';
 import { AuthProvider, useAuth } from './AuthProvider';
+import { triggerReauth, __resetReauthForTest } from './reauth';
 
 const mockAppLogin = vi.mocked(appLogin);
 const mockStorageGet = vi.mocked(Storage.getItem);
 const mockEnv = vi.mocked(getOperationalEnvironment);
+
+/** 테스트용 최소 JWT (exp 초 단위). */
+function makeJwt(expSec: number): string {
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  return `${b64({ alg: 'HS256' })}.${b64({ exp: expSec })}.sig`;
+}
+const nowSec = () => Math.floor(Date.now() / 1000);
 
 function Probe() {
   const { token, isLoading } = useAuth();
@@ -43,6 +51,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  __resetReauthForTest();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
@@ -113,5 +122,62 @@ describe('AuthProvider — 자동 로그인', () => {
 
     expect(await screen.findByText('token:none')).toBeInTheDocument();
     expect(mockAppLogin).not.toHaveBeenCalled();
+  });
+
+  it('만료된 저장 토큰 → 폐기하고 재로그인(appLogin)으로 새 토큰 획득', async () => {
+    setNative('toss');
+    mockStorageGet.mockResolvedValue(makeJwt(nowSec() - 100)); // 만료
+    mockAppLogin.mockResolvedValue({ authorizationCode: 'code', referrer: 'ref' } as never);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: 'tok-new' }) }),
+    );
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByText('token:tok-new')).toBeInTheDocument();
+    expect(mockAppLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it('유효한 저장 토큰 → 복원만 하고 재로그인 안 함', async () => {
+    setNative('toss');
+    const valid = makeJwt(nowSec() + 3600);
+    mockStorageGet.mockResolvedValue(valid);
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByText(`token:${valid}`)).toBeInTheDocument();
+    expect(mockAppLogin).not.toHaveBeenCalled();
+  });
+
+  it('마운트 시 재인증 핸들러 등록 → triggerReauth 가 재로그인으로 새 토큰을 반환', async () => {
+    setNative('toss');
+    const valid = makeJwt(nowSec() + 3600);
+    mockStorageGet.mockResolvedValue(valid); // 부트스트랩은 재로그인 안 함(유효 토큰)
+    mockAppLogin.mockResolvedValue({ authorizationCode: 'c', referrer: 'r' } as never);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: 'reauth-tok' }) }),
+    );
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await screen.findByText(`token:${valid}`); // 마운트 완료
+
+    // apiFetch 가 401 에서 호출하는 경로를 직접 트리거
+    const fresh = await triggerReauth();
+    expect(fresh).toBe('reauth-tok');
+    expect(mockAppLogin).toHaveBeenCalledTimes(1);
   });
 });

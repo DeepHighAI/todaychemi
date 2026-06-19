@@ -16,6 +16,10 @@ import type { ChartCore } from '@/types/chart';
 export function useMeChart(token: string | null) {
   return useQuery({
     queryKey: ['me-chart'],
+    // 토큰이 준비되기 전엔 발화 금지 — null-token 으로 한 번 호출되면 ProfileGate·HomePage·MePage
+    // 가 공유하는 ['me-chart'] 캐시에 인증 실패 결과가 박혀 자가 치유되지 않는다(토큰은 user-scoped
+    // 라 queryKey 에 넣지 않고 enabled 가드로만 처리; 재로그인 후 401-retry 가 본문을 갱신).
+    enabled: !!token,
     queryFn: async (): Promise<ChartCore | null> => {
       const res = await apiFetch<{ ok: boolean; chart: ChartCore | null }>('/api/me/chart', {
         token,

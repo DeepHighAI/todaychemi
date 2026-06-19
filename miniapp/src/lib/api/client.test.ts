@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError, apiFetch, resolveApiBaseUrl } from './client';
+import { setReauthHandler, __resetReauthForTest } from '@/lib/auth/reauth';
 
 const PROD_HOST = 'https://todaychemi.vercel.app';
 
@@ -15,7 +16,22 @@ function mockFetchOnce(status: number, body: unknown) {
   );
 }
 
+/** 호출 순서대로 다른 응답을 주는 fetch mock (재시도 검증용). */
+function mockFetchSequence(responses: Array<{ status: number; body: unknown }>) {
+  const fn = vi.fn();
+  responses.forEach((r) =>
+    fn.mockResolvedValueOnce({
+      ok: r.status >= 200 && r.status < 300,
+      status: r.status,
+      json: () => Promise.resolve(r.body),
+    } as Response),
+  );
+  vi.stubGlobal('fetch', fn);
+  return fn;
+}
+
 afterEach(() => {
+  __resetReauthForTest();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -70,6 +86,68 @@ describe('apiFetch', () => {
 
     const [, init] = fetchSpy.mock.calls[0];
     expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer tok-123');
+  });
+});
+
+describe('apiFetch — 401 만료 토큰 자동 재로그인 재시도', () => {
+  it('token + 401 → 재로그인 후 새 토큰으로 1회 재시도해 성공한다', async () => {
+    setReauthHandler(async () => 'fresh-token');
+    const fetchSpy = mockFetchSequence([
+      { status: 401, body: { error: { code: 'UNAUTHORIZED' } } },
+      { status: 200, body: { ok: true } },
+    ]);
+
+    const res = await apiFetch('/api/today', { token: 'stale' });
+
+    expect(res).toEqual({ ok: true });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const [, init2] = fetchSpy.mock.calls[1];
+    expect((init2.headers as Record<string, string>)['Authorization']).toBe('Bearer fresh-token');
+  });
+
+  it('token 없는 401 → 재로그인 미발화, 그대로 throw', async () => {
+    const handler = vi.fn(async () => 'fresh');
+    setReauthHandler(handler);
+    const fetchSpy = mockFetchSequence([{ status: 401, body: { error: { code: 'UNAUTHORIZED' } } }]);
+
+    await expect(apiFetch('/api/today')).rejects.toMatchObject({ status: 401 });
+    expect(handler).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('재시도 후에도 401 → throw (무한 루프 없음, fetch 정확히 2회)', async () => {
+    setReauthHandler(async () => 'fresh-token');
+    const fetchSpy = mockFetchSequence([
+      { status: 401, body: { error: { code: 'UNAUTHORIZED' } } },
+      { status: 401, body: { error: { code: 'UNAUTHORIZED' } } },
+    ]);
+
+    await expect(apiFetch('/api/today', { token: 'stale' })).rejects.toMatchObject({ status: 401 });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('재로그인이 null/동일 토큰을 주면 재시도하지 않는다', async () => {
+    setReauthHandler(async () => null);
+    const fetchSpy = mockFetchSequence([{ status: 401, body: { error: { code: 'UNAUTHORIZED' } } }]);
+
+    await expect(apiFetch('/api/today', { token: 'stale' })).rejects.toMatchObject({ status: 401 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('402 결제 필요는 재로그인 미발화', async () => {
+    const handler = vi.fn(async () => 'fresh');
+    setReauthHandler(handler);
+    mockFetchSequence([
+      {
+        status: 402,
+        body: { error: { code: 'PAYMENT_REQUIRED' }, feature: 'hapcard', ref: 'r', amount_krw: 550 },
+      },
+    ]);
+
+    await expect(
+      apiFetch('/api/hapcards', { token: 'tok', method: 'POST', body: {} }),
+    ).rejects.toMatchObject({ status: 402 });
+    expect(handler).not.toHaveBeenCalled();
   });
 });
 

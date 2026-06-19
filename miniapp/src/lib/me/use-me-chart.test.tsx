@@ -39,4 +39,11 @@ describe('useMeChart', () => {
     const { result } = renderHook(() => useMeChart('tok'), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('token=null → enabled false: 쿼리 미발화(apiFetch 미호출, fetchStatus idle)', () => {
+    const { result } = renderHook(() => useMeChart(null), { wrapper });
+    // null-token 으로 발화하면 공유 ['me-chart'] 캐시에 인증실패가 박혀 자가치유 안 됨 → 가드.
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockApiFetch).not.toHaveBeenCalled();
+  });
 });

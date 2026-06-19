@@ -27,6 +27,7 @@ import {
 } from 'react';
 import { appLogin } from '@apps-in-toss/web-framework';
 import { API_BASE_URL } from '@/lib/api/client';
+import { setReauthHandler } from './reauth';
 import { clearToken, getToken, isNativeTossEnv, setToken } from './toss-session';
 
 // ---------------------------------------------------------------------------
@@ -68,9 +69,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 실패 원인(에러 코드/메시지) — 재시도 게이트에 보조 노출해 실기기 진단을 돕는다.
   const [authErrorDetail, setAuthErrorDetail] = useState<string | null>(null);
 
-  const login = useCallback(async () => {
-    setAuthError(false);
-    setAuthErrorDetail(null);
+  // 실제 로그인 수행 — 새 access_token 을 반환한다(재로그인 재시도에서 토큰 값이 필요).
+  const performLogin = useCallback(async (): Promise<string | null> => {
     // dev 오버라이드: dev(serve) 빌드 한정. 프로덕션(.ait)에서는 DEV=false → 미사용·미인라인.
     const devBearer = import.meta.env.DEV
       ? (import.meta.env.VITE_DEV_BEARER as string | undefined)
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (devBearer) {
       await setToken(devBearer);
       setTokenState(devBearer);
-      return;
+      return devBearer;
     }
 
     // 실제 Toss 로그인 흐름
@@ -98,7 +98,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const data = (await res.json()) as { access_token: string };
     await setToken(data.access_token);
     setTokenState(data.access_token);
+    return data.access_token;
   }, []);
+
+  const login = useCallback(async () => {
+    setAuthError(false);
+    setAuthErrorDetail(null);
+    await performLogin();
+  }, [performLogin]);
+
+  // 재인증 브리지 등록: apiFetch 가 인증 401 을 받으면 이 핸들러로 재로그인 후 재시도한다.
+  // 비-네이티브(웹 프리뷰)는 appLogin 불가 → null(재시도 없음). single-flight 는 reauth.ts 가 보장.
+  useEffect(() => {
+    setReauthHandler(async () => {
+      if (!isNativeTossEnv()) return null;
+      try {
+        return await performLogin();
+      } catch {
+        return null;
+      }
+    });
+    return () => setReauthHandler(null);
+  }, [performLogin]);
 
   const logout = useCallback(async () => {
     await clearToken();

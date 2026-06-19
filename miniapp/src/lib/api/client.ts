@@ -10,6 +10,8 @@
  * 모든 flow hook 이 이 클라이언트로 실제 엔드포인트를 호출한다.
  */
 
+import { triggerReauth } from '@/lib/auth/reauth';
+
 const PROD_API_HOST = 'https://todaychemi.vercel.app';
 
 /**
@@ -65,6 +67,8 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   token?: string | null;
   /** 요청 바디 (자동으로 JSON.stringify) */
   body?: unknown;
+  /** 내부 전용 — 401 재로그인 후 재시도 여부(무한 루프 방지). 호출자는 설정하지 않는다. */
+  __isReauthRetry?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,7 +84,7 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { token, body, headers: extraHeaders, ...rest } = options;
+  const { token, body, headers: extraHeaders, __isReauthRetry, ...rest } = options;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -99,6 +103,15 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!response.ok) {
+    // 인증 만료 자동 복구: 토큰을 보냈는데 401 이면(서버 getUser 가 만료 토큰을 거부) 재로그인 후
+    // 새 토큰으로 1회 재시도한다. 토큰 미첨부 401·402(결제)·이미 재시도한 요청은 제외(루프 방지).
+    if (response.status === 401 && token && !__isReauthRetry) {
+      const fresh = await triggerReauth();
+      if (fresh && fresh !== token) {
+        return apiFetch<T>(path, { ...options, token: fresh, __isReauthRetry: true });
+      }
+    }
+
     // 웹 API 표준 에러 봉투: { error: { code, message } } (route-response.ts apiErrorResponse).
     // 402 PAYMENT_REQUIRED 는 상위 레벨에 { feature, ref, amount_krw } 동반(paymentRequiredResponse).
     let code = 'UNKNOWN_ERROR';
