@@ -25,6 +25,12 @@ import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-re
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
+// 항목 8: 케미카드 분석은 LLM 생성이 길어질 수 있다(~25-40s). Vercel 기본 함수 타임아웃에
+// 끊기면 캐시가 안 남아 백그라운드 보장이 깨진다. nodejs 런타임은 클라가 끊겨도 함수를
+// 끝까지 실행하므로, 생성 여유 시간을 확보한다(Hobby 상한 60s; Pro 면 상향 가능).
+// 결과는 deterministic cache_key 로 persist → 복귀 시 재조회(AppShell visibilitychange)가 캐시 히트.
+export const maxDuration = 60;
+
 interface ChartRow {
   chart_core: ChartCore;
   chart_hash: string;

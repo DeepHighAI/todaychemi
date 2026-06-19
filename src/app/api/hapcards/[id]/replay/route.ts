@@ -27,6 +27,10 @@ import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-re
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 
+// 항목 8: 케미 다시 맞추기도 LLM 재해석이라 생성이 길어질 수 있다 — 케미카드와 동일하게
+// 함수 타임아웃을 확보해 백그라운드(클라 이탈 후에도 서버 완료) 보장을 지킨다.
+export const maxDuration = 60;
+
 function createLazyReplayDeps(
   supabaseUserClient: BuildReplayDeps['supabaseUserClient'],
   supabaseServiceClient: BuildReplayDeps['supabaseServiceClient'],

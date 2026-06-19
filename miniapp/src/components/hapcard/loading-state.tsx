@@ -52,6 +52,10 @@ export function HapcardLoadingState() {
         <p data-testid="hapcard-loading-estimate" style={{ font: 'var(--t-sub)', color: 'var(--muted-foreground)', margin: 0, wordBreak: 'keep-all' }}>
           {t('estimate')}
         </p>
+        {/* 항목 8: 결제 후 백그라운드 분석 보장 안내 — 앱을 나가도 서버가 끝까지 생성 */}
+        <p data-testid="hapcard-loading-background" style={{ font: 'var(--t-cap)', color: 'var(--primary)', margin: '8px 0 0', wordBreak: 'keep-all' }}>
+          {t('background')}
+        </p>
       </div>
 
       <div
