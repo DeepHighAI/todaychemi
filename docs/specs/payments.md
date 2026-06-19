@@ -118,9 +118,9 @@ export async function GET(request: NextRequest) {
 | `FeaturePaySheet` | 기능 화면 안에서 V2 Payment Widget 렌더링 및 `requestPayment` |
 | `GET /payments/fail` | 실패 코드 표시 및 pending 결제 실패 기록 |
 
-기능 가격 카탈로그: 오픈초기 이벤트 현금가 기준 케미카드 500원(정가 1,000원), 만약에 우리 400원(정가 800원), 케미 다시 맞추기 300원(정가 600원), 인연 등록(3번째+) 500원(정가 1,000원) (2026-06-07 §1.1 D6 + 2026-06-10 relation_slot + 2026-06-14 오픈초기 50% 할인 개정 — 웹·미니앱 통일). 단일 출처는 `src/lib/payments/feature-prices.ts` (`FEATURE_PRICES_KRW` + `FREE_RELATION_SLOTS`).
+기능 가격 카탈로그: 오픈초기 이벤트 현금가 기준 케미카드 550원(정가 1,100원), 만약에 우리 440원(정가 880원), 케미 다시 맞추기 440원(정가 880원), 인연 등록(3번째+) 550원(정가 1,100원) (2026-06-07 §1.1 D6 + 2026-06-10 relation_slot + 2026-06-14 오픈초기 50% 할인 + 2026-06-19 정가 인상 개정 — 웹·미니앱 통일). 단일 출처는 `src/lib/payments/feature-prices.ts` (`FEATURE_PRICES_KRW` + `FREE_RELATION_SLOTS`).
 
-무료 부적 잔액이 충분하면 케미카드 `10p`, 케미 다시 맞추기 `6p`, 만약에 우리 `8p`, 인연 등록 `10p`를 서버에서 `token_ledger` 차감/환불/idempotency로 처리한다. 오픈초기 50% 할인은 현금 결제 금액에만 적용하며 무료 부적 차감량은 유지한다. 잔액이 부족하면 현금 결제 후 기능 잠금 해제만 확정하며, 유료 결제로 `token_ledger.reason='purchase'` 적립을 만들지 않는다. 캐시 적중 또는 이미 결제 완료된 `feature_ref`는 신규 차감/결제하지 않는다.
+무료 부적 잔액이 충분하면 케미카드 `11p`, 케미 다시 맞추기 `9p`, 만약에 우리 `9p`, 인연 등록 `11p`를 서버에서 `token_ledger` 차감/환불/idempotency로 처리한다(1부적 ≈ 100원, 880원 → 9부적 반올림). 오픈초기 50% 할인은 현금 결제 금액에만 적용하며 무료 부적 차감량은 유지한다. 잔액이 부족하면 현금 결제 후 기능 잠금 해제만 확정하며, 유료 결제로 `token_ledger.reason='purchase'` 적립을 만들지 않는다. 캐시 적중 또는 이미 결제 완료된 `feature_ref`는 신규 차감/결제하지 않는다.
 
 원자성은 **모델 C**(선생성 → 성공 시 결제): 본문을 먼저 생성·보류한 뒤 무료 차감 불가 시 402로 결제를 요구하고, confirm 후 동일 요청 재호출로 잠금이 해제된다(빌드 실패 시 `charged` 플래그로 환불). 미결제 선생성 누적은 일일 `CASH_GEN_DAILY_LIMIT`(기본 5, 초과 시 429)로 제한한다. **잠금 단일 진실은 `isFeatureUnlocked`** — 본문을 반환하는 GET 라우트(`ohaeng-interpretation`·`role-analysis`)도 hapcard `cache_key`로 게이트를 통과해야 한다(미결제 본문 유출 차단). `snapshots`·OG·share는 점수·메타데이터만 노출하므로 게이트하지 않는다. 상세 결정: `docs/adr/ADR-039-pay-per-use-billing.md`.
 
