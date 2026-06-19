@@ -43,7 +43,9 @@ export function AppNav({ items }: AppNavProps) {
         borderTop: '1px solid var(--hairline)',
         display: 'flex',
         alignItems: 'stretch',
-        zIndex: 100,
+        // 탭바는 페이지 콘텐츠(z 1~10) 위, 모달/시트/오버레이(z 40~60) 아래에 둔다.
+        // 그래야 모든 팝업·드로어가 탭바를 덮어 그 위로 뜬다 (요구사항: 팝업은 네비바 위로).
+        zIndex: 30,
         boxShadow: 'var(--e-2)',
       }}
     >

@@ -6,7 +6,7 @@
  * 언어 변경(onLang)·앱 정보(onAbout)는 미니앱에서 시트 없이 no-op 처리.
  */
 
-import { ChevronRight, FileText, Globe2, LogOut, Receipt, Shield, Trash2 } from 'lucide-react';
+import { ChevronRight, FileText, Globe2, Receipt, Shield, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface InfoCardProps {
@@ -15,8 +15,6 @@ interface InfoCardProps {
   onRefund: () => void;
   onLang: () => void;
   onDeleteAccount: () => void;
-  onLogout: () => void;
-  logoutLoading?: boolean;
 }
 
 export function InfoCard({
@@ -25,8 +23,6 @@ export function InfoCard({
   onRefund,
   onLang,
   onDeleteAccount,
-  onLogout,
-  logoutLoading = false,
 }: InfoCardProps) {
   const t = useTranslations('me.info');
 
@@ -59,14 +55,6 @@ export function InfoCard({
       <InfoRow Icon={FileText} label={t('terms')} sub={t('termsSub')} onClick={onTerms} />
       <InfoRow Icon={Receipt} label={t('refund')} sub={t('refundSub')} onClick={onRefund} />
       <InfoRow Icon={Trash2} label={t('deleteAccount')} sub={t('deleteAccountSub')} onClick={onDeleteAccount} danger />
-      <InfoRow
-        Icon={LogOut}
-        label={t('logout')}
-        sub={logoutLoading ? t('logoutLoading') : t('logoutSub')}
-        onClick={onLogout}
-        danger
-        disabled={logoutLoading}
-      />
     </section>
   );
 }

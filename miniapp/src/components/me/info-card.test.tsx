@@ -11,7 +11,6 @@ describe('InfoCard', () => {
     onRefund: vi.fn(),
     onLang: vi.fn(),
     onDeleteAccount: vi.fn(),
-    onLogout: vi.fn(),
   };
 
   it('회사소개(외부 링크) 행을 렌더하지 않는다', () => {
@@ -19,9 +18,15 @@ describe('InfoCard', () => {
     expect(screen.queryByText('회사소개')).not.toBeInTheDocument();
   });
 
-  it('남은 정보 행은 6개다 (언어·개인정보·약관·환불·계정삭제·로그아웃)', () => {
+  // 미니앱은 토스 자동 로그인이라 수동 로그아웃이 불필요 — 행을 제거한다.
+  it('로그아웃 행을 렌더하지 않는다 (미니앱)', () => {
+    renderWithProviders(<InfoCard {...baseProps} />);
+    expect(screen.queryByText('로그아웃')).not.toBeInTheDocument();
+  });
+
+  it('남은 정보 행은 5개다 (언어·개인정보·약관·환불·계정삭제)', () => {
     renderWithProviders(<InfoCard {...baseProps} />);
     const card = screen.getByTestId('info-card');
-    expect(within(card).getAllByRole('button')).toHaveLength(6);
+    expect(within(card).getAllByRole('button')).toHaveLength(5);
   });
 });

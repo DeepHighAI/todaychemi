@@ -12,12 +12,12 @@
  *   - Dialog (shadcn/ui 기반) → miniapp/src/components/ui/dialog (base-ui 포트)
  *   - next-intl useTranslations → 유지 (provider 마운트됨)
  *   - Tailwind → 인라인 스타일
- *   - signOut: POST /api/auth/sign-out → useAuth().logout()
+ *   - 로그아웃: 제거 (미니앱은 토스 자동 로그인이라 수동 로그아웃 불필요)
  */
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 
 import { apiFetch } from '@/lib/api/client';
@@ -57,8 +57,7 @@ import type { WalletResponse } from '@/types/wallet';
 export function MePage() {
   const t = useTranslations('me');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
 
   // chart 데이터 조회 — ProfileGate·HomePage 와 ['me-chart'] 캐시 공유.
   const { data: chart, isLoading, isError, refetch } = useMeChart(token);
@@ -78,9 +77,6 @@ export function MePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
-  const [logoutOpen, setLogoutOpen] = useState(false);
-  const [logoutLoading, setLogoutLoading] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   // 계정 삭제 요청
   async function handleDeleteAccount() {
@@ -96,23 +92,6 @@ export function MePage() {
       setDeleteError(t('privacyControls.deleteError'));
     } finally {
       setDeleteLoading(false);
-    }
-  }
-
-  // 로그아웃 — useAuth logout() 으로 토큰 제거 후 /login 이동
-  async function handleLogout() {
-    setLogoutLoading(true);
-    setLogoutError(null);
-    try {
-      // 서버 측 세션 해제 (실패해도 클라이언트는 정리함)
-      await apiFetch('/api/auth/sign-out', { method: 'POST', token }).catch(() => {/* 무시 */});
-      queryClient.clear();
-      await logout();
-      navigate('/onboarding');
-    } catch {
-      setLogoutError(t('info.logoutError'));
-      setLogoutOpen(false);
-      setLogoutLoading(false);
     }
   }
 
@@ -184,55 +163,7 @@ export function MePage() {
           // 미니앱: 언어 KO 고정 — 추후 다국어 지원 시 시트로 교체 (TODO P5)
         }}
         onDeleteAccount={() => setDeleteOpen(true)}
-        onLogout={() => {
-          setLogoutError(null);
-          setLogoutOpen(true);
-        }}
-        logoutLoading={logoutLoading}
       />
-
-      {/* 로그아웃 에러 알림 */}
-      {logoutError && (
-        <p
-          role="alert"
-          style={{
-            borderRadius: 'var(--r-sm)',
-            backgroundColor: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
-            padding: '8px 12px',
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--destructive)',
-            margin: 0,
-          }}
-        >
-          {logoutError}
-        </p>
-      )}
-
-      {/* 로그아웃 확인 다이얼로그 */}
-      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>{t('info.logoutConfirmTitle')}</DialogTitle>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              disabled={logoutLoading}
-              onClick={() => setLogoutOpen(false)}
-            >
-              {t('info.logoutConfirmNo')}
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={logoutLoading}
-              onClick={() => void handleLogout()}
-            >
-              {logoutLoading ? t('info.logoutLoading') : t('info.logoutConfirmYes')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* 계정 삭제 확인 다이얼로그 */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
