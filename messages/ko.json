@@ -11,6 +11,17 @@
       "button": "시작하기"
     }
   },
+  "rewards": {
+    "popup": {
+      "title": {
+        "signup": "환영해요! 부적을 선물로 받았어요",
+        "daily": "오늘의 출석 부적을 받았어요"
+      },
+      "amount": "부적 {count}개",
+      "usage": "부적으로 케미카드·또 다른 나·케미 다시 맞추기를 볼 수 있어요. 부적이 부족하면 결제로 이어볼 수 있어요.",
+      "confirm": "확인"
+    }
+  },
   "aiDisclosure": {
     "badge": "AI 생성",
     "notice": {

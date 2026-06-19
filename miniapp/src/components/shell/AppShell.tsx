@@ -15,6 +15,7 @@ import { graniteEvent } from '@apps-in-toss/web-framework';
 import { AppNav } from './AppNav';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { restorePendingOrders } from '@/lib/iap/purchase';
+import { RewardGate } from '@/components/rewards/reward-gate';
 
 // ---------------------------------------------------------------------------
 // 탭 정의
@@ -184,6 +185,9 @@ export function AppShell({ showNav = true }: AppShellProps) {
 
       {/* 하단 탭바 */}
       {showNav && <AppNav items={[...NAV_ITEMS]} />}
+
+      {/* 부적 지급 트리거 + 팝업 (가입 +50 / 매일 +5, 항목 6/7) */}
+      <RewardGate />
     </div>
   );
 }

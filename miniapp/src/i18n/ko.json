@@ -11,6 +11,17 @@
       "button": "시작하기"
     }
   },
+  "rewards": {
+    "popup": {
+      "title": {
+        "signup": "환영해요! 부적을 선물로 받았어요",
+        "daily": "오늘의 출석 부적을 받았어요"
+      },
+      "amount": "부적 {count}개",
+      "usage": "부적으로 케미카드·또 다른 나·케미 다시 맞추기를 볼 수 있어요. 부적이 부족하면 결제로 이어볼 수 있어요.",
+      "confirm": "확인"
+    }
+  },
   "aiDisclosure": {
     "badge": "AI 생성",
     "notice": {
@@ -339,6 +350,7 @@
     "loadingView": {
       "title": "두 사람의 흐름을 분석하고 있어요",
       "estimate": "보통 20~40초 정도 걸려요",
+      "background": "앱을 나가도 분석은 계속돼요. 다시 들어오면 결과를 보여드려요.",
       "statusLabel": "지금 하는 일",
       "readLabel": "기다리는 동안",
       "phases": {
