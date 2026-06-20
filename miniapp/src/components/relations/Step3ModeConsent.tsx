@@ -257,6 +257,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           <div style={{ display: 'flex', gap: 8 }}>
             <Button
               size="sm"
+              className="btn-cta"
               disabled={isPurchasing || !refundConsent}
               onClick={() => {
                 clearIapError();
@@ -293,6 +294,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           onClick={() => mutation.mutate()}
           disabled={!canSubmit}
           variant="default"
+          className="btn-cta"
           style={{ height: 48, width: '100%', borderRadius: 'var(--r-pill)', fontWeight: 700 }}
         >
           {mutation.isPending ? t('submitting') : t('submit')}

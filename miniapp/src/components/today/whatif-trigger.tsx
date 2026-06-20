@@ -54,6 +54,7 @@ export function WhatifTrigger() {
     <div style={{ padding: '0 16px' }}>
       <button
         type="button"
+        className="btn-cta"
         onClick={() => setOpen(true)}
         style={{
           width: '100%',

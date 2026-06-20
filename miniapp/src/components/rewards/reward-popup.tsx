@@ -62,7 +62,7 @@ export function RewardPopup({ open, amount, isSignup, onClose }: RewardPopupProp
         </div>
 
         <DialogFooter>
-          <Button variant="default" onClick={onClose} style={{ width: '100%' }}>
+          <Button variant="default" className="btn-cta" onClick={onClose} style={{ width: '100%' }}>
             {t('confirm')}
           </Button>
         </DialogFooter>

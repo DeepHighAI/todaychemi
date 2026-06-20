@@ -30,6 +30,7 @@ export function CtaBar({ label, disabled = false, loading = false, onClick }: Ct
     >
       <Button
         variant="default"
+        className="btn-cta"
         disabled={disabled || loading}
         onClick={onClick}
         style={{

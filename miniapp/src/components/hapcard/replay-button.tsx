@@ -155,6 +155,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       {/* 트리거 버튼 */}
       <button
         type="button"
+        className="btn-cta"
         onClick={() => setOpen(true)}
         style={{
           display: 'inline-flex',
@@ -243,6 +244,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 size="sm"
+                className="btn-cta"
                 disabled={isPurchasing || !payInfo || !refundConsent}
                 onClick={() => {
                   clearIapError();
@@ -270,6 +272,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             </Button>
             <Button
               onClick={handleConfirm}
+              className="btn-cta"
               disabled={isLoading || state === 'error'}
             >
               {isLoading ? '처리 중…' : t('replayButton.confirmCta')}
