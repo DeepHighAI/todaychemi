@@ -9,10 +9,6 @@ vi.mock('@/lib/auth/google', () => ({
   signInWithGoogle: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/kakao', () => ({
-  signInWithKakao: vi.fn(),
-}));
-
 vi.mock('@/lib/auth/email', () => ({
   signInWithEmail: vi.fn(),
 }));
@@ -27,12 +23,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 import { signInWithGoogle } from '@/lib/auth/google';
-import { signInWithKakao } from '@/lib/auth/kakao';
 import { signInWithEmail } from '@/lib/auth/email';
 import { createClient } from '@/lib/supabase/server';
 
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
-const mockSignInWithKakao = vi.mocked(signInWithKakao);
 const mockSignInWithEmail = vi.mocked(signInWithEmail);
 const mockRouterPush = vi.fn();
 const getUser = vi.fn();
@@ -68,7 +62,7 @@ describe('LoginPage', () => {
     expect(serviceIcon).toHaveAttribute('src', expect.stringContaining('twoday_thumbnail_1932x828.png'));
     expect(screen.getByRole('heading', { name: '오늘케미 로그인' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Google로 시작하기' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '카카오로 시작하기' })).not.toBeInTheDocument();
     expect(screen.queryByText('소셜 로그인 필수 동의')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '잠깐 둘러보기' })).toHaveAttribute(
       'href',
@@ -149,25 +143,6 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
     await screen.findByText('로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
-  });
-
-  it('clicking Kakao button calls signInWithKakao', async () => {
-    mockSignInWithKakao.mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    await renderLoginPage();
-
-    await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
-
-    await waitFor(() =>
-      expect(mockSignInWithKakao).toHaveBeenCalledWith(
-        {
-          terms: false,
-          privacy: false,
-          age: false,
-        },
-        { next: '/', deferLegalConsent: true },
-      ),
-    );
   });
 });
 

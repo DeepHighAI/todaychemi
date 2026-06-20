@@ -9,7 +9,7 @@
 |---|---|---|
 | Email/Password | ✅ Active | Primary auth method |
 | Google OAuth | ⚠️ Remote secret required | App flow implemented; Dashboard setup follows `docs/runbooks/google_oauth.md` |
-| Kakao OAuth | ⚠️ Remote secret required | App flow implemented; Dashboard/Kakao setup required |
+| Kakao OAuth (login) | ❌ Removed (2026-06-20, §1.1) | Web login removed (KOE205: `account_email` requires Kakao business app). KakaoTalk **share** retained. |
 
 ## Password Policy
 
@@ -62,7 +62,7 @@ No application-layer rate limiting (Supabase-only, per §1.1 Q2.A decision 2026-
 - Supabase anonymous auth는 사용하지 않는다. 게스트 온보딩 입력과 오늘 결과는 현재 탭 `sessionStorage`에만 저장한다.
 - `/api/guest/today`는 guest legal cookie와 `OnboardingRequest`를 검증한 뒤 차트 계산과 **오늘 나의 흐름** 생성을 수행한다. `users`, `user_charts`, `daily_haps`에는 쓰지 않는다.
 - `/today/me`의 `친구와의 오늘 케미 보기` CTA는 `/signup?intent=guest`로 이동한다.
-- 게스트 전환 가입은 email, Google, Kakao를 모두 지원한다. 가입 후 `/guest/complete`가 `sessionStorage`의 게스트 온보딩 입력을 인증된 `/api/onboarding`에 저장하고 `/relations/new`로 이동한다.
+- 게스트 전환 가입은 email, Google을 지원한다(Kakao 로그인 제거, 2026-06-20). 가입 후 `/guest/complete`가 `sessionStorage`의 게스트 온보딩 입력을 인증된 `/api/onboarding`에 저장하고 `/relations/new`로 이동한다.
 - 게스트 입력이 없거나 server consent가 만료되면 `/start`에서 다시 시작한다.
 
 ## Google OAuth Flow
@@ -75,16 +75,12 @@ No application-layer rate limiting (Supabase-only, per §1.1 Q2.A decision 2026-
 - 게스트 전환 시 OAuth callback은 `next=/guest/complete`를 보존한다.
 - Remote setup and smoke test: `docs/runbooks/google_oauth.md`
 
-## Kakao OAuth Flow
+## Kakao Login — Removed (2026-06-20, §1.1)
 
-- **오늘케미 로그인**: `/login` → `카카오로 시작하기`
-- OAuth start is blocked until Terms, Privacy Policy, and age 14+ are checked.
-- OAuth start: `src/lib/auth/kakao.ts`
-- Callback: `/auth/callback` (Google과 같은 Supabase PKCE exchange route) claims the server-owned legal consent record.
-- Success redirect: `/` 홈의 **오늘의 케미**
-- 게스트 전환 시 OAuth callback은 `next=/guest/complete`를 보존한다.
-- Kakao `account_email`은 기본 요구하지 않는다. Supabase Kakao provider에서 "Allow users without an email"을 켠다.
-- Kakao profile/email/provider token은 로그인 식별에만 사용하며 LLM payload, share payload, public share page, OG image에는 직렬화하지 않는다.
+- 웹 카카오 **로그인**은 제거됐다(Google→Kakao 마이그레이션 정리). 사유: KOE205 — Supabase Kakao provider 기본 `account_email` scope는 카카오 **비즈니스(사업자) 인증 앱**에만 허용되어 개인 개발자 앱에서 실패.
+- 코드: `src/lib/auth/kakao.ts`(로그인 헬퍼) 삭제, `/login`·`/signup` 카카오 버튼 제거, `src/app/auth/oauth/route.ts` `parseProvider`는 `google`만 허용.
+- Supabase Dashboard → Authentication → Providers → **Kakao Disabled**(외부 적용).
+- **KakaoTalk 공유**(`/api/share/kakao/*`, `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY`, `KAKAO_ADMIN_KEY`)는 유지 — 로그인과 무관.
 
 ## Test Account
 
@@ -102,7 +98,6 @@ No application-layer rate limiting (Supabase-only, per §1.1 Q2.A decision 2026-
 | `src/lib/auth/password-policy.ts` | Policy constants + `validatePassword()` |
 | `src/lib/auth/email.ts` | `signInWithEmail`, `signUpWithEmail`, `WeakPasswordError` |
 | `src/lib/auth/google.ts` | `signInWithGoogle` OAuth entry |
-| `src/lib/auth/kakao.ts` | `signInWithKakao` OAuth entry |
 | `src/lib/legal/consent.ts` | Legal version constants + consent state helpers |
 | `src/lib/legal/server-consent.ts` | Server-owned legal consent nonce/hash/cookie helpers |
 | `src/app/api/legal/consent/route.ts` | Legal consent record creation + HttpOnly nonce cookie |

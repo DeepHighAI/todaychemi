@@ -1,22 +1,16 @@
-# Kakao OAuth + KakaoTalk Share Runbook
+# Kakao Login (Removed) + KakaoTalk Share Runbook
 
-## Production / Supabase Auth
+## Kakao Login — Removed (2026-06-20, §1.1)
 
-MVP launch without a custom domain uses the fixed Vercel Production `*.vercel.app`
-origin selected as `NEXT_PUBLIC_APP_URL`. Use that origin for Kakao Web platform
-settings and app callback URLs.
+웹 카카오 **로그인**은 제거됐다. 사유: KOE205 — Supabase Kakao provider 기본 `account_email`
+scope는 카카오 비즈니스(사업자) 인증 앱에만 허용되어 개인 개발자 앱에서 실패. 웹 OAuth는 Google 단독.
 
-1. Kakao Developers에서 앱을 만들고 Kakao Login을 활성화한다.
-2. Redirect URI에 Supabase callback URL을 등록한다.
-   - Production: `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback`
-   - Local: `http://127.0.0.1:54321/auth/v1/callback` only for local Supabase smoke
-3. Web platform site domain에 Vercel Production origin을 등록한다.
-   - Production: `https://<vercel-production-url>`
-   - Preview: `https://<vercel-preview-origin>` only if preview OAuth smoke is required
-   - Local: `http://localhost:3000`
-4. Supabase Auth → Providers → Kakao를 활성화한다.
-5. Kakao REST API key를 Supabase Kakao client id로, client secret을 secret으로 설정한다.
-6. Kakao email은 필수 수집하지 않는다. Supabase provider의 email optional 설정을 켠다.
+- Supabase Auth → Providers → **Kakao Disabled** 로 둔다.
+- 추후 카카오 로그인을 다시 도입하려면: 카카오 비즈니스 앱 전환(사업자 인증) 후 동의항목(`account_email`)
+  설정 + Redirect URI `https://jamhkucluhiibqpjsiov.supabase.co/auth/v1/callback` 등록 + Supabase Kakao
+  provider 재활성. (이 경우 §1.1 재승인 + `parseProvider`/버튼 복원 필요.)
+
+> 아래 **KakaoTalk Share** 는 로그인과 무관하게 계속 사용한다.
 
 ## KakaoTalk Share
 
@@ -43,7 +37,7 @@ kakao_origin=production origin, callback=supabase auth callback, share_callback=
 
 ## Smoke Test
 
-1. `/login`에서 `카카오로 시작하기` 클릭 → Kakao OAuth → `/auth/callback` → `/`.
+1. (카카오 로그인 제거 — Google 로그인 스모크는 `docs/runbooks/google_oauth.md` 참조.)
 2. 케미카드 `공유` → 범위 선택 → `카카오톡`.
 3. KakaoTalk share dialog opens and sends a card with `/h/<token>`.
 4. Kakao callback receives `share_id` and returns `{ ok: true }`.

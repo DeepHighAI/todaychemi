@@ -9,7 +9,6 @@ import Link from 'next/link';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { signInWithGoogle } from '@/lib/auth/google';
-import { signInWithKakao } from '@/lib/auth/kakao';
 import { signInWithEmail } from '@/lib/auth/email';
 import { cn } from '@/lib/utils';
 import { EMPTY_LEGAL_CONSENT } from '@/lib/legal/consent';
@@ -33,17 +32,6 @@ export function LoginClient({ next }: LoginClientProps) {
       setLoading(true);
       setError(null);
       await signInWithGoogle(EMPTY_LEGAL_CONSENT, { next, deferLegalConsent: true });
-    } catch {
-      setError(t('errorGeneric'));
-      setLoading(false);
-    }
-  }
-
-  async function handleKakao() {
-    try {
-      setLoading(true);
-      setError(null);
-      await signInWithKakao(EMPTY_LEGAL_CONSENT, { next, deferLegalConsent: true });
     } catch {
       setError(t('errorGeneric'));
       setLoading(false);
@@ -137,16 +125,6 @@ export function LoginClient({ next }: LoginClientProps) {
           className="h-11 w-full"
         >
           {loading ? t('loading') : t('googleButton')}
-        </Button>
-
-        <Button
-          type="button"
-          onClick={handleKakao}
-          disabled={loading}
-          variant="outline"
-          className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-white hover:bg-[var(--kakao-yellow-hover)] hover:text-white disabled:text-white"
-        >
-          {loading ? t('loading') : t('kakaoButton')}
         </Button>
 
         <Link

@@ -78,8 +78,7 @@ Project ref must be `jamhkucluhiibqpjsiov`.
 | Redirect URL includes `${NEXT_PUBLIC_APP_URL}/auth/callback` | TBD | URL path only |
 | Local redirect URLs kept for smoke only | TBD | localhost paths only |
 | Google provider enabled | TBD | provider enabled |
-| Kakao provider enabled if included in launch scope | TBD | provider enabled |
-| Kakao email optional setting matches `docs/specs/auth.md` | TBD | checked |
+| Kakao **login** provider DISABLED (login removed 2026-06-20) | TBD | provider disabled |
 | Email/password minimum length is 8 | TBD | checked |
 | Password strength requires letters plus digits | TBD | checked |
 | Sign-in/sign-up rate limit is 10 per 5 minutes | TBD | checked |
@@ -91,10 +90,8 @@ Project ref must be `jamhkucluhiibqpjsiov`.
 |---|---|---:|---|
 | Google | Web origin is `NEXT_PUBLIC_APP_URL` | TBD | origin only |
 | Google | OAuth callback is Supabase callback URL | TBD | path only |
-| Kakao | Web origin is `NEXT_PUBLIC_APP_URL` | TBD | origin only |
-| Kakao | OAuth callback is Supabase callback URL | TBD | path only |
-| Kakao | JavaScript key present in Vercel env | TBD | presence only |
-| Kakao | Admin key present in Vercel env | TBD | presence only |
+| Kakao | (login removed) JavaScript key present in Vercel env — **share only** | TBD | presence only |
+| Kakao | (login removed) Admin key present in Vercel env — **share only** | TBD | presence only |
 
 ## OpenAI / ZDR
 

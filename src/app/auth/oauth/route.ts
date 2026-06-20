@@ -52,7 +52,8 @@ export async function GET(request: NextRequest) {
 }
 
 function parseProvider(value: string | null): LegalConsentProvider | null {
-  return value === 'google' || value === 'kakao' ? value : null;
+  // 웹 OAuth 는 Google 단독(Kakao 로그인 제거, KOE205). 직접 ?provider=kakao 호출도 차단.
+  return value === 'google' ? value : null;
 }
 
 function sanitizeNextPath(next: string | null): string | null {

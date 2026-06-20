@@ -13,10 +13,6 @@ vi.mock('@/lib/auth/google', () => ({
   signInWithGoogle: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/kakao', () => ({
-  signInWithKakao: vi.fn(),
-}));
-
 vi.mock('@/lib/supabase/server');
 
 vi.mock('next/navigation', () => ({
@@ -28,12 +24,10 @@ vi.mock('next/navigation', () => ({
 
 import { signUpWithEmail } from '@/lib/auth/email';
 import { signInWithGoogle } from '@/lib/auth/google';
-import { signInWithKakao } from '@/lib/auth/kakao';
 import { createClient } from '@/lib/supabase/server';
 
 const mockSignUpWithEmail = vi.mocked(signUpWithEmail);
 const mockSignInWithGoogle = vi.mocked(signInWithGoogle);
-const mockSignInWithKakao = vi.mocked(signInWithKakao);
 const mockRouterPush = vi.fn();
 const mockRouterReplace = vi.fn();
 const getUser = vi.fn();
@@ -209,33 +203,6 @@ describe('SignupPage', () => {
 
     await waitFor(() =>
       expect(mockSignInWithGoogle).toHaveBeenCalledWith(
-        expect.any(Object),
-        { next: '/guest/complete', reuseExistingConsent: true },
-      ),
-    );
-  });
-
-  it('guest intent Kakao signup keeps next=/guest/complete without recording new consent', async () => {
-    window.sessionStorage.setItem(
-      'osa_guest_onboarding',
-      JSON.stringify({
-        nickname: '하늘달',
-        birth_date: '1995-11-05',
-        birth_date_calendar: 'solar',
-        is_lunar_leap: false,
-        birth_time_knowledge: 'exact',
-        birth_time: '14:20',
-        gender: 'M',
-      }),
-    );
-    mockSignInWithKakao.mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    await renderSignupPage(true);
-
-    await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
-
-    await waitFor(() =>
-      expect(mockSignInWithKakao).toHaveBeenCalledWith(
         expect.any(Object),
         { next: '/guest/complete', reuseExistingConsent: true },
       ),

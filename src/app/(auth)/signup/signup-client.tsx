@@ -9,7 +9,6 @@ import { LegalConsentBlock } from '@/components/legal/legal-consent-block';
 import { Button } from '@/components/ui/button';
 import { signUpWithEmail } from '@/lib/auth/email';
 import { signInWithGoogle } from '@/lib/auth/google';
-import { signInWithKakao } from '@/lib/auth/kakao';
 import { loadGuestOnboarding } from '@/lib/guest/session';
 import { trackEvent } from '@/lib/analytics/ga';
 import { validatePassword } from '@/lib/auth/password-policy';
@@ -47,20 +46,6 @@ export function SignupClient({ isGuestIntent }: SignupClientProps) {
       setLoading(true);
       setError(null);
       await signInWithGoogle(legalConsent, {
-        next: '/guest/complete',
-        reuseExistingConsent: isGuestIntent,
-      });
-    } catch {
-      setError(t('errorGeneric'));
-      setLoading(false);
-    }
-  }
-
-  async function handleKakao() {
-    try {
-      setLoading(true);
-      setError(null);
-      await signInWithKakao(legalConsent, {
         next: '/guest/complete',
         reuseExistingConsent: isGuestIntent,
       });
@@ -184,16 +169,6 @@ export function SignupClient({ isGuestIntent }: SignupClientProps) {
               className="h-11 w-full"
             >
               {loading ? t('loading') : 'Google로 시작하기'}
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleKakao}
-              disabled={loading}
-              variant="outline"
-              className="mt-2 h-11 w-full border-[var(--kakao-yellow)] bg-[var(--kakao-yellow)] text-white hover:bg-[var(--kakao-yellow-hover)] hover:text-white disabled:text-white"
-            >
-              {loading ? t('loading') : '카카오로 시작하기'}
             </Button>
           </>
         )}
