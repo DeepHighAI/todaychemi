@@ -587,7 +587,6 @@
   },
   "home": {
     "greeting": "오늘의 케미",
-    "add_relation": "인연 등록",
     "intro": {
       "question": "머릿속을 맴도는 그 질문 — \"이 사람과 나, 잘 맞을까?\"",
       "prefix": "새 동료, 소개팅 상대, 오래 본 친구까지. 마음 쓰이는 사람을 별명으로 등록하면, 나와 그 사람의 ",
@@ -718,6 +717,8 @@
       "eyebrow": "서비스 정보",
       "language": "언어 변경",
       "languageSub": "한국어 우선 지원",
+      "fontSize": "글자 크기",
+      "fontSizeSub": "보통 · 크게",
       "privacy": "개인정보처리방침",
       "privacySub": "시행일 2026.06.01",
       "terms": "이용약관",
@@ -733,6 +734,14 @@
       "logoutConfirmNo": "아니오",
       "logoutLoading": "로그아웃 중…",
       "logoutError": "로그아웃에 실패했어요. 잠시 후 다시 시도해주세요."
+    },
+    "fontSize": {
+      "title": "글자 크기",
+      "description": "앱 전체 글자 크기를 선택하세요.",
+      "preview": "이 문장으로 크기를 미리 볼 수 있어요.",
+      "normal": "보통",
+      "large": "크게",
+      "close": "닫기"
     },
     "privacyControls": {
       "deleteTitle": "계정 삭제를 요청할까요?",

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders } from '@/test/render';
 import { InfoCard } from './info-card';
@@ -10,6 +11,7 @@ describe('InfoCard', () => {
     onTerms: vi.fn(),
     onRefund: vi.fn(),
     onLang: vi.fn(),
+    onFontSize: vi.fn(),
     onDeleteAccount: vi.fn(),
   };
 
@@ -24,9 +26,16 @@ describe('InfoCard', () => {
     expect(screen.queryByText('로그아웃')).not.toBeInTheDocument();
   });
 
-  it('남은 정보 행은 5개다 (언어·개인정보·약관·환불·계정삭제)', () => {
+  it('정보 행은 6개다 (언어·글자 크기·개인정보·약관·환불·계정삭제)', () => {
     renderWithProviders(<InfoCard {...baseProps} />);
     const card = screen.getByTestId('info-card');
-    expect(within(card).getAllByRole('button')).toHaveLength(5);
+    expect(within(card).getAllByRole('button')).toHaveLength(6);
+  });
+
+  it('글자 크기 행을 클릭하면 onFontSize 를 호출한다', async () => {
+    const onFontSize = vi.fn();
+    renderWithProviders(<InfoCard {...baseProps} onFontSize={onFontSize} />);
+    await userEvent.click(screen.getByRole('button', { name: /글자 크기/ }));
+    expect(onFontSize).toHaveBeenCalledTimes(1);
   });
 });

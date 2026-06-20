@@ -4,13 +4,14 @@
  * 웹앱 원본: src/components/today/today-app-bar.tsx
  * 변경 사항:
  *  - 'use client' 제거 (Vite SPA)
- *  - next/link <Link href> → react-router <Link to>
- *  - next-themes useTheme 제거 — miniapp 은 시스템 다크모드만 따름(tokens.css)
- *  - 테마 토글 버튼 제거 (미니앱 단순화)
+ *  - 우측 인연 등록 링크 → 라이트/다크 테마 토글로 교체.
+ *    (홈 인연 등록 진입은 중앙 빠른카드·0건 hero 로 유지되어 기능 손실 없음.
+ *     피드의 인연 등록은 그대로 유지.)
  */
 
-import { Link } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
+
+import { ThemeToggleButton } from './theme-toggle-button';
 
 export function TodayAppBar() {
   const t = useTranslations('home');
@@ -30,17 +31,7 @@ export function TodayAppBar() {
       <h1 style={{ font: 'var(--t-h3)', color: 'var(--text-primary)', margin: 0 }}>
         {t('greeting')}
       </h1>
-      <Link
-        to="/relations/new"
-        style={{
-          color: 'var(--primary)',
-          font: 'var(--t-sub)',
-          fontWeight: 600,
-          textDecoration: 'none',
-        }}
-      >
-        {t('add_relation')}
-      </Link>
+      <ThemeToggleButton />
     </div>
   );
 }

@@ -43,6 +43,7 @@ import { MeEditRow } from '@/components/me/me-edit-row';
 import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { TalismanCard } from '@/components/me/talisman-card';
 import { InfoCard } from '@/components/me/info-card';
+import { FontSizeSheet } from '@/components/me/font-size-sheet';
 import { PillarGrid } from '@/components/me/pillar-grid';
 import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
 import { DayMasterCard } from '@/components/me/day-master-card';
@@ -73,6 +74,7 @@ export function MePage() {
 
   // 로컬 상태
   const [editOpen, setEditOpen] = useState(false);
+  const [fontSheetOpen, setFontSheetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -162,8 +164,12 @@ export function MePage() {
         onLang={() => {
           // 미니앱: 언어 KO 고정 — 추후 다국어 지원 시 시트로 교체 (TODO P5)
         }}
+        onFontSize={() => setFontSheetOpen(true)}
         onDeleteAccount={() => setDeleteOpen(true)}
       />
+
+      {/* 글자 크기 선택 바텀시트 */}
+      <FontSizeSheet open={fontSheetOpen} onOpenChange={setFontSheetOpen} />
 
       {/* 계정 삭제 확인 다이얼로그 */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
