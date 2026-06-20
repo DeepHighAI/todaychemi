@@ -275,3 +275,18 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .btn-cta::before { animation: none; }
 }
+
+/* ===========================================================================
+ * 로딩 애니메이션 — 스켈레톤 pulse / 스피너 spin
+ *
+ * LoadingState·hapcard/loading-state 가 `animation: pulse …`/`spin …` 를
+ * 참조하지만 keyframes 정의가 없어 동작하지 않던 것을 정의한다.
+ * =========================================================================== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
