@@ -14,6 +14,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { AuthProvider } from './lib/auth/AuthProvider';
 import { AppRouter } from './app/routes';
 import { ensureTossAdsInitialized } from './components/ads/ad-banner';
+import { usePreferences } from './lib/preferences/use-preferences';
 import koMessages from './i18n/ko.json';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,11 @@ export function App() {
   // init + 자신의 onInitialized 안 attach 는 2번째 이후 배너가 누락될 수 있어 금지.
   useEffect(() => {
     ensureTossAdsInitialized();
+  }, []);
+
+  // 테마·글자 크기 환경설정을 <html> 에 동기화한다(인라인 스크립트와 멱등).
+  useEffect(() => {
+    usePreferences.getState().init();
   }, []);
 
   return (
