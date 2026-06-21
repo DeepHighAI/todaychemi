@@ -44,6 +44,7 @@ import { Button } from '@/components/ui/button';
 import { Bar } from '@/components/ui/bar';
 import { BackButton } from '@/components/ui/back-button';
 import { Seg } from '@/components/ui/seg';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -881,77 +882,21 @@ export function HapcardPage() {
         </div>
       )}
 
-      {/* ── 삭제 확인 ── */}
-      {confirmDel && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 24px',
-          }}
-          onClick={() => setConfirmDel(false)}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 20,
-              padding: 20,
-              width: '100%',
-              maxWidth: 320,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p style={{ font: 'var(--t-h3)', margin: 0, color: 'var(--text-primary)' }}>
-              {t('delete.confirmTitle', { nickname: relationNickname })}
-            </p>
-            <p style={{ font: 'var(--t-sub)', margin: 0, color: 'var(--text-secondary)' }}>
-              {t('delete.confirmBody')}
-            </p>
-            <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-              <button
-                type="button"
-                onClick={() => setConfirmDel(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: 'var(--surface-1)',
-                  color: 'var(--text-primary)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {t('delete.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setConfirmDel(false); del.mutate(); }}
-                style={{
-                  flex: 1,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: 'var(--destructive)',
-                  color: 'white',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                {t('delete.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── 삭제 확인 (공용 ConfirmDialog) ── */}
+      <ConfirmDialog
+        open={confirmDel}
+        title={String(t('delete.confirmTitle', { nickname: relationNickname }))}
+        description={String(t('delete.confirmBody'))}
+        confirmLabel={String(t('delete.confirm'))}
+        cancelLabel={String(t('delete.cancel'))}
+        variant="destructive"
+        isPending={del.isPending}
+        onConfirm={() => {
+          setConfirmDel(false);
+          del.mutate();
+        }}
+        onCancel={() => setConfirmDel(false)}
+      />
 
       {/* ── 삭제 완료 토스트 ── */}
       {deleted && (

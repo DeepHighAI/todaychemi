@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Seg } from '@/components/ui/seg';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SwipeRow } from '@/components/layout/SwipeRow';
 import { AdBanner, isAdSlotAvailable } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
@@ -543,66 +544,26 @@ export function FeedPage() {
         </ul>
       )}
 
-      {/* 삭제 확인 다이얼로그 */}
-      {confirmDelete && (
-        <div
-          onClick={() => setConfirmDelete(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 24px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: 'var(--card)',
-              borderRadius: 20,
-              padding: 20,
-              width: '100%',
-              maxWidth: 320,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <p style={{ margin: 0, font: 'var(--t-h3)', color: 'var(--foreground)' }}>
-              {confirmDelete.length === 1
-                ? t('delete.confirmTitle', { nickname: confirmDelete[0].nickname })
-                : t('delete.bulkConfirmTitle', { count: confirmDelete.length })}
-            </p>
-            <p style={{ margin: 0, font: 'var(--t-sub)', color: 'var(--muted-foreground)' }}>
-              {t('delete.confirmBody')}
-            </p>
-            <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
-                style={{ flex: 1 }}
-                onClick={() => setConfirmDelete(null)}
-              >
-                {t('delete.cancel')}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="lg"
-                style={{ flex: 1 }}
-                disabled={del.isPending}
-                onClick={() => submitDelete(confirmDelete)}
-              >
-                {del.isPending ? t('delete.deleting') : t('delete.confirm')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 삭제 확인 다이얼로그 (공용 ConfirmDialog) */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={
+          confirmDelete
+            ? confirmDelete.length === 1
+              ? t('delete.confirmTitle', { nickname: confirmDelete[0].nickname })
+              : t('delete.bulkConfirmTitle', { count: confirmDelete.length })
+            : ''
+        }
+        description={t('delete.confirmBody')}
+        confirmLabel={del.isPending ? t('delete.deleting') : t('delete.confirm')}
+        cancelLabel={t('delete.cancel')}
+        variant="destructive"
+        isPending={del.isPending}
+        onConfirm={() => {
+          if (confirmDelete) submitDelete(confirmDelete);
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </main>
   );
 }

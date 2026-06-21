@@ -42,6 +42,7 @@ import { AvoidActionCards } from '../../components/today/avoid-action-cards';
 import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { AdBanner, isAdSlotAvailable } from '../../components/ads/ad-banner';
 
 import type { DailyHapCard } from '../../types/dailyHap';
@@ -437,57 +438,21 @@ export function HomePage() {
       {/* 또 다른 나 진입 버튼 (차트 있을 때만) */}
       {card && chart && <WhatifTrigger />}
 
-      {/* 삭제 확인 다이얼로그 */}
-      {confirmDelete && (
-        <>
-          <div
-            onClick={() => setConfirmDelete(null)}
-            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.45)' }}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 51,
-              background: 'var(--card)',
-              borderRadius: 20,
-              padding: 20,
-              width: 'calc(100% - 3rem)',
-              maxWidth: 320,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p style={{ font: 'var(--t-h3)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              {t('delete.confirmTitle', { nickname: confirmDelete.nickname })}
-            </p>
-            <p style={{ font: 'var(--t-sub)', color: 'var(--text-secondary)', margin: 0 }}>
-              {t('delete.confirmBody')}
-            </p>
-            <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--muted)', color: 'var(--text-primary)', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-              >
-                {t('delete.cancel')}
-              </button>
-              <button
-                onClick={() => {
-                  del.mutate(confirmDelete.relation_id);
-                  setConfirmDelete(null);
-                }}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--warn)', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-              >
-                {t('delete.confirm')}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* 삭제 확인 다이얼로그 (공용 ConfirmDialog) */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={confirmDelete ? t('delete.confirmTitle', { nickname: confirmDelete.nickname }) : ''}
+        description={t('delete.confirmBody')}
+        confirmLabel={t('delete.confirm')}
+        cancelLabel={t('delete.cancel')}
+        variant="destructive"
+        isPending={del.isPending}
+        onConfirm={() => {
+          if (confirmDelete) del.mutate(confirmDelete.relation_id);
+          setConfirmDelete(null);
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }
