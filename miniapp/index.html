@@ -12,6 +12,18 @@
     />
     <title>오늘케미</title>
     <!--
+      Pretendard Variable 동적 서브셋(사용 글리프만 로드). 시그니처 디스플레이 폰트.
+      토스 WebView 에서 CDN 차단 시 system-ui 폴백(회귀 없음) — 온디바이스 폴백 관찰되면
+      번들 woff2 서브셋으로 교체. Pretendard = OFL(무료).
+    -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <!--
       테마·글자 크기 pre-paint 적용(FOUC 방지). React 마운트 전에 동기 실행한다.
       저장값(twoday_theme/twoday_font_scale)이 없으면 OS 선호를 따른다.
       matchMedia 는 try/catch 밖이라 localStorage 가 막혀도 data-theme 은 항상 설정된다.

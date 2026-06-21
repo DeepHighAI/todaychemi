@@ -116,8 +116,9 @@
   --ctabar-h:              72px;
   --ctabar-h-with-safe-area: calc(72px + env(safe-area-inset-bottom));
 
-  /* Fonts (Pretendard 우선, 미로드 시 system-ui 폴백 — 회귀 없음) */
-  --font-display: 'Pretendard JP', 'Pretendard', system-ui, sans-serif;
+  /* Fonts (Pretendard Variable 우선, 미로드 시 system-ui 폴백 — 회귀 없음)
+     index.html 에서 variable 동적 서브셋 CDN 로드(family='Pretendard Variable'). */
+  --font-display: 'Pretendard Variable', 'Pretendard', system-ui, sans-serif;
   --font-body:    'Pretendard JP', 'Pretendard', system-ui, sans-serif;
 
   /* Type scale */
