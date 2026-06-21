@@ -20,6 +20,7 @@ export function WhatifClassicCitation({ citations }: WhatifClassicCitationProps)
   return (
     <div
       data-testid="whatif-classic-citation"
+      className="card-elevated"
       style={{
         borderRadius: 'var(--r-lg)',
         backgroundColor: 'var(--bg-card)',

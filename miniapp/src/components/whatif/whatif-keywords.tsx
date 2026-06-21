@@ -17,6 +17,7 @@ export function WhatifKeywords({ keywords }: WhatifKeywordsProps) {
   return (
     <div
       data-testid="whatif-keywords"
+      className="card-elevated"
       style={{
         borderRadius: 'var(--r-lg)',
         backgroundColor: 'var(--bg-card)',

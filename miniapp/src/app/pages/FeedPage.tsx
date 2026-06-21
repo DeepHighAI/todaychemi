@@ -192,6 +192,7 @@ export function FeedPage() {
   // ----- 행 콘텐츠 -----
   const renderRowContent = (item: FeedItem) => (
     <div
+      className="card-elevated"
       style={{
         backgroundColor: 'var(--card)',
         borderRadius: 'var(--r-md)',
