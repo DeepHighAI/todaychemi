@@ -42,7 +42,8 @@ function isNativeStorage(): boolean {
 /** 저장된 Bearer 토큰을 반환한다. 없으면 null. */
 export async function getToken(): Promise<string | null> {
   // 개발 환경 오버라이드: dev(serve) 빌드에서만 VITE_DEV_BEARER 를 사용한다.
-  // import.meta.env.DEV 게이트로 프로덕션(.ait) 빌드에서는 사용/인라인되지 않는다(보안).
+  // ⚠️ DEV 게이트는 프로덕션(.ait)에서 런타임 "사용"만 막는다 — vite8/rolldown 은 토큰
+  // 문자열을 번들에서 DCE하지 못하므로, 미인라인은 vite.config.ts 의 빌드 가드가 보장한다.
   const devBearer = import.meta.env.DEV
     ? (import.meta.env.VITE_DEV_BEARER as string | undefined)
     : undefined;

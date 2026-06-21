@@ -14,7 +14,10 @@
  * 자동 로그인: 네이티브 Toss 환경에서 저장 토큰이 없으면 마운트 시 login() 을 자동 호출한다
  *   (user_key 스코프 — PII·동의화면 없음, 앱인토스 seamless 진입). 실패 시 재시도 게이트 노출.
  *
- * 개발 오버라이드: dev(serve) 빌드에서만 VITE_DEV_BEARER 사용(프로덕션 .ait 미인라인, 보안).
+ * 개발 오버라이드: dev(serve) 빌드에서만 VITE_DEV_BEARER 를 사용한다(아래 DEV 게이트).
+ *   ⚠️ DEV 게이트는 런타임 "사용"만 막을 뿐, vite8/rolldown 은 토큰 문자열을 번들에서 DCE하지
+ *   못한다 — 프로덕션 .ait 미인라인은 vite.config.ts 의 빌드 가드(assertNoDevBearerInBuild)가
+ *   보장한다(.env.local 에 토큰이 있으면 프로덕션 빌드 실패). 빌드 전 토큰을 비워야 한다.
  */
 
 import {
@@ -71,7 +74,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // 실제 로그인 수행 — 새 access_token 을 반환한다(재로그인 재시도에서 토큰 값이 필요).
   const performLogin = useCallback(async (): Promise<string | null> => {
-    // dev 오버라이드: dev(serve) 빌드 한정. 프로덕션(.ait)에서는 DEV=false → 미사용·미인라인.
+    // dev 오버라이드: dev(serve) 빌드 한정. 프로덕션(.ait)은 DEV=false → 미사용(런타임).
+    // 미인라인은 vite.config 빌드 가드가 보장(DEV 게이트만으론 토큰 문자열이 안 잘림).
     const devBearer = import.meta.env.DEV
       ? (import.meta.env.VITE_DEV_BEARER as string | undefined)
       : undefined;
