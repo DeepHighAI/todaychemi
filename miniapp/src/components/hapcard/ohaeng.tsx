@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/client';
 import { Bar } from '@/components/ui/bar';
+import { HapcardMiniRadar } from './mini-radar';
 import type { OhaengInterpretation } from '@/types/hapcard';
 
 // 오행 요소 타입 (웹앱 src/lib/saju/elementLabel.ts 와 동일)
@@ -94,6 +95,8 @@ export function HapcardOhaeng({
   return (
     <div data-testid="hapcard-ohaeng" style={{ borderRadius: 16, backgroundColor: 'var(--bg-card)', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('ohaeng.title')}</p>
+      {/* 오버레이 레이더(본인 vs 인연 게슈탈트) — 아래 비교 바는 정밀 카운트 유지 */}
+      <HapcardMiniRadar user={userCounts} relation={relationCounts} />
       <div data-testid="ohaeng-comparison-chart" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5rem 1fr', gap: 8, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
           <span style={{ textAlign: 'right' }}>{t('ohaeng.labelMe')}</span>
