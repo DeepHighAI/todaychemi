@@ -2,7 +2,7 @@
  * whatif-hero.tsx — 또 다른 나 히어로 카드 (미니앱 포트)
  *
  * 웹앱 원본: src/components/whatif/whatif-hero.tsx (next-intl + Tailwind)
- * 변경: 'use client' 제거, Tailwind → 인라인 스타일.
+ * 변경: 'use client' 제거, Tailwind → 인라인 스타일. .liquid cool 리퀴드글래스(회색 카드 대체).
  * AiDisclosureBadge 유지 (AI 생성 고지 의무, ADR-038/1G).
  */
 
@@ -21,9 +21,8 @@ export function WhatifHero({ type, body }: WhatifHeroProps) {
   return (
     <div
       data-testid="whatif-hero"
+      className="liquid cool"
       style={{
-        borderRadius: 'var(--r-lg)',
-        backgroundColor: 'var(--bg-card)',
         padding: 24,
         display: 'flex',
         flexDirection: 'column',
@@ -34,7 +33,7 @@ export function WhatifHero({ type, body }: WhatifHeroProps) {
         <p
           style={{
             font: 'var(--t-cap)',
-            color: 'var(--text-secondary)',
+            color: 'rgba(255,255,255,0.85)',
             textTransform: 'uppercase',
             letterSpacing: 'var(--ls-wide)',
             margin: 0,
@@ -42,12 +41,12 @@ export function WhatifHero({ type, body }: WhatifHeroProps) {
         >
           {t(`${type}.title`)}
         </p>
-        <AiDisclosureBadge tone="light" />
+        <AiDisclosureBadge tone="dark" />
       </div>
       <p
         style={{
           font: 'var(--t-body)',
-          color: 'var(--text-primary)',
+          color: '#fff',
           whiteSpace: 'pre-line',
           margin: 0,
         }}
