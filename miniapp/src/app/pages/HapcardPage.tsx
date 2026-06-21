@@ -652,25 +652,8 @@ export function HapcardPage() {
           gap: 12,
         }}
       >
-        {/* ── Liquid Glass 히어로 ── */}
-        <section
-          style={{
-            background: 'var(--bg-liquid-hero, linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, #1a1a2e) 100%))',
-            borderRadius: 20,
-            padding: 20,
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)',
-            }}
-          />
+        {/* ── Liquid Glass 히어로 (.liquid 클래스: 배경·글로스·rim 통일) ── */}
+        <section className="liquid" style={{ padding: 20 }}>
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
