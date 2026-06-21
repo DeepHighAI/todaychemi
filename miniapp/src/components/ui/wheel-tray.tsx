@@ -39,7 +39,7 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
       <div
         aria-hidden
         onClick={onCancel}
-        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 200 }}
+        style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 200, pointerEvents: 'auto' }}
       />
       <div
         role="dialog"
@@ -52,6 +52,9 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
           zIndex: 201,
           maxWidth: 448,
           margin: '0 auto',
+          // vaul modal Drawer 안에서 body 가 pointer-events:none 가 되므로
+          // 포털된 트레이가 죽지 않도록 명시적으로 auto 로 되돌린다(다른 화면 무영향).
+          pointerEvents: 'auto',
           backgroundColor: 'var(--bg-card)',
           borderTopLeftRadius: 'var(--r-xl)',
           borderTopRightRadius: 'var(--r-xl)',

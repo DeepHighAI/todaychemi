@@ -31,6 +31,18 @@ describe('WheelTray', () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
+  it('backdrop·dialog 에 pointer-events:auto 를 둔다 (vaul 모달 중첩 시 죽지 않도록)', () => {
+    renderWithProviders(
+      <WheelTray open title="t" onCancel={vi.fn()} onDone={vi.fn()}>
+        <div />
+      </WheelTray>,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.style.pointerEvents).toBe('auto');
+    const backdrop = dialog.previousElementSibling as HTMLElement;
+    expect(backdrop?.style.pointerEvents).toBe('auto');
+  });
+
   it('open=false 면 아무것도 렌더하지 않는다', () => {
     renderWithProviders(
       <WheelTray open={false} title="t" onCancel={vi.fn()} onDone={vi.fn()}>
