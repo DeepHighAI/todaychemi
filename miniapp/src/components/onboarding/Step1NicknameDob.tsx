@@ -3,9 +3,7 @@
  *
  * 웹앱 원본: src/app/(app)/onboarding/dob/page.tsx
  * 변경사항:
- *   - BirthDateField(tray+wheel) → native <input type="date">
- *     (WebView 에서 네이티브 날짜 선택기 사용 — 의존성 없음, 구현 단순)
- *   - 날짜 포맷: YYYY-MM-DD (input[type=date] 기본 value 포맷)
+ *   - 생년월일 = iOS 휠 피커(DateWheelField). 출력은 동일한 YYYY-MM-DD.
  *   - next-intl useTranslations 유지
  */
 

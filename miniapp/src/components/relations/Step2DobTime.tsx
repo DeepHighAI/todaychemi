@@ -2,10 +2,8 @@
  * Step2DobTime.tsx — 스텝 2: 생년월일 + 양음력 + 출생시간
  *
  * 웹앱 src/app/(app)/relations/new/dob-time/page.tsx 포트.
- * - BirthDateField / BirthTimeField 는 웹앱 전용 picker 라 WebView 에서
- *   그대로 재사용하기 어렵다 (next-intl tray 의존). 대신 네이티브
- *   <input type="date"> / <input type="time"> 를 사용한다.
- *   (WebView 에서 정상 동작하며 데이터 shape 은 동일)
+ * - 생년월일/시간 = iOS 휠 피커(DateWheelField/TimeWheelField). 출력 shape
+ *   (YYYY-MM-DD / HH:MM)·검증은 네이티브 input 과 동일하게 유지.
  * - G-10 (ADR-029 Amend): "생일을 잘 몰라요" 토글 → Track B 카드 (등록 비차단).
  *   Track B 링크 = /whatif/first_meet (HashRouter Link).
  */

@@ -3,7 +3,7 @@
  *
  * 웹앱 원본: src/app/(app)/onboarding/time/page.tsx
  * 변경사항:
- *   - BirthTimeField(wheel picker) → native <input type="time">
+ *   - 태어난 시간 = iOS 휠 피커(TimeWheelField). 출력은 동일한 HH:MM.
  *   - next-intl useTranslations 유지
  */
 
@@ -111,7 +111,7 @@ export function Step2Time() {
               id="birth-time"
               value={birthTime}
               onChange={setBirthTime}
-              label={t('birth.time')}
+              label={t('birth.timeOptional')}
               placeholder={t('birth.timePlaceholder')}
             />
           </div>
