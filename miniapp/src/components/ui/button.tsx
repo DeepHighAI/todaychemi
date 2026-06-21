@@ -10,7 +10,7 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cn } from '@/lib/utils';
 
 export type ButtonVariant = 'default' | 'outline' | 'secondary' | 'ghost' | 'destructive' | 'link';
-export type ButtonSize = 'default' | 'xs' | 'sm' | 'lg' | 'icon' | 'icon-sm' | 'icon-lg';
+export type ButtonSize = 'default' | 'xs' | 'sm' | 'lg' | 'cta' | 'icon' | 'icon-sm' | 'icon-lg';
 
 // 변형별 인라인 스타일 팩토리 — tokens.css 변수 참조
 function variantStyle(variant: ButtonVariant): React.CSSProperties {
@@ -43,6 +43,8 @@ function sizeStyle(size: ButtonSize): React.CSSProperties {
     case 'sm':    return { height: 28, padding: '0 10px', fontSize: 13, borderRadius: 'var(--r-sm)' };
     case 'default': return { height: 32, padding: '0 10px', fontSize: 14, borderRadius: 'var(--r-sm)' };
     case 'lg':    return { height: 36, padding: '0 14px', fontSize: 15, borderRadius: 'var(--r-md)' };
+    // 풀폭 pill 프라이머리 CTA(UIDesign .btn) — 하단 플로팅 주요 행동용
+    case 'cta':   return { height: 52, width: '100%', padding: '0 20px', fontSize: 16, fontWeight: 700, borderRadius: 'var(--r-pill)' };
     case 'icon':    return { width: 32, height: 32, padding: 0, borderRadius: 'var(--r-sm)' };
     case 'icon-sm': return { width: 28, height: 28, padding: 0, borderRadius: 'var(--r-xs)' };
     case 'icon-lg': return { width: 36, height: 36, padding: 0, borderRadius: 'var(--r-md)' };
