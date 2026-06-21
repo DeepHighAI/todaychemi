@@ -314,6 +314,30 @@ body {
 }
 
 /* ===========================================================================
+ * 버튼 disabled 시각 표시
+ *
+ * Button 프리미티브(button.tsx)는 disabled 시 별도 스타일이 없어 비활성 상태가
+ * 보이지 않았다(특히 결제 CTA 가 글로우는 그대로 빛나며 탭만 무시). 전역 affordance
+ * 를 제공하고, .btn-cta 는 disabled 시 글로우/그림자/모션을 죽여 활성 컨트롤로
+ * 오인되지 않게 한다. 클릭 차단 동작은 native disabled 가 담당하므로 불변.
+ * @base-ui 는 native :disabled 와 [data-disabled] 를 모두 부여 → 둘 다 매칭.
+ * =========================================================================== */
+.btn:disabled,
+.btn[data-disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-cta:disabled,
+.btn-cta[data-disabled] {
+  box-shadow: none;
+}
+.btn-cta:disabled::before,
+.btn-cta[data-disabled]::before {
+  animation: none;
+  opacity: 0.4;
+}
+
+/* ===========================================================================
  * 로딩 애니메이션 — 스켈레톤 pulse / 스피너 spin
  *
  * LoadingState·hapcard/loading-state 가 `animation: pulse …`/`spin …` 를
