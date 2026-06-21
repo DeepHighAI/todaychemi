@@ -7,6 +7,7 @@
  *  - next/link <Link href> → react-router <Link to>
  *  - @/ 절대 경로 → 상대 경로
  *  - AiDisclosureBadge: 공유 컴포넌트에서 import
+ *  - 배경/글로스: .liquid 클래스로 통일(인라인 그라데이션·수동 글로스 span 제거)
  *
  * G-10 ADR-032 Amend: 인연 0건 hero 유도 블록 유지.
  */
@@ -39,30 +40,16 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
 
   return (
     <div
+      className="liquid"
       style={{
-        background: 'linear-gradient(135deg, var(--lg-1), var(--lg-2), var(--lg-3), var(--lg-4))',
-        borderRadius: 'var(--r-xl)',
         margin: '0 16px',
         padding: 20,
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
-        position: 'relative',
-        overflow: 'hidden',
       }}
       aria-label={t('greeting')}
     >
-      {/* gloss overlay */}
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.30), transparent 50%)',
-        }}
-      />
-
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           {/* 레이블 + AI 배지 */}
@@ -98,12 +85,12 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
           {/* 온도 / 헤드라인 — /feed 이동 */}
           <Link to="/feed" style={{ display: 'block', textDecoration: 'none' }}>
             {hasScore ? (
-              <p style={{ fontWeight: 800, fontSize: 56, lineHeight: 1, letterSpacing: '-0.045em', color: 'white', marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 56, lineHeight: 1, letterSpacing: '-0.045em', color: 'white', marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
                 {temperature?.toFixed(1)}
                 <span style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginLeft: 4, letterSpacing: 'normal', verticalAlign: 'baseline' }}>°C</span>
               </p>
             ) : (
-              <p style={{ fontWeight: 800, fontSize: 28, lineHeight: 1.18, letterSpacing: '-0.025em', color: 'white', marginTop: 8, whiteSpace: 'pre-line' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, lineHeight: 1.18, letterSpacing: '-0.025em', color: 'white', marginTop: 8, whiteSpace: 'pre-line' }}>
                 {convertHanja(card.headline)}
               </p>
             )}
