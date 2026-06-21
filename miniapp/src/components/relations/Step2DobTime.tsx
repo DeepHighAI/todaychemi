@@ -14,6 +14,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { DateWheelField } from '@/components/ui/date-wheel-field';
+import { TimeWheelField } from '@/components/ui/time-wheel-field';
 import type { Calendar, TimeAccuracy } from '@/lib/relations/draft-store';
 
 interface Step2Props {
@@ -107,7 +109,7 @@ export function Step2DobTime({
           ))}
         </div>
 
-        {/* 생년월일 — 네이티브 date picker */}
+        {/* 생년월일 — 휠 피커 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label
             htmlFor="rel-birthdate"
@@ -115,23 +117,14 @@ export function Step2DobTime({
           >
             {t('birth.date')}
           </label>
-          <input
+          <DateWheelField
             id="rel-birthdate"
-            type="date"
             value={birthDate}
+            onChange={setBirthDate}
             min="1900-01-01"
             max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setBirthDate(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              borderRadius: 'var(--r-sm)',
-              backgroundColor: 'var(--surface-1)',
-              border: '1px solid var(--border)',
-              padding: '12px 14px',
-              fontSize: 15,
-              color: birthDate ? 'var(--foreground)' : 'var(--text-secondary)',
-            }}
+            label={t('birth.date')}
+            placeholder={t('birth.datePlaceholder')}
           />
         </div>
 
@@ -163,7 +156,7 @@ export function Step2DobTime({
           ))}
         </div>
 
-        {/* 시간 입력 — 네이티브 time picker */}
+        {/* 시간 입력 — 휠 피커 */}
         {knowledge !== 'unknown' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label
@@ -172,21 +165,12 @@ export function Step2DobTime({
             >
               {t('birth.timeOptional')}
             </label>
-            <input
+            <TimeWheelField
               id="rel-birthtime"
-              type="time"
               value={birthTime}
-              onChange={(e) => setBirthTime(e.target.value)}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                borderRadius: 'var(--r-sm)',
-                backgroundColor: 'var(--surface-1)',
-                border: '1px solid var(--border)',
-                padding: '12px 14px',
-                fontSize: 15,
-                color: birthTime ? 'var(--foreground)' : 'var(--text-secondary)',
-              }}
+              onChange={setBirthTime}
+              label={t('birth.timeOptional')}
+              placeholder={t('birth.timePlaceholder')}
             />
           </div>
         )}
