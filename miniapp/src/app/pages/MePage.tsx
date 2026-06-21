@@ -44,9 +44,8 @@ import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { TalismanCard } from '@/components/me/talisman-card';
 import { InfoCard } from '@/components/me/info-card';
 import { FontSizeSheet } from '@/components/me/font-size-sheet';
-import { SectionCard } from '@/components/me/section-card';
 import { PillarGrid } from '@/components/me/pillar-grid';
-import { OhaengBars } from '@/components/hapcard/primitives/ohaeng-bars';
+import { OhaengRadar } from '@/components/me/ohaeng-radar';
 import { DayMasterCard } from '@/components/me/day-master-card';
 import YunseCard from '@/components/me/yunse-card';
 
@@ -161,10 +160,8 @@ export function MePage() {
       {/* 4기둥 그리드 */}
       <PillarGrid chart={chart} />
 
-      {/* 오행 분포 바 — 통일 카드 surface 로 래핑 */}
-      <SectionCard eyebrow={t('section.ohaeng.eyebrow')}>
-        <OhaengBars data={chart.five_elements_counts} />
-      </SectionCard>
+      {/* 오행 5축 레이더 + 가장 강한/약한 기운 칩 */}
+      <OhaengRadar data={chart.five_elements_counts} />
 
       {/* 일간 설명 */}
       <DayMasterCard element={chart.day_master_element} />

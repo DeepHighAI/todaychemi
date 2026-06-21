@@ -680,7 +680,9 @@
         "unknown": "—"
       },
       "ohaeng": {
-        "eyebrow": "오행 분포"
+        "eyebrow": "오행 분포",
+        "strongest": "가장 강한 기운",
+        "weakest": "가장 약한 기운"
       },
       "daymaster": {
         "eyebrow": "일간",
