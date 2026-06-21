@@ -26,23 +26,17 @@ export function CtaBar({ label, disabled = false, loading = false, onClick }: Ct
         paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
         background: 'var(--background)',
         borderTop: '1px solid var(--border)',
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
       <Button
         variant="default"
+        size="cta"
         className="btn-cta"
         disabled={disabled || loading}
         onClick={onClick}
-        style={{
-          height: 48,
-          width: '100%',
-          borderRadius: 'var(--r-pill)',
-          fontWeight: 700,
-          fontSize: 16,
-          maxWidth: 448,
-          display: 'block',
-          margin: '0 auto',
-        }}
+        style={{ maxWidth: 448 }}
       >
         {label}
       </Button>

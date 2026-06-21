@@ -283,11 +283,11 @@ export function RelationDetailPage() {
           onDelete={(memoId) => deleteMemo.mutate(memoId)}
         />
 
-        {/* CTA — 케미카드 보기 */}
+        {/* CTA — 케미카드 보기 (풀폭 pill 프라이머리, 글로우 강조) */}
         <Button
           type="button"
-          size="lg"
-          style={{ width: '100%' }}
+          size="cta"
+          className="btn-cta"
           onClick={() =>
             navigate(`/hapcard/${relation.relation_id}?mode=${encodeURIComponent(relation.mode)}`)
           }

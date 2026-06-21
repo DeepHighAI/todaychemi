@@ -40,6 +40,7 @@ import type { ErrorCode } from '@/lib/errors/error-codes';
 import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
+import { Button } from '@/components/ui/button';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -286,47 +287,29 @@ export function HapcardPage() {
             </p>
           )}
           <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+            <Button
               type="button"
+              size="cta"
+              className="btn-cta"
+              disabled={isPurchasing || !payInfo || !refundConsent}
               onClick={() => {
                 clearIapError();
                 if (payInfo) {
                   openIapPurchase(payInfo);
                 }
               }}
-              disabled={isPurchasing || !payInfo || !refundConsent}
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                borderRadius: 10,
-                border: 'none',
-                backgroundColor: 'var(--primary)',
-                color: 'white',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: isPurchasing || !payInfo || !refundConsent ? 'not-allowed' : 'pointer',
-                opacity: isPurchasing || !payInfo || !refundConsent ? 0.6 : 1,
-              }}
             >
               {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => { clearIapError(); setPayDismissed(true); }}
-              style={{
-                padding: '10px 16px',
-                borderRadius: 10,
-                border: '1px solid var(--border)',
-                backgroundColor: 'transparent',
-                color: 'var(--text-primary)',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
+              style={{ width: '100%' }}
             >
               닫기
-            </button>
+            </Button>
           </div>
         </div>
       </main>

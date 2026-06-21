@@ -241,9 +241,9 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
               </p>
             )}
             <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Button
-                size="sm"
+                size="cta"
                 className="btn-cta"
                 disabled={isPurchasing || !payInfo || !refundConsent}
                 onClick={() => {
@@ -253,7 +253,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
               >
                 {isPurchasing ? '결제 중…' : `₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()} 결제하기`}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleRetry}>
+              <Button variant="ghost" onClick={handleRetry} style={{ width: '100%' }}>
                 닫기
               </Button>
             </div>

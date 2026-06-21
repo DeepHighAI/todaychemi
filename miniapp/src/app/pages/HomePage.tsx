@@ -312,7 +312,6 @@ export function HomePage() {
       <section style={{ padding: '0 16px' }}>
         <Link
           to="/relations/new"
-          className="btn-cta"
           style={{
             display: 'flex',
             alignItems: 'center',

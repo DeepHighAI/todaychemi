@@ -321,7 +321,7 @@ export function FeedPage() {
             </Button>
           )}
           <Link to="/relations/new" style={{ textDecoration: 'none' }}>
-            <Button type="button" variant="default" size="sm" className="btn-cta" style={{ gap: 6 }}>
+            <Button type="button" variant="default" size="sm" style={{ gap: 6 }}>
               <Plus size={16} aria-hidden="true" />
               {t('addRelation')}
             </Button>
@@ -397,7 +397,7 @@ export function FeedPage() {
             {t('empty')}
           </p>
           <Link to="/relations/new" style={{ textDecoration: 'none' }}>
-            <Button type="button" variant="default" size="lg">
+            <Button type="button" variant="default" size="cta" className="btn-cta">
               {t('emptyCta')}
             </Button>
           </Link>

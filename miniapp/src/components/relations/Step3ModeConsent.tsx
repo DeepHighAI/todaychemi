@@ -254,24 +254,22 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
             onCheckedChange={setRefundConsent}
             notice="인연 등록이 완료되면 「전자상거래법」상 청약철회가 제한됩니다."
           />
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Button
-              size="sm"
+              size="cta"
               className="btn-cta"
               disabled={isPurchasing || !refundConsent}
               onClick={() => {
                 clearIapError();
                 openIapPurchase(paywallInfo);
               }}
-              style={{ alignSelf: 'flex-start' }}
             >
               {isPurchasing ? '결제 중…' : `₩${paywallInfo.amount_krw.toLocaleString()} 결제하기`}
             </Button>
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
               onClick={() => { clearIapError(); setPaywallInfo(null); }}
-              style={{ alignSelf: 'flex-start' }}
+              style={{ width: '100%' }}
             >
               닫기
             </Button>
@@ -294,8 +292,8 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           onClick={() => mutation.mutate()}
           disabled={!canSubmit}
           variant="default"
+          size="cta"
           className="btn-cta"
-          style={{ height: 48, width: '100%', borderRadius: 'var(--r-pill)', fontWeight: 700 }}
         >
           {mutation.isPending ? t('submitting') : t('submit')}
         </Button>

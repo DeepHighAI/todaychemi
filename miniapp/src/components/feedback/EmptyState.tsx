@@ -34,7 +34,7 @@ export function EmptyState({ title, body, cta, onCta }: EmptyStateProps) {
           <p style={{ font: 'var(--t-sub)', color: 'var(--text-secondary)', margin: 0 }}>{body}</p>
         )}
         {cta && onCta && (
-          <Button variant="default" className="btn-cta" onClick={onCta}>
+          <Button variant="default" size="cta" className="btn-cta" onClick={onCta}>
             {cta}
           </Button>
         )}
