@@ -31,6 +31,28 @@ describe('WheelTray', () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
+  it('aria-modal 과 포커스 가능한 다이얼로그(tabIndex -1)를 둔다', () => {
+    renderWithProviders(
+      <WheelTray open title="t" onCancel={vi.fn()} onDone={vi.fn()}>
+        <div />
+      </WheelTray>,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('Escape 키로 취소한다', () => {
+    const onCancel = vi.fn();
+    renderWithProviders(
+      <WheelTray open title="t" onCancel={onCancel} onDone={vi.fn()}>
+        <div />
+      </WheelTray>,
+    );
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('backdrop·dialog 에 pointer-events:auto 를 둔다 (vaul 모달 중첩 시 죽지 않도록)', () => {
     renderWithProviders(
       <WheelTray open title="t" onCancel={vi.fn()} onDone={vi.fn()}>

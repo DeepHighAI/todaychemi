@@ -42,7 +42,7 @@ export function TimeWheelField({ value, onChange, label, placeholder, id }: Time
 
   return (
     <>
-      <PickerField id={id} value={value} placeholder={placeholder} ariaLabel={label} onTap={openTray} />
+      <PickerField id={id} value={value} placeholder={placeholder} ariaLabel={label} onTap={openTray} expanded={open} />
       <WheelTray open={open} title={label} onCancel={() => setOpen(false)} onDone={done}>
         <div style={{ position: 'relative', display: 'flex', gap: 4 }}>
           <div

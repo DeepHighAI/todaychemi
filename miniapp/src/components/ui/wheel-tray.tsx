@@ -6,7 +6,7 @@
  * 중첩 충돌 없이 위에 뜬다. 모션은 UIDesign .tray(translateY + cubic-bezier).
  */
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 
@@ -21,6 +21,8 @@ interface WheelTrayProps {
 export function WheelTray({ open, title, onCancel, onDone, children }: WheelTrayProps) {
   const t = useTranslations('common');
   const [shown, setShown] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const prevFocus = useRef<HTMLElement | null>(null);
 
   // open 직후 다음 프레임에 translateY(0) 전환 → 슬라이드 인.
   useEffect(() => {
@@ -32,6 +34,41 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
     return () => cancelAnimationFrame(id);
   }, [open]);
 
+  // 포커스 관리: open 시 다이얼로그로 이동, close 시 트리거로 복원.
+  useEffect(() => {
+    if (!open) return;
+    prevFocus.current = document.activeElement as HTMLElement | null;
+    const id = requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(id);
+      prevFocus.current?.focus?.();
+    };
+  }, [open]);
+
+  // Escape = 취소, Tab = 다이얼로그 내 순환(포커스 트랩).
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusables = root.querySelectorAll<HTMLElement>('button, [tabindex]:not([tabindex="-1"])');
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   if (!open) return null;
 
   return createPortal(
@@ -42,8 +79,12 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
         style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 200, pointerEvents: 'auto' }}
       />
       <div
+        ref={dialogRef}
         role="dialog"
+        aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
         style={{
           position: 'fixed',
           left: 0,

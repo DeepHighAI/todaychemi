@@ -73,6 +73,7 @@ export function DateWheelField({ value, onChange, min, max, label, placeholder, 
         placeholder={placeholder}
         ariaLabel={label}
         onTap={openTray}
+        expanded={open}
       />
       <WheelTray open={open} title={label} onCancel={() => setOpen(false)} onDone={done}>
         <div style={{ position: 'relative', display: 'flex', gap: 4 }}>

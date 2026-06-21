@@ -7,7 +7,7 @@
  * 중앙 밴드 오버레이는 상위(DateWheelField/TimeWheelField)가 그린다.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
 
 const ITEM_H = 40;
 const COL_H = 180;
@@ -22,6 +22,8 @@ interface WheelColumnProps {
 
 export function WheelColumn({ options, value, onChange, ariaLabel }: WheelColumnProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const baseId = useId();
+  const optId = (o: string) => `${baseId}-${o}`;
 
   // value/options 변경 시 선택 항목을 중앙으로 스크롤.
   useEffect(() => {
@@ -39,11 +41,39 @@ export function WheelColumn({ options, value, onChange, ariaLabel }: WheelColumn
     if (next !== undefined && next !== value) onChange(next);
   }
 
+  // 키보드 조작(listbox 계약) — 네이티브 input 대체에 따른 a11y 보존.
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const cur = options.indexOf(value);
+    let next = cur;
+    switch (e.key) {
+      case 'ArrowDown':
+        next = Math.min(options.length - 1, cur + 1);
+        break;
+      case 'ArrowUp':
+        next = Math.max(0, cur - 1);
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = options.length - 1;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    const v = options[next];
+    if (v !== undefined && v !== value) onChange(v);
+  }
+
   return (
     <div
       ref={ref}
       role="listbox"
       aria-label={ariaLabel}
+      tabIndex={0}
+      aria-activedescendant={options.includes(value) ? optId(value) : undefined}
+      onKeyDown={handleKeyDown}
       className="wheel-col"
       onScroll={handleScroll}
       style={{
@@ -59,6 +89,7 @@ export function WheelColumn({ options, value, onChange, ariaLabel }: WheelColumn
         return (
           <div
             key={o}
+            id={optId(o)}
             role="option"
             aria-selected={selected}
             onClick={() => onChange(o)}

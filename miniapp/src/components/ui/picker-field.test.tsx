@@ -19,4 +19,15 @@ describe('PickerField', () => {
     fireEvent.click(screen.getByRole('button', { name: '생년월일' }));
     expect(onTap).toHaveBeenCalledTimes(1);
   });
+
+  it('다이얼로그 팝업 시맨틱(aria-haspopup/aria-expanded)을 노출한다', () => {
+    const { rerender } = render(
+      <PickerField value="" placeholder="선택" ariaLabel="생년월일" onTap={vi.fn()} expanded={false} />,
+    );
+    const btn = screen.getByRole('button', { name: '생년월일' });
+    expect(btn).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
+    rerender(<PickerField value="" placeholder="선택" ariaLabel="생년월일" onTap={vi.fn()} expanded />);
+    expect(screen.getByRole('button', { name: '생년월일' })).toHaveAttribute('aria-expanded', 'true');
+  });
 });

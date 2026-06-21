@@ -21,4 +21,33 @@ describe('WheelColumn', () => {
     render(<WheelColumn options={['01']} value="01" onChange={vi.fn()} ariaLabel="월" />);
     expect(screen.getByRole('listbox', { name: '월' })).toBeInTheDocument();
   });
+
+  it('ArrowDown/ArrowUp 키로 인접 옵션을 선택한다', () => {
+    const onChange = vi.fn();
+    render(<WheelColumn options={['01', '02', '03']} value="02" onChange={onChange} ariaLabel="월" />);
+    const list = screen.getByRole('listbox', { name: '월' });
+    fireEvent.keyDown(list, { key: 'ArrowDown' });
+    expect(onChange).toHaveBeenCalledWith('03');
+    fireEvent.keyDown(list, { key: 'ArrowUp' });
+    expect(onChange).toHaveBeenCalledWith('01');
+  });
+
+  it('Home/End 키로 처음/마지막 옵션을 선택한다', () => {
+    const onChange = vi.fn();
+    render(<WheelColumn options={['01', '02', '03']} value="02" onChange={onChange} ariaLabel="월" />);
+    const list = screen.getByRole('listbox', { name: '월' });
+    fireEvent.keyDown(list, { key: 'End' });
+    expect(onChange).toHaveBeenCalledWith('03');
+    fireEvent.keyDown(list, { key: 'Home' });
+    expect(onChange).toHaveBeenCalledWith('01');
+  });
+
+  it('listbox 가 키보드 포커스 가능(tabIndex 0)하고 aria-activedescendant 를 가리킨다', () => {
+    render(<WheelColumn options={['01', '02']} value="02" onChange={vi.fn()} ariaLabel="월" />);
+    const list = screen.getByRole('listbox', { name: '월' });
+    expect(list).toHaveAttribute('tabindex', '0');
+    const active = list.getAttribute('aria-activedescendant');
+    expect(active).toBeTruthy();
+    expect(document.getElementById(active!)).toHaveTextContent('02');
+  });
 });

@@ -13,9 +13,11 @@ interface PickerFieldProps {
   ariaLabel: string;
   onTap: () => void;
   id?: string;
+  /** 트레이 열림 상태 — aria-expanded 로 노출(미지정 시 생략) */
+  expanded?: boolean;
 }
 
-export function PickerField({ value, placeholder, ariaLabel, onTap, id }: PickerFieldProps) {
+export function PickerField({ value, placeholder, ariaLabel, onTap, id, expanded }: PickerFieldProps) {
   const filled = value.length > 0;
   return (
     <button
@@ -23,6 +25,8 @@ export function PickerField({ value, placeholder, ariaLabel, onTap, id }: Picker
       type="button"
       onClick={onTap}
       aria-label={ariaLabel}
+      aria-haspopup="dialog"
+      aria-expanded={expanded}
       style={{
         width: '100%',
         boxSizing: 'border-box',
