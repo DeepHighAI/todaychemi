@@ -9,6 +9,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useOnboardingDraft, type TimeAccuracy } from '@/lib/onboarding/draft-store';
+import { TimeWheelField } from '@/components/ui/time-wheel-field';
 
 // 시간 정확도 옵션 순서 (웹앱과 동일)
 const ACCURACY_OPTIONS: TimeAccuracy[] = ['exact', 'approximate', 'unknown'];
@@ -106,22 +107,12 @@ export function Step2Time() {
             >
               {t('birth.timeOptional')}
             </label>
-            <input
+            <TimeWheelField
               id="birth-time"
-              type="time"
               value={birthTime}
-              onChange={(e) => setBirthTime(e.target.value)}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                borderRadius: 'var(--r-sm)',
-                backgroundColor: 'var(--surface-1)',
-                border: '1px solid var(--border)',
-                padding: '12px 14px',
-                fontSize: 15,
-                color: birthTime ? 'var(--foreground)' : 'var(--muted-foreground)',
-                outline: 'none',
-              }}
+              onChange={setBirthTime}
+              label={t('birth.time')}
+              placeholder={t('birth.timePlaceholder')}
             />
           </div>
         )}

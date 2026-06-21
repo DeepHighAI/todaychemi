@@ -105,8 +105,10 @@
     },
     "birth": {
       "date": "생년월일",
+      "datePlaceholder": "생년월일 선택",
       "time": "태어난 시간",
       "timeOptional": "시간 입력",
+      "timePlaceholder": "태어난 시간 선택",
       "timeUnknownHint": "정오 12:00로 가정해 추정해요",
       "calendar": "달력 종류",
       "calendarSolar": "양력",
@@ -234,7 +236,9 @@
       },
       "birth": {
         "date": "생년월일",
+        "datePlaceholder": "생년월일 선택",
         "timeOptional": "시간 입력",
+        "timePlaceholder": "태어난 시간 선택",
         "timeUnknownHint": "정오 12:00로 가정해 추정해요",
         "calendar": "달력 종류",
         "calendarSolar": "양력",

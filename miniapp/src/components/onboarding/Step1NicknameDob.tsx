@@ -11,6 +11,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useOnboardingDraft } from '@/lib/onboarding/draft-store';
+import { DateWheelField } from '@/components/ui/date-wheel-field';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MAX_DATE = `${CURRENT_YEAR}-12-31`;
@@ -113,24 +114,14 @@ export function Step1NicknameDob() {
           >
             {t('birth.date')}
           </label>
-          <input
+          <DateWheelField
             id="birth-date"
-            type="date"
             value={birthDate}
+            onChange={setBirthDate}
             min={MIN_DATE}
             max={MAX_DATE}
-            onChange={(e) => setBirthDate(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              borderRadius: 'var(--r-sm)',
-              backgroundColor: 'var(--surface-1)',
-              border: '1px solid var(--border)',
-              padding: '12px 14px',
-              fontSize: 15,
-              color: birthDate ? 'var(--foreground)' : 'var(--muted-foreground)',
-              outline: 'none',
-            }}
+            label={t('birth.date')}
+            placeholder={t('birth.datePlaceholder')}
           />
         </div>
       </div>
