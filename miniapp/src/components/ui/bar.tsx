@@ -20,7 +20,8 @@ interface BarProps {
   max?: number;
   /** 채움 색(CSS 변수 권장) */
   color: string;
-  /** 트랙(배경) 색 — 기본 --surface-1(다크 패리티 토큰) */
+  /** 트랙(배경) 색 — 기본 --hairline. 카드(--bg-card) 위에서 라이트/다크 모두 가시.
+   *  (--surface-1 은 다크에서 --bg-card 와 거의 동색이라 트랙이 안 보임) */
   trackColor?: string;
   /** 트랙 높이 px(기본 6) */
   height?: number;
@@ -41,7 +42,7 @@ export function Bar({
   value,
   max = 100,
   color,
-  trackColor = 'var(--surface-1)',
+  trackColor = 'var(--hairline)',
   height = 6,
   anchor = 'start',
   ariaLabel,

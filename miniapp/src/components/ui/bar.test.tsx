@@ -49,4 +49,18 @@ describe('Bar (수평 fill 프리미티브)', () => {
     render(<Bar value={40} color="red" />);
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
+
+  it('기본 트랙 색은 --hairline (카드 위 라이트/다크 모두 가시)', () => {
+    const { container } = render(<Bar value={50} color="red" ariaLabel="t" />);
+    const track = container.firstElementChild as HTMLElement;
+    expect(track.style.backgroundColor).toContain('var(--hairline)');
+  });
+
+  it('trackColor override 가 적용된다', () => {
+    const { container } = render(
+      <Bar value={50} color="red" trackColor="var(--surface-1)" ariaLabel="t" />,
+    );
+    const track = container.firstElementChild as HTMLElement;
+    expect(track.style.backgroundColor).toContain('var(--surface-1)');
+  });
 });
