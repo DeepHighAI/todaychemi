@@ -24,6 +24,19 @@
   --accent-metal:      #c0c5ce;
   --accent-water:      #5b7db1;
 
+  /* Dawn 워터컬러 히어로(me) — 오행 soft 틴트 + 보조 텍스트 + 새벽 배경/카드 (다크는 아래 블록)
+     soft 값은 UIDesign Dawn 레퍼런스(globals.css.patch.css)와 동일. */
+  --accent-wood-soft:  #e5f1ec;
+  --accent-fire-soft:  #fbe5dd;
+  --accent-earth-soft: #f3e8d6;
+  --accent-metal-soft: #ecedf0;
+  --accent-water-soft: #dde6f2;
+  --text-tertiary:     #8a8b96;
+  --dawn-wash-bottom:  #f5efe5;
+  --dawn-sky:          #ffeacc;
+  --dawn-card-bg:      rgba(255, 255, 255, 0.85);
+  --dawn-card-border:  rgba(255, 255, 255, 0.60);
+
   /* M3 purple — 브랜드 primary */
   --p-10: #21005d;
   --p-20: #381e72;
@@ -171,6 +184,18 @@
     --accent-earth: #a88862;
     --accent-metal: #9da3ac;
     --accent-water: #4a6896;
+
+    /* Dawn 다크 — soft 틴트는 라이트 base RGB 의 16% (레퍼런스 패치 동일), 새벽 배경은 따뜻한 어두움 */
+    --accent-wood-soft:  rgba(111, 181, 154, 0.16);
+    --accent-fire-soft:  rgba(224, 122, 95, 0.16);
+    --accent-earth-soft: rgba(201, 164, 122, 0.16);
+    --accent-metal-soft: rgba(192, 197, 206, 0.16);
+    --accent-water-soft: rgba(91, 125, 177, 0.16);
+    --text-tertiary:     #7a7b85;
+    --dawn-wash-bottom:  #1d1a24;
+    --dawn-sky:          #3a2f24;
+    --dawn-card-bg:      rgba(28, 29, 38, 0.85);
+    --dawn-card-border:  rgba(255, 255, 255, 0.08);
 
     --p-10: #eaddff;
     --p-20: #d0bcff;
@@ -350,4 +375,53 @@ body {
 .card-elevated {
   box-shadow: var(--e-1);
   border: 1px solid var(--outline-variant);
+}
+
+/* ===========================================================================
+ * Dawn 워터컬러 히어로(me) — 종이 grain + 잉크 블롭 드리프트/숨쉬기 모션
+ *
+ * UIDesign Dawn 레퍼런스(globals.css.patch.css) 이식. 레퍼런스의 .dark 셀렉터는
+ * 미니앱 속성 셀렉터 :root[data-theme="dark"] 로 재작성(multiply→screen, opacity .05→.08).
+ * 히어로가 실제로 쓰는 3종 keyframe만 정의(breathe/drift-1/drift-2 — pulse-ring/sheet-rise/
+ * sparkle 제외). prefers-reduced-motion 시 전부 정지. 기존 pulse/spin 과 이름 충돌 없음.
+ * =========================================================================== */
+.dawn-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(58, 26, 14, 0.06) 1px, transparent 1px),
+    radial-gradient(rgba(58, 26, 14, 0.04) 1px, transparent 1px);
+  background-size: 3px 3px, 5px 5px;
+  background-position: 0 0, 1px 1px;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+:root[data-theme="dark"] .dawn-grain {
+  opacity: 0.08;
+  mix-blend-mode: screen;
+}
+
+@keyframes dawn-breathe {
+  0%, 100% { transform: scale(1);     opacity: 1; }
+  50%      { transform: scale(1.025); opacity: 0.95; }
+}
+@keyframes dawn-drift-1 {
+  0%, 100% { transform: translate(0, 0)       rotate(0deg); }
+  50%      { transform: translate(10px, -8px) rotate(3deg); }
+}
+@keyframes dawn-drift-2 {
+  0%, 100% { transform: translate(0, 0)       rotate(0deg); }
+  50%      { transform: translate(-8px, 10px) rotate(-3deg); }
+}
+.anim-dawn-breathe { animation: dawn-breathe 4.2s cubic-bezier(0.32, 0.72, 0, 1) infinite; }
+.anim-dawn-drift-1 { animation: dawn-drift-1 9s ease-in-out infinite;  transform-origin: center; }
+.anim-dawn-drift-2 { animation: dawn-drift-2 11s ease-in-out infinite; transform-origin: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-dawn-breathe,
+  .anim-dawn-drift-1,
+  .anim-dawn-drift-2 {
+    animation: none !important;
+  }
 }
