@@ -24,6 +24,7 @@ export default function YunseCard({ yunse }: YunseCardProps) {
         borderRadius: 'var(--r-lg)',
         border: '1px solid var(--hairline)',
         backgroundColor: 'var(--bg-card)',
+        boxShadow: 'var(--e-1)',
         padding: 16,
         display: 'flex',
         flexDirection: 'column',

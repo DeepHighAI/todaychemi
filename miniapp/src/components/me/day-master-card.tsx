@@ -7,6 +7,7 @@
 
 import { useTranslations } from 'next-intl';
 import { elementLabel } from '@/lib/saju/elementLabel';
+import { SectionCard } from '@/components/me/section-card';
 import type { ChartCore } from '@/types/chart';
 
 interface DayMasterCardProps {
@@ -17,24 +18,10 @@ export function DayMasterCard({ element }: DayMasterCardProps) {
   const t = useTranslations('me.section.daymaster');
   const { hanja } = elementLabel(element);
   return (
-    <div
-      data-testid="day-master-card"
-      style={{
-        borderRadius: 'var(--r-lg)',
-        border: '1px solid var(--hairline)',
-        backgroundColor: 'var(--bg-card)',
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-      }}
-    >
-      <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>
-        {t('eyebrow')}
-      </p>
+    <SectionCard eyebrow={t('eyebrow')} gap={8} data-testid="day-master-card">
       <p title={hanja} style={{ fontSize: 14, color: 'var(--text-primary)', margin: 0 }}>
         {t(element)}
       </p>
-    </div>
+    </SectionCard>
   );
 }

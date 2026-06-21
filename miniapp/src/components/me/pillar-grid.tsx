@@ -9,6 +9,7 @@
 import { useTranslations } from 'next-intl';
 import { pillarDescriptor, type PillarKey } from '@/lib/saju/pillarDescriptor';
 import { convertHanja } from '@/lib/glossary/post-process';
+import { SectionCard } from '@/components/me/section-card';
 import type { ChartCore } from '@/types/chart';
 
 interface PillarGridProps { chart: ChartCore }
@@ -24,26 +25,28 @@ export function PillarGrid({ chart }: PillarGridProps) {
     chart.hour_pillar ?? t('unknown'),
   ];
   return (
-    <div
-      data-testid="pillar-grid"
-      style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}
-    >
-      {PILLAR_KEYS.map((key, i) => {
-        const { ko_short, hanja } = pillarDescriptor(key);
-        return (
-          <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <p
-              title={hanja}
-              style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}
-            >
-              {ko_short}
-            </p>
-            <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
-              {values[i] ? convertHanja(values[i] as string) : '—'}
-            </p>
-          </div>
-        );
-      })}
-    </div>
+    <SectionCard eyebrow={t('eyebrow')}>
+      <div
+        data-testid="pillar-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}
+      >
+        {PILLAR_KEYS.map((key, i) => {
+          const { ko_short, hanja } = pillarDescriptor(key);
+          return (
+            <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <p
+                title={hanja}
+                style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}
+              >
+                {ko_short}
+              </p>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
+                {values[i] ? convertHanja(values[i] as string) : '—'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
   );
 }
