@@ -24,6 +24,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Seg } from '@/components/ui/seg';
 import { SwipeRow } from '@/components/layout/SwipeRow';
 import { AdBanner, isAdSlotAvailable } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
@@ -330,46 +331,16 @@ export function FeedPage() {
         </div>
       </header>
 
-      {/* 세그먼트 필터 바 */}
-      <div
-        role="radiogroup"
-        style={{
-          display: 'flex',
-          backgroundColor: 'var(--surface-2)',
-          borderRadius: 'var(--r-md)',
-          padding: 3,
-          gap: 2,
-          marginBottom: 16,
-          overflowX: 'auto',
-        }}
-      >
-        {filters.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            role="radio"
-            aria-checked={activeFilter === f.value}
-            onClick={() => changeFilter(f.value)}
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              padding: '10px 4px',
-              fontSize: 13,
-              fontWeight: 600,
-              borderRadius: 12,
-              border: 'none',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'background 0.15s',
-              backgroundColor: activeFilter === f.value ? 'var(--surface)' : 'transparent',
-              color: activeFilter === f.value ? 'var(--on-surface)' : 'var(--on-surface-var)',
-              boxShadow: activeFilter === f.value ? 'var(--e-1)' : 'none',
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      {/* 세그먼트 필터 바 (공용 Seg) */}
+      <Seg
+        options={filters}
+        value={activeFilter}
+        onChange={changeFilter}
+        variant="segment"
+        scrollable
+        ariaLabel="모드 필터"
+        style={{ marginBottom: 16 }}
+      />
 
       {/* 로딩/에러 상태 */}
       {isLoading && (

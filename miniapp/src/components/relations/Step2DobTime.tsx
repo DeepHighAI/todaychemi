@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { DateWheelField } from '@/components/ui/date-wheel-field';
 import { TimeWheelField } from '@/components/ui/time-wheel-field';
 import type { Calendar, TimeAccuracy } from '@/lib/relations/draft-store';
+import { Seg } from '@/components/ui/seg';
 
 interface Step2Props {
   initialBirthDate: string;
@@ -82,30 +83,18 @@ export function Step2DobTime({
           gap: 16,
         }}
       >
-        {/* 양력 / 음력 선택 */}
-        <div role="radiogroup" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {(['solar', 'lunar'] as Calendar[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={calendar === v}
-              onClick={() => setCalendar(v)}
-              style={{
-                padding: '10px 0',
-                borderRadius: 'var(--r-pill)',
-                border: 'none',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                backgroundColor: calendar === v ? 'var(--p-40)' : 'var(--surface-2)',
-                color: calendar === v ? '#fff' : 'var(--foreground)',
-              }}
-            >
-              {t(v === 'solar' ? 'birth.calendarSolar' : 'birth.calendarLunar')}
-            </button>
-          ))}
-        </div>
+        {/* 양력 / 음력 선택 (공용 Seg) */}
+        <Seg
+          options={[
+            { value: 'solar', label: t('birth.calendarSolar') },
+            { value: 'lunar', label: t('birth.calendarLunar') },
+          ]}
+          value={calendar}
+          onChange={(v) => setCalendar(v)}
+          variant="fill"
+          columns={2}
+          ariaLabel="양력·음력"
+        />
 
         {/* 생년월일 — 휠 피커 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -126,33 +115,21 @@ export function Step2DobTime({
           />
         </div>
 
-        {/* 시간 인지도 */}
-        <div
-          role="radiogroup"
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
-        >
-          {ACCURACY_OPTIONS.map(({ value, labelKey }) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={knowledge === value}
-              onClick={() => setKnowledge(value)}
-              style={{
-                padding: '10px 0',
-                borderRadius: 'var(--r-sm)',
-                border: knowledge === value ? 'none' : '1px solid var(--border)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                backgroundColor: knowledge === value ? 'var(--p-40)' : 'var(--surface-1)',
-                color: knowledge === value ? '#fff' : 'var(--foreground)',
-              }}
-            >
-              {t(labelKey as Parameters<typeof t>[0])}
-            </button>
-          ))}
-        </div>
+        {/* 시간 인지도 (공용 Seg — outlined fill) */}
+        <Seg
+          options={ACCURACY_OPTIONS.map(({ value, labelKey }) => ({
+            value,
+            label: t(labelKey as Parameters<typeof t>[0]),
+          }))}
+          value={knowledge}
+          onChange={(v) => setKnowledge(v)}
+          variant="fill"
+          columns={3}
+          shape="rounded"
+          outlined
+          size="sm"
+          ariaLabel="출생 시간 정확도"
+        />
 
         {/* 시간 입력 — 휠 피커 */}
         {knowledge !== 'unknown' && (

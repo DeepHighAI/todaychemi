@@ -6,7 +6,8 @@
  */
 
 import { useTranslations } from 'next-intl';
-import { useOnboardingDraft, type Calendar, type Gender } from '@/lib/onboarding/draft-store';
+import { useOnboardingDraft } from '@/lib/onboarding/draft-store';
+import { Seg } from '@/components/ui/seg';
 
 export function Step3CalGender() {
   const t = useTranslations('onboarding');
@@ -48,37 +49,17 @@ export function Step3CalGender() {
           >
             {t('birth.calendar')}
           </p>
-          <div
-            role="radiogroup"
-            aria-label={t('birth.calendar')}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}
-          >
-            {(['solar', 'lunar'] as Calendar[]).map((v) => {
-              const selected = calendar === v;
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setCalendar(v)}
-                  style={{
-                    padding: '12px 0',
-                    borderRadius: 'var(--r-pill)',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    border: 'none',
-                    backgroundColor: selected ? 'var(--p-40)' : 'var(--surface-2)',
-                    color: selected ? '#ffffff' : 'var(--foreground)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.15s, color 0.15s',
-                  }}
-                >
-                  {t(v === 'solar' ? 'birth.calendarSolar' : 'birth.calendarLunar')}
-                </button>
-              );
-            })}
-          </div>
+          <Seg
+            options={[
+              { value: 'solar', label: t('birth.calendarSolar') },
+              { value: 'lunar', label: t('birth.calendarLunar') },
+            ]}
+            value={calendar}
+            onChange={setCalendar}
+            variant="fill"
+            columns={2}
+            ariaLabel={t('birth.calendar')}
+          />
         </div>
 
         {/* 성별 */}
@@ -93,37 +74,17 @@ export function Step3CalGender() {
           >
             {t('gender.label')}
           </p>
-          <div
-            role="radiogroup"
-            aria-label={t('gender.label')}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}
-          >
-            {(['M', 'F'] as Gender[]).map((g) => {
-              const selected = gender === g;
-              return (
-                <button
-                  key={g}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setGender(g)}
-                  style={{
-                    padding: '12px 0',
-                    borderRadius: 'var(--r-pill)',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    border: 'none',
-                    backgroundColor: selected ? 'var(--p-40)' : 'var(--surface-2)',
-                    color: selected ? '#ffffff' : 'var(--foreground)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.15s, color 0.15s',
-                  }}
-                >
-                  {t(g === 'M' ? 'gender.male' : 'gender.female')}
-                </button>
-              );
-            })}
-          </div>
+          <Seg
+            options={[
+              { value: 'M', label: t('gender.male') },
+              { value: 'F', label: t('gender.female') },
+            ]}
+            value={gender}
+            onChange={setGender}
+            variant="fill"
+            columns={2}
+            ariaLabel={t('gender.label')}
+          />
         </div>
       </div>
     </div>

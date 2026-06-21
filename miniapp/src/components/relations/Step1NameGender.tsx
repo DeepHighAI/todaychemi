@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import type { Gender } from '@/lib/relations/draft-store';
+import { Seg } from '@/components/ui/seg';
 
 interface Step1Props {
   /** 초기값 (draft 에서 주입) */
@@ -100,29 +101,17 @@ export function Step1NameGender({ initialNickname, initialGender, onNext }: Step
         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
           {t('gender.label')}
         </p>
-        <div role="radiogroup" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {(['M', 'F'] as const).map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="radio"
-              aria-checked={gender === g}
-              onClick={() => setGender(g)}
-              style={{
-                padding: '10px 0',
-                borderRadius: 'var(--r-pill)',
-                border: 'none',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                backgroundColor: gender === g ? 'var(--p-40)' : 'var(--surface-2)',
-                color: gender === g ? '#fff' : 'var(--foreground)',
-              }}
-            >
-              {t(g === 'M' ? 'gender.male' : 'gender.female')}
-            </button>
-          ))}
-        </div>
+        <Seg
+          options={[
+            { value: 'M', label: t('gender.male') },
+            { value: 'F', label: t('gender.female') },
+          ]}
+          value={gender}
+          onChange={(g) => setGender(g)}
+          variant="fill"
+          columns={2}
+          ariaLabel={t('gender.label')}
+        />
       </div>
 
       {/* 고정 하단 버튼 */}

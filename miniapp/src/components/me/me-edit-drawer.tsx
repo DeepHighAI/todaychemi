@@ -17,6 +17,7 @@ import { Drawer } from 'vaul';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { Seg } from '@/components/ui/seg';
 import { DateWheelField } from '@/components/ui/date-wheel-field';
 import { TimeWheelField } from '@/components/ui/time-wheel-field';
 import { apiFetch } from '@/lib/api/client';
@@ -137,18 +138,6 @@ function MeEditForm({
     boxSizing: 'border-box',
   };
 
-  const radioBtnStyle = (active: boolean): React.CSSProperties => ({
-    flex: 1,
-    borderRadius: 'var(--r-pill)',
-    padding: '12px 16px',
-    fontSize: 14,
-    fontWeight: 600,
-    backgroundColor: active ? 'var(--p-40)' : 'var(--surface-2)',
-    color: active ? '#fff' : 'var(--text-primary)',
-    border: 'none',
-    cursor: 'pointer',
-  });
-
   return (
     <div style={{ overflowY: 'auto', padding: '0 16px 128px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* 별명 */}
@@ -193,71 +182,51 @@ function MeEditForm({
       {/* 양/음력 */}
       <div>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{tOb('birth.calendar')}</p>
-        <div style={{ display: 'flex', gap: 8 }} role="radiogroup">
-          {([
-            { value: 'solar' as Calendar, label: tOb('birth.calendarSolar') },
-            { value: 'lunar' as Calendar, label: tOb('birth.calendarLunar') },
-          ]).map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={form.calendar === value}
-              onClick={() => setField('calendar', value)}
-              style={radioBtnStyle(form.calendar === value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Seg
+          options={[
+            { value: 'solar', label: tOb('birth.calendarSolar') },
+            { value: 'lunar', label: tOb('birth.calendarLunar') },
+          ]}
+          value={form.calendar}
+          onChange={(v) => setField('calendar', v)}
+          variant="fill"
+          ariaLabel={tOb('birth.calendar')}
+        />
       </div>
 
       {/* 성별 */}
       <div>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{tOb('gender.label')}</p>
-        <div style={{ display: 'flex', gap: 8 }} role="radiogroup">
-          {(['M', 'F'] as const).map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="radio"
-              aria-checked={form.gender === g}
-              aria-label={g === 'M' ? tOb('gender.male') : tOb('gender.female')}
-              onClick={() => setField('gender', g)}
-              style={radioBtnStyle(form.gender === g)}
-            >
-              {g === 'M' ? tOb('gender.male') : tOb('gender.female')}
-            </button>
-          ))}
-        </div>
+        <Seg
+          options={[
+            { value: 'M', label: tOb('gender.male') },
+            { value: 'F', label: tOb('gender.female') },
+          ]}
+          value={form.gender as 'M' | 'F'}
+          onChange={(g) => setField('gender', g)}
+          variant="fill"
+          ariaLabel={tOb('gender.label')}
+        />
       </div>
 
       {/* 출생 시간 정확도 */}
       <div>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{tOb('birth.time')}</p>
-        <div style={{ display: 'flex', gap: 12 }} role="radiogroup">
-          {([
-            { value: 'exact' as TimeAccuracy, label: tOb('birth.timeAccuracy.exact') },
-            { value: 'approximate' as TimeAccuracy, label: tOb('birth.timeAccuracy.estimated') },
-            { value: 'unknown' as TimeAccuracy, label: tOb('birth.timeAccuracy.unknown') },
-          ]).map(({ value, label }) => (
-            <label
-              key={value}
-              style={{ display: 'flex', minHeight: 44, alignItems: 'center', gap: 6, cursor: 'pointer' }}
-            >
-              <input
-                type="radio"
-                name="edit-birth-time-knowledge"
-                value={value}
-                checked={form.knowledge === value}
-                onChange={() => setField('knowledge', value)}
-                aria-label={label}
-                style={{ accentColor: 'var(--primary)' }}
-              />
-              <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{label}</span>
-            </label>
-          ))}
-        </div>
+        <Seg
+          options={[
+            { value: 'exact', label: tOb('birth.timeAccuracy.exact') },
+            { value: 'approximate', label: tOb('birth.timeAccuracy.estimated') },
+            { value: 'unknown', label: tOb('birth.timeAccuracy.unknown') },
+          ]}
+          value={form.knowledge}
+          onChange={(v) => setField('knowledge', v)}
+          variant="fill"
+          columns={3}
+          shape="rounded"
+          outlined
+          size="sm"
+          ariaLabel={tOb('birth.time')}
+        />
       </div>
 
       {/* 출생 시간 — iOS 휠 피커 */}

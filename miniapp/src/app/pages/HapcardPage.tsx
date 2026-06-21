@@ -43,6 +43,7 @@ import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badg
 import { Button } from '@/components/ui/button';
 import { Bar } from '@/components/ui/bar';
 import { BackButton } from '@/components/ui/back-button';
+import { Seg } from '@/components/ui/seg';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -1009,12 +1010,12 @@ function ExpandPanel({
     easyMode ? { ...f, name: toEasyText(f.name), effect: toEasyText(f.effect) } : f,
   );
 
-  const tabs: { k: ExpandTab; label: string }[] = [
-    { k: 'summary', label: String(t('tab.summary')) },
-    { k: 'ohaeng', label: String(t('tab.ohaeng')) },
-    { k: 'evidence', label: String(t('tab.evidence')) },
-    { k: 'area', label: String(t('tab.area')) },
-    { k: 'flow', label: String(t('tab.flow')) },
+  const tabs: { value: ExpandTab; label: string }[] = [
+    { value: 'summary', label: String(t('tab.summary')) },
+    { value: 'ohaeng', label: String(t('tab.ohaeng')) },
+    { value: 'evidence', label: String(t('tab.evidence')) },
+    { value: 'area', label: String(t('tab.area')) },
+    { value: 'flow', label: String(t('tab.flow')) },
   ];
 
   return (
@@ -1069,39 +1070,18 @@ function ExpandPanel({
         </button>
       </header>
 
-      {/* 탭 내비 */}
-      <nav
-        style={{
-          display: 'flex',
-          gap: 2,
-          backgroundColor: 'var(--surface-1)',
-          borderRadius: 12,
-          padding: 3,
-          margin: '0 16px 12px',
-        }}
-      >
-        {tabs.map((tb) => (
-          <button
-            key={tb.k}
-            type="button"
-            onClick={() => onTab(tb.k)}
-            style={{
-              flex: 1,
-              padding: '10px 0',
-              borderRadius: 9,
-              fontSize: 12,
-              fontWeight: tab === tb.k ? 800 : 600,
-              border: 'none',
-              backgroundColor: tab === tb.k ? 'var(--bg-card)' : 'transparent',
-              color: tab === tb.k ? 'var(--primary)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              boxShadow: tab === tb.k ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-            }}
-          >
-            {tb.label}
-          </button>
-        ))}
-      </nav>
+      {/* 탭 내비 (공용 Seg — .itabs accent 레시피) */}
+      <Seg
+        options={tabs}
+        value={tab}
+        onChange={onTab}
+        variant="segment"
+        accent
+        role="tablist"
+        size="sm"
+        ariaLabel={String(t('title'))}
+        style={{ margin: '0 16px 12px' }}
+      />
 
       <div style={{ padding: '0 16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* 요약 탭 */}

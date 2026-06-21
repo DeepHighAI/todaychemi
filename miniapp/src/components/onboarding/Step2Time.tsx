@@ -10,6 +10,7 @@
 import { useTranslations } from 'next-intl';
 import { useOnboardingDraft, type TimeAccuracy } from '@/lib/onboarding/draft-store';
 import { TimeWheelField } from '@/components/ui/time-wheel-field';
+import { Seg } from '@/components/ui/seg';
 
 // 시간 정확도 옵션 순서 (웹앱과 동일)
 const ACCURACY_OPTIONS: TimeAccuracy[] = ['exact', 'approximate', 'unknown'];
@@ -59,38 +60,18 @@ export function Step2Time() {
           gap: 16,
         }}
       >
-        {/* 시간 정확도 선택 */}
-        <div
-          role="radiogroup"
-          aria-label={t('birth.time')}
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
-        >
-          {ACCURACY_OPTIONS.map((v) => {
-            const selected = knowledge === v;
-            return (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setKnowledge(v)}
-                style={{
-                  padding: '12px 0',
-                  borderRadius: 'var(--r-sm)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  border: selected ? 'none' : '1px solid var(--border)',
-                  backgroundColor: selected ? 'var(--p-40)' : 'var(--surface-1)',
-                  color: selected ? '#ffffff' : 'var(--foreground)',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s, color 0.15s',
-                }}
-              >
-                {accuracyLabel(v)}
-              </button>
-            );
-          })}
-        </div>
+        {/* 시간 정확도 선택 (공용 Seg — outlined fill) */}
+        <Seg
+          options={ACCURACY_OPTIONS.map((v) => ({ value: v, label: accuracyLabel(v) }))}
+          value={knowledge}
+          onChange={setKnowledge}
+          variant="fill"
+          columns={3}
+          shape="rounded"
+          outlined
+          size="sm"
+          ariaLabel={t('birth.time')}
+        />
 
         {/* 시간 입력 — unknown 제외 */}
         {knowledge !== 'unknown' && (
