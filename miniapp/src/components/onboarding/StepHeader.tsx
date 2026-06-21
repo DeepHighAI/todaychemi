@@ -5,7 +5,7 @@
  * 미니앱: next/navigation → props 기반 콜백, Tailwind → 인라인 스타일.
  */
 
-import { ChevronLeft } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 
 const TOTAL_STEPS = 4;
 
@@ -19,27 +19,8 @@ export function StepHeader({ step, onBack }: StepHeaderProps) {
 
   return (
     <header style={{ padding: '12px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* 뒤로가기 버튼 */}
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="이전 단계"
-        style={{
-          width: 32,
-          height: 32,
-          marginLeft: -4,
-          borderRadius: '50%',
-          border: 'none',
-          background: 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: 'var(--foreground)',
-        }}
-      >
-        <ChevronLeft size={22} />
-      </button>
+      {/* 뒤로가기 버튼 (공용 BackButton) */}
+      <BackButton onClick={onBack} />
 
       {/* 진행 바 */}
       <div

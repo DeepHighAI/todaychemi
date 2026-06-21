@@ -42,6 +42,7 @@ import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { Button } from '@/components/ui/button';
 import { Bar } from '@/components/ui/bar';
+import { BackButton } from '@/components/ui/back-button';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -484,26 +485,7 @@ export function HapcardPage() {
           justifyContent: 'space-between',
         }}
       >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="back"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            border: 'none',
-            background: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-          }}
-        >
-          ‹
-        </button>
+        <BackButton onClick={() => navigate(-1)} />
         <span
           style={{
             font: 'var(--t-h3)',

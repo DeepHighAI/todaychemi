@@ -13,6 +13,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 
 import { LegalDocContent, isLegalSlug } from '@/components/legal/legal-markdown';
+import { BackButton } from '@/components/ui/back-button';
 
 export function LegalPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -36,22 +37,7 @@ export function LegalPage() {
           borderBottom: '1px solid var(--hairline)',
         }}
       >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="back"
-          style={{
-            width: 32,
-            height: 32,
-            border: 'none',
-            background: 'none',
-            fontSize: 22,
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-          }}
-        >
-          ‹
-        </button>
+        <BackButton onClick={() => navigate(-1)} />
       </header>
 
       <main style={{ padding: '16px 20px 64px' }}>

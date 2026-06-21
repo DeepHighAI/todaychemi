@@ -5,7 +5,7 @@
  * SPA 에서는 layout 대신 각 스텝 컴포넌트에 공통 헤더로 주입한다.
  */
 
-import { ChevronLeft } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 
 interface StepHeaderProps {
   /** 현재 스텝 (1-based) */
@@ -19,25 +19,7 @@ interface StepHeaderProps {
 export function StepHeader({ current, total, onBack }: StepHeaderProps) {
   return (
     <header style={{ padding: '12px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <button
-        onClick={onBack}
-        aria-label="back"
-        style={{
-          width: 32,
-          height: 32,
-          marginLeft: -4,
-          borderRadius: '50%',
-          border: 'none',
-          background: 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--foreground)',
-          cursor: 'pointer',
-        }}
-      >
-        <ChevronLeft size={22} />
-      </button>
+      <BackButton onClick={onBack} />
       {/* 진행 바 */}
       <div
         style={{
