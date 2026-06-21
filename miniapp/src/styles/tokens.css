@@ -402,6 +402,15 @@ body {
   border: 1px solid var(--hairline);
 }
 
+/* iOS 휠 피커 컬럼 — 스크롤바 숨김(인라인 스타일로 불가). 스크롤/스냅은 컴포넌트 인라인. */
+.wheel-col {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.wheel-col::-webkit-scrollbar {
+  display: none;
+}
+
 /* ===========================================================================
  * Dawn 워터컬러 히어로(me) — 종이 grain + 잉크 블롭 드리프트/숨쉬기 모션
  *
