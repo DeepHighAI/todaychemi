@@ -17,7 +17,7 @@ export interface HM {
   minute: number; // 0-59
 }
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
+export const pad2 = (n: number) => String(n).padStart(2, '0');
 
 /** (year, month 1-12)의 일수. new Date(y, month, 0) = 해당 월 말일. */
 export function daysInMonth(year: number, month: number): number {
