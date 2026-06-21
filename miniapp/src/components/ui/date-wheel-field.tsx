@@ -42,7 +42,8 @@ export function DateWheelField({ value, onChange, min, max, label, placeholder, 
 
   function initialDraft(): YMD {
     const parsed = parseDate(value);
-    if (parsed) return clampDay(parsed);
+    // 파싱값도 경계로 보정 → 휠 선택(aria-selected)과 draft 가 항상 일치(done 과 동일 규칙).
+    if (parsed) return clampDateToBounds(clampDay(parsed), minYmd, maxYmd);
     // 빈 값이면 생년월일에 흔한 ~30년 전을 기본값으로(경계 보정).
     const defaultYear = Math.min(maxYmd.year, Math.max(minYmd.year, maxYmd.year - 30));
     return clampDateToBounds({ year: defaultYear, month: 1, day: 1 }, minYmd, maxYmd);

@@ -55,4 +55,15 @@ describe('DateWheelField', () => {
     renderWithProviders(<DateWheelField value="" onChange={vi.fn()} {...BASE} />);
     expect(screen.getByText('선택')).toBeInTheDocument();
   });
+
+  it('범위 밖 저장값은 트레이 진입 시 경계로 보정되어 휠 선택과 일치한다', () => {
+    const onChange = vi.fn();
+    // min=1900 인데 value=1850 → 경계(1900-01-01)로 보정
+    renderWithProviders(<DateWheelField value="1850-06-15" onChange={onChange} {...BASE} />);
+    fireEvent.click(screen.getByRole('button', { name: '생년월일' }));
+    const yearList = screen.getByRole('listbox', { name: '년' });
+    expect(within(yearList).getByRole('option', { selected: true })).toHaveTextContent('1900');
+    fireEvent.click(screen.getByText('완료'));
+    expect(onChange).toHaveBeenCalledWith('1900-01-01');
+  });
 });
