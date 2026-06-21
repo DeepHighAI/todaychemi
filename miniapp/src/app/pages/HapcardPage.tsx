@@ -45,6 +45,20 @@ import { Bar } from '@/components/ui/bar';
 import { BackButton } from '@/components/ui/back-button';
 import { Seg } from '@/components/ui/seg';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -72,6 +86,22 @@ const RELATION_CHART_PENDING_CODES: string[] = [
   'RELATION_CHART_NOT_FOUND',
   'RELATION_CHART_LOOKUP_FAILED',
 ];
+
+// ⋯ 액션시트 행 공통 스타일 — 풀폭 좌측정렬 탭 타깃(아이콘 + 라벨).
+const MENU_ROW_STYLE: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  padding: '14px 12px',
+  borderRadius: 12,
+  border: 'none',
+  backgroundColor: 'transparent',
+  textAlign: 'left',
+  fontSize: 15,
+  color: 'var(--text-primary)',
+  cursor: 'pointer',
+};
 
 // ---------------------------------------------------------------------------
 // API 함수 — apiFetch 사용.
@@ -501,7 +531,7 @@ export function HapcardPage() {
         </span>
         <button
           type="button"
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => setMenuOpen(true)}
           aria-label="more"
           style={{
             width: 32,
@@ -520,95 +550,66 @@ export function HapcardPage() {
         </button>
       </header>
 
-      {/* ⋯ 메뉴 팝오버 */}
-      {menuOpen && (
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 20 }}
-            onClick={() => setMenuOpen(false)}
-          />
+      {/* ⋯ 액션 메뉴 — 모바일 네이티브 바텀 액션시트(공용 Drawer) */}
+      <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+        <DrawerContent>
           <div
             style={{
-              position: 'absolute',
-              top: 56,
-              right: 16,
-              zIndex: 30,
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 14,
-              minWidth: 180,
-              padding: 6,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-              border: '1px solid var(--border)',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              padding: '12px 20px 4px',
             }}
           >
-            <button
-              type="button"
-              onClick={openRenameDialog}
+            <DrawerTitle>{t('menu.title')}</DrawerTitle>
+            {/* Radix Dialog 접근성 계약 — 시각적으로 숨김(다른 시트와 동일 패턴) */}
+            <DrawerDescription
+              style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}
+            >
+              {t('menu.description')}
+            </DrawerDescription>
+            <DrawerClose
+              aria-label={t('menu.close')}
               style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
+                padding: '4px 10px',
                 border: 'none',
-                backgroundColor: 'transparent',
-                textAlign: 'left',
-                fontSize: 14,
-                color: 'var(--text-primary)',
+                background: 'none',
+                fontSize: 13,
+                color: 'var(--text-secondary)',
                 cursor: 'pointer',
               }}
             >
-              <Edit2 style={{ width: 16, height: 16 }} /> {t('menu.rename')}
+              {t('menu.close')}
+            </DrawerClose>
+          </div>
+
+          <div style={{ padding: '4px 12px 24px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <button
+              type="button"
+              onClick={openRenameDialog}
+              style={MENU_ROW_STYLE}
+            >
+              <Edit2 style={{ width: 18, height: 18 }} /> {t('menu.rename')}
             </button>
             <button
               type="button"
               onClick={() => void handleShare()}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: 'none',
-                backgroundColor: 'transparent',
-                textAlign: 'left',
-                fontSize: 14,
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-              }}
+              style={MENU_ROW_STYLE}
             >
-              <Share2 style={{ width: 16, height: 16 }} /> {t('menu.share')}
+              <Share2 style={{ width: 18, height: 18 }} /> {t('menu.share')}
             </button>
-            <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '2px 8px' }} />
+            <div style={{ height: 1, backgroundColor: 'var(--hairline)', margin: '4px 8px' }} />
             <button
               type="button"
               onClick={() => { setMenuOpen(false); setConfirmDel(true); }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: 'none',
-                backgroundColor: 'transparent',
-                textAlign: 'left',
-                fontSize: 14,
-                fontWeight: 600,
-                color: 'var(--destructive)',
-                cursor: 'pointer',
-              }}
+              style={{ ...MENU_ROW_STYLE, fontWeight: 600, color: 'var(--destructive)' }}
             >
-              <Trash2 style={{ width: 16, height: 16 }} /> {t('menu.delete')}
+              <Trash2 style={{ width: 18, height: 18 }} /> {t('menu.delete')}
             </button>
           </div>
-        </>
-      )}
+        </DrawerContent>
+      </Drawer>
 
       <main
         style={{
@@ -774,50 +775,26 @@ export function HapcardPage() {
         </p>
       </main>
 
-      {/* ── 별명 수정 다이얼로그 ── */}
-      {renameOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 24px',
-          }}
-          onClick={() => setRenameOpen(false)}
-        >
+      {/* ── 별명 수정 다이얼로그 (공용 센터 Dialog) ── */}
+      <Dialog
+        open={renameOpen}
+        onOpenChange={(next) => {
+          if (!next) setRenameOpen(false);
+        }}
+      >
+        <DialogContent showCloseButton={false}>
           <form
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hapcard-rename-title"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 20,
-              padding: 20,
-              width: '100%',
-              maxWidth: 320,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}
-            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             onSubmit={(e) => {
               e.preventDefault();
               if (!canRename) return;
               rename.mutate({ id: id!, nickname: renameValue.trim() });
             }}
           >
-            <div>
-              <h2 id="hapcard-rename-title" style={{ font: 'var(--t-h3)', margin: '0 0 4px', color: 'var(--text-primary)' }}>
-                {t('rename.title')}
-              </h2>
-              <p style={{ font: 'var(--t-sub)', margin: 0, color: 'var(--text-secondary)' }}>
-                {t('rename.body')}
-              </p>
-            </div>
+            <DialogHeader>
+              <DialogTitle>{t('rename.title')}</DialogTitle>
+              <DialogDescription>{t('rename.body')}</DialogDescription>
+            </DialogHeader>
             <input
               id="hapcard-rename-input"
               value={renameValue}
@@ -844,43 +821,22 @@ export function HapcardPage() {
               </p>
             )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="lg"
+                style={{ flex: 1 }}
                 onClick={() => setRenameOpen(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: 'var(--surface-1)',
-                  color: 'var(--text-primary)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
               >
                 {t('rename.cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={!canRename}
-                style={{
-                  flex: 1,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: 'var(--primary)',
-                  color: 'white',
-                  fontWeight: 700,
-                  cursor: canRename ? 'pointer' : 'not-allowed',
-                  opacity: canRename ? 1 : 0.6,
-                }}
-              >
+              </Button>
+              <Button type="submit" size="lg" style={{ flex: 1 }} disabled={!canRename}>
                 {rename.isPending ? t('rename.saving') : t('rename.save')}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── 삭제 확인 (공용 ConfirmDialog) ── */}
       <ConfirmDialog
