@@ -147,8 +147,10 @@ export function RelationDetailPage() {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          backgroundColor: 'rgba(var(--background), 0.8)',
+          // rgba(var(--background)…) 는 토큰이 hex 라 무효 → color-mix 로 80% 불투명 틴트.
+          backgroundColor: 'color-mix(in srgb, var(--background) 80%, transparent)',
           backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,

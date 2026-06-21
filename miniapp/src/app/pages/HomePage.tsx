@@ -245,7 +245,7 @@ export function HomePage() {
               <p style={{ font: 'var(--t-h2)', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.3 }}>
                 {t('intro.question')}
               </p>
-              <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(var(--text-primary), 0.85)', margin: 0 }}>
+              <p style={{ fontSize: 15, lineHeight: 1.7, color: 'color-mix(in srgb, var(--text-primary) 85%, transparent)', margin: 0 }}>
                 {t('intro.prefix')}
                 <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('intro.emphasis')}</strong>
                 {t('intro.suffix')}
