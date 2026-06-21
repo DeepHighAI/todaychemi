@@ -5,9 +5,9 @@
  * 미니앱:
  *   - vaul Drawer 유지 (package.json 설치됨).
  *   - Tailwind → 인라인 스타일.
- *   - BirthDateField / BirthTimeField (wheel picker, Tailwind 의존) →
- *     단순 <input type="date"> / <input type="time"> 로 대체.
- *     TODO(P5): 웹앱 wheel picker 이식 또는 TDS DatePicker 교체.
+ *   - 생년월일/시간 = iOS 휠 피커(DateWheelField/TimeWheelField). WheelTray 는
+ *     vaul 이 아닌 portal(document.body, z-index 200+)이라 본 드로어 위에 뜬다.
+ *     min/max 는 다른 등록 화면과 동일하게 [1900-01-01, 오늘]로 보정.
  *   - fetch → apiFetch + useAuth 토큰 사용.
  *   - next/link → 제거(사용 없음), next-intl useTranslations 유지.
  */
@@ -17,6 +17,8 @@ import { Drawer } from 'vaul';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { DateWheelField } from '@/components/ui/date-wheel-field';
+import { TimeWheelField } from '@/components/ui/time-wheel-field';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
@@ -169,7 +171,7 @@ function MeEditForm({
         />
       </div>
 
-      {/* 생년월일 — 웹앱 wheel picker 대신 <input type="date"> */}
+      {/* 생년월일 — iOS 휠 피커 */}
       <div>
         <label
           htmlFor="edit-birth-date"
@@ -177,14 +179,15 @@ function MeEditForm({
         >
           {tOb('birth.date')}
         </label>
-        <input
+        <DateWheelField
           id="edit-birth-date"
-          type="date"
           value={form.birthDate}
-          onChange={(e) => setField('birthDate', e.target.value)}
-          style={inputStyle}
+          onChange={(v) => setField('birthDate', v)}
+          min="1900-01-01"
+          max={new Date().toISOString().slice(0, 10)}
+          label={tOb('birth.date')}
+          placeholder={tOb('birth.datePlaceholder')}
         />
-        {/* TODO(P5): BirthDateField wheel picker 이식 */}
       </div>
 
       {/* 양/음력 */}
@@ -257,7 +260,7 @@ function MeEditForm({
         </div>
       </div>
 
-      {/* 출생 시간 — 웹앱 wheel picker 대신 <input type="time"> */}
+      {/* 출생 시간 — iOS 휠 피커 */}
       {form.knowledge !== 'unknown' && (
         <div>
           <label
@@ -266,14 +269,13 @@ function MeEditForm({
           >
             {tOb('birth.timeOptional')}
           </label>
-          <input
+          <TimeWheelField
             id="edit-birth-time"
-            type="time"
             value={form.birthTime}
-            onChange={(e) => setField('birthTime', e.target.value)}
-            style={inputStyle}
+            onChange={(v) => setField('birthTime', v)}
+            label={tOb('birth.timeOptional')}
+            placeholder={tOb('birth.timePlaceholder')}
           />
-          {/* TODO(P5): BirthTimeField wheel picker 이식 */}
         </div>
       )}
 
