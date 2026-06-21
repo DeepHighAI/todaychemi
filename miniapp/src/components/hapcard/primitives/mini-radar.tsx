@@ -10,6 +10,7 @@
  */
 
 import { toPercent } from '@/lib/hapcard/ohaeng-percent';
+import { radarVertex } from '@/lib/hapcard/radar-geometry';
 import type { OhaengElement } from '@/lib/saju/elementLabel';
 
 const ELEMENTS: OhaengElement[] = ['목', '화', '토', '금', '수'];
@@ -17,13 +18,12 @@ const N = ELEMENTS.length;
 const CX = 100;
 const CY = 100;
 const R_MAX = 70;
+const DIMS = { cx: CX, cy: CY, rMax: R_MAX };
 const LABEL_OFFSET = 12;
 const GRID_LEVELS = [0.25, 0.5, 0.75, 1];
 
-function vertex(index: number, scale: number): [number, number] {
-  const angle = -Math.PI / 2 + (2 * Math.PI * index) / N;
-  return [CX + scale * R_MAX * Math.cos(angle), CY + scale * R_MAX * Math.sin(angle)];
-}
+// 공용 결정형 기하(radar-geometry) — me/합카드 레이더가 동일 수식 공유.
+const vertex = (index: number, scale: number) => radarVertex(index, scale, DIMS, N);
 
 function polygonPoints(percents: Record<OhaengElement, number>): string {
   return ELEMENTS.map((el, i) => {

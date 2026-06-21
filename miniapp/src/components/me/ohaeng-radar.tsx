@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 
 import { SectionCard } from '@/components/me/section-card';
 import { toPercent } from '@/lib/hapcard/ohaeng-percent';
+import { radarVertex } from '@/lib/hapcard/radar-geometry';
 import type { OhaengElement } from '@/lib/saju/elementLabel';
 
 const ELEMENTS: OhaengElement[] = ['목', '화', '토', '금', '수'];
@@ -29,15 +30,10 @@ const KEY_TO_EN: Record<OhaengElement, 'wood' | 'fire' | 'earth' | 'metal' | 'wa
 };
 
 const SIZE = 160;
-const CX = 80;
-const CY = 80;
-const R_MAX = 54;
+const DIMS = { cx: 80, cy: 80, rMax: 54 };
 
-// index 번째 꼭짓점(scale 0~1) 좌표 — 12시 방향에서 시계방향.
-function vertex(index: number, scale: number): [number, number] {
-  const angle = -Math.PI / 2 + (2 * Math.PI * index) / N;
-  return [CX + scale * R_MAX * Math.cos(angle), CY + scale * R_MAX * Math.sin(angle)];
-}
+// 공용 결정형 기하(radar-geometry) — me/합카드 레이더가 동일 수식 공유.
+const vertex = (index: number, scale: number) => radarVertex(index, scale, DIMS, N);
 
 interface OhaengRadarProps {
   data: Record<OhaengElement, number>;
