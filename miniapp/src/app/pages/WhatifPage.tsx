@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
-import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import { ERROR_CODES, type ErrorCode } from '@/lib/errors/error-codes';
 import { LoadingState } from '@/components/feedback/LoadingState';
@@ -44,85 +44,6 @@ async function callWhatif(type: DiagnosticType, token: string | null): Promise<W
 }
 
 // ---------------------------------------------------------------------------
-// 402 결제 필요 UI — Toss IAP 시트 연결
-// ---------------------------------------------------------------------------
-
-interface PayRequiredBlockProps {
-  amountKrw: number;
-  onPurchase: () => void;
-  onDismiss: () => void;
-  isPurchasing: boolean;
-  purchaseError: Error | null;
-}
-
-function PayRequiredBlock({ amountKrw, onPurchase, onDismiss, isPurchasing, purchaseError }: PayRequiredBlockProps) {
-  const [refundConsent, setRefundConsent] = useState(false);
-  return (
-    <div
-      data-testid="whatif-pay-required"
-      style={{
-        borderRadius: 'var(--r-lg)',
-        backgroundColor: 'var(--bg-card)',
-        padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-        alignItems: 'center',
-        textAlign: 'center',
-      }}
-    >
-      <p style={{ font: 'var(--t-body)', color: 'var(--text-primary)', margin: 0 }}>
-        또 다른 나 결과를 보려면 결제가 필요해요.
-      </p>
-      <p style={{ font: 'var(--t-cap)', color: 'var(--text-secondary)', margin: 0 }}>
-        ₩{amountKrw.toLocaleString()} / 1회
-      </p>
-      {purchaseError && (
-        <p style={{ font: 'var(--t-cap)', color: 'var(--destructive)', margin: 0 }}>
-          결제 중 오류가 발생했어요. 다시 시도해 주세요.
-        </p>
-      )}
-      <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          type="button"
-          onClick={onPurchase}
-          disabled={isPurchasing || !refundConsent}
-          style={{
-            borderRadius: 'var(--r-md)',
-            backgroundColor: 'var(--primary)',
-            color: 'var(--primary-foreground)',
-            font: 'var(--t-sub)',
-            fontWeight: 600,
-            padding: '10px 20px',
-            border: 'none',
-            cursor: isPurchasing || !refundConsent ? 'not-allowed' : 'pointer',
-            opacity: isPurchasing || !refundConsent ? 0.6 : 1,
-          }}
-        >
-          {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}
-        </button>
-        <button
-          type="button"
-          onClick={onDismiss}
-          style={{
-            borderRadius: 'var(--r-md)',
-            backgroundColor: 'transparent',
-            color: 'var(--text-secondary)',
-            font: 'var(--t-sub)',
-            padding: '10px 16px',
-            border: '1px solid var(--border)',
-            cursor: 'pointer',
-          }}
-        >
-          닫기
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // 메인 페이지 컴포넌트 (routes.tsx 가 default export 없이 named import 사용)
 // ---------------------------------------------------------------------------
 
@@ -142,6 +63,7 @@ export function WhatifPage() {
 
   const [payDismissed, setPayDismissed] = useState(false);
   const [payInfo, setPayInfo] = useState<{ amount_krw: number; feature: string; ref: string } | null>(null);
+  const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — 성공 시 쿼리 재실행
   const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
@@ -177,17 +99,24 @@ export function WhatifPage() {
       // 402 발생 시 payment 정보 저장
       const info = err.payment ?? payInfo;
       if (info && !payInfo) setPayInfo(info);
+      const amountKrw = info?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.whatif;
       return (
         <div style={{ padding: 16 }}>
-          <PayRequiredBlock
-            amountKrw={info?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.whatif}
+          <FeaturePayCard
+            testId="whatif-pay-required"
+            tone="card"
+            title="또 다른 나 결과를 보려면 결제가 필요해요."
+            description={`₩${amountKrw.toLocaleString()} / 1회`}
+            amountKrw={amountKrw}
+            consentChecked={refundConsent}
+            onConsentChange={setRefundConsent}
             isPurchasing={isPurchasing}
-            purchaseError={iapError}
-            onPurchase={() => {
+            hasError={!!iapError}
+            onPay={() => {
               clearIapError();
               if (info) openIapPurchase(info);
             }}
-            onDismiss={() => { clearIapError(); setPayDismissed(true); }}
+            onClose={() => { clearIapError(); setPayDismissed(true); }}
           />
         </div>
       );

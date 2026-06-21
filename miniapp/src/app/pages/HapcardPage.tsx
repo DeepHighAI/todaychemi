@@ -61,11 +61,11 @@ import {
 } from '@/components/ui/drawer';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
+import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
 import { GlossarySheet } from '@/components/hapcard/glossary-sheet';
 import { HapcardReplayButton } from '@/components/hapcard/replay-button';
 import { shareHapcard } from '@/lib/share/toss-share';
-import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
 import { HapcardLoadingState } from '@/components/hapcard/loading-state';
 import { HapcardOhaeng } from '@/components/hapcard/ohaeng';
 import { HapcardEvidence } from '@/components/hapcard/evidence';
@@ -299,53 +299,23 @@ export function HapcardPage() {
     const amountKrw = payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.hapcard;
     return (
       <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
-        <div
-          style={{
-            borderRadius: 16,
-            backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)',
-            padding: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
+        <FeaturePayCard
+          title={`케미카드는 ₩${amountKrw.toLocaleString()}이 필요해요`}
+          description="결제 후 바로 케미카드를 확인할 수 있어요."
+          amountKrw={amountKrw}
+          consentChecked={refundConsent}
+          onConsentChange={setRefundConsent}
+          isPurchasing={isPurchasing}
+          hasError={!!iapError}
+          payDisabled={!payInfo}
+          onPay={() => {
+            clearIapError();
+            if (payInfo) {
+              openIapPurchase(payInfo);
+            }
           }}
-        >
-          <p style={{ font: 'var(--t-h3)', margin: 0, color: 'var(--text-primary)' }}>
-            케미카드는 ₩{amountKrw.toLocaleString()}이 필요해요
-          </p>
-          <p style={{ font: 'var(--t-sub)', margin: 0, color: 'var(--text-secondary)' }}>
-            결제 후 바로 케미카드를 확인할 수 있어요.
-          </p>
-          {iapError && (
-            <p style={{ font: 'var(--t-cap)', margin: 0, color: 'var(--destructive)' }}>
-              결제 중 오류가 발생했어요. 다시 시도해 주세요.
-            </p>
-          )}
-          <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-            <Button
-              type="button"
-              size="cta"
-              className="btn-cta"
-              disabled={isPurchasing || !payInfo || !refundConsent}
-              onClick={() => {
-                clearIapError();
-                if (payInfo) {
-                  openIapPurchase(payInfo);
-                }
-              }}
-            >
-              {isPurchasing ? '결제 중…' : `₩${amountKrw.toLocaleString()} 결제하기`}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => { clearIapError(); setPayDismissed(true); }}
-              style={{ width: '100%' }}
-            >
-              닫기
-            </Button>
-          </div>
-        </div>
+          onClose={() => { clearIapError(); setPayDismissed(true); }}
+        />
       </main>
     );
   }

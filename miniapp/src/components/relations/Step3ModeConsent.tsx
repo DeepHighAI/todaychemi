@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
-import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem } from '@/types/relation';
@@ -226,55 +226,24 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
         </p>
       )}
 
-      {/* 402 결제 필요 — Toss IAP 시트 연결 */}
+      {/* 402 결제 필요 — Toss IAP 시트 연결 (공용 FeaturePayCard) */}
       {paywallInfo && (
-        <div
-          style={{
-            borderRadius: 'var(--r-md)',
-            backgroundColor: 'var(--warn-bg, #fff8e1)',
-            padding: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
+        <FeaturePayCard
+          tone="warn"
+          title={t('errors.payment')}
+          description={`인연 등록 비용: ${paywallInfo.amount_krw.toLocaleString()}원`}
+          amountKrw={paywallInfo.amount_krw}
+          consentChecked={refundConsent}
+          onConsentChange={setRefundConsent}
+          consentNotice="인연 등록이 완료되면 「전자상거래법」상 청약철회가 제한됩니다."
+          isPurchasing={isPurchasing}
+          hasError={!!iapError}
+          onPay={() => {
+            clearIapError();
+            openIapPurchase(paywallInfo);
           }}
-        >
-          <p style={{ font: 'var(--t-sub)', color: 'var(--warn, #b45309)', margin: 0 }}>
-            {t('errors.payment')}
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
-            인연 등록 비용: {paywallInfo.amount_krw.toLocaleString()}원
-          </p>
-          {iapError && (
-            <p style={{ fontSize: 12, color: 'var(--destructive)', margin: 0 }}>
-              결제 중 오류가 발생했어요. 다시 시도해 주세요.
-            </p>
-          )}
-          <RefundRestrictionConsent
-            checked={refundConsent}
-            onCheckedChange={setRefundConsent}
-            notice="인연 등록이 완료되면 「전자상거래법」상 청약철회가 제한됩니다."
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Button
-              size="cta"
-              className="btn-cta"
-              disabled={isPurchasing || !refundConsent}
-              onClick={() => {
-                clearIapError();
-                openIapPurchase(paywallInfo);
-              }}
-            >
-              {isPurchasing ? '결제 중…' : `₩${paywallInfo.amount_krw.toLocaleString()} 결제하기`}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => { clearIapError(); setPaywallInfo(null); }}
-              style={{ width: '100%' }}
-            >
-              닫기
-            </Button>
-          </div>
-        </div>
+          onClose={() => { clearIapError(); setPaywallInfo(null); }}
+        />
       )}
 
       {/* 고정 하단 버튼 */}

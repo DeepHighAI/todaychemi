@@ -20,7 +20,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiFetch } from '@/lib/api/client';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
-import { RefundRestrictionConsent } from '@/components/iap/refund-consent';
+import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
 import { Button } from '@/components/ui/button';
 import {
@@ -215,49 +215,23 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
           </div>
         )}
 
-        {/* 결제 필요 — Toss IAP 시트 연결 */}
+        {/* 결제 필요 — Toss IAP 시트 연결 (공용 FeaturePayCard) */}
         {state === 'pay_required' && (
-          <div
-            role="alert"
-            style={{
-              borderRadius: 12,
-              backgroundColor: 'color-mix(in srgb, var(--primary) 8%, transparent)',
-              padding: 12,
-              fontSize: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
+          <FeaturePayCard
+            title={`케미 다시 맞추기는 ₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()}이 필요해요.`}
+            description="결제 후 바로 새 케미카드를 확인할 수 있어요."
+            amountKrw={payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay}
+            consentChecked={refundConsent}
+            onConsentChange={setRefundConsent}
+            isPurchasing={isPurchasing}
+            hasError={!!iapError}
+            payDisabled={!payInfo}
+            onPay={() => {
+              clearIapError();
+              if (payInfo) openIapPurchase(payInfo);
             }}
-          >
-            <p style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>
-              케미 다시 맞추기는 ₩{(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()}이 필요해요.
-            </p>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
-              결제 후 바로 새 케미카드를 확인할 수 있어요.
-            </p>
-            {iapError && (
-              <p style={{ margin: 0, color: 'var(--destructive)', fontSize: 12 }}>
-                결제 중 오류가 발생했어요. 다시 시도해 주세요.
-              </p>
-            )}
-            <RefundRestrictionConsent checked={refundConsent} onCheckedChange={setRefundConsent} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button
-                size="cta"
-                className="btn-cta"
-                disabled={isPurchasing || !payInfo || !refundConsent}
-                onClick={() => {
-                  clearIapError();
-                  if (payInfo) openIapPurchase(payInfo);
-                }}
-              >
-                {isPurchasing ? '결제 중…' : `₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()} 결제하기`}
-              </Button>
-              <Button variant="ghost" onClick={handleRetry} style={{ width: '100%' }}>
-                닫기
-              </Button>
-            </div>
-          </div>
+            onClose={handleRetry}
+          />
         )}
 
         {/* 확인/취소 푸터 — 성공/페이/autoReplay 상태가 아닐 때 */}
