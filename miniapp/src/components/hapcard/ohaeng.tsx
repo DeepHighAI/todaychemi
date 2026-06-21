@@ -10,6 +10,7 @@
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api/client';
+import { Bar } from '@/components/ui/bar';
 import type { OhaengInterpretation } from '@/types/hapcard';
 
 // 오행 요소 타입 (웹앱 src/lib/saju/elementLabel.ts 와 동일)
@@ -44,26 +45,17 @@ const ELEMENT_COLOR: Record<OhaengElement, string> = {
 };
 
 function ComparisonBar({ label, value, scaleMax, element, side }: ComparisonBarProps) {
-  const width = Math.round((value / scaleMax) * 100);
-  const marginLeft = side === 'left' ? 'auto' : undefined;
-
+  // side='left' 칸은 중앙(우측)으로 자라야 하므로 anchor='end'.
   return (
-    <div style={{ height: 10, flex: 1, overflow: 'hidden', borderRadius: 'var(--r-pill)', backgroundColor: 'rgba(0,0,0,0.08)' }}>
-      <div
-        role="progressbar"
-        aria-label={label}
-        aria-valuenow={value}
-        aria-valuemin={0}
-        aria-valuemax={scaleMax}
-        style={{
-          height: '100%',
-          borderRadius: 'var(--r-pill)',
-          backgroundColor: ELEMENT_COLOR[element],
-          width: `${width}%`,
-          marginLeft,
-        }}
-      />
-    </div>
+    <Bar
+      value={value}
+      max={scaleMax}
+      color={ELEMENT_COLOR[element]}
+      height={10}
+      anchor={side === 'left' ? 'end' : 'start'}
+      ariaLabel={label}
+      style={{ flex: 1 }}
+    />
   );
 }
 

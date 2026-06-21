@@ -41,6 +41,7 @@ import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { Button } from '@/components/ui/button';
+import { Bar } from '@/components/ui/bar';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { GlossaryProvider } from '@/components/hapcard/glossary-provider';
@@ -722,30 +723,13 @@ export function HapcardPage() {
             {(['talk', 'attract', 'speed', 'money', 'future'] as const).map((k) => {
               const v = data.content.area_scores?.[k] ?? 0;
               const color = v >= 70 ? 'var(--ok)' : v < 55 ? 'var(--warn)' : 'var(--primary)';
+              const areaLabel = t(`areas.${k}` as Parameters<typeof t>[0]);
               return (
                 <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ width: 48, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {t(`areas.${k}` as Parameters<typeof t>[0])}
+                    {areaLabel}
                   </span>
-                  <span
-                    style={{
-                      flex: 1,
-                      height: 6,
-                      backgroundColor: 'var(--surface-1)',
-                      borderRadius: 100,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: 'block',
-                        height: '100%',
-                        borderRadius: 100,
-                        width: `${v}%`,
-                        backgroundColor: color,
-                      }}
-                    />
-                  </span>
+                  <Bar value={v} color={color} ariaLabel={areaLabel} style={{ flex: 1 }} />
                   <span style={{ width: 48, textAlign: 'right', fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
                     {scoreToTemperature(v).toFixed(1)}°
                   </span>
