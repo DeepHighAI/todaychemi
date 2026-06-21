@@ -36,6 +36,10 @@ function DialogOverlay({ style, ...props }: Omit<DialogPrimitive.Backdrop.Props,
         zIndex: 50,
         backgroundColor: 'rgba(0,0,0,0.1)',
         backdropFilter: 'blur(2px)',
+        // 포인터-이벤트 트랩 방어: vaul Drawer 가 닫히는 ~500ms 동안 body 가
+        // pointer-events:none 이어도 모달 백드롭/팝업은 항상 상호작용 가능해야 한다.
+        // (base-ui 는 열린 Popup/Backdrop 에 pointer-events 를 명시하지 않아 상속됨.)
+        pointerEvents: 'auto',
         ...(typeof style === 'object' && !Array.isArray(style) ? style : {}),
       }}
       {...props}
@@ -70,6 +74,8 @@ function DialogContent({
           padding: 16,
           fontSize: 14,
           outline: 'none',
+          // 포인터-이벤트 트랩 방어 — DialogOverlay 동일 사유(상속된 none 차단).
+          pointerEvents: 'auto',
           ...(typeof style === 'object' && !Array.isArray(style) ? style : {}),
         }}
         {...props}
