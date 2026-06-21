@@ -22,19 +22,23 @@ export function AvoidActionCards({ card }: AvoidActionCardsProps) {
   const favorableAction = card.favorable_action.trim() || t('fallback.favorable_action');
   const favorableReason = card.favorable_action_reason.trim() || t('fallback.favorable_action_reason');
 
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: 'var(--surface-2)',
+  // 시맨틱 톤 카드 — 피할 말=warn, 좋은 행동=ok. 소프트 elevation + 톤 매칭 외곽선.
+  // 다크 패리티는 --warn/--ok/*-bg 다크 토큰이 담당한다.
+  const toneCardStyle = (tone: 'warn' | 'ok'): React.CSSProperties => ({
+    backgroundColor: `var(--${tone}-bg)`,
+    border: `1px solid color-mix(in srgb, var(--${tone}) 20%, transparent)`,
+    boxShadow: 'var(--e-1)',
     borderRadius: 'var(--r-lg)',
     padding: 16,
     display: 'flex',
     flexDirection: 'column',
     gap: 4,
-  };
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '0 16px' }}>
-      <div data-card="avoid" style={cardStyle}>
-        <p style={{ font: 'var(--t-cap)', color: 'var(--text-secondary)', margin: 0 }}>
+      <div data-card="avoid" style={toneCardStyle('warn')}>
+        <p style={{ font: 'var(--t-cap)', color: 'var(--warn)', margin: 0 }}>
           {t('avoid_phrase_label')}
         </p>
         <p style={{ font: 'var(--t-h3)', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
@@ -44,8 +48,8 @@ export function AvoidActionCards({ card }: AvoidActionCardsProps) {
           {convertHanja(avoidReason)}
         </p>
       </div>
-      <div data-card="favorable" style={cardStyle}>
-        <p style={{ font: 'var(--t-cap)', color: 'var(--text-secondary)', margin: 0 }}>
+      <div data-card="favorable" style={toneCardStyle('ok')}>
+        <p style={{ font: 'var(--t-cap)', color: 'var(--ok)', margin: 0 }}>
           {t('favorable_action_label')}
         </p>
         <p style={{ font: 'var(--t-h3)', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
