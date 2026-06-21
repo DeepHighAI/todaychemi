@@ -23,6 +23,7 @@ import { useTranslations } from 'next-intl';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useMeChart } from '@/lib/me/use-me-chart';
+import { useMeProfile } from '@/lib/me/use-me-profile';
 
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
@@ -39,7 +40,6 @@ import {
 import { Button } from '@/components/ui/button';
 
 import { MeHero } from '@/components/me/me-hero';
-import { MeEditRow } from '@/components/me/me-edit-row';
 import { MeEditDrawer } from '@/components/me/me-edit-drawer';
 import { TalismanCard } from '@/components/me/talisman-card';
 import { InfoCard } from '@/components/me/info-card';
@@ -57,11 +57,15 @@ import type { WalletResponse } from '@/types/wallet';
 
 export function MePage() {
   const t = useTranslations('me');
+  const tBirth = useTranslations('onboarding.birth');
   const navigate = useNavigate();
   const { token } = useAuth();
 
   // chart 데이터 조회 — ProfileGate·HomePage 와 ['me-chart'] 캐시 공유.
   const { data: chart, isLoading, isError, refetch } = useMeChart(token);
+
+  // 프로필(닉네임·생일) 조회 — 히어로 표시용. MeEditDrawer 와 ['me-profile'] 캐시 공유.
+  const { data: profile } = useMeProfile(token);
 
   // 부적 지갑 조회 (chart 가 있을 때만)
   const { data: wallet } = useQuery({
@@ -132,13 +136,22 @@ export function MePage() {
   // 메인 렌더
   // ---------------------------------------------------------------------------
 
+  // 생일 라벨: "1992.07.14 양력" (profile 로딩 전엔 undefined → 히어로가 서브타이틀 생략)
+  const birthDateLabel = profile
+    ? `${profile.birth_date.replaceAll('-', '.')} ${
+        profile.birth_date_calendar === 'lunar' ? tBirth('calendarLunar') : tBirth('calendarSolar')
+      }`
+    : undefined;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 16px' }}>
-      {/* 히어로: 일주 칩 */}
-      <MeHero chart={chart} />
-
-      {/* 정보 수정 진입 */}
-      <MeEditRow onClick={() => setEditOpen(true)} />
+      {/* 히어로: Dawn 워터컬러 + 떠있는 일주 카드 (편집 진입 버튼 내장) */}
+      <MeHero
+        chart={chart}
+        nickname={profile?.nickname}
+        birthDateLabel={birthDateLabel}
+        onEdit={() => setEditOpen(true)}
+      />
       <MeEditDrawer open={editOpen} onOpenChange={setEditOpen} />
 
       {/* 부적 지갑 (있을 때만) */}
