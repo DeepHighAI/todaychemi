@@ -43,6 +43,14 @@ import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
 import { AdBanner, isAdSlotAvailable } from '../../components/ads/ad-banner';
 
 import type { DailyHapCard } from '../../types/dailyHap';
@@ -217,61 +225,29 @@ export function HomePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 96 }}>
       <TodayAppBar />
 
-      {/* 환영 팝업 — 하루 1회 */}
-      {introOpen && (
-        <>
-          <div
-            onClick={handleIntroClose}
-            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.45)' }}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 51,
-              background: 'var(--card)',
-              borderRadius: 'var(--r-xl)',
-              padding: 24,
-              width: 'calc(100% - 2rem)',
-              maxWidth: 420,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ font: 'var(--t-h2)', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.3 }}>
-                {t('intro.question')}
-              </p>
-              <p style={{ fontSize: 15, lineHeight: 1.7, color: 'color-mix(in srgb, var(--text-primary) 85%, transparent)', margin: 0 }}>
-                {t('intro.prefix')}
-                <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('intro.emphasis')}</strong>
-                {t('intro.suffix')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleIntroClose}
-              style={{
-                height: 48,
-                width: '100%',
-                borderRadius: 'var(--r-pill)',
-                background: 'var(--primary)',
-                color: 'white',
-                fontWeight: 700,
-                fontSize: 16,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {t('intro.button')}
-            </button>
-          </div>
-        </>
-      )}
+      {/* 환영 팝업 — 하루 1회 (공용 센터 Dialog) */}
+      <Dialog
+        open={introOpen}
+        onOpenChange={(next) => {
+          if (!next) handleIntroClose();
+        }}
+      >
+        <DialogContent showCloseButton={false} style={{ gap: 20 }}>
+          <DialogHeader style={{ gap: 12 }}>
+            <DialogTitle style={{ font: 'var(--t-h2)', fontWeight: 700, lineHeight: 1.3 }}>
+              {t('intro.question')}
+            </DialogTitle>
+            <DialogDescription style={{ fontSize: 15, lineHeight: 1.7, color: 'color-mix(in srgb, var(--text-primary) 85%, transparent)' }}>
+              {t('intro.prefix')}
+              <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('intro.emphasis')}</strong>
+              {t('intro.suffix')}
+            </DialogDescription>
+          </DialogHeader>
+          <Button type="button" size="cta" className="btn-cta" onClick={handleIntroClose}>
+            {t('intro.button')}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* 로딩 */}
       {todayQuery.isLoading && (
