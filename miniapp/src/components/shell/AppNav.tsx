@@ -61,11 +61,12 @@ export function AppNav({ items }: AppNavProps) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 3,
-            color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+            gap: 4,
+            // UIDesign(M3) 활성 라벨 = --p-10/700, 비활성 = --outline/500
+            color: isActive ? 'var(--p-10)' : 'var(--outline)',
             textDecoration: 'none',
-            fontSize: 10,
-            fontWeight: isActive ? 600 : 400,
+            fontSize: 11,
+            fontWeight: isActive ? 700 : 500,
             letterSpacing: 'var(--ls-snug)',
             paddingTop: 8,
             paddingBottom: 4,
@@ -73,8 +74,28 @@ export function AppNav({ items }: AppNavProps) {
           })}
           aria-selected={undefined} // NavLink 의 aria-current="page" 로 관리
         >
-          {item.icon}
-          <span>{item.label}</span>
+          {({ isActive }) => (
+            <>
+              {/* M3 활성 인디케이터 pill — 아이콘을 감싸는 56x28 캡슐(UIDesign system.css .tabbar .ti .ic).
+                  활성 시 --p-90 배경 + --p-10 전경, 비활성 시 투명 → 아이콘은 라벨 색(--outline) 상속. */}
+              <span
+                style={{
+                  width: 56,
+                  height: 28,
+                  borderRadius: 'var(--r-pill)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isActive ? 'var(--p-90)' : 'transparent',
+                  color: isActive ? 'var(--p-10)' : 'inherit',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

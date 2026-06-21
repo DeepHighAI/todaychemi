@@ -27,4 +27,34 @@ describe('AppNav', () => {
     const nav = screen.getByRole('tablist', { name: '메인 탭' });
     expect(Number(nav.style.zIndex)).toBeGreaterThan(10);
   });
+
+  // UIDesign(M3 Expressive) 타깃: 활성 탭은 아이콘 뒤에 둥근 캡슐 'pill' 인디케이터를 가진다.
+  // pill 배경 = --p-90, 전경 = --p-10, 라벨 700. (system.css .tabbar .ti.on .ic)
+  describe('활성 탭 M3 pill 인디케이터', () => {
+    it('활성 탭은 아이콘 캡슐에 --p-90 배경 pill 을 가진다', () => {
+      renderWithProviders(<AppNav items={items} />, { routerEntries: ['/feed'] });
+      const tabs = screen.getAllByRole('tab');
+      const active = tabs.find((t) => t.getAttribute('aria-current') === 'page');
+      expect(active).toBeTruthy();
+      const pill = active!.firstElementChild as HTMLElement;
+      expect(pill.style.background).toContain('var(--p-90)');
+    });
+
+    it('비활성 탭의 아이콘 캡슐은 pill 배경(--p-90)이 없다', () => {
+      renderWithProviders(<AppNav items={items} />, { routerEntries: ['/feed'] });
+      const tabs = screen.getAllByRole('tab');
+      const inactive = tabs.find((t) => t.getAttribute('aria-current') !== 'page');
+      expect(inactive).toBeTruthy();
+      const pill = inactive!.firstElementChild as HTMLElement;
+      expect(pill.style.background).not.toContain('var(--p-90)');
+    });
+
+    it('활성 탭 라벨은 --p-10 색 + 700 굵기', () => {
+      renderWithProviders(<AppNav items={items} />, { routerEntries: ['/me'] });
+      const tabs = screen.getAllByRole('tab');
+      const active = tabs.find((t) => t.getAttribute('aria-current') === 'page');
+      expect(active!.style.color).toContain('var(--p-10)');
+      expect(active!.style.fontWeight).toBe('700');
+    });
+  });
 });
