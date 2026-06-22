@@ -37,8 +37,7 @@ vi.mock('@/lib/me/use-me-chart', () => ({
 }));
 
 vi.mock('@/components/ads/ad-banner', () => ({
-  AdBanner: () => null,
-  isAdSlotAvailable: () => false,
+  AdBannerListItem: () => null,
 }));
 
 import { renderWithProviders } from '@/test/render';

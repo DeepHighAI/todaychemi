@@ -41,7 +41,7 @@ export function resolveAdGroupId(env: AdEnv = readAdEnv()): string | null {
 
 function adsSupported(): boolean {
   try {
-    return Boolean(TossAds?.attachBanner?.isSupported?.());
+    return Boolean(TossAds?.initialize?.isSupported?.() && TossAds?.attachBanner?.isSupported?.());
   } catch {
     return false;
   }
@@ -75,13 +75,19 @@ export function ensureTossAdsInitialized(): void {
           initState = 'ready';
           notifyReady();
         },
-        onInitializationFailed: () => {
+        onInitializationFailed: (error) => {
+          console.warn('[ads] TossAds.initialize failed', {
+            message: error instanceof Error ? error.message : String(error),
+          });
           // SDK 초기화 실패 — 배너는 빈 컨테이너 유지. 다음 앱 진입에서 재시도 가능하도록 idle 복귀.
           initState = 'idle';
         },
       },
     });
-  } catch {
+  } catch (error) {
+    console.warn('[ads] TossAds.initialize threw', {
+      message: error instanceof Error ? error.message : String(error),
+    });
     // SDK 미지원/예외 — idle 복귀(빈 컨테이너 유지).
     initState = 'idle';
   }
@@ -114,35 +120,86 @@ export function __resetTossAdsForTest(): void {
   readyListeners.clear();
 }
 
-export function AdBanner() {
+interface AdBannerProps {
+  env?: AdEnv;
+  onSlotUnavailable?: () => void;
+}
+
+export function AdBanner({ env, onSlotUnavailable }: AdBannerProps = {}) {
   const ref = useRef<HTMLDivElement>(null);
   const [supported] = useState(adsSupported);
+  const [slotHidden, setSlotHidden] = useState(false);
   const ready = useTossAdsReady();
-  const adGroupId = resolveAdGroupId();
+  const adGroupId = resolveAdGroupId(env ?? readAdEnv());
 
   useEffect(() => {
-    if (!ready || !adGroupId) return;
+    if (!ready || !adGroupId || slotHidden) return;
     const el = ref.current;
     if (!el) return;
 
     let attached: { destroy: () => void } | undefined;
+    const destroyAttached = () => {
+      attached?.destroy();
+      attached = undefined;
+    };
+    const hideSlot = () => {
+      destroyAttached();
+      setSlotHidden(true);
+      onSlotUnavailable?.();
+    };
+
     try {
       attached =
         TossAds.attachBanner(adGroupId, el, {
           theme: 'auto',
           tone: 'blackAndWhite',
           variant: 'expanded',
+          callbacks: {
+            onNoFill: (payload) => {
+              console.warn('[ads] TossAds.attachBanner no fill', {
+                slotId: payload.slotId,
+                adGroupId: payload.adGroupId,
+              });
+              hideSlot();
+            },
+            onAdFailedToRender: (payload) => {
+              console.error('[ads] TossAds.attachBanner render failed', {
+                slotId: payload.slotId,
+                adGroupId: payload.adGroupId,
+                code: payload.error.code,
+                message: payload.error.message,
+                domain: payload.error.domain,
+              });
+              hideSlot();
+            },
+          },
         }) ?? undefined;
-    } catch {
-      // 부착 실패 — 빈 컨테이너 유지(SDK 가 다음 갱신에서 재시도).
+    } catch (error) {
+      console.error('[ads] TossAds.attachBanner threw', {
+        adGroupId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      hideSlot();
     }
 
     return () => {
-      attached?.destroy();
+      destroyAttached();
     };
-  }, [ready, adGroupId]);
+  }, [ready, adGroupId, slotHidden, onSlotUnavailable]);
 
-  if (!supported || !adGroupId) return null;
+  if (!supported || !adGroupId || slotHidden) return null;
   // 컨테이너 내부는 비워둔다(SDK 가 광고 DOM 을 주입). ready 전에는 빈 96px 컨테이너(부착 대기).
   return <div ref={ref} data-testid="ad-banner" style={{ width: '100%', height: AD_BANNER_HEIGHT }} />;
+}
+
+export function AdBannerListItem({ env }: Pick<AdBannerProps, 'env'> = {}) {
+  const [slotUnavailable, setSlotUnavailable] = useState(false);
+
+  if (slotUnavailable || !isAdSlotAvailable(env ?? readAdEnv())) return null;
+
+  return (
+    <li aria-label="광고">
+      <AdBanner env={env} onSlotUnavailable={() => setSlotUnavailable(true)} />
+    </li>
+  );
 }

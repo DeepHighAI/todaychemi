@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Seg } from '@/components/ui/seg';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SwipeRow } from '@/components/layout/SwipeRow';
-import { AdBanner, isAdSlotAvailable } from '@/components/ads/ad-banner';
+import { AdBannerListItem } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
@@ -534,11 +534,7 @@ export function FeedPage() {
               )}
             </li>
             {/* 인앱 광고 배너 — 목록 중간 4개마다 1개 (항목 4). 선택 모드·광고 미지원/미설정 시 숨김. */}
-            {!selectionMode && (i + 1) % 4 === 0 && i < rest.length - 1 && isAdSlotAvailable() && (
-              <li aria-label="광고">
-                <AdBanner />
-              </li>
-            )}
+            {!selectionMode && (i + 1) % 4 === 0 && i < rest.length - 1 && <AdBannerListItem />}
             </Fragment>
           ))}
         </ul>

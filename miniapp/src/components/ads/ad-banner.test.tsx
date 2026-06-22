@@ -1,35 +1,86 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 
 const h = vi.hoisted(() => {
-  let supported = true;
+  let initializeSupported = true;
+  let attachSupported = true;
   let initCalls = 0;
   // 기본: 최악 시나리오 — SDK 가 "첫 initialize 호출"의 onInitialized 만 발화한다고 가정.
   // (공식 문서가 중복 init 마다 onInitialized 를 발화한다고 보장하지 않으므로 이 가정으로 검증)
   let fireOnlyFirstInit = true;
+  let attachThrows = false;
+  let lastAdGroupId = 'ad-prod-123';
+  let lastAttachOptions:
+    | {
+        callbacks?: {
+          onNoFill?: (payload: { slotId: string; adGroupId: string; adMetadata: {} }) => void;
+          onAdFailedToRender?: (payload: {
+            slotId: string;
+            adGroupId: string;
+            adMetadata: {};
+            error: { code: number; message: string; domain?: string };
+          }) => void;
+        };
+      }
+    | undefined;
   const destroy = vi.fn();
-  const attachBanner = vi.fn(() => ({ destroy }));
+  const attachBanner = vi.fn((adGroupId: string, _target: HTMLElement, options: NonNullable<typeof lastAttachOptions>) => {
+    if (attachThrows) throw new Error('attach failed');
+    lastAdGroupId = adGroupId;
+    lastAttachOptions = options;
+    return { destroy };
+  });
   // isSupported 프로퍼티 부착
-  (attachBanner as unknown as { isSupported: () => boolean }).isSupported = () => supported;
+  (attachBanner as unknown as { isSupported: () => boolean }).isSupported = () => attachSupported;
   const initialize = vi.fn((opts: { callbacks?: { onInitialized?: () => void } }) => {
     initCalls += 1;
     if (!fireOnlyFirstInit || initCalls === 1) {
       opts.callbacks?.onInitialized?.();
     }
   });
-  (initialize as unknown as { isSupported: () => boolean }).isSupported = () => supported;
+  (initialize as unknown as { isSupported: () => boolean }).isSupported = () => initializeSupported;
   return {
     destroy,
     attachBanner,
     initialize,
     setSupported: (v: boolean) => {
-      supported = v;
+      initializeSupported = v;
+      attachSupported = v;
+    },
+    setInitializeSupported: (v: boolean) => {
+      initializeSupported = v;
+    },
+    setAttachSupported: (v: boolean) => {
+      attachSupported = v;
     },
     resetInitCalls: () => {
       initCalls = 0;
     },
     setFireOnlyFirstInit: (v: boolean) => {
       fireOnlyFirstInit = v;
+    },
+    setAttachThrows: (v: boolean) => {
+      attachThrows = v;
+    },
+    resetAttachState: () => {
+      attachThrows = false;
+      lastAdGroupId = 'ad-prod-123';
+      lastAttachOptions = undefined;
+    },
+    triggerNoFill: () => {
+      lastAttachOptions?.callbacks?.onNoFill?.({
+        slotId: 'slot-1',
+        adGroupId: lastAdGroupId,
+        adMetadata: {},
+      });
+    },
+    triggerAdFailedToRender: () => {
+      lastAttachOptions?.callbacks?.onAdFailedToRender?.({
+        slotId: 'slot-1',
+        adGroupId: lastAdGroupId,
+        adMetadata: {},
+        error: { code: 500, message: 'render failed', domain: 'test' },
+      });
     },
   };
 });
@@ -38,17 +89,25 @@ vi.mock('@apps-in-toss/web-framework', () => ({
   TossAds: { initialize: h.initialize, attachBanner: h.attachBanner, destroyAll: vi.fn() },
 }));
 
-import { AdBanner, isAdSlotAvailable, resolveAdGroupId, __resetTossAdsForTest } from './ad-banner';
+import {
+  AdBanner,
+  AdBannerListItem,
+  isAdSlotAvailable,
+  resolveAdGroupId,
+  __resetTossAdsForTest,
+} from './ad-banner';
 
 beforeEach(() => {
   vi.clearAllMocks();
   h.setSupported(true);
   h.resetInitCalls();
   h.setFireOnlyFirstInit(true);
+  h.resetAttachState();
   __resetTossAdsForTest();
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   __resetTossAdsForTest();
 });
@@ -79,6 +138,18 @@ describe('isAdSlotAvailable', () => {
     h.setSupported(false);
     expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
   });
+
+  it('initialize 미지원이면 attach 지원이어도 false', () => {
+    h.setInitializeSupported(false);
+    h.setAttachSupported(true);
+    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+  });
+
+  it('attachBanner 미지원이면 initialize 지원이어도 false', () => {
+    h.setInitializeSupported(true);
+    h.setAttachSupported(false);
+    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+  });
 });
 
 describe('AdBanner', () => {
@@ -86,6 +157,24 @@ describe('AdBanner', () => {
     h.setSupported(false);
     render(<AdBanner />);
     expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+    expect(h.attachBanner).not.toHaveBeenCalled();
+  });
+
+  it('initialize 미지원이면 아무것도 렌더하지 않고 초기화도 호출하지 않는다', () => {
+    h.setInitializeSupported(false);
+    h.setAttachSupported(true);
+    render(<AdBanner />);
+    expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+    expect(h.initialize).not.toHaveBeenCalled();
+    expect(h.attachBanner).not.toHaveBeenCalled();
+  });
+
+  it('attachBanner 미지원이면 아무것도 렌더하지 않고 초기화도 호출하지 않는다', () => {
+    h.setInitializeSupported(true);
+    h.setAttachSupported(false);
+    render(<AdBanner />);
+    expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+    expect(h.initialize).not.toHaveBeenCalled();
     expect(h.attachBanner).not.toHaveBeenCalled();
   });
 
@@ -97,6 +186,26 @@ describe('AdBanner', () => {
     expect(container.style.height).toBe('96px');
     expect(h.attachBanner).toHaveBeenCalledWith(
       'ait-ad-test-banner-id',
+      container,
+      expect.objectContaining({
+        variant: 'expanded',
+        callbacks: expect.objectContaining({
+          onNoFill: expect.any(Function),
+          onAdFailedToRender: expect.any(Function),
+        }),
+      }),
+    );
+  });
+
+  it('운영 env 광고 그룹 ID 를 attachBanner 에 그대로 전달한다', () => {
+    render(
+      <AdBanner
+        env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ait.v2.live.a36156fd5d3c461d' }}
+      />,
+    );
+    const container = screen.getByTestId('ad-banner');
+    expect(h.attachBanner).toHaveBeenCalledWith(
+      'ait.v2.live.a36156fd5d3c461d',
       container,
       expect.objectContaining({ variant: 'expanded' }),
     );
@@ -121,5 +230,72 @@ describe('AdBanner', () => {
     const { unmount } = render(<AdBanner />);
     unmount();
     expect(h.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('onNoFill 발생 시 배너와 부모 list item 을 숨기고 destroy 한다', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    render(
+      <ul>
+        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+      </ul>,
+    );
+
+    expect(screen.getByRole('listitem', { name: '광고' })).toBeInTheDocument();
+
+    act(() => {
+      h.triggerNoFill();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listitem', { name: '광고' })).not.toBeInTheDocument();
+    });
+    expect(h.destroy).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      '[ads] TossAds.attachBanner no fill',
+      expect.objectContaining({ adGroupId: 'ad-prod-123' }),
+    );
+  });
+
+  it('onAdFailedToRender 발생 시 배너와 부모 list item 을 숨기고 destroy 한다', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <ul>
+        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+      </ul>,
+    );
+
+    act(() => {
+      h.triggerAdFailedToRender();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listitem', { name: '광고' })).not.toBeInTheDocument();
+    });
+    expect(h.destroy).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(
+      '[ads] TossAds.attachBanner render failed',
+      expect.objectContaining({ adGroupId: 'ad-prod-123', code: 500 }),
+    );
+  });
+
+  it('attachBanner 예외 시 빈 부모 list item 을 남기지 않는다', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    h.setAttachThrows(true);
+
+    render(
+      <ul>
+        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+      </ul>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listitem', { name: '광고' })).not.toBeInTheDocument();
+    });
+    expect(error).toHaveBeenCalledWith(
+      '[ads] TossAds.attachBanner threw',
+      expect.objectContaining({ adGroupId: 'ad-prod-123' }),
+    );
   });
 });
