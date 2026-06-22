@@ -17,6 +17,13 @@ export default defineConfig({
       build: 'vite build',
     },
   },
+  webViewProps: {
+    type: 'partner',
+  },
+  navigationBar: {
+    withBackButton: true,
+    withHomeButton: true,
+  },
   permissions: [],
   outdir: 'dist',
 });

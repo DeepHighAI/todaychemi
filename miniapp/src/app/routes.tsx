@@ -1,21 +1,20 @@
 /**
  * routes.tsx
  *
- * HashRouter 기반 라우트 정의.
- * 정적 .ait 번들은 서버-사이드 라우팅을 지원하지 않으므로
- * 해시(#) 기반 라우팅을 사용한다.
+ * MemoryRouter 기반 라우트 정의.
+ * 앱인토스 미니앱은 SDK 콜드스타트 스킴을 내부 라우트로 매핑하므로,
+ * 브라우저 History API 조작 없이 앱 내부 스택으로만 화면을 전환한다.
  *
  * 페이지 UI 포팅 완료(P4) — 8개 플로우 실구현. 유료 게이트는 IAP 시트 연동(P5).
  */
 
 import { useEffect } from 'react';
-import { createHashRouter, RouterProvider, useNavigate } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { getSchemeUri } from '@apps-in-toss/web-framework';
 import { parseSchemeToPath } from '../lib/deeplink/parse-scheme';
 
 // 모듈 레벨 싱글톤 가드 — 콜드스타트 딥링크는 앱 세션당 정확히 1회만 적용한다.
-// (SchemeUriRouter 가 라우트 그룹 전환마다 재마운트되어도 재적용 금지 — 사용자가
-//  딥링크 화면을 벗어나려 할 때 다시 끌려가는 버그 방지.)
+// StrictMode 이중 마운트 시에도 재적용하지 않아 사용자가 딥링크 화면을 벗어날 수 있게 한다.
 let coldStartDeeplinkHandled = false;
 import { AppShell } from '../components/shell/AppShell';
 import { ProfileGate } from './ProfileGate';
@@ -38,7 +37,7 @@ import { LegalPage } from './pages/LegalPage';
  * 렌더링 결과는 없다.
  *
  * 토스는 공유 링크로 미니앱을 실행할 때 getSchemeUri() 에 초기 경로를 전달한다.
- * WebView 는 항상 기본 URL(#/)에서 시작하므로, 여기서 경로를 파싱해 1회 navigate 한다.
+ * WebView 는 항상 기본 URL에서 시작하므로, 여기서 경로를 파싱해 1회 navigate 한다.
  *   예) intoss://todaychemi/hapcard/abc123 → navigate('/hapcard/abc123')
  */
 function SchemeUriRouter() {
@@ -67,51 +66,52 @@ function SchemeUriRouter() {
 // 라우터 구성
 // ---------------------------------------------------------------------------
 
-const router = createHashRouter([
-  {
-    // 탭바 있는 메인 레이아웃
-    element: (
-      <>
-        <SchemeUriRouter />
-        <AppShell showNav />
-      </>
-    ),
-    children: [
-      {
-        // 프로필 강제 게이트 — chart 없는 로그인 사용자는 온보딩으로(§1.1).
-        // pathless layout route: 온보딩(탭바 없는 그룹)은 게이트 밖이라 루프 없음.
-        element: <ProfileGate />,
-        children: [
-          { path: '/',                    element: <HomePage /> },
-          { path: '/feed',                element: <FeedPage /> },
-          { path: '/feed/:relationId',    element: <RelationDetailPage /> },
-          { path: '/me',                  element: <MePage /> },
-        ],
-      },
-    ],
-  },
-  {
-    // 탭바 없는 단독 화면 레이아웃 (온보딩, 케미카드 뷰어, 진단)
-    element: (
-      <>
-        <SchemeUriRouter />
-        <AppShell showNav={false} />
-      </>
-    ),
-    children: [
-      { path: '/onboarding',              element: <OnboardingPage /> },
-      { path: '/relations/new',           element: <RelationsNewPage /> },
-      { path: '/hapcard/:id',             element: <HapcardPage /> },
-      { path: '/whatif/:type',            element: <WhatifPage /> },
-      { path: '/legal/:slug',             element: <LegalPage /> },
-    ],
-  },
-]);
+function shouldShowMainNav(pathname: string): boolean {
+  return pathname === '/' || pathname === '/me' || pathname === '/feed' || pathname.startsWith('/feed/');
+}
+
+function ShellLayout() {
+  const location = useLocation();
+
+  return (
+    <>
+      <SchemeUriRouter />
+      <AppShell showNav={shouldShowMainNav(location.pathname)} />
+    </>
+  );
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<ShellLayout />}>
+        {/* 프로필 강제 게이트 — chart 없는 로그인 사용자는 온보딩으로(§1.1). */}
+        {/* pathless layout route: 온보딩(탭바 없는 그룹)은 게이트 밖이라 루프 없음. */}
+        <Route element={<ProfileGate />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/feed" element={<FeedPage />} />
+          <Route path="/feed/:relationId" element={<RelationDetailPage />} />
+          <Route path="/me" element={<MePage />} />
+        </Route>
+
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/relations/new" element={<RelationsNewPage />} />
+        <Route path="/hapcard/:id" element={<HapcardPage />} />
+        <Route path="/whatif/:type" element={<WhatifPage />} />
+        <Route path="/legal/:slug" element={<LegalPage />} />
+      </Route>
+    </Routes>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // 내보내기
 // ---------------------------------------------------------------------------
 
 export function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <MemoryRouter initialEntries={['/']}>
+      <AppRoutes />
+    </MemoryRouter>
+  );
 }

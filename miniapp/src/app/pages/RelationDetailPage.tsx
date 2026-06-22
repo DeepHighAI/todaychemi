@@ -20,7 +20,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BackButton } from '@/components/ui/back-button';
 import { ErrorCard } from '@/components/feedback/ErrorCard';
 import { RelationFlowChart } from '@/components/relation/RelationFlowChart';
 import { RelationTimeline } from '@/components/relation/RelationTimeline';
@@ -159,7 +158,6 @@ export function RelationDetailPage() {
           borderBottom: '1px solid var(--surface-2)',
         }}
       >
-        <BackButton onClick={() => navigate(-1)} />
         <h1
           style={{
             margin: 0,

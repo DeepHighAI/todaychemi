@@ -13,8 +13,8 @@
  *   이 URL 을 getTossShareLink 2번째 인자로 넘기면 외부 메신저 크롤러가 미리보기를 가져올 수 있다.
  *   share 발급에 실패하더라도 공유 자체가 깨지지 않도록 딥링크만 공유하는 폴백을 둔다.
  *
- * ⚠️ intoss:// 스킴은 앱 정식 출시 후에만 동작한다. 출시 전 테스트는 콘솔 업로드 시
- *    발급되는 테스트 스킴(intoss-private://...?_deploymentId=) 으로 검증한다.
+ * ⚠️ intoss:// 스킴은 앱 정식 출시 후에만 동작한다. 출시 전에는 콘솔 업로드 산출물의
+ *    private 테스트 스킴으로 검증한다.
  *
  * 출처: 구현 레퍼런스 §5(공유/lifecycle), getTossShareLink/share 공식 문서.
  */

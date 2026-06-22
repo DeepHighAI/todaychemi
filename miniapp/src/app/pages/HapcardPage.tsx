@@ -42,7 +42,6 @@ import type { HapcardResult, HapcardErrorCode } from '@/types/hapcard';
 import { AiDisclosureBadge } from '@/components/ai-disclosure/ai-disclosure-badge';
 import { Button } from '@/components/ui/button';
 import { Bar } from '@/components/ui/bar';
-import { BackButton } from '@/components/ui/back-button';
 import { Seg } from '@/components/ui/seg';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
@@ -215,7 +214,13 @@ export function HapcardPage() {
   const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — PAYMENT_REQUIRED(402) 시 Toss IAP 시트 오픈 후 쿼리 무효화
-  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+  const {
+    purchase: openIapPurchase,
+    isPurchasing,
+    purchaseError: iapError,
+    purchaseErrorMessage: iapErrorMessage,
+    clearError: clearIapError,
+  } = useFeaturePurchase({
     onSuccess: () => {
       setPayDismissed(false);
       void refetch();
@@ -307,6 +312,7 @@ export function HapcardPage() {
           onConsentChange={setRefundConsent}
           isPurchasing={isPurchasing}
           hasError={!!iapError}
+          errorMessage={iapErrorMessage ?? undefined}
           payDisabled={!payInfo}
           onPay={() => {
             clearIapError();
@@ -487,14 +493,14 @@ export function HapcardPage() {
           justifyContent: 'space-between',
         }}
       >
-        <BackButton onClick={() => navigate(-1)} />
         <span
           style={{
             font: 'var(--t-h3)',
+            flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            padding: '0 8px',
+            padding: '0 8px 0 4px',
           }}
         >
           {headerNote}

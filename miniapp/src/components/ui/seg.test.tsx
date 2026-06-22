@@ -49,6 +49,27 @@ describe('Seg', () => {
     expect(radios[1].style.boxShadow).toBe('none');
   });
 
+  it('scrollable segment 는 글자 수와 무관하게 균일 폭을 유지한다', () => {
+    render(
+      <Seg
+        options={[
+          { value: 'all', label: '전체' },
+          { value: 'friend', label: '친구 관계' },
+          { value: 'old', label: '오래된 관계' },
+        ]}
+        value="all"
+        onChange={() => {}}
+        variant="segment"
+        scrollable
+        ariaLabel="모드 필터"
+      />,
+    );
+    const radios = screen.getAllByRole('radio');
+    expect(radios[0].style.flex).toBe('0 0 88px');
+    expect(radios[1].style.flex).toBe('0 0 88px');
+    expect(radios[2].style.minWidth).toBe('88px');
+  });
+
   it('variant=segment accent: 활성 텍스트가 --p-40(.itabs 레시피)', () => {
     render(
       <Seg options={OPTS} value="a" onChange={() => {}} variant="segment" accent ariaLabel="탭" />,

@@ -5,19 +5,19 @@ import { renderWithProviders } from '@/test/render';
 import { WheelTray } from './wheel-tray';
 
 describe('WheelTray', () => {
-  it('open 시 제목·취소·완료·children 을 렌더한다', () => {
+  it('open 시 제목·닫기·완료·children 을 렌더한다', () => {
     renderWithProviders(
       <WheelTray open title="생년월일" onCancel={vi.fn()} onDone={vi.fn()}>
         <div>WHEELS</div>
       </WheelTray>,
     );
     expect(screen.getByRole('dialog', { name: '생년월일' })).toBeInTheDocument();
-    expect(screen.getByText('취소')).toBeInTheDocument();
+    expect(screen.getByText('닫기')).toBeInTheDocument();
     expect(screen.getByText('완료')).toBeInTheDocument();
     expect(screen.getByText('WHEELS')).toBeInTheDocument();
   });
 
-  it('취소/완료 클릭 시 각 콜백을 호출한다', () => {
+  it('닫기/완료 클릭 시 각 콜백을 호출한다', () => {
     const onCancel = vi.fn();
     const onDone = vi.fn();
     renderWithProviders(
@@ -25,7 +25,7 @@ describe('WheelTray', () => {
         <div />
       </WheelTray>,
     );
-    fireEvent.click(screen.getByText('취소'));
+    fireEvent.click(screen.getByText('닫기'));
     expect(onCancel).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('완료'));
     expect(onDone).toHaveBeenCalledTimes(1);
@@ -42,7 +42,7 @@ describe('WheelTray', () => {
     expect(dialog).toHaveAttribute('tabindex', '-1');
   });
 
-  it('Escape 키로 취소한다', () => {
+  it('Escape 키로 닫는다', () => {
     const onCancel = vi.fn();
     renderWithProviders(
       <WheelTray open title="t" onCancel={onCancel} onDone={vi.fn()}>

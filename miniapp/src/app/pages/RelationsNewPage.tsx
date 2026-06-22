@@ -4,7 +4,7 @@
  * 웹앱 src/app/(app)/relations/new/{name,dob-time,mode}/page.tsx 포트.
  *
  * 웹앱은 URL 서브라우트 (/relations/new/name → /dob-time → /mode) 로 스텝을 구분하지만
- * SPA(HashRouter)에서는 /relations/new 단일 경로 안에서 로컬 step state 로 관리한다.
+ * SPA 라우터에서는 /relations/new 단일 경로 안에서 로컬 step state 로 관리한다.
  * routes.tsx 변경 없이 기존 { path: '/relations/new', element: <RelationsNewPage /> } 사용.
  *
  * 결제 흐름:
@@ -85,7 +85,7 @@ export function RelationsNewPage() {
   } as const;
 
   return (
-    <main style={{ backgroundColor: 'var(--background)', minHeight: '100dvh', paddingBottom: 128 }}>
+    <main style={{ backgroundColor: 'var(--background)', minHeight: '100%' }}>
       <StepHeader current={step} total={TOTAL_STEPS} onBack={handleBack} />
 
       {step === 1 && (

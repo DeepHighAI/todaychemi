@@ -19,7 +19,7 @@
 6. **IAP** (`iap/develop.md`, framework 레퍼런스): `getProductItemList()` → `createOneTimePurchaseOrder({ options:{ sku, processProductGrant(orderId)→boolean|Promise<boolean> }, onEvent, onError })` → `getPendingOrders`/`completeProductGrant`(복원) → `getCompletedOrRefundedOrders`(환불 감지). SDK ≥1.1.3(지급완료), ≥1.2.2(복원). **`processProductGrant`는 30초 내 true 반환** 못 하면 사용자에게 환불 페이지 노출.
 7. **iframe**: 전면 금지, **단 YouTube 임베드는 예외 허용**(라이브 문서가 명시 — 리뷰 문서의 "예외 미확인" 표기는 정정됨).
 8. **출시**: `.ait` 압축해제 100MB 이하, 리소스는 빌드와 분리(CDN) 권장. 비게임은 **앱 내 기능 최소 1개**(검토 1~2영업일). 검수 가이드 = `checklist/app-nongame.md`(반드시 준수). 외부링크/자사앱 유도 금지 = `checklist/miniapp-external-link.md`.
-9. **로컬 상태**: `public/apps-in-toss/`에 로고/썸네일 에셋 다수 기존재(콘솔 등록에 재사용). `src/lib/payments/feature-prices.ts` = list 1,000/800/600(+relation_slot 1,000)에 **2026-06-14 오픈초기 50% 할인 적용 중**(amount 500/400/300/500). → **고정가 IAP sku와 충돌**(아래 §5 게이트).
+9. **로컬 상태**: `public/apps-in-toss/`에 로고/썸네일 에셋 다수 기존재(콘솔 등록에 재사용). `src/lib/payments/feature-prices.ts` = 정가 1,100/880/880/1,100, 현금가 550/440/440/550, 부적 11/9/9/11. 2026-06-22 사용자 확정: 앱인토스 콘솔 IAP SKU 4종은 판매가 550/440/440/550원(공급가 500/400/400/500원)으로 등록.
 
 ---
 
@@ -53,7 +53,7 @@
   | D3 | 결제 이원화 — 미니앱=**IAP**, 기존 웹=토스페이먼츠 pay-per-use **병행 유지** |
   | D4 | 1차 출시 = **전체 8 플로우** (온보딩·인연등록·케미피드·케미카드·오늘케미·본명식·또다른나·다시맞추기 + 공유) |
   | D5 | TDS 적용 깊이 = **채널톡 검수기준 확인 후 결정** (TDS는 공식상 *선택* — §5 게이트로 잔존) |
-  | D6 | 가격 = **1,000 / 800 / 600원** 티어(웹·미니앱 통일). 단일출처 `feature-prices.ts`. |
+  | D6 | 가격 = 정가 **1,100 / 880 / 880 / 1,100원**, 현금가 **550 / 440 / 440 / 550원**(웹·미니앱 통일). 단일출처 `feature-prices.ts`. |
 - **잠금 ADR(비협상)**: ADR-002(자유채팅 X)·ADR-011(별명만)·ADR-035(점수 결정형, LLM 점수 개입 금지)·ADR-038(Hanja 노출 금지, `convertHanja()` 안전망 의무)·ADR-039(pay-per-use, 잠금 단일진실 `isFeatureUnlocked`)·ADR-040(파생/교차분석층).
 
 ---
@@ -108,7 +108,7 @@
 - 종료 게이트: 최소 .ait가 샌드박스에서 흰화면 없이 부팅 + React 버전 정책 확정.
 
 ### P1 — 콘솔·계약 준비 (대표 작업 / §7과 동일, 병행)
-- 산출물 수령: 확정 `appName`, mTLS 인증서(cert/key PEM), IAP sku 3종, 토스 로그인 약관+scope=`user_key`, 연결끊기 콜백 URL 등록, 채널톡 답변(운세 카테고리/TDS 범위/부적 정책/getAnonymousKey/Sentry/주문조회 SLA/계정링크/임베드).
+- 산출물 수령: 확정 `appName`, mTLS 인증서(cert/key PEM), IAP SKU 4종, 토스 로그인 약관+scope=`user_key`, 연결끊기 콜백 URL 등록, 채널톡 답변(운세 카테고리/TDS 범위/부적 정책/getAnonymousKey/Sentry/주문조회 SLA/계정링크/임베드).
 - 종료 게이트: 위 값들이 `.env`/설정에 주입 가능 상태. **사업자 등록 완료**(없으면 로그인·결제 불가 → 빌드 무의미).
 
 ### P2 — 미니앱 셸
@@ -129,12 +129,12 @@
 - 종료 게이트: 8 플로우가 샌드박스에서 데이터·에러·빈상태까지 동작(결제 전 무료/잠금 분기 포함).
 
 ### P5 — IAP 결제 통합 (ADR-039 모델 C 유지)
-- sku 3종(케미카드/또다른나/다시맞추기) + `getProductItemList` 노출 + `createOneTimePurchaseOrder({options:{sku, processProductGrant}})`.
+- SKU 4종(케미카드/또 다른 나/케미 다시 맞추기/인연 슬롯) + `getProductItemList` 노출 + `createOneTimePurchaseOrder({options:{sku, processProductGrant}})`.
 - `processProductGrant(orderId)` → **우리 서버 unlock API**(mTLS `order/get-order-status`로 `PURCHASED|PAYMENT_COMPLETED` 검증 → `isFeatureUnlocked` 해제 → true). **30초 내·멱등** 필수. IAP가 mTLS 검증 후 `payments`(status=confirmed) insert하면 기존 read-path 게이트·Model C 그대로 흡수(리뷰 §13 B9 확인).
 - 복원: 재진입 시 `getPendingOrders` → 재지급 → `completeProductGrant`. 환불: `getCompletedOrRefundedOrders`로 `REFUNDED` 감지 → 잠금 회수 정책.
 - `resolveFeatureCharge`의 `pay_required` 분기에서 402/토스페이먼츠 시트 대신 **IAP 시트**를 띄운다(웹은 불변).
 - **IAP sku 가격 = §5-3 게이트**(오픈초기 50% 할인 ↔ 고정가 sku).
-- 종료 게이트: 샌드박스 IAP **필수 시나리오 3종**(정상결제→지급 / 미결주문 복원 / 환불 회수) PASS.
+- 종료 게이트: 샌드박스 IAP **4상품 × 필수 시나리오**(정상결제→지급 / 미결주문 복원 / 환불 회수) PASS.
 
 ### P6 — 정책 요건
 - AI 고지/라벨(§3, 법적 의무) 미니앱 전 결과면 배선.
@@ -145,7 +145,7 @@
 
 ### P7 — QA·검수·출시
 - `pnpm build` → `<appName>.ait`(100MB 이하 확인, 폰트/이미지 CDN 분리) → 콘솔 업로드 → QR 토스앱 테스트.
-- `checklist/app-nongame.md` 전 항목 + 외부링크 가이드 + IAP 3종 시나리오 + AI 고지 재점검.
+- `checklist/app-nongame.md` 전 항목 + 외부링크 가이드 + IAP 4상품 시나리오 + AI 고지 재점검.
 - 종료 게이트: 검토 요청 제출 가능 상태 + 대표에게 검수 제출 인수인계(영업일 3일, 출시 즉시 전체 반영·카나리 없음 → 샌드박스/QR 테스트 강도 최대).
 
 ---
@@ -156,7 +156,7 @@
 
 1. **B1 크로스채널 계정 모델** (P3 전): 웹 유저(Supabase)와 미니앱 유저(toss `userKey`)가 별도 `user_id` → 웹 구매분이 미니앱에서 잠겨 보인다. (A) 분리계정 v1 수용+업그레이드 경로 / (B) email scope 받아 자동링크(D2·ADR-011 재검토) / (C) 명시적 연결 플로우. 권장 A. 채널톡: "user_key-only → 추후 email scope 링크 가능?"
 2. **D5 TDS 깊이 + React 버전** (P0/P2): TDS는 `react@^18` 강제. (A) React 18 셸 + TDS 채택 / (B) React 19 유지 + TDS 미채택(자체 디자인). 채널톡 "TDS가 실제 검수 기준에 포함되는지/범위" 답변과 묶어 결정. §1.6 디자인 시스템과의 절충 사안.
-3. **IAP sku 가격 vs 오픈초기 50% 할인** (P5): `feature-prices.ts`에 50% 할인(amount 500/400/300) 적용 중인데 IAP sku는 고정가 등록. (A) 할인가 sku로 이벤트 기간 등록 / (B) 미니앱은 정가, 할인은 웹 한정 / (C) 토스 프로모션/포인트로 할인 대체. 가격 변경은 ADR-039+`feature-prices.ts`+문서 동시갱신 의무(§12).
+3. **IAP sku 가격 확정 완료** (P5): 2026-06-22 사용자 확정. 콘솔 SKU 4종은 판매가 550/440/440/550원(공급가 500/400/400/500원)으로 등록하며, `feature-prices.ts`/`miniapp/src/lib/iap/prices.ts`와 동일하게 유지한다. 가격 변경은 ADR-039+`feature-prices.ts`+문서 동시갱신 의무(§12).
 4. **부적(무료 토큰) + IAP 정책** (P5 전): 무료 데일리 부적이 "가상통화"로, sometimes-free/sometimes-IAP가 IAP-only 규정과 충돌 소지. 채널톡 확인 필수.
 5. **비로그인/guest + 관측성** (P3): `getAnonymousKey` 미확인 → 채널톡 확인 또는 현행 guest(legal-consent 쿠키+`__guest__`)/Supabase anon으로 fallback. Sentry가 .ait 번들에서 동작하는지(미지원 시 Toss Analytics/커스텀 엔드포인트) 채널톡 확인.
 
@@ -175,7 +175,7 @@
 1. 콘솔 가입(만19세+ 워크스페이스) → 앱 등록 → **`appName` 확정**(영구). 로고/썸네일은 `public/apps-in-toss/` 재사용.
 2. **사업자 등록**(필수 — 미등록 시 로그인·결제 불가) + 정산용 사업자 공동인증서 + 팝빌 가입(세금계산서 역발행).
 3. mTLS 인증서 발급(콘솔) → cert/key PEM 전달.
-4. IAP sku 3종 등록(§5-3 가격 확정 후, VAT 포함가).
+4. IAP SKU 4종 등록(케미카드/또 다른 나/케미 다시 맞추기/인연 슬롯, VAT 포함 판매가).
 5. 토스 로그인 약관 등록 + scope=`user_key` + 연결끊기 콜백 URL + (scope 받을 경우만)복호화 키 수령.
 6. 앱 내 기능 ≥1개 등록(예: "오늘 케미 보기"→`/`).
 7. **채널톡 문의(B8)**: ①운세 카테고리 사전승인(돈합 오인) ②TDS 검수 포함 여부/범위 ③부적/가상통화 정책 ④`getAnonymousKey` 존재 ⑤Sentry/에러리포팅 ⑥주문조회 SLA(30초) ⑦user_key→email scope 링크 ⑧iframe/임베드 범위.
@@ -188,7 +188,7 @@
 - [ ] `pnpm build` → `<appName>.ait` 생성, 압축해제 100MB 이하.
 - [ ] 샌드박스 + 토스앱 QR에서 8 플로우 완결 동작.
 - [ ] 토스 로그인 → Bearer 보호 API → 연결끊기 콜백 멱등.
-- [ ] IAP 필수 시나리오 3종(결제·복원·환불) PASS, 30초 내 멱등 unlock.
+- [ ] IAP 4상품의 필수 시나리오(결제·복원·환불) PASS, 30초 내 멱등 unlock.
 - [ ] AI 고지+라벨, 공유 딥링크+공개 OG, 뒤로가기/가시성, 인앱 정책 뷰.
 - [ ] `checklist/app-nongame.md` + 외부링크 가이드 전 항목 충족.
 - [ ] 미니앱 경로에 토스페이먼츠/구글·이메일 로그인/외부 랜딩 **부재** 확인.
@@ -213,7 +213,7 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 
 1. **React 18 강제 + TDS** 를 P0 go/no-go 게이트의 결정 강제 사실로 승격(라이브 TDS 설치 명령 `react@^18` 핀 확인).
 2. **사업자 등록 = 하드 선행조건** 명문화(비사업자는 로그인·수익화 불가 — 미충족 시 빌드 무의미).
-3. **오픈초기 50% 할인 ↔ 고정가 IAP sku 충돌**을 신규 §1.1 게이트(§5-3)로 추가(리뷰 D6 이후 2026-06-14 코드 변경분).
+3. **IAP SKU 가격 게이트 해소**: 2026-06-22 최종 확정가 550/440/440/550원으로 콘솔 등록, 웹·미니앱 단일출처와 정합.
 4. iframe-YouTube 예외가 현재 공식 문서에 명시됨(리뷰 정정 표기 → 재정정).
 5. MCP doc-id 시드 표로 실행 세션의 그라운딩 진입점을 고정.
 
@@ -229,7 +229,7 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 ### ✅ §5 결정 확정 (사용자, 2026-06-14)
 - §5-2 = **React 19 + TDS 미채택** (스파이크 검증 경로). 셸은 React 18 다운그레이드 호환으로 작성(헤지).
 - §5-1 = **분리 계정 v1 + 업그레이드 경로** (userKey only, ADR-011 정합).
-- §5-3 = **할인가 IAP sku** (500/400/300, 웹·미니앱 통일, 이벤트 후 정가).
+- §5-3 = **확정 IAP SKU 가격** (550/440/440/550, 공급가 500/400/400/500, 웹·미니앱 통일).
 
 ### ✅ 구현 레퍼런스(빌드 바이블)
 - `docs/research/apps_in_toss_implementation_reference.md` (9-agent 워크플로). 빌드/로그인/mTLS/IAP/공유/검수정책 + 31라우트 통합맵 + 결정매트릭스 + NOT-FOUND 31건. **구현 시 동반 참조 필수.**
@@ -246,7 +246,7 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 - 미완(stub): appLogin 실배선 · API base URL · 8 플로우 UI · IAP.
 
 ### 다음 (우선순위)
-1. **P1 사용자 외부작업 (임계경로 — 코드로 대체 불가)**: 사업자 등록(로그인·결제 선행 필수) → 콘솔 appName 확정 → mTLS 인증서 발급 → IAP sku 3종(공급가=VAT역산, 표시 500/400/300) → 토스로그인 scope=`user_key` + 연결끊기 콜백 URL → 앱 내 기능 ≥1 → **채널톡 6문의(TDS 필수여부 우선)**.
+1. **P1 사용자 외부작업 (임계경로 — 코드로 대체 불가)**: 사업자 등록(로그인·결제 선행 필수) → 콘솔 appName 확정 → mTLS 인증서 발급 → IAP SKU 4종(판매가 550/440/440/550, 공급가 500/400/400/500) → 토스로그인 scope=`user_key` + 연결끊기 콜백 URL → 앱 내 기능 ≥1 → **채널톡 6문의(TDS 필수여부 우선)**.
 2. **P3 인증 브릿지** (코드, 자율 가능): `toss-mtls-client.ts` + `/api/toss/login` + `/api/toss/disconnect` + 31라우트 Bearer 듀얼 auth + CORS. cert 수령 후 통합 테스트.
 3. **P4 8 플로우 이식** (워크플로 병렬 후보, §7.3 맵): 15~21일 추정. 셸 파운데이션 위에 구축.
 4. P5 IAP · P6 정책(AI라벨/공유/정책뷰) · P7 QA/검수/출시.
@@ -306,6 +306,6 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 
 ### 📊 코드 DONE 바 (§8) 현황 — 빌드/정적 검증 한도 내 전부 GREEN
 - ✅ `ait build` → `todaychemi.ait` ~3.99MB(<100MB). ✅ root tsc 0 · lint 0 · 백엔드 2823/2823 · miniapp tsc 0 + build. ✅ AI고지·공유 딥링크·뒤로가기/가시성·인앱 정책 뷰. ✅ 미니앱에 토스페이먼츠/구글·이메일 OAuth/next-* 부재(grep 0). ✅ PII/ZDR 무변경(LLM 페이로드 미접촉). ✅ §5 게이트 반영.
-- 🔒 **디바이스/콘솔 게이트(P1 선행)**: 샌드박스/QR 8플로우 실동작 · IAP 3종(결제/복원/환불) 실결제 · 토스 로그인 실세션 · `checklist/app-nongame.md` 대조 · 대표 검수 제출 인수인계.
+- 🔒 **디바이스/콘솔 게이트(P1 선행)**: 샌드박스/QR 8플로우 실동작 · IAP 4상품(결제/복원/환불) 실결제 · 토스 로그인 실세션 · `checklist/app-nongame.md` 대조 · 대표 검수 제출 인수인계.
 - 📌 **코더블 잔여(별도 PR, 비차단)**: ① 공개 OG 토큰 라우트(공유 미리보기 이미지) ② 31라우트 명시적 CORS는 미들웨어로 충족하나 라우트별 검증 권장 ③ MePage "회사소개→deephalabs.com" 외부링크 = `miniapp-external-link.md` 정책 대조 필요(제거/인앱 중 §1.1) ④ 미니앱 자체 테스트 인프라(vitest) 부재 — 현재 tsc+build+tsx 단발 검증으로 대체.
 - ⚠️ **배포 선행**: `20260614154823_toss_connections.sql` 미적용 → `db:push` + database.types regen(임시 stub 대체)은 cert 수령·배포 시점에. (`feedback_migration_before_deploy` 준수)

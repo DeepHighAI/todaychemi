@@ -5,7 +5,7 @@
  *   QueryClientProvider (TanStack Query 서버 상태)
  *   └── NextIntlClientProvider (i18n — 한국어)
  *       └── AuthProvider (Bearer 토큰 세션)
- *           └── AppRouter (HashRouter + 페이지들)
+ *           └── AppRouter (MemoryRouter + 페이지들)
  */
 
 import { StrictMode } from 'react';

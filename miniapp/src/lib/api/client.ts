@@ -31,7 +31,10 @@ export function resolveApiBaseUrl(env: { VITE_API_BASE_URL?: string; PROD?: bool
   return env.PROD ? PROD_API_HOST : '';
 }
 
-export const API_BASE_URL = resolveApiBaseUrl(import.meta.env);
+export const API_BASE_URL = resolveApiBaseUrl({
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  PROD: import.meta.env.PROD,
+});
 
 // ---------------------------------------------------------------------------
 // 에러 타입

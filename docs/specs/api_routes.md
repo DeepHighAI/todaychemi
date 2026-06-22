@@ -9,11 +9,11 @@
 
 | Route | Type | Auth | Request | Response | Notes |
 |---|---|---|---|---|---|
-| `POST /api/hapcards` | Route Handler | required | `{relation_id, mode, theory_profile_version, question_slot?}` | `HapcardResult` JSON | 8p 차감, KST `target_date` 서버 산출, 날짜별 캐시/재분석. 캐시 hit는 신규 차감 없음 |
+| `POST /api/hapcards` | Route Handler | required | `{relation_id, mode, theory_profile_version, question_slot?}` | `HapcardResult` JSON | 11p 차감, KST `target_date` 서버 산출, 날짜별 캐시/재분석. 캐시 hit는 신규 차감 없음 |
 | `GET /api/today` | Route Handler | required | — | `DailyHap` JSON | lazy-first 캐시 (자정 만료) |
 | `POST /actions/createRelation` | Server Action | required | `RelationCreate` | `RelationRow` | Zod validated, 닉네임만 저장 |
-| `POST /api/hapcards/[id]/replay` | Route Handler | required | `{replay_reason?}` | `HapcardReplayResult` | 4p 차감, idempotency(jinjin_date UNIQUE), 보상 트랜잭션 |
-| `POST /api/whatif/[type]` | Route Handler | required | path `type` | `WhatifResult` | 5p 차감, chart_hash+type+prompt cache hit는 신규 차감 없음 |
+| `POST /api/hapcards/[id]/replay` | Route Handler | required | `{replay_reason?}` | `HapcardReplayResult` | 9p 차감, idempotency(jinjin_date UNIQUE), 보상 트랜잭션 |
+| `POST /api/whatif/[type]` | Route Handler | required | path `type` | `WhatifResult` | 9p 차감, chart_hash+type+prompt cache hit는 신규 차감 없음 |
 | `POST /api/hapcards/[id]/share` | Route Handler | required | `{range, channel}` | `{share_id,url,og_image_url,title,text,expires_at}` | 30일 공개 토큰 생성, raw `hapcard_id` 미노출 |
 | `POST /api/share/complete` | Route Handler | required | `{share_id, channel}` | `{ok,reward}` | 클라이언트 공유 완료 기록용. 보상 지급 없음 |
 | `POST /api/share/kakao/callback` | Route Handler | Kakao admin key | `share_id` | `{ok,reward}` | KakaoTalk Share webhook, `X-Kakao-Resource-ID` 멱등 |

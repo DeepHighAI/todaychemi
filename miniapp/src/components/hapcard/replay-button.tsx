@@ -65,7 +65,13 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — 성공 시 replay 재시도 (unlock row 있으면 200, 재과금 없음)
-  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+  const {
+    purchase: openIapPurchase,
+    isPurchasing,
+    purchaseError: iapError,
+    purchaseErrorMessage: iapErrorMessage,
+    clearError: clearIapError,
+  } = useFeaturePurchase({
     onSuccess: () => {
       setPayInfo(null);
       setState('loading');
@@ -225,6 +231,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             onConsentChange={setRefundConsent}
             isPurchasing={isPurchasing}
             hasError={!!iapError}
+            errorMessage={iapErrorMessage ?? undefined}
             payDisabled={!payInfo}
             onPay={() => {
               clearIapError();
@@ -234,7 +241,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
           />
         )}
 
-        {/* 확인/취소 푸터 — 성공/페이/autoReplay 상태가 아닐 때 */}
+        {/* 확인/닫기 푸터 — 성공/페이/autoReplay 상태가 아닐 때 */}
         {state !== 'success' && state !== 'pay_required' && !autoReplay && (
           <DialogFooter>
             <Button

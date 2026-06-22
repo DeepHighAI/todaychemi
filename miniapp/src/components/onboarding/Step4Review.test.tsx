@@ -131,7 +131,7 @@ describe('Step4Review — 에러 분기', () => {
     await userEvent.click(screen.getByRole('button', { name: '시작하기' }));
 
     expect(mockLogin).toHaveBeenCalled();
-    expect(await screen.findByText('저장에 실패했어요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('저장에 실패했어요. 잠시 후 다시 시도해 주세요.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '시작하기' })).toBeEnabled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -154,6 +154,6 @@ describe('Step4Review — 에러 분기', () => {
     await checkAllConsents();
     await userEvent.click(screen.getByRole('button', { name: '시작하기' }));
 
-    expect(await screen.findByText('저장에 실패했어요. 잠시 후 다시 시도해주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('저장에 실패했어요. 잠시 후 다시 시도해 주세요.')).toBeInTheDocument();
   });
 });

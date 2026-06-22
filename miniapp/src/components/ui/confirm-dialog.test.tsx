@@ -6,7 +6,7 @@ import { renderWithProviders } from '@/test/render';
 import { ConfirmDialog } from './confirm-dialog';
 
 describe('ConfirmDialog', () => {
-  it('open 이면 제목·설명·확인/취소 버튼을 렌더한다', () => {
+  it('open 이면 제목·설명·확인/닫기 버튼을 렌더한다', () => {
     renderWithProviders(
       <ConfirmDialog
         open
@@ -20,7 +20,7 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('삭제할까요?')).toBeInTheDocument();
     expect(screen.getByText('되돌릴 수 없어요')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '취소' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '닫기' })).toBeInTheDocument();
   });
 
   it('확인 클릭 시 onConfirm 을 호출한다', async () => {
@@ -32,12 +32,12 @@ describe('ConfirmDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('취소 클릭 시 onCancel 을 호출한다', async () => {
+  it('닫기 클릭 시 onCancel 을 호출한다', async () => {
     const onCancel = vi.fn();
     renderWithProviders(
       <ConfirmDialog open title="t" confirmLabel="삭제" onConfirm={vi.fn()} onCancel={onCancel} />,
     );
-    await userEvent.click(screen.getByRole('button', { name: '취소' }));
+    await userEvent.click(screen.getByRole('button', { name: '닫기' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -64,8 +64,8 @@ describe('ConfirmDialog', () => {
 
   it('커스텀 cancelLabel 을 적용한다', () => {
     renderWithProviders(
-      <ConfirmDialog open title="t" confirmLabel="삭제" cancelLabel="닫기" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+      <ConfirmDialog open title="t" confirmLabel="삭제" cancelLabel="뒤로" onConfirm={vi.fn()} onCancel={vi.fn()} />,
     );
-    expect(screen.getByRole('button', { name: '닫기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '뒤로' })).toBeInTheDocument();
   });
 });

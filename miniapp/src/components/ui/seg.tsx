@@ -122,7 +122,8 @@ export function Seg<T extends string>({
   function itemStyle(active: boolean): React.CSSProperties {
     if (variant === 'segment') {
       return {
-        flex: 1,
+        flex: scrollable ? '0 0 88px' : 1,
+        minWidth: scrollable ? 88 : undefined,
         whiteSpace: 'nowrap',
         border: 'none',
         cursor: 'pointer',

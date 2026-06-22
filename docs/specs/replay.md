@@ -2,7 +2,7 @@
 
 > **Status: 구현 완료 (2026-06-13 문서 동기)** — S-07b(2026-05-06) 완료 후 pay-per-use 게이트 통합(dated ref `replay:{id}:{date}` 멱등, 2026-06-02)·lazy yunse 재계산(2026-06-11)까지 반영됨. 단일 truth source = 구현 코드(`src/lib/replay/`, `/api/hapcards/[id]/replay`).
 >
-> D1~D4 확정 기록과 아래 명세는 설계 사료로 보존. 가격은 ADR-039 D6 개정(₩600/6부적)이 우선.
+> D1~D4 확정 기록과 아래 명세는 설계 사료로 보존. 현행 가격은 ADR-039 확정가(정가 ₩880, 현금가 ₩440, 9부적)가 우선.
 
 ---
 
@@ -10,7 +10,7 @@
 
 `hapcard_replays` 테이블(`supabase/migrations/0007_hapcard_replays.sql`)과 `fluttering-gathering-island.md §4.3`(관계 진화 타임라인 재해석, Phase 1.5)에 근거한 기능.
 
-원본 케미카드(8p)와 동일한 `(user, relation, mode)` 조합을 *다른 시간 변수*(일진/주운/월운)로 재해석. 결과는 `hapcard_replays` INSERT.
+원본 케미카드(11p)와 동일한 `(user, relation, mode)` 조합을 *다른 시간 변수*(일진/주운/월운)로 재해석. 결과는 `hapcard_replays` INSERT.
 
 ---
 
@@ -19,8 +19,8 @@
 | # | 결정 항목 | **확정값** | 영향 파일 |
 |---|---|---|---|
 | **D1** ✅ | **라우트 형태** | **Route Handler** `POST /api/hapcards/[id]/replay` | `api_routes.md:15` 정정 완료(§12), `src/app/api/hapcards/[id]/replay/route.ts` 신규 |
-| **D2** ✅ | **요금** | **4p 차감** (원본 8p 의 50%) | `token_ledger` INSERT delta = `-4`, UI 안내 "케미 다시 맞추기 4토큰" |
-| **D3** ✅ | **레이트리미트** | **무제한** — 4p 부담 자체가 자연 게이트. Idempotency(`jinjin_date` UNIQUE)만 적용 | `REPLAY_RATE_LIMITED` 에러 코드 미사용. `0023_replay_idempotency.sql` 신규 |
+| **D2** ✅ | **요금** | 현행 ADR-039 기준 **9p 차감** 또는 현금가 **₩440** | `token_ledger` INSERT delta = `-9`, UI 안내는 `feature-prices.ts`/미니앱 IAP 표시가를 따른다 |
+| **D3** ✅ | **레이트리미트** | **무제한** — 현행 9p 또는 ₩440 부담 자체가 자연 게이트. Idempotency(`jinjin_date` UNIQUE)만 적용 | `REPLAY_RATE_LIMITED` 에러 코드 미사용. `0023_replay_idempotency.sql` 신규 |
 | **D4** ✅ | **`token_ledger.reason` 네이밍** | **`'replay_use'`** (`db_schema.md:319` canonical) / 환불 `'replay_refund'` | `payments.md:271` 정정 완료(§12) |
 
 ---

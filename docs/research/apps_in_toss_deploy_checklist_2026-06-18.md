@@ -40,8 +40,9 @@
 - [x] **B-2 브랜드**: `displayName`=`오늘케미`(한글) · `brand.icon` 설정 완료.
   - ✅ 앱 로고 = `twoday_app_logo_600.svg`. `public/apps-in-toss/twoday_app_logo_600.svg` 로 Vercel 호스팅, `granite.config.ts brand.icon` = `https://todaychemi.vercel.app/apps-in-toss/twoday_app_logo_600.svg` (2026-06-18). 콘솔 업로드 이미지 URL로 교체 원하면 그 링크로 1줄 교체 가능.
 - [ ] **B-3 카테고리**: "라이프스타일/운세". "소셜/만남"·투자자문 분류 회피(특히 돈합 모드 — C-1 채널톡 확인).
-- [ ] **B-4 IAP SKU 4종 등록** → SKU ID 수령 → A-6/A-7 기입.
-  - 가격: `feature-prices.ts` 의 `amount_krw`(오픈 50% 할인가) = 케미카드 **₩500** · 또 다른 나 **₩400** · 케미 다시 맞추기 **₩300** · 인연 슬롯 **₩500**. (이벤트 종료 후 정가 1,000/800/600/1,000 환원 — **§1.1 최종 가격 확정 후 등록**)
+- [x] **B-4 IAP SKU 4종 등록** → SKU ID 수령 → A-6/A-7 기입.
+  - 최종 확정가(2026-06-22): 케미카드 **₩550(공급가 500원)** · 또 다른 나 **₩440(공급가 400원)** · 케미 다시 맞추기 **₩440(공급가 400원)** · 인연 슬롯 **₩550(공급가 500원)**.
+  - 코드 단일출처: `feature-prices.ts` 의 `amount_krw` 및 `miniapp/src/lib/iap/prices.ts` 의 `IAP_DISPLAY_PRICE_KRW` = 550/440/440/550.
 - [ ] **B-5 토스 로그인 설정**: scope = **user_key 만**(PII 미수집, ADR-011). 연결해제 콜백 URL = `https://todaychemi.vercel.app/api/toss/disconnect` + Basic Auth(A-5 값과 일치).
 - [ ] **B-6 인앱 기능 등록**(≥1) — 미니앱 내에서 완결되는 기능 경로 지정.
 
@@ -64,7 +65,7 @@
 - [x] **D-3** `pnpm build` → `todaychemi.ait` 생성 완료(3.99MB, deploymentId `019eda12-f8f5-736f-8d7d-d2900c248c91`). Phase 4.2 검증 PASS(appName·displayName·icon)
   - ⚠️ icon URL은 **Vercel 배포 후** 해석됨 → 아래 GitHub push + Vercel 재배포 필요(이미 진행). 업로드 전 env(A절)도 설정해야 미니앱 API/인증/IAP 동작.
 - [ ] **D-4** `cd miniapp && pnpm deploy` (`ait deploy`) 또는 콘솔 수동 업로드 → `deploymentId` 발급
-- [ ] **D-5** A-6/A-7 SKU env 반영 후 Vercel **재배포**(env 변경은 재배포 시 적용)
+- [ ] **D-5** A-6 서버 SKU env 반영 후 Vercel **재배포**(env 변경은 재배포 시 적용). A-7 미니앱 빌드 env는 `miniapp/.env.local`에 반영 후 `.ait` 재빌드·재업로드.
 
 ---
 

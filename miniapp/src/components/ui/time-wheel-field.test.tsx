@@ -24,11 +24,11 @@ describe('TimeWheelField', () => {
     expect(onChange).toHaveBeenCalledWith('09:40');
   });
 
-  it('취소 시 onChange 를 호출하지 않는다', () => {
+  it('닫기 시 onChange 를 호출하지 않는다', () => {
     const onChange = vi.fn();
     renderWithProviders(<TimeWheelField value="03:40" onChange={onChange} {...BASE} />);
     fireEvent.click(screen.getByRole('button', { name: '태어난 시간' }));
-    fireEvent.click(screen.getByText('취소'));
+    fireEvent.click(screen.getByText('닫기'));
     expect(onChange).not.toHaveBeenCalled();
   });
 

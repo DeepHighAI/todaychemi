@@ -13,7 +13,7 @@
  *  - UNAUTHORIZED 시 /onboarding 으로 이동 (미니앱 auth 흐름)
  *  - Dialog: shadcn → @base-ui/react 래퍼 (miniapp/src/components/ui/dialog.tsx)
  *  - SwipeRow: 미니앱 포트 버전
- *  - 테마 토글 없음 (시스템 다크모드 따름)
+ *  - 테마 토글 없음 (라이트 모드 고정)
  *
  * API:
  *  - GET /api/today[?relation_id=...] → { ok, card }
@@ -22,7 +22,7 @@
  *  - DELETE /api/relations/:id
  */
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -43,14 +43,6 @@ import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog';
-import { Button } from '../../components/ui/button';
 import { AdBanner, isAdSlotAvailable } from '../../components/ads/ad-banner';
 
 import type { DailyHapCard } from '../../types/dailyHap';
@@ -61,27 +53,6 @@ import type { FeedListItem, RelationChipItem } from '../../types/relation';
 // ---------------------------------------------------------------------------
 
 const TOP_N_RELATIONS = 5;
-const HOME_INTRO_POPUP_STORAGE_KEY = 'home_intro_popup_seen_date_v2';
-
-// ---------------------------------------------------------------------------
-// 로컬스토리지 헬퍼
-// ---------------------------------------------------------------------------
-
-function readHomeIntroSeenDate(): string | null {
-  try {
-    return window.localStorage.getItem(HOME_INTRO_POPUP_STORAGE_KEY);
-  } catch {
-    return todayKST();
-  }
-}
-
-function markHomeIntroSeen(date: string): void {
-  try {
-    window.localStorage.setItem(HOME_INTRO_POPUP_STORAGE_KEY, date);
-  } catch {
-    // localStorage 차단 환경에서는 세션 내 닫힘 상태만 유지
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 날짜 포맷
@@ -167,26 +138,10 @@ export function HomePage() {
   // -------------------------------------------------------------------------
 
   const [confirmDelete, setConfirmDelete] = useState<FeedListItem | null>(null);
-  const [introOpen, setIntroOpen] = useState(false);
 
   // 인증(미로그인)은 AuthProvider 자동 로그인 + AuthRetryGate 가, 프로필 미등록은
   // ProfileGate 가 전담한다. 따라서 홈에서 today 401 을 직접 리다이렉트하지 않는다.
   // (구 코드는 ApiError.message 를 'UNAUTHORIZED' 와 비교해 사실상 미발화하던 죽은 코드.)
-
-  // -------------------------------------------------------------------------
-  // 환영 팝업 — 하루 1회 (localStorage 기반)
-  // -------------------------------------------------------------------------
-
-  useEffect(() => {
-    if (readHomeIntroSeenDate() !== todayDate) {
-      setIntroOpen(true);
-    }
-  }, [todayDate]);
-
-  function handleIntroClose() {
-    markHomeIntroSeen(todayDate);
-    setIntroOpen(false);
-  }
 
   // -------------------------------------------------------------------------
   // 파생 값
@@ -224,30 +179,6 @@ export function HomePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 96 }}>
       <TodayAppBar />
-
-      {/* 환영 팝업 — 하루 1회 (공용 센터 Dialog) */}
-      <Dialog
-        open={introOpen}
-        onOpenChange={(next) => {
-          if (!next) handleIntroClose();
-        }}
-      >
-        <DialogContent showCloseButton={false} style={{ gap: 20 }}>
-          <DialogHeader style={{ gap: 12 }}>
-            <DialogTitle style={{ font: 'var(--t-h2)', fontWeight: 700, lineHeight: 1.3 }}>
-              {t('intro.question')}
-            </DialogTitle>
-            <DialogDescription style={{ fontSize: 15, lineHeight: 1.7, color: 'color-mix(in srgb, var(--text-primary) 85%, transparent)' }}>
-              {t('intro.prefix')}
-              <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t('intro.emphasis')}</strong>
-              {t('intro.suffix')}
-            </DialogDescription>
-          </DialogHeader>
-          <Button type="button" size="cta" className="btn-cta" onClick={handleIntroClose}>
-            {t('intro.button')}
-          </Button>
-        </DialogContent>
-      </Dialog>
 
       {/* 로딩 */}
       {todayQuery.isLoading && (

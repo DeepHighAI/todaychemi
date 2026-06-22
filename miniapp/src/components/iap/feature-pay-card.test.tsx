@@ -71,6 +71,18 @@ describe('FeaturePayCard', () => {
     expect(screen.getByText(/결제 중 오류가 발생했어요/)).toBeInTheDocument();
   });
 
+  it('errorMessage 로 결제 오류 안내를 재정의한다', () => {
+    renderWithProviders(
+      <FeaturePayCard
+        {...baseProps()}
+        hasError
+        errorMessage="결제 상품 설정을 확인 중이에요. 잠시 후 다시 시도해 주세요."
+      />,
+    );
+    expect(screen.getByText(/결제 상품 설정을 확인 중이에요/)).toBeInTheDocument();
+    expect(screen.queryByText(/결제 중 오류가 발생했어요/)).not.toBeInTheDocument();
+  });
+
   it('hasError 가 아니면 오류 안내를 표시하지 않는다', () => {
     renderWithProviders(<FeaturePayCard {...baseProps()} />);
     expect(screen.queryByText(/결제 중 오류가 발생했어요/)).not.toBeInTheDocument();

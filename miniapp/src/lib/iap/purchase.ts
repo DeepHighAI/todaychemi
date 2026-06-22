@@ -38,6 +38,26 @@ export interface UnlockResponse {
   unlocked: boolean;
 }
 
+export class IapSkuNotConfiguredError extends Error {
+  readonly code = 'IAP_SKU_NOT_CONFIGURED';
+  readonly feature: IapFeature;
+
+  constructor(feature: IapFeature) {
+    super(`IAP SKU is not configured for ${feature}`);
+    this.name = 'IapSkuNotConfiguredError';
+    this.feature = feature;
+  }
+}
+
+export function isIapSkuNotConfiguredError(error: unknown): error is IapSkuNotConfiguredError {
+  return error instanceof IapSkuNotConfiguredError ||
+    (
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { code?: unknown }).code === 'IAP_SKU_NOT_CONFIGURED'
+    );
+}
+
 // ---------------------------------------------------------------------------
 // 서버 unlock 호출
 // ---------------------------------------------------------------------------
@@ -76,6 +96,10 @@ async function callServerUnlock(
 export function purchaseFeature(params: PurchaseFeatureParams): Promise<void> {
   const { feature, ref, amountKrw: _amountKrw, token } = params;
   const sku = resolveIapSku(feature);
+
+  if (!sku.trim()) {
+    return Promise.reject(new IapSkuNotConfiguredError(feature));
+  }
 
   return new Promise<void>((resolve, reject) => {
     // §4.3 createOneTimePurchaseOrder — cleanup 반환

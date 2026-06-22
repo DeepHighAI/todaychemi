@@ -10,7 +10,7 @@
  *
  * 미니앱 SPA 변환 규칙:
  *   - 웹앱의 URL 서브라우트(/onboarding/dob, /time, ...)를 단일 HashRoute(/onboarding) +
- *     로컬 step 상태로 대체 (HashRouter 서브라우트 없음).
+ *     로컬 step 상태로 대체 (라우터 서브라우트 없음).
  *   - next/navigation → react-router-dom (useNavigate).
  *   - 게스트/법적 동의 플로우 없음 — 미니앱은 Toss appLogin() 이후 진입 전제.
  *   - AccessGuard: useAuth().isAuthed 미확인 시 홈(/)으로 redirect.

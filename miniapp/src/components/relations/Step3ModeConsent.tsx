@@ -81,7 +81,13 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
   const [refundConsent, setRefundConsent] = useState(false);
 
   // IAP 결제 훅 — 성공 시 relation 생성 재시도
-  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+  const {
+    purchase: openIapPurchase,
+    isPurchasing,
+    purchaseError: iapError,
+    purchaseErrorMessage: iapErrorMessage,
+    clearError: clearIapError,
+  } = useFeaturePurchase({
     onSuccess: () => {
       setPaywallInfo(null);
       // 결제 완료 후 서버가 unlock row 를 가지고 있으므로 재제출
@@ -238,6 +244,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           consentNotice="인연 등록이 완료되면 「전자상거래법」상 청약철회가 제한됩니다."
           isPurchasing={isPurchasing}
           hasError={!!iapError}
+          errorMessage={iapErrorMessage ?? undefined}
           onPay={() => {
             clearIapError();
             openIapPurchase(paywallInfo);

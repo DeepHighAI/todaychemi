@@ -5,7 +5,7 @@
  *   QueryClientProvider  → TanStack Query 캐시 전역 공유
  *   NextIntlClientProvider → 한국어 i18n (KO 1차, SEA Phase별)
  *   AuthProvider          → Bearer 토큰 세션
- *   AppRouter             → HashRouter + 페이지들
+ *   AppRouter             → MemoryRouter + 페이지들
  */
 
 import { useEffect } from 'react';
@@ -60,7 +60,7 @@ export function App() {
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         {/* Bearer 토큰 세션 — iOS WebView Storage SDK 기반 */}
         <AuthProvider>
-          {/* HashRouter + 페이지 라우트 */}
+          {/* MemoryRouter + 페이지 라우트 */}
           <AppRouter />
         </AuthProvider>
       </NextIntlClientProvider>

@@ -12,14 +12,14 @@
     }
   },
   "rewards": {
-    "popup": {
+    "notice": {
       "title": {
         "signup": "환영해요! 부적을 선물로 받았어요",
         "daily": "오늘의 출석 부적을 받았어요"
       },
       "amount": "부적 {count}개",
       "usage": "부적으로 케미카드·또 다른 나·케미 다시 맞추기를 볼 수 있어요. 부적이 부족하면 결제로 이어볼 수 있어요.",
-      "confirm": "확인"
+      "close": "보상 안내 닫기"
     }
   },
   "aiDisclosure": {
@@ -39,6 +39,7 @@
   "common": {
     "delete": "삭제",
     "cancel": "취소",
+    "close": "닫기",
     "done": "완료"
   },
   "auth": {
@@ -47,14 +48,14 @@
       "googleButton": "Google로 시작하기",
       "kakaoButton": "카카오로 시작하기",
       "loading": "연결 중...",
-      "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "errorGeneric": "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.",
       "privacy": "로그인 시 개인정보 처리방침에 동의합니다",
       "emailLabel": "이메일",
       "passwordLabel": "비밀번호",
       "submitButton": "이메일로 로그인",
       "errorInvalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
-      "errorEmailRequired": "이메일을 입력해주세요.",
-      "errorPasswordRequired": "비밀번호를 입력해주세요.",
+      "errorEmailRequired": "이메일을 입력해 주세요.",
+      "errorPasswordRequired": "비밀번호를 입력해 주세요.",
       "signupLink": "계정이 없으신가요? 가입하기",
       "browseButton": "잠깐 둘러보기",
       "legalTitle": "소셜 로그인 필수 동의"
@@ -65,7 +66,7 @@
       "legalTitle": "필수 동의",
       "submitButton": "동의하고 시작하기",
       "loading": "저장 중...",
-      "errorGeneric": "동의를 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+      "errorGeneric": "동의를 저장하지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "signup": {
       "title": "오늘케미 회원가입",
@@ -75,12 +76,12 @@
       "submitButton": "이메일로 가입",
       "loading": "가입 중...",
       "loginLink": "이미 계정이 있으신가요? 로그인",
-      "errorEmailRequired": "이메일을 입력해주세요.",
+      "errorEmailRequired": "이메일을 입력해 주세요.",
       "errorPasswordTooShort": "비밀번호는 8자 이상이어야 해요.",
-      "errorPasswordWeak": "영문과 숫자를 모두 포함해주세요.",
+      "errorPasswordWeak": "영문과 숫자를 모두 포함해 주세요.",
       "errorEmailTaken": "이미 사용 중인 이메일이에요.",
-      "errorRateLimited": "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
-      "errorGeneric": "가입에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "errorRateLimited": "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.",
+      "errorGeneric": "가입에 실패했어요. 잠시 후 다시 시도해 주세요.",
       "legalTitle": "회원가입 필수 동의"
     }
   },
@@ -135,11 +136,11 @@
       "docDescription": "약관·정책 전문을 확인할 수 있어요."
     },
     "errors": {
-      "nicknameRequired": "별명을 입력해주세요.",
-      "dobRequired": "생년월일을 입력해주세요.",
-      "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
-      "genderRequired": "성별을 선택해주세요.",
-      "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
+      "nicknameRequired": "별명을 입력해 주세요.",
+      "dobRequired": "생년월일을 입력해 주세요.",
+      "timeRequiredWhenKnown": "태어난 시간을 입력해 주세요.",
+      "genderRequired": "성별을 선택해 주세요.",
+      "generic": "저장에 실패했어요. 잠시 후 다시 시도해 주세요.",
       "session": "세션이 만료되었어요. 다시 시도해 주세요.",
       "consent": "약관 동의가 필요해요. 다시 시도해 주세요."
     },
@@ -174,8 +175,8 @@
       "headline": "달력과 성별을\n확인할게요"
     },
     "step4": {
-      "headline": "입력한 정보를\n확인해주세요",
-      "body": "맞으면 시작하기를 눌러주세요."
+      "headline": "입력한 정보를\n확인해 주세요",
+      "body": "맞으면 시작하기를 눌러 주세요."
     },
     "next": "다음"
   },
@@ -196,10 +197,10 @@
         "sheet": {
           "createTitle": "메모 추가",
           "editTitle": "메모 수정",
-          "description": "이 인연에 대한 메모를 입력하세요 (80자 이내)",
+          "description": "이 인연에 대한 메모를 입력해 주세요 (80자 이내)",
           "placeholder": "이 인연에 대한 메모 (80자 이내)",
           "submit": "저장",
-          "cancel": "취소",
+          "cancel": "닫기",
           "submitting": "저장 중..."
         }
       },
@@ -217,7 +218,7 @@
     },
     "new": {
       "eyebrow": "인연 사주맵",
-      "headline": "인연의 사주를\n입력해주세요",
+      "headline": "인연의 사주를\n입력해 주세요",
       "body": "오늘 케미 계산에 사용돼요.",
       "title": "인연 등록",
       "sections": {
@@ -269,12 +270,12 @@
         "requiredError": "동의가 필요해요"
       },
       "errors": {
-        "nicknameRequired": "별명을 입력해주세요.",
-        "modeRequired": "관계 유형을 선택해주세요.",
-        "dobRequired": "생년월일을 입력해주세요.",
-        "timeRequiredWhenKnown": "태어난 시간을 입력해주세요.",
-        "genderRequired": "성별을 선택해주세요.",
-        "generic": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
+        "nicknameRequired": "별명을 입력해 주세요.",
+        "modeRequired": "관계 유형을 선택해 주세요.",
+        "dobRequired": "생년월일을 입력해 주세요.",
+        "timeRequiredWhenKnown": "태어난 시간을 입력해 주세요.",
+        "genderRequired": "성별을 선택해 주세요.",
+        "generic": "저장에 실패했어요. 잠시 후 다시 시도해 주세요.",
         "payment": "이 인연을 등록하려면 결제가 필요해요."
       },
       "paywall": {
@@ -307,12 +308,12 @@
   },
   "feed": {
     "title": "케미피드",
-    "empty": "아직 등록된 인연이 없어요. 첫 인연을 추가해보세요.",
+    "empty": "첫 인연을 추가하면 케미 흐름을 볼 수 있어요.",
     "emptyCta": "첫 인연 등록하기",
     "emptyFilter": "이 관계 유형의 인연이 없어요.",
     "addRelation": "인연 추가",
     "loading": "불러오는 중...",
-    "errorGeneric": "인연을 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+    "errorGeneric": "인연을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
     "filter": {
       "all": "전체",
       "modes": {
@@ -332,7 +333,7 @@
     },
     "select": {
       "start": "선택 삭제",
-      "cancel": "취소",
+      "cancel": "선택 해제",
       "count": "{count}개 선택됨",
       "delete": "삭제",
       "itemLabel": "{nickname} 선택"
@@ -341,7 +342,7 @@
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
       "bulkConfirmTitle": "{count}개 인연을 삭제할까요?",
       "confirmBody": "삭제하면 오늘 케미와 흐름 기록도 함께 사라져요.",
-      "cancel": "취소",
+      "cancel": "닫기",
       "confirm": "삭제",
       "deleting": "삭제 중…"
     }
@@ -413,7 +414,7 @@
       "ctaInstagram": "인스타그램/카드",
       "ctaCopy": "링크 복사",
       "sending": "준비 중...",
-      "cancel": "취소"
+      "cancel": "닫기"
     },
     "replay": "케미 다시 맞추기",
     "placeholder": "오늘 케미 본문은 곧 준비됩니다.",
@@ -477,7 +478,7 @@
       "confirmTitle": "케미 다시 맞춰 볼까요?",
       "confirmBody": "토큰 1개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
       "confirmCta": "케미 다시 맞추기",
-      "cancel": "취소",
+      "cancel": "닫기",
       "successToast": "재해석 완료. 흐름이 갱신되었어요.",
       "afterPayLoading": "결제 완료. 결과를 불러오는 중…"
     },
@@ -521,11 +522,11 @@
         "body": "오늘 케미를 보려면 내 프로필을 먼저 등록해야 해요.",
         "cta": "내 프로필 등록하기"
       },
-      "generic": "오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+      "generic": "오늘 케미를 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "menu": {
       "title": "케미카드 메뉴",
-      "description": "별명 수정, 공유, 삭제 중 하나를 선택하세요.",
+      "description": "별명 수정, 공유, 삭제 중 하나를 선택해 주세요.",
       "close": "닫기",
       "rename": "별명 수정",
       "share": "공유",
@@ -536,10 +537,10 @@
       "body": "이 인연을 알아보기 쉬운 별명으로 바꿀 수 있어요.",
       "label": "별명",
       "placeholder": "별명 입력",
-      "cancel": "취소",
+      "cancel": "닫기",
       "save": "저장",
       "saving": "저장 중",
-      "error": "별명을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+      "error": "별명을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "mode": {
       "일합": "일 관계",
@@ -575,7 +576,7 @@
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
       "confirmBody": "삭제하면 오늘 케미와 흐름 기록도 함께 사라져요.",
-      "cancel": "취소",
+      "cancel": "닫기",
       "confirm": "삭제",
       "done": "삭제했어요"
     }
@@ -626,7 +627,7 @@
     "delete": {
       "confirmTitle": "{nickname} 인연을 삭제할까요?",
       "confirmBody": "삭제하면 오늘 케미와 흐름 기록도 함께 사라져요.",
-      "cancel": "취소",
+      "cancel": "닫기",
       "confirm": "삭제"
     },
     "compat": {
@@ -634,7 +635,7 @@
       "title": "다른 사람과의 사주"
     },
     "empty": {
-      "title": "아직 등록된 인연이 없어요.",
+      "title": "인연을 등록하면 오늘 케미를 볼 수 있어요.",
       "body": "동료·이성·가족을 등록하면 오늘의 케미를 볼 수 있어요.",
       "cta": "인연 등록하기"
     },
@@ -720,7 +721,7 @@
       "charge": "충전",
       "history": "사용 기록",
       "emptyHistory": "아직 사용 기록이 없어요.",
-      "error": "결제 주문을 만들지 못했어요. 잠시 후 다시 시도해주세요."
+      "error": "결제 주문을 만들지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "info": {
       "eyebrow": "서비스 정보",
@@ -738,15 +739,15 @@
       "deleteAccountSub": "30일 후 영구 삭제",
       "logout": "로그아웃",
       "logoutSub": "현재 계정에서 나가기",
-      "logoutConfirmTitle": "정말 로그아웃 하시겠습니까?",
-      "logoutConfirmYes": "예",
-      "logoutConfirmNo": "아니오",
+      "logoutConfirmTitle": "로그아웃할까요?",
+      "logoutConfirmYes": "로그아웃",
+      "logoutConfirmNo": "닫기",
       "logoutLoading": "로그아웃 중…",
-      "logoutError": "로그아웃에 실패했어요. 잠시 후 다시 시도해주세요."
+      "logoutError": "로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요."
     },
     "fontSize": {
       "title": "글자 크기",
-      "description": "앱 전체 글자 크기를 선택하세요.",
+      "description": "앱 전체 글자 크기를 골라 주세요.",
       "preview": "이 문장으로 크기를 미리 볼 수 있어요.",
       "normal": "보통",
       "large": "크게",
@@ -755,11 +756,11 @@
     "privacyControls": {
       "deleteTitle": "계정 삭제를 요청할까요?",
       "deleteBody": "요청 후 30일 동안 복구 가능한 상태로 보관되며, 이후 개인정보가 영구 삭제됩니다.",
-      "cancel": "취소",
+      "cancel": "닫기",
       "confirmDelete": "삭제 요청",
       "deleting": "요청 중…",
       "deleteSuccess": "계정 삭제 요청이 접수됐어요.",
-      "deleteError": "계정 삭제 요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요."
+      "deleteError": "계정 삭제 요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "theme": {
       "label": "테마 선택",
@@ -769,7 +770,7 @@
     },
     "empty": {
       "title": "내 프로필이 아직 등록되지 않았어요.",
-      "body": "온보딩에서 사주 정보를 입력해주세요.",
+      "body": "온보딩에서 사주 정보를 입력해 주세요.",
       "cta": "시작하기"
     }
   },
@@ -816,7 +817,7 @@
     },
     "result": {
       "loading": "사주를 읽고 있어요...",
-      "error": "결과를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+      "error": "결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
       "section": {
         "keywords": "키워드",
         "do_first": "일단 이거 해봐",
@@ -826,8 +827,8 @@
     }
   },
   "errors": {
-    "generic": "오류가 발생했어요. 잠시 후 다시 시도해주세요.",
-    "network": "네트워크 오류가 발생했어요. 연결을 확인해주세요.",
+    "generic": "오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
+    "network": "네트워크 오류가 발생했어요. 연결을 확인해 주세요.",
     "unauthorized": "로그인이 필요해요."
   }
 }

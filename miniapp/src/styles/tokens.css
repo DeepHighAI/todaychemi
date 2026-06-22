@@ -125,7 +125,7 @@
   --outline-variant: #cac4d0;
 
   /* Layout height tokens */
-  --tabbar-h:              76px;
+  --tabbar-h:              96px;
   --ctabar-h:              72px;
   --ctabar-h-with-safe-area: calc(72px + env(safe-area-inset-bottom));
 

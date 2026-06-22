@@ -1,5 +1,5 @@
 /**
- * wheel-tray.tsx — 하단 슬라이드 휠 트레이 (취소/완료 헤더)
+ * wheel-tray.tsx — 하단 슬라이드 휠 트레이 (닫기/완료 헤더)
  *
  * 와이어 ref: UIDesign/interactive.jsx Tray + system.css .tray.
  * vaul 이 아닌 createPortal(document.body) 기반 — me-edit-drawer(vaul) 안에서도
@@ -45,7 +45,7 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
     };
   }, [open]);
 
-  // Escape = 취소, Tab = 다이얼로그 내 순환(포커스 트랩).
+  // Escape = 닫기, Tab = 다이얼로그 내 순환(포커스 트랩).
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -118,7 +118,7 @@ export function WheelTray({ open, title, onCancel, onDone, children }: WheelTray
             onClick={onCancel}
             style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: '4px 8px' }}
           >
-            {t('cancel')}
+            {t('close')}
           </button>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</span>
           <button

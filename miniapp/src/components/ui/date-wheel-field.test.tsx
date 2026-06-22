@@ -43,11 +43,11 @@ describe('DateWheelField', () => {
     expect(onChange).toHaveBeenCalledWith('2023-02-28');
   });
 
-  it('취소 시 onChange 를 호출하지 않는다', () => {
+  it('닫기 시 onChange 를 호출하지 않는다', () => {
     const onChange = vi.fn();
     renderWithProviders(<DateWheelField value="1994-09-12" onChange={onChange} {...BASE} />);
     fireEvent.click(screen.getByRole('button', { name: '생년월일' }));
-    fireEvent.click(screen.getByText('취소'));
+    fireEvent.click(screen.getByText('닫기'));
     expect(onChange).not.toHaveBeenCalled();
   });
 

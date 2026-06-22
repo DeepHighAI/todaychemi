@@ -11,6 +11,22 @@ const items = [
 ];
 
 describe('AppNav', () => {
+  it('탭 개수는 앱인토스 가이드 범위(2~5개)를 지킨다', () => {
+    renderWithProviders(<AppNav items={items} />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.length).toBeGreaterThanOrEqual(2);
+    expect(tabs.length).toBeLessThanOrEqual(5);
+  });
+
+  it('탭바는 전체 폭 고정 바가 아니라 하단 플로팅 pill 형태다', () => {
+    renderWithProviders(<AppNav items={items} />);
+    const nav = screen.getByRole('tablist', { name: '메인 탭' });
+    expect(nav.style.left).toBe('50%');
+    expect(nav.style.right).toBe('');
+    expect(nav.style.transform).toBe('translateX(-50%)');
+    expect(nav.style.borderRadius).toContain('var(--r-pill)');
+  });
+
   // 요구사항: "모든 팝업과 내용은 하단의 네비게이션 바 위로 위치해야 함".
   // 페이지 콘텐츠는 z 1~10, 모달/시트/오버레이는 z 40~60 이므로,
   // 탭바는 그 사이(콘텐츠 위·모달 아래)에 위치해야 모든 팝업이 탭바 위로 뜬다.

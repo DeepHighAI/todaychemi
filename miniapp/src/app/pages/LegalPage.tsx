@@ -10,36 +10,17 @@
  * 출처: 구현 레퍼런스 §6(검수/정책), 웹 src/app/legal/_components/legal-document-page.tsx.
  */
 
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { LegalDocContent, isLegalSlug } from '@/components/legal/legal-markdown';
-import { BackButton } from '@/components/ui/back-button';
 
 export function LegalPage() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
 
   const isValid = isLegalSlug(slug);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)' }}>
-      {/* 헤더 */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '8px 12px',
-          backgroundColor: 'var(--bg-base)',
-          borderBottom: '1px solid var(--hairline)',
-        }}
-      >
-        <BackButton onClick={() => navigate(-1)} />
-      </header>
-
       <main style={{ padding: '16px 20px 64px' }}>
         {!isValid ? (
           <p style={{ font: 'var(--t-sub)', color: 'var(--warn)', textAlign: 'center', padding: '32px 0' }}>

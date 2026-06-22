@@ -28,10 +28,10 @@
 ## 2. 현재 상태 요약 (Codex가 이어받는 지점)
 
 - 미니앱(앱인토스, `miniapp/` Vite SPA) **디자인 정렬 Phase 0–7 + `.ait` dev-bearer 하드닝까지 `main` 반영 완료**. 마스터 플랜 종료.
-- 코드/DB 측 미해결 작업 없음(그린 베이스라인). 미해결은 **전부 사용자측 수동(코드 아님)**:
+- 코드/DB 측 미해결 작업 없음(그린 베이스라인). 미해결은 **전부 사용자측 수동/외부 설정(코드 아님)**:
   1. 최종 `miniapp/todaychemi.ait`(deploymentId `019eeb3d`) **토스 콘솔 업로드**.
-  2. **IAP SKU 맵 공란**(`miniapp/.env.local`의 `VITE_TOSS_IAP_SKU_MAP` 전부 `""`) → 페이월 UI는 보이나 실결제는 콘솔 SKU 등록 + `.env.local` 입력 후 동작.
-  3. **Vercel Toss env**(mTLS PEM·`TOSS_USER_PASSWORD_SECRET`·SKU map·`NEXT_PUBLIC_APP_URL`) — 실기기 인증/IAP 동작 전제.
+  2. **IAP SKU 4종 콘솔 등록 완료 + 로컬 빌드 env 반영 필요**: `miniapp/.env.local`의 `VITE_TOSS_IAP_SKU_MAP` 값이 채워져 있어야 `.ait` 결제 시트가 동작한다. 최종 확정가: 550/440/440/550원(공급가 500/400/400/500원).
+  3. **Vercel Toss env**(mTLS PEM·`TOSS_USER_PASSWORD_SECRET`·서버 `TOSS_IAP_SKU_MAP`·`NEXT_PUBLIC_APP_URL`) — 실기기 인증/IAP unlock 동작 전제.
 - 다음 개발 방향은 사용자 지시 대기.
 
 ## 3. Codex-on-Windows 주의 (필독)
@@ -82,7 +82,7 @@
 [5] 동기화 판정 보고 (한국어): IN SYNC / STALE + 불일치 항목.
   그다음 무엇을 이어서 개발할지 사용자에게 물어라. 참고: 미니앱 디자인 정렬
   Phase 0–7 + .ait 하드닝까지 main 반영 완료. 미해결은 전부 사용자측 수동(코드 아님):
-  최종 .ait 토스 콘솔 업로드 · IAP SKU 맵 공란(VITE_TOSS_IAP_SKU_MAP) · Vercel Toss env.
+  최종 .ait 토스 콘솔 업로드 · VITE_TOSS_IAP_SKU_MAP 반영 빌드 확인 · Vercel Toss env.
 ```
 
 ## 5. 갱신 의무

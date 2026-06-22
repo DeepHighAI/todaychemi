@@ -1,11 +1,9 @@
 /**
- * StepHeader.tsx — 온보딩 단계 헤더 (진행 바 + 단계 표시 + 뒤로가기)
+ * StepHeader.tsx — 온보딩 단계 헤더 (진행 바 + 단계 표시 + 이전 단계)
  *
  * 웹앱 원본: src/app/(app)/onboarding/layout.tsx
  * 미니앱: next/navigation → props 기반 콜백, Tailwind → 인라인 스타일.
  */
-
-import { BackButton } from '@/components/ui/back-button';
 
 const TOTAL_STEPS = 4;
 
@@ -19,8 +17,25 @@ export function StepHeader({ step, onBack }: StepHeaderProps) {
 
   return (
     <header style={{ padding: '12px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* 뒤로가기 버튼 (공용 BackButton) */}
-      <BackButton onClick={onBack} />
+      {step > 1 && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            alignSelf: 'flex-start',
+            minHeight: 36,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            font: 'var(--t-sub)',
+            fontWeight: 700,
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          이전 단계
+        </button>
+      )}
 
       {/* 진행 바 */}
       <div

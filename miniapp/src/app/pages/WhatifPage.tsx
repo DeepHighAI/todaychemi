@@ -11,8 +11,8 @@
  * - Tailwind → 인라인 스타일
  */
 
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiFetch, ApiError } from '@/lib/api/client';
@@ -49,6 +49,7 @@ async function callWhatif(type: DiagnosticType, token: string | null): Promise<W
 
 export function WhatifPage() {
   const { type: rawType } = useParams<{ type: string }>();
+  const navigate = useNavigate();
   const { token } = useAuth();
 
   // 유효하지 않은 type 이면 에러 단락
@@ -65,8 +66,22 @@ export function WhatifPage() {
   const [payInfo, setPayInfo] = useState<{ amount_krw: number; feature: string; ref: string } | null>(null);
   const [refundConsent, setRefundConsent] = useState(false);
 
+  useEffect(() => {
+    if (!isError) return;
+    const err = error as ApiError;
+    if (err.status === 402 && err.payment) {
+      setPayInfo(err.payment);
+    }
+  }, [isError, error]);
+
   // IAP 결제 훅 — 성공 시 쿼리 재실행
-  const { purchase: openIapPurchase, isPurchasing, purchaseError: iapError, clearError: clearIapError } = useFeaturePurchase({
+  const {
+    purchase: openIapPurchase,
+    isPurchasing,
+    purchaseError: iapError,
+    purchaseErrorMessage: iapErrorMessage,
+    clearError: clearIapError,
+  } = useFeaturePurchase({
     onSuccess: () => {
       setPayDismissed(false);
       setPayInfo(null);
@@ -96,9 +111,7 @@ export function WhatifPage() {
 
     // 402 PAYMENT_REQUIRED → Toss IAP 시트 연결
     if (err.status === 402 && !payDismissed) {
-      // 402 발생 시 payment 정보 저장
       const info = err.payment ?? payInfo;
-      if (info && !payInfo) setPayInfo(info);
       const amountKrw = info?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.whatif;
       return (
         <div style={{ padding: 16 }}>
@@ -112,11 +125,17 @@ export function WhatifPage() {
             onConsentChange={setRefundConsent}
             isPurchasing={isPurchasing}
             hasError={!!iapError}
+            errorMessage={iapErrorMessage ?? undefined}
+            payDisabled={!info}
             onPay={() => {
               clearIapError();
               if (info) openIapPurchase(info);
             }}
-            onClose={() => { clearIapError(); setPayDismissed(true); }}
+            onClose={() => {
+              clearIapError();
+              setPayDismissed(true);
+              navigate(-1);
+            }}
           />
         </div>
       );

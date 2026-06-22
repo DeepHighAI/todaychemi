@@ -2,7 +2,7 @@
  * reward-gate.tsx — 부적 지급 트리거 (항목 6/7)
  *
  * 앱 진입 시 1회 POST /api/rewards/session 를 호출해 가입(+50)·매일 출석(+5) 부적을
- * 지급받는다. 지급이 발생하면 RewardPopup 으로 안내하고 지갑 쿼리를 무효화한다.
+ * 지급받는다. 지급이 발생하면 비모달 RewardNotice 로 안내하고 지갑 쿼리를 무효화한다.
  *
  * - 온보딩 경로(/onboarding)에서는 호출하지 않는다(프로필 생성 전이라 PROFILE_REQUIRED).
  * - RPC 는 멱등(이미 지급 시 ALREADY_AWARDED) — 마운트마다 재호출돼도 팝업은 실제 지급 1회만.
@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { RewardPopup } from './reward-popup';
+import { RewardNotice } from './reward-notice';
 
 interface SessionReward {
   awarded?: boolean;
@@ -35,7 +35,7 @@ export function RewardGate() {
   const { token, isAuthed } = useAuth();
   const queryClient = useQueryClient();
   const requestedRef = useRef(false);
-  const [popup, setPopup] = useState<{ amount: number; isSignup: boolean } | null>(null);
+  const [notice, setNotice] = useState<{ amount: number; isSignup: boolean } | null>(null);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -51,7 +51,7 @@ export function RewardGate() {
         void queryClient.invalidateQueries({ queryKey: ['me-wallet'] });
         const amount = reward.amount_awarded ?? 0;
         if (amount > 0) {
-          setPopup({ amount, isSignup: Boolean(reward.signup_awarded) });
+          setNotice({ amount, isSignup: Boolean(reward.signup_awarded) });
         }
       })
       .catch(() => {
@@ -60,13 +60,12 @@ export function RewardGate() {
       });
   }, [isAuthed, location.pathname, token, queryClient]);
 
-  if (!popup) return null;
+  if (!notice) return null;
   return (
-    <RewardPopup
-      open
-      amount={popup.amount}
-      isSignup={popup.isSignup}
-      onClose={() => setPopup(null)}
+    <RewardNotice
+      amount={notice.amount}
+      isSignup={notice.isSignup}
+      onClose={() => setNotice(null)}
     />
   );
 }

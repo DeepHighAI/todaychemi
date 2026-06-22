@@ -16,7 +16,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { purchaseFeature } from '@/lib/iap/purchase';
+import { isIapSkuNotConfiguredError, purchaseFeature } from '@/lib/iap/purchase';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import type { PaymentRequiredInfo } from '@/lib/api/client';
 import type { IapFeature } from '@/lib/iap/sku';
@@ -37,8 +37,18 @@ export interface UseFeaturePurchaseReturn {
   isPurchasing: boolean;
   /** 마지막 결제 오류 (취소/실패 등). null = 오류 없음 */
   purchaseError: Error | null;
+  /** 사용자에게 표시할 결제 오류 문구. null = 오류 없음 */
+  purchaseErrorMessage: string | null;
   /** 오류 상태 초기화 */
   clearError: () => void;
+}
+
+const PURCHASE_ERROR_TEXT = '결제 중 오류가 발생했어요. 다시 시도해 주세요.';
+const SKU_NOT_CONFIGURED_TEXT = '결제 상품 설정을 확인 중이에요. 잠시 후 다시 시도해 주세요.';
+
+function formatPurchaseError(error: Error | null): string | null {
+  if (!error) return null;
+  return isIapSkuNotConfiguredError(error) ? SKU_NOT_CONFIGURED_TEXT : PURCHASE_ERROR_TEXT;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,6 +95,7 @@ export function useFeaturePurchase(
   );
 
   const clearError = useCallback(() => setPurchaseError(null), []);
+  const purchaseErrorMessage = formatPurchaseError(purchaseError);
 
-  return { purchase, isPurchasing, purchaseError, clearError };
+  return { purchase, isPurchasing, purchaseError, purchaseErrorMessage, clearError };
 }

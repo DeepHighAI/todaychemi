@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 describe('RewardGate', () => {
-  it('가입 보상 지급 시 부적 팝업을 노출한다', async () => {
+  it('가입 보상 지급 시 화면을 막지 않는 보상 안내를 노출한다', async () => {
     vi.mocked(apiFetch).mockResolvedValue({
       ok: true,
       reward: { awarded: true, reason: 'AWARDED', signup_awarded: true, daily_login_awarded: true, amount_awarded: 55 },
@@ -26,7 +26,8 @@ describe('RewardGate', () => {
 
     renderWithProviders(<RewardGate />, { routerEntries: ['/'] });
 
-    expect(await screen.findByText('부적 55개')).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent('+55');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(apiFetch).toHaveBeenCalledWith('/api/rewards/session', { method: 'POST', token: 'tok' });
   });
 

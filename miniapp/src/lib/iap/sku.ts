@@ -22,12 +22,11 @@
 
 export type IapFeature = 'hapcard' | 'whatif' | 'replay' | 'relation_slot';
 
-/** feature → env 키 접미사 매핑 */
-const FEATURE_ENV_KEY: Record<IapFeature, string> = {
-  hapcard: 'HAPCARD',
-  whatif: 'WHATIF',
-  replay: 'REPLAY',
-  relation_slot: 'RELATION_SLOT',
+const FEATURE_SKU_ENV_VALUE: Record<IapFeature, string | undefined> = {
+  hapcard: import.meta.env.VITE_TOSS_IAP_SKU_HAPCARD,
+  whatif: import.meta.env.VITE_TOSS_IAP_SKU_WHATIF,
+  replay: import.meta.env.VITE_TOSS_IAP_SKU_REPLAY,
+  relation_slot: import.meta.env.VITE_TOSS_IAP_SKU_RELATION_SLOT,
 };
 
 /** VITE_TOSS_IAP_SKU_MAP JSON 파싱 (1회 캐시) */
@@ -56,8 +55,7 @@ function getSkuMap(): Partial<Record<IapFeature, string>> {
  */
 export function resolveIapSku(feature: IapFeature): string {
   // 1. 피처별 env
-  const envKey = `VITE_TOSS_IAP_SKU_${FEATURE_ENV_KEY[feature]}`;
-  const perFeature = (import.meta.env as Record<string, string | undefined>)[envKey];
+  const perFeature = FEATURE_SKU_ENV_VALUE[feature]?.trim();
   if (perFeature) return perFeature;
 
   // 2. 맵 env

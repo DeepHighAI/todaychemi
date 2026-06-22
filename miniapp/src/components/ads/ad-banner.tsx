@@ -25,8 +25,15 @@ interface AdEnv {
   DEV?: boolean;
 }
 
+function readAdEnv(): AdEnv {
+  return {
+    VITE_TOSS_AD_GROUP_ID: import.meta.env.VITE_TOSS_AD_GROUP_ID,
+    DEV: import.meta.env.DEV,
+  };
+}
+
 /** env 우선, 미설정 시 개발 환경에서만 테스트 광고 ID. */
-export function resolveAdGroupId(env: AdEnv = import.meta.env): string | null {
+export function resolveAdGroupId(env: AdEnv = readAdEnv()): string | null {
   const fromEnv = env.VITE_TOSS_AD_GROUP_ID?.trim();
   if (fromEnv && fromEnv.length > 0) return fromEnv;
   return env.DEV ? TEST_AD_GROUP_ID : null;
@@ -41,7 +48,7 @@ function adsSupported(): boolean {
 }
 
 /** 광고 슬롯을 실제로 채울 수 있는 환경인지(지원 + 광고 그룹 ID 존재). 빈 래퍼 렌더 방지용. */
-export function isAdSlotAvailable(env: AdEnv = import.meta.env): boolean {
+export function isAdSlotAvailable(env: AdEnv = readAdEnv()): boolean {
   return adsSupported() && resolveAdGroupId(env) !== null;
 }
 

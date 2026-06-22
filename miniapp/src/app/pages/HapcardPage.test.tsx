@@ -74,7 +74,7 @@ describe('HapcardPage 402 결제 흐름', () => {
     // 결제 안내 페이월 노출 — 청약철회 동의 체크박스로 게이트(가격 문자열 비의존).
     await screen.findByRole('checkbox');
 
-    // 고지가는 서버 제공 실청구액(오픈 할인가 ₩500)을 표시해야 한다 — 하드코딩 ₩1,000 아님.
+    // 고지가는 서버 제공 실청구액(오픈 할인가 ₩550)을 표시해야 한다 — 하드코딩 정가 아님.
     expect(screen.getByText(/₩550이 필요해요/)).toBeInTheDocument();
 
     const payButton = screen.getByRole('button', { name: /결제하기/ });

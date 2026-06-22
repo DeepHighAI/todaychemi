@@ -4,17 +4,20 @@
  * 앱 전체 레이아웃 컨테이너.
  * - 상단 콘텐츠 영역 + 하단 AppNav (오늘 / 피드 / 나)
  * - 뒤로 가기 버튼: graniteEvent.addEventListener('backEvent', ...) 등록
- *   → Android/iOS 네이티브 뒤로 가기 키를 라우터 navigate(-1) 에 연결
+ *   → 앱 내부 스택이 있으면 navigate(-1), 없으면 closeView 로 서비스 종료
+ * - 홈 버튼: graniteEvent.addEventListener('homeEvent', ...) 등록
+ *   → 서비스 진입점(/)으로 replace 이동
  * - 페이지 이탈(pagehide) 시 이벤트 리스너 정리
  */
 
-import { useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import { AppNav } from './AppNav';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { restorePendingOrders } from '@/lib/iap/purchase';
+import { closeMiniappView } from '@/lib/navigation/close-view';
 import { RewardGate } from '@/components/rewards/reward-gate';
 
 // ---------------------------------------------------------------------------
@@ -118,8 +121,12 @@ interface AppShellProps {
 
 export function AppShell({ showNav = true }: AppShellProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationType = useNavigationType();
   const queryClient = useQueryClient();
   const { token, isAuthed } = useAuth();
+  const stackDepthRef = useRef(0);
+  const lastLocationKeyRef = useRef(location.key);
 
   // 미결 IAP 주문 복구 — 앱 마운트 + 인증 완료 시 best-effort
   useEffect(() => {
@@ -139,25 +146,56 @@ export function AppShell({ showNav = true }: AppShellProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [queryClient, isAuthed, token]);
 
-  // 네이티브 뒤로 가기 버튼 → 라우터 히스토리 뒤로 이동
+  // 앱 내부 history depth 추적 — 네이티브 backEvent 의 close/back 분기 기준.
+  useEffect(() => {
+    if (lastLocationKeyRef.current === location.key) return;
+
+    if (navigationType === 'PUSH') {
+      stackDepthRef.current += 1;
+    } else if (navigationType === 'POP') {
+      stackDepthRef.current = Math.max(0, stackDepthRef.current - 1);
+    }
+
+    lastLocationKeyRef.current = location.key;
+  }, [location.key, navigationType]);
+
+  // 네이티브 뒤로 가기 버튼 → 내부 스택 back, 스택이 없으면 서비스 종료.
   useEffect(() => {
     const removeBackListener = graniteEvent.addEventListener('backEvent', {
       onEvent: () => {
-        navigate(-1);
+        if (stackDepthRef.current > 0) {
+          navigate(-1);
+          return;
+        }
+
+        void closeMiniappView().catch((error: Error) => {
+          console.warn('[AppShell] closeView 오류:', error);
+        });
       },
       onError: (error: Error) => {
         console.warn('[AppShell] backEvent 오류:', error);
+      },
+    });
+    const removeHomeListener = graniteEvent.addEventListener('homeEvent', {
+      onEvent: () => {
+        stackDepthRef.current = 0;
+        navigate('/', { replace: true });
+      },
+      onError: (error: Error) => {
+        console.warn('[AppShell] homeEvent 오류:', error);
       },
     });
 
     // pagehide(탭 전환·앱 백그라운드 진입) 시 정리
     function handlePageHide() {
       removeBackListener();
+      removeHomeListener();
     }
     window.addEventListener('pagehide', handlePageHide);
 
     return () => {
       removeBackListener();
+      removeHomeListener();
       window.removeEventListener('pagehide', handlePageHide);
     };
   }, [navigate]);

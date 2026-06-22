@@ -5,7 +5,7 @@
  * - 생년월일/시간 = iOS 휠 피커(DateWheelField/TimeWheelField). 출력 shape
  *   (YYYY-MM-DD / HH:MM)·검증은 네이티브 input 과 동일하게 유지.
  * - G-10 (ADR-029 Amend): "생일을 잘 몰라요" 토글 → Track B 카드 (등록 비차단).
- *   Track B 링크 = /whatif/first_meet (HashRouter Link).
+ *   Track B 링크 = /whatif/first_meet (라우터 Link).
  */
 
 import { useState } from 'react';
@@ -195,7 +195,7 @@ export function Step2DobTime({
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
             {t('birth.trackB.body')}
           </p>
-          {/* HashRouter Link — /whatif/first_meet */}
+          {/* 라우터 Link — /whatif/first_meet */}
           <Link
             to="/whatif/first_meet"
             style={{

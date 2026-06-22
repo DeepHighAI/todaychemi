@@ -44,6 +44,8 @@ interface FeaturePayCardProps {
   isPurchasing: boolean;
   /** 결제 오류 발생 — 안내 문구 표시 */
   hasError?: boolean;
+  /** 결제 오류 문구 재정의(예: SKU 미설정 출시 가드). */
+  errorMessage?: string;
   /** 결제 버튼 추가 비활성 조건(예: payInfo 부재). 기본 false */
   payDisabled?: boolean;
   /** 결제 시작 — 호스트가 IAP 시트를 연다 */
@@ -67,6 +69,7 @@ export function FeaturePayCard({
   consentNotice,
   isPurchasing,
   hasError = false,
+  errorMessage,
   payDisabled = false,
   onPay,
   onClose,
@@ -92,7 +95,7 @@ export function FeaturePayCard({
         <p style={{ font: 'var(--t-sub)', color: 'var(--text-secondary)', margin: 0 }}>{description}</p>
       )}
       {hasError && (
-        <p style={{ font: 'var(--t-cap)', color: 'var(--destructive)', margin: 0 }}>{PAY_ERROR_TEXT}</p>
+        <p style={{ font: 'var(--t-cap)', color: 'var(--destructive)', margin: 0 }}>{errorMessage ?? PAY_ERROR_TEXT}</p>
       )}
       <RefundRestrictionConsent
         checked={consentChecked}

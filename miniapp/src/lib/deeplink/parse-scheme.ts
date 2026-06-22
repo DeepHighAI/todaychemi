@@ -2,13 +2,13 @@
  * parse-scheme.ts — 콜드스타트 스킴 URI → 앱 라우트 경로 파서
  *
  * 토스가 딥링크로 미니앱을 실행하면 getSchemeUri() 가 초기 진입 스킴을 반환한다.
- * WebView 는 기본 URL(해시 #/)에서 시작하므로, 스킴의 경로를 직접 파싱해
- * HashRouter 경로로 이동시켜야 공유 링크(케미카드 등)가 동작한다.
+ * WebView 는 기본 URL에서 시작하므로, 스킴의 경로를 직접 파싱해
+ * MemoryRouter 경로로 이동시켜야 공유 링크(케미카드 등)가 동작한다.
  *
  * 지원 스킴 형식:
  *   - 운영:  intoss://todaychemi/hapcard/abc123
  *            intoss://todaychemi/feed/rel-1?x=1
- *   - 테스트: intoss-private://appsintoss/hapcard/abc123?_deploymentId=...
+ *   - 테스트: 콘솔 업로드 산출물의 private 테스트 스킴
  *
  * 보안: 임의 경로 이동을 막기 위해 알려진 라우트 prefix allowlist 로 제한한다.
  *
@@ -38,7 +38,7 @@ const FRAMEWORK_QUERY_KEYS: ReadonlySet<string> = new Set(['_deploymentId']);
 export function parseSchemeToPath(schemeUri: string | null | undefined): string | null {
   if (!schemeUri || typeof schemeUri !== 'string') return null;
 
-  // 1. 스킴(intoss:// 또는 intoss-private://) 제거
+  // 1. 스킴 구분자 제거
   const schemeSep = schemeUri.indexOf('://');
   if (schemeSep === -1) return null;
   const afterScheme = schemeUri.slice(schemeSep + 3); // "host/path?query"
