@@ -428,6 +428,19 @@ describe('POST /api/toss/iap/unlock — 유효성 검증', () => {
     expect(res.status).toBe(400);
   });
 
+  it('기존 confirmed 행이 없는 신규 지급에서 ref 빈 문자열 → 400 INVALID_BODY', async () => {
+    const { client, insert } = makeServiceClient({ existingRow: null });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID, feature: 'hapcard', ref: '' }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
   it('잘못된 feature 값 → 400 INVALID_BODY', async () => {
     const res = await POST(makeRequest({
       orderId: ORDER_ID,

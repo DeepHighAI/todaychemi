@@ -46,7 +46,8 @@ const UnlockSchema = z.object({
   feature: FeatureIdSchema,
   /**
    * 선생성 결과 캐시 키 또는 참조 문자열.
-   * restore 경로(restorePendingOrders)에서는 빈 문자열 허용 — 서버가 orderId 로 기존 row 를 찾아 멱등 처리.
+   * 기존 confirmed 행 멱등 복구에서만 빈 문자열을 허용한다.
+   * 새 지급 생성 경로에서는 실제 feature_ref 가 반드시 필요하다.
    */
   ref: z.string().max(200),
 });
@@ -141,7 +142,7 @@ export async function POST(
 
   // ------------------------------------------------------------------
   // 2.5. 조기 멱등 단락 — 기존 confirmed 행이 있으면 즉시 200 반환
-  //       (restorePendingOrders 복구 경로: feature='hapcard', ref='' 전송)
+  //       (레거시 restore 경로의 ref='' 요청도 여기에서만 허용)
   //       SKU 검증·mTLS 호출 없이 처리 — 이미 서버가 한 번 검증하고 삽입한 행임.
   // ------------------------------------------------------------------
   {
@@ -158,6 +159,13 @@ export async function POST(
       const unlocked: IapUnlockResponse = { unlocked: true };
       return NextResponse.json(unlocked, { status: 200 });
     }
+  }
+
+  // 기존 row 가 없으면 이 요청이 새 지급 생성 경로가 된다.
+  // feature_ref='' 로 confirmed payment 를 만들면 isFeatureUnlocked(feature, realRef) 와
+  // 영원히 매칭되지 않으므로 서버에서 fail-closed 한다.
+  if (!ref.trim()) {
+    return apiErrorResponse('INVALID_BODY', 'feature ref required for new IAP grant', 400);
   }
 
   // ------------------------------------------------------------------
