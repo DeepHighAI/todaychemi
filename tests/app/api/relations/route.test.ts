@@ -99,7 +99,7 @@ function makeClient(opts: {
 // service-role mock — 유료 슬롯 경로(payments 복구 조회 + pending 스테이징 + refund rpc)
 function makeService(opts: {
   paidRefs?: string[];
-  pendings?: Array<{ pending_id: string }>;
+  pendings?: Array<{ pending_id: string; draft?: unknown }>;
   pendingsError?: { code: string; message: string } | null;
   stagedPendingId?: string;
   stageError?: { code: string; message: string } | null;
@@ -497,6 +497,30 @@ describe('POST /api/relations — 슬롯 게이트 (ADR-039 Amended)', () => {
     );
     // 복구 후 신규 draft 는 자기 흐름대로 402
     expect(res.status).toBe(402);
+  });
+
+  it('A1 lazy recovery: 같은 draft 의 paid pending 이 복구되면 새 402 없이 relation_id 를 반환한다', async () => {
+    const client = makeClient({ relationCount: 2 });
+    vi.mocked(createServerClient).mockResolvedValue(client as never);
+    const svc = makeService({
+      stagedPendingId: 'pend-new-001',
+      paidRefs: ['relation_slot:pend-same-draft'],
+      pendings: [{ pending_id: 'pend-same-draft', draft: VALID_BODY }],
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(svc.service);
+
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ ok: true, relation_id: 'rel-paid-001' });
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-uuid-001',
+      'pend-same-draft',
+    );
+    expect(svc._pendingInsert).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).not.toHaveBeenCalled();
   });
 
   it('A1 복구: 한 고아 머티리얼라이즈 실패가 다른 고아 복구를 막지 않는다', async () => {

@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/supabase/service-role');
 vi.mock('@/lib/toss/iap');
+vi.mock('@/lib/relations/materialize');
 
 import { POST } from '@/app/api/toss/iap/unlock/route';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -22,6 +23,7 @@ import {
   IapOrderError,
 } from '@/lib/toss/iap';
 import type { IapOrderStatusSuccess } from '@/lib/toss/iap';
+import { materializeRelationSlot } from '@/lib/relations/materialize';
 
 // ---------------------------------------------------------------------------
 // 픽스처
@@ -31,6 +33,7 @@ const USER_ID = 'user-iap-test-001';
 const BEARER_TOKEN = 'supabase-access-token-abc';
 const ORDER_ID = 'order-uuid-v7-iap-001';
 const REF = 'cache-key-hapcard-xyz';
+const RELATION_REF = 'relation_slot:pending-relation-001';
 const SAMPLE_SKU = 'sku_hapcard_001';
 
 const PURCHASED_ORDER: IapOrderStatusSuccess = {
@@ -63,9 +66,9 @@ const TOSS_USER_KEY = 1234567;
 function makeServiceClient(opts: {
   insertError?: { code: string; message: string };
   /** 조기 멱등 단락: payments SELECT 첫 호출이 반환할 값 (null = 기존 row 없음, 기본값) */
-  existingRow?: { id: string } | null;
+  existingRow?: { id: string; feature_id?: string; feature_ref?: string | null } | null;
   /** 23505 충돌 후 재-SELECT 가 반환할 값 (null = 타인 주문 충돌 → 402, 기본값) */
-  ownRowAfter23505?: { id: string } | null;
+  ownRowAfter23505?: { id: string; feature_id?: string; feature_ref?: string | null } | null;
   /** toss_connections 조회 결과 userKey (null = 연결 없음 → 401) */
   tossUserKey?: number | null;
 } = {}) {
@@ -82,9 +85,15 @@ function makeServiceClient(opts: {
 
   // ── payments 체인 (early idempotency SELECT → insert → 23505 재-SELECT) ──
   const insert = vi.fn().mockResolvedValue({ error: opts.insertError ?? null });
+  const existingRow = opts.existingRow
+    ? { feature_id: 'hapcard', feature_ref: REF, ...opts.existingRow }
+    : null;
+  const ownRowAfter23505 = opts.ownRowAfter23505
+    ? { feature_id: 'hapcard', feature_ref: REF, ...opts.ownRowAfter23505 }
+    : null;
   const paymentsMaybeSingle = vi.fn()
-    .mockResolvedValueOnce({ data: opts.existingRow ?? null, error: null }) // 조기 멱등
-    .mockResolvedValue({ data: opts.ownRowAfter23505 ?? null, error: null }); // 23505 재-SELECT
+    .mockResolvedValueOnce({ data: existingRow, error: null }) // 조기 멱등
+    .mockResolvedValue({ data: ownRowAfter23505, error: null }); // 23505 재-SELECT
   const paymentsEq = vi.fn().mockReturnThis();
   const paymentsSelect = vi.fn().mockReturnValue({ eq: paymentsEq, maybeSingle: paymentsMaybeSingle });
   const paymentsTable = { insert, select: paymentsSelect, eq: paymentsEq, maybeSingle: paymentsMaybeSingle };
@@ -130,6 +139,7 @@ beforeEach(() => {
   vi.mocked(getOrderStatus).mockResolvedValue(PURCHASED_ORDER);
   vi.mocked(isGrantableStatus).mockReturnValue(true);
   vi.mocked(resolveFeatureFromSku).mockReturnValue('hapcard');
+  vi.mocked(materializeRelationSlot).mockResolvedValue('rel-delivered-001');
 });
 
 afterEach(() => {
@@ -191,6 +201,31 @@ describe('POST /api/toss/iap/unlock — 정상 흐름', () => {
     expect(insertArg.toss_payment_key).toBeNull();
     expect(insertArg.user_id).toBe(USER_ID);
   });
+
+  it('relation_slot 신규 결제 → payment confirmed 후 materialize delivery 를 반환한다', async () => {
+    vi.mocked(resolveFeatureFromSku).mockReturnValue('relation_slot');
+
+    const res = await POST(makeRequest({
+      orderId: ORDER_ID,
+      feature: 'relation_slot',
+      ref: RELATION_REF,
+    }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as {
+      unlocked: boolean;
+      delivery?: { feature: string; relation_id: string };
+    };
+    expect(body).toEqual({
+      unlocked: true,
+      delivery: { feature: 'relation_slot', relation_id: 'rel-delivered-001' },
+    });
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      USER_ID,
+      'pending-relation-001',
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -235,6 +270,76 @@ describe('POST /api/toss/iap/unlock — 멱등성', () => {
     expect(body.unlocked).toBe(true);
     // mTLS 조회 없이 처리됐음을 확인 (getOrderStatus 미호출)
     expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+  });
+
+  it('relation_slot 기존 confirmed 행 → mTLS 없이 materialize 후 delivery 반환(ref 빈 문자열 복구)', async () => {
+    const { client } = makeServiceClient({
+      existingRow: {
+        id: 'payments-row-existing-relation-001',
+        feature_id: 'relation_slot',
+        feature_ref: RELATION_REF,
+      },
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({
+      orderId: ORDER_ID,
+      feature: 'relation_slot',
+      ref: '',
+    }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { delivery?: { relation_id: string } };
+    expect(body.delivery?.relation_id).toBe('rel-delivered-001');
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      USER_ID,
+      'pending-relation-001',
+    );
+    expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+  });
+
+  it('relation_slot 23505 본인 행 → materialize 후 delivery 반환', async () => {
+    vi.mocked(resolveFeatureFromSku).mockReturnValue('relation_slot');
+    const { client } = makeServiceClient({
+      insertError: { code: '23505', message: 'duplicate key value' },
+      ownRowAfter23505: {
+        id: 'payments-own-row-relation-001',
+        feature_id: 'relation_slot',
+        feature_ref: RELATION_REF,
+      },
+    });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({
+      orderId: ORDER_ID,
+      feature: 'relation_slot',
+      ref: RELATION_REF,
+    }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { delivery?: { relation_id: string } };
+    expect(body.delivery?.relation_id).toBe('rel-delivered-001');
+    expect(materializeRelationSlot).toHaveBeenCalledWith(
+      expect.anything(),
+      USER_ID,
+      'pending-relation-001',
+    );
+  });
+
+  it('relation_slot materialize 실패 → 500 INTERNAL_ERROR (SDK pending 복구 대상)', async () => {
+    vi.mocked(resolveFeatureFromSku).mockReturnValue('relation_slot');
+    vi.mocked(materializeRelationSlot).mockRejectedValue(new Error('materialize down'));
+
+    const res = await POST(makeRequest({
+      orderId: ORDER_ID,
+      feature: 'relation_slot',
+      ref: RELATION_REF,
+    }));
+
+    expect(res.status).toBe(500);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('INTERNAL_ERROR');
   });
 });
 
@@ -460,8 +565,26 @@ describe('POST /api/toss/iap/unlock — 유효성 검증', () => {
   it('4개 feature 값 모두 허용 (whatif/replay/relation_slot)', async () => {
     for (const feature of ['whatif', 'replay', 'relation_slot'] as const) {
       vi.mocked(resolveFeatureFromSku).mockReturnValue(feature);
-      const res = await POST(makeRequest({ orderId: ORDER_ID, feature, ref: REF }));
+      const ref = feature === 'relation_slot' ? RELATION_REF : REF;
+      const res = await POST(makeRequest({ orderId: ORDER_ID, feature, ref }));
       expect(res.status).toBe(200);
     }
+  });
+
+  it('relation_slot ref 가 pending prefix 형식이 아니면 mTLS 호출 전 400', async () => {
+    const { client, insert } = makeServiceClient({ existingRow: null });
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never);
+
+    const res = await POST(makeRequest({
+      orderId: ORDER_ID,
+      feature: 'relation_slot',
+      ref: REF,
+    }));
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('INVALID_BODY');
+    expect(vi.mocked(getOrderStatus)).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 });

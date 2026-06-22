@@ -52,6 +52,8 @@ interface FeaturePayCardProps {
   onPay: () => void;
   /** 닫기 — 호스트가 페이월을 닫는다(payDismissed 등) */
   onClose: () => void;
+  /** 결제 진행 중 닫기 비활성화. 기본 false */
+  closeDisabled?: boolean;
   /** 닫기 버튼 라벨. 기본 '닫기' */
   closeLabel?: string;
   /** 컨테이너 톤. 기본 'primary' */
@@ -73,6 +75,7 @@ export function FeaturePayCard({
   payDisabled = false,
   onPay,
   onClose,
+  closeDisabled = false,
   closeLabel = '닫기',
   tone = 'primary',
   testId,
@@ -112,7 +115,13 @@ export function FeaturePayCard({
         >
           {isPurchasing ? '결제 중…' : `${priceLabel} 결제하기`}
         </Button>
-        <Button type="button" variant="ghost" onClick={onClose} style={{ width: '100%' }}>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={closeDisabled}
+          onClick={onClose}
+          style={{ width: '100%' }}
+        >
           {closeLabel}
         </Button>
       </div>

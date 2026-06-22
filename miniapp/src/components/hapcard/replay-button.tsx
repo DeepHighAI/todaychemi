@@ -29,10 +29,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { ERROR_COPY } from '@/lib/errors/error-codes';
 import type { HapcardResult } from '@/types/hapcard';
+import type { PaymentRequiredInfo } from '@/lib/api/client';
 
 interface Props {
   hapcardId: string;
@@ -41,11 +41,25 @@ interface Props {
   targetDate: string;
 }
 
-type State = 'idle' | 'loading' | 'success' | 'error' | 'pay_required';
+type State = 'idle' | 'checking' | 'loading' | 'success' | 'error' | 'pay_required';
+
+type ReplayPreflightResponse =
+  | { mode: 'ready'; payment: null }
+  | { mode: 'pay_required'; payment: PaymentRequiredInfo };
 
 /** 케미 다시 맞추기 호출 — apiFetch(중첩 { error:{code,message} } 봉투 + 402 payment 파싱). */
 async function postReplay(hapcardId: string, token: string | null): Promise<HapcardResult> {
   return apiFetch<HapcardResult>(`/api/hapcards/${hapcardId}/replay`, { method: 'POST', token });
+}
+
+async function preflightReplay(
+  hapcardId: string,
+  token: string | null,
+): Promise<ReplayPreflightResponse> {
+  return apiFetch<ReplayPreflightResponse>(`/api/hapcards/${hapcardId}/replay/preflight`, {
+    method: 'GET',
+    token,
+  });
 }
 
 export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }: Props) {
@@ -60,7 +74,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const [state, setState] = useState<State>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // 결제 필요 상태 — IAP 연결용 payment 정보 보관
-  const [payInfo, setPayInfo] = useState<{ feature: string; ref: string; amount_krw: number } | null>(null);
+  const [payInfo, setPayInfo] = useState<PaymentRequiredInfo | null>(null);
   const [autoReplay, setAutoReplay] = useState(false);
   const [refundConsent, setRefundConsent] = useState(false);
 
@@ -131,30 +145,81 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replayParam]);
 
-  function handleOpen(v: boolean) {
-    if (!v) {
-      setState('idle');
-      setErrorMsg(null);
-      setAutoReplay(false);
-      setPayInfo(null);
-      clearIapError();
-    }
-    setOpen(v);
-  }
+  const isChecking = state === 'checking';
+  const isLoading = state === 'loading';
+  const isBusy = isChecking || isLoading || isPurchasing;
+  const canDismiss = !isBusy;
 
-  function handleConfirm() {
-    setState('loading');
-    mutation.mutate();
-  }
-
-  function handleRetry() {
+  function resetDialogState() {
     setState('idle');
     setErrorMsg(null);
+    setAutoReplay(false);
     setPayInfo(null);
     clearIapError();
   }
 
-  const isLoading = state === 'loading';
+  function handleOpen(v: boolean) {
+    if (!v && !canDismiss) return;
+    if (!v) {
+      resetDialogState();
+    }
+    setOpen(v);
+  }
+
+  function startReplayMutation() {
+    setState('loading');
+    mutation.mutate();
+  }
+
+  async function handleStart() {
+    if (isBusy) return;
+
+    setOpen(true);
+    setState('checking');
+    setErrorMsg(null);
+    setAutoReplay(false);
+    setPayInfo(null);
+    clearIapError();
+
+    try {
+      const preflight = await preflightReplay(hapcardId, token);
+      if (preflight.mode === 'pay_required') {
+        setPayInfo(preflight.payment);
+        setState('pay_required');
+        return;
+      }
+      startReplayMutation();
+    } catch (err) {
+      const e = err as { code?: string };
+      const rawCode = e.code ?? 'INTERNAL_ERROR';
+      const msg =
+        (rawCode in ERROR_COPY)
+          ? ERROR_COPY[rawCode as keyof typeof ERROR_COPY]
+          : ERROR_COPY.INTERNAL_ERROR;
+      setErrorMsg(msg);
+      setState('error');
+    }
+  }
+
+  function handleRetry() {
+    void handleStart();
+  }
+
+  function getTitle(): string {
+    if (state === 'checking' || state === 'loading') return t('replayButton.progressTitle');
+    if (state === 'pay_required') return t('replayButton.payRequiredTitle');
+    if (state === 'success') return t('replayButton.successTitle');
+    return t('replayButton.confirmTitle');
+  }
+
+  function getDescription(): string {
+    if (state === 'checking') return t('replayButton.checkingBody');
+    if (state === 'loading') {
+      return autoReplay ? t('replayButton.afterPayLoading') : t('replayButton.loadingBody');
+    }
+    if (state === 'pay_required') return t('replayButton.payRequiredBody');
+    return t('replayButton.confirmBody');
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
@@ -162,7 +227,8 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       <button
         type="button"
         className="btn-cta"
-        onClick={() => setOpen(true)}
+        onClick={() => { void handleStart(); }}
+        disabled={isBusy}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -183,15 +249,29 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
         {t('replayButton.label')}
       </button>
 
-      <DialogContent>
+      <DialogContent showCloseButton={canDismiss}>
         <DialogHeader>
-          <DialogTitle>{t('replayButton.confirmTitle')}</DialogTitle>
-          <DialogDescription>
-            {autoReplay
-              ? t('replayButton.afterPayLoading')
-              : t('replayButton.confirmBody')}
-          </DialogDescription>
+          <DialogTitle>{getTitle()}</DialogTitle>
+          <DialogDescription>{getDescription()}</DialogDescription>
         </DialogHeader>
+
+        {(state === 'checking' || state === 'loading') && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              borderRadius: 'var(--r-lg)',
+              backgroundColor: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+              color: 'var(--primary)',
+              font: 'var(--t-body)',
+              fontWeight: 700,
+              padding: '14px 16px',
+              textAlign: 'center',
+            }}
+          >
+            {state === 'checking' ? t('replayButton.checkingStatus') : t('replayButton.loadingStatus')}
+          </div>
+        )}
 
         {/* 성공 */}
         {state === 'success' && (
@@ -237,28 +317,9 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
               clearIapError();
               if (payInfo) openIapPurchase(payInfo);
             }}
-            onClose={handleRetry}
+            onClose={() => handleOpen(false)}
+            closeDisabled={isPurchasing}
           />
-        )}
-
-        {/* 확인/닫기 푸터 — 성공/페이/autoReplay 상태가 아닐 때 */}
-        {state !== 'success' && state !== 'pay_required' && !autoReplay && (
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => handleOpen(false)}
-              disabled={isLoading}
-            >
-              {t('replayButton.cancel')}
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              className="btn-cta"
-              disabled={isLoading || state === 'error'}
-            >
-              {isLoading ? '처리 중…' : t('replayButton.confirmCta')}
-            </Button>
-          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>

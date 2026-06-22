@@ -71,21 +71,44 @@ export function isGrantableStatus(status: IapOrderStatus): boolean {
  *
  * 형식: "hapcard:sku_abc,whatif:sku_def,replay:sku_ghi,relation_slot:sku_jkl"
  * feature 이름과 SKU 문자열을 콜론으로 구분, 항목은 쉼표로 구분.
+ * 또는 클라이언트 VITE_TOSS_IAP_SKU_MAP 과 같은 JSON object:
+ * {"hapcard":"sku_abc","whatif":"sku_def","replay":"sku_ghi","relation_slot":"sku_jkl"}
  *
  * 환경변수 미설정 시 빈 Map 반환 → 모든 sku 검증 실패 (의도된 동작).
  */
+const IAP_FEATURE_IDS: readonly FeatureId[] = ['hapcard', 'whatif', 'replay', 'relation_slot'];
+
+function isIapFeatureId(value: string): value is FeatureId {
+  return IAP_FEATURE_IDS.includes(value as FeatureId);
+}
+
 export function buildSkuToFeatureMap(rawEnv?: string): Map<string, FeatureId> {
   const map = new Map<string, FeatureId>();
   const raw = rawEnv ?? process.env.TOSS_IAP_SKU_MAP ?? '';
-  if (!raw.trim()) return map;
+  const trimmed = raw.trim();
+  if (!trimmed) return map;
+
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      for (const [feature, sku] of Object.entries(parsed)) {
+        if (!isIapFeatureId(feature) || typeof sku !== 'string') continue;
+        const cleanSku = sku.trim();
+        if (cleanSku) map.set(cleanSku, feature);
+      }
+    } catch {
+      // env 오류는 fail-closed: 매핑 없음.
+    }
+    return map;
+  }
 
   // "feature:sku,feature:sku" 파싱
   for (const entry of raw.split(',')) {
     const colon = entry.indexOf(':');
     if (colon < 1) continue;
-    const feature = entry.slice(0, colon).trim() as FeatureId;
+    const feature = entry.slice(0, colon).trim();
     const sku = entry.slice(colon + 1).trim();
-    if (feature && sku) {
+    if (isIapFeatureId(feature) && sku) {
       map.set(sku, feature);
     }
   }

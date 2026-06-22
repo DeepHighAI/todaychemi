@@ -476,11 +476,19 @@
     "replayButton": {
       "label": "케미 다시 맞추기",
       "confirmTitle": "케미 다시 맞춰 볼까요?",
-      "confirmBody": "토큰 1개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
+      "confirmBody": "부적 9개가 차감되며, 새 해석이 동일 카드에 덧씌워집니다.",
       "confirmCta": "케미 다시 맞추기",
       "cancel": "닫기",
+      "progressTitle": "케미 다시 맞추는 중이에요",
+      "checkingBody": "부적을 확인하고 있어요. 곧 결제 또는 분석으로 이어집니다.",
+      "checkingStatus": "부적 확인 중…",
+      "loadingBody": "부적을 사용해 분석 중이에요. 앱을 나가도 처리는 계속돼요.",
+      "loadingStatus": "분석 중…",
+      "payRequiredTitle": "부적이 부족해요",
+      "payRequiredBody": "사용 가능한 부적이 부족해요. 결제로 바로 이어볼 수 있어요.",
+      "successTitle": "케미 다시 맞췄어요",
       "successToast": "재해석 완료. 흐름이 갱신되었어요.",
-      "afterPayLoading": "결제 완료. 결과를 불러오는 중…"
+      "afterPayLoading": "결제 완료. 분석 중이에요."
     },
     "appBar": { "title": "오늘 케미", "back": "뒤로", "share": "공유" },
     "ohaeng": {

@@ -176,8 +176,14 @@ export interface PurchaseFeatureParams {
 }
 
 export interface UnlockResponse {
-  unlocked: boolean;
+  unlocked: true;
+  delivery?: {
+    feature: 'relation_slot';
+    relation_id: string;
+  };
 }
+
+export type PurchaseFeatureResult = UnlockResponse;
 
 export class IapSkuNotConfiguredError extends Error {
   readonly code = 'IAP_SKU_NOT_CONFIGURED';
@@ -212,7 +218,7 @@ async function callServerUnlock(
   feature: IapFeature,
   ref: string,
   token: string | null,
-): Promise<boolean> {
+): Promise<UnlockResponse | null> {
   for (let attempt = 0; attempt <= IAP_GRANT_RETRY_DELAYS_MS.length; attempt += 1) {
     try {
       const res = await apiFetch<UnlockResponse>('/api/toss/iap/unlock', {
@@ -220,17 +226,28 @@ async function callServerUnlock(
         token,
         body: { orderId, feature, ref },
       });
-      return res.unlocked === true;
+      return res.unlocked === true ? res : null;
     } catch (error) {
       const delayMs = IAP_GRANT_RETRY_DELAYS_MS[attempt];
       if (delayMs === undefined || !isRetryableUnlockError(error)) {
-        return false;
+        return null;
       }
       await delay(delayMs);
     }
   }
 
-  return false;
+  return null;
+}
+
+export class IapProductGrantFailedError extends Error {
+  readonly code = 'IAP_PRODUCT_GRANT_FAILED';
+  readonly feature: IapFeature;
+
+  constructor(feature: IapFeature) {
+    super(`IAP product grant failed for ${feature}`);
+    this.name = 'IapProductGrantFailedError';
+    this.feature = feature;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +258,7 @@ async function callServerUnlock(
  * Toss IAP 시트를 열고, 결제 성공 시 서버 unlock 을 완료한다.
  * 완료되면 resolve, 실패하면 reject.
  */
-export function purchaseFeature(params: PurchaseFeatureParams): Promise<void> {
+export function purchaseFeature(params: PurchaseFeatureParams): Promise<PurchaseFeatureResult> {
   const { feature, ref, amountKrw: _amountKrw, token } = params;
   const sku = resolveIapSku(feature);
 
@@ -249,7 +266,19 @@ export function purchaseFeature(params: PurchaseFeatureParams): Promise<void> {
     return Promise.reject(new IapSkuNotConfiguredError(feature));
   }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<PurchaseFeatureResult>((resolve, reject) => {
+    let settled = false;
+    const settleResolve = (result: PurchaseFeatureResult) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+    const settleReject = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      reject(error instanceof Error ? error : new Error(String(error)));
+    };
+
     // §4.3 createOneTimePurchaseOrder — cleanup 반환
     const cleanup = IAP.createOneTimePurchaseOrder({
       options: {
@@ -260,11 +289,14 @@ export function purchaseFeature(params: PurchaseFeatureParams): Promise<void> {
          */
         processProductGrant: async ({ orderId }: { orderId: string }): Promise<boolean> => {
           rememberPendingIapContext(orderId, feature, ref);
-          const granted = await callServerUnlock(orderId, feature, ref, token);
-          if (granted) {
-            resolve();
+          const unlockResult = await callServerUnlock(orderId, feature, ref, token);
+          if (unlockResult) {
+            forgetPendingIapContext(orderId);
+            settleResolve(unlockResult);
+            return true;
           }
-          return granted;
+          settleReject(new IapProductGrantFailedError(feature));
+          return false;
         },
       },
       onEvent: (event: { data?: { orderId?: string } }) => {
@@ -275,7 +307,7 @@ export function purchaseFeature(params: PurchaseFeatureParams): Promise<void> {
       },
       onError: (error: unknown) => {
         // 결제 취소/네트워크 오류 등 — reject 후 cleanup
-        reject(error instanceof Error ? error : new Error(String(error)));
+        settleReject(error);
       },
     });
 

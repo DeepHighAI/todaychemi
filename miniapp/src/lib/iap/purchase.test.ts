@@ -75,7 +75,7 @@ describe('purchaseFeature', () => {
       .mockResolvedValueOnce({ unlocked: true });
     sdk.getPendingOrders.mockResolvedValue({ orders: [{ orderId: 'order-1' }] });
 
-    void purchaseFeature({
+    const purchasePromise = purchaseFeature({
       feature: 'hapcard',
       ref: 'hapcard-cache-key-1',
       amountKrw: 550,
@@ -83,6 +83,10 @@ describe('purchaseFeature', () => {
     });
 
     await expect(processProductGrant({ orderId: 'order-1' })).resolves.toBe(false);
+    await expect(purchasePromise).rejects.toMatchObject({
+      code: 'IAP_PRODUCT_GRANT_FAILED',
+      feature: 'hapcard',
+    });
     await restorePendingOrders('tok');
 
     expect(api.apiFetch).toHaveBeenLastCalledWith('/api/toss/iap/unlock', expect.objectContaining({
@@ -94,6 +98,31 @@ describe('purchaseFeature', () => {
       token: 'tok',
     }));
     expect(sdk.completeProductGrant).toHaveBeenCalledWith({ params: { orderId: 'order-1' } });
+  });
+
+  it('서버 unlock 이 delivery 를 반환하면 purchaseFeature 가 delivery 를 resolve 한다', async () => {
+    const { purchaseFeature } = await loadPurchaseModule('{"relation_slot":"sku_relation"}');
+    let processProductGrant!: (params: { orderId: string }) => Promise<boolean>;
+    const delivery = {
+      feature: 'relation_slot' as const,
+      relation_id: 'rel-delivered-001',
+    };
+
+    sdk.createOneTimePurchaseOrder.mockImplementation(({ options }) => {
+      processProductGrant = options.processProductGrant;
+      return vi.fn();
+    });
+    api.apiFetch.mockResolvedValue({ unlocked: true, delivery });
+
+    const purchasePromise = purchaseFeature({
+      feature: 'relation_slot',
+      ref: 'relation_slot:pending-001',
+      amountKrw: 550,
+      token: 'tok',
+    });
+
+    await expect(processProductGrant({ orderId: 'order-1' })).resolves.toBe(true);
+    await expect(purchasePromise).resolves.toEqual({ unlocked: true, delivery });
   });
 
   it('order-status 지연성 402 는 processProductGrant 안에서 재시도해 true 로 지급 완료한다', async () => {
@@ -109,7 +138,7 @@ describe('purchaseFeature', () => {
       .mockRejectedValueOnce({ status: 402, code: 'IAP_ORDER_NOT_GRANTABLE' })
       .mockResolvedValueOnce({ unlocked: true });
 
-    void purchaseFeature({
+    const purchasePromise = purchaseFeature({
       feature: 'hapcard',
       ref: 'hapcard-cache-key-1',
       amountKrw: 550,
@@ -120,6 +149,7 @@ describe('purchaseFeature', () => {
     await vi.advanceTimersByTimeAsync(250);
 
     await expect(grantPromise).resolves.toBe(true);
+    await expect(purchasePromise).resolves.toEqual({ unlocked: true });
     expect(api.apiFetch).toHaveBeenCalledTimes(2);
   });
 

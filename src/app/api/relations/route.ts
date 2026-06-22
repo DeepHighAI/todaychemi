@@ -55,7 +55,10 @@ export async function POST(request: Request) {
   // A1 — 결제 confirmed 인데 머티리얼라이즈가 누락된 고아 pending 을 먼저 전달(재과금 방지).
   // 무료 게이트보다 먼저: 유저가 인연을 지워 무료 구간(<2)으로 내려가도 paid 고아는
   // 반드시 전달돼야 한다(돈 받은 건 반드시 제공). 복구된 인연은 이어지는 게이트에 반영된다.
-  await recoverPaidPendings(service, user.id);
+  const recoveredRelationId = await recoverPaidPendings(service, user.id, parsed.data);
+  if (recoveredRelationId) {
+    return NextResponse.json({ ok: true, relation_id: recoveredRelationId });
+  }
 
   // 무료 슬롯 게이트 (ADR-039 §9) — count 와 INSERT 를 단일 원자 RPC 로 묶어 TOCTOU 차단.
   // relation_id 반환 = 무료 등록 완료. null = 슬롯 초과 → 유료 경로.
@@ -150,7 +153,8 @@ async function handlePaidSlot(
 async function recoverPaidPendings(
   service: ReturnType<typeof createServiceRoleClient>,
   userId: string,
-) {
+  currentDraft: RelationCreate,
+): Promise<string | null> {
   try {
     const { data: paid, error: paidError } = await service
       .from('payments')
@@ -168,22 +172,30 @@ async function recoverPaidPendings(
       .filter((ref): ref is string => Boolean(ref?.startsWith('relation_slot:')))
       .map((ref) => ref.slice('relation_slot:'.length))
       .filter(Boolean);
-    if (paidPendingIds.length === 0) return;
+    if (paidPendingIds.length === 0) return null;
 
     // 결제된 것 중 아직 전달 안 된 것만 조회 (대부분 이미 처리 → 빈 결과).
     // 미전달 판별은 delivered_at 단일 진실 — materialized_at 은 클레임 마커일 뿐이라
     // 클레임 후 죽은(INSERT/마킹 실패) 고아가 영구 누락된다. materialize 는 멱등이라 재시도 안전.
     const { data: pendings, error: pendingsError } = await service
       .from('pending_relation_registrations')
-      .select('pending_id')
+      .select('pending_id, draft')
       .eq('user_id', userId)
       .in('pending_id', paidPendingIds)
       .is('delivered_at', null);
     if (pendingsError) throw pendingsError;
 
-    for (const row of (pendings ?? []) as Array<{ pending_id: string }>) {
+    let matchingRecoveredRelationId: string | null = null;
+    for (const row of (pendings ?? []) as Array<{ pending_id: string; draft?: unknown }>) {
       try {
-        await materializeRelationSlot(service, userId, row.pending_id);
+        const relationId = await materializeRelationSlot(service, userId, row.pending_id);
+        if (
+          !matchingRecoveredRelationId &&
+          relationId &&
+          pendingDraftMatchesCurrent(row.draft, currentDraft)
+        ) {
+          matchingRecoveredRelationId = relationId;
+        }
       } catch (itemErr) {
         // 한 고아의 실패가 나머지 paid 고아 복구를 막지 않게 격리한다.
         console.error('relation_slot_recovery_item_failed', {
@@ -199,6 +211,7 @@ async function recoverPaidPendings(
         );
       }
     }
+    return matchingRecoveredRelationId;
   } catch (err) {
     // 복구 실패가 신규 등록을 막으면 안 된다 — 로깅 후 계속 (다음 시도에서 재복구).
     // 돈 받고 미전달 상태이므로 console 외에 Sentry 로도 알린다.
@@ -210,5 +223,24 @@ async function recoverPaidPendings(
       err instanceof Error ? sanitizeErrorForReporting(err) : new Error('relation_slot recovery failed'),
       { tags: { area: 'payments', payment_step: 'relation_slot_recovery' } },
     );
+    return null;
   }
+}
+
+function pendingDraftMatchesCurrent(pendingDraft: unknown, currentDraft: RelationCreate): boolean {
+  if (typeof pendingDraft !== 'object' || pendingDraft === null) return false;
+  const candidate = pendingDraft as Partial<RelationCreate>;
+  return (
+    candidate.nickname === currentDraft.nickname &&
+    candidate.mode === currentDraft.mode &&
+    candidate.gender === currentDraft.gender &&
+    candidate.birth_date === currentDraft.birth_date &&
+    candidate.birth_date_calendar === currentDraft.birth_date_calendar &&
+    candidate.is_lunar_leap === currentDraft.is_lunar_leap &&
+    candidate.birth_time_knowledge === currentDraft.birth_time_knowledge &&
+    candidate.birth_time === currentDraft.birth_time &&
+    candidate.birth_longitude === currentDraft.birth_longitude &&
+    candidate.consent_confirmed === currentDraft.consent_confirmed &&
+    candidate.is_primary === currentDraft.is_primary
+  );
 }

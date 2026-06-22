@@ -80,6 +80,13 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
   } | null>(null);
   const [refundConsent, setRefundConsent] = useState(false);
 
+  function invalidateRelationViews(relationId: string) {
+    void queryClient.invalidateQueries({ queryKey: ['feed'] });
+    void queryClient.invalidateQueries({ queryKey: ['relations'] });
+    void queryClient.invalidateQueries({ queryKey: ['relation-detail', relationId] });
+    void queryClient.invalidateQueries({ queryKey: ['today'] });
+  }
+
   // IAP 결제 훅 — 성공 시 relation 생성 재시도
   const {
     purchase: openIapPurchase,
@@ -88,7 +95,17 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     purchaseErrorMessage: iapErrorMessage,
     clearError: clearIapError,
   } = useFeaturePurchase({
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const relationId = result.delivery?.feature === 'relation_slot'
+        ? result.delivery.relation_id
+        : null;
+      if (relationId) {
+        setPaywallInfo(null);
+        invalidateRelationViews(relationId);
+        onSuccess();
+        navigate(`/feed/${relationId}`, { replace: true });
+        return;
+      }
       setPaywallInfo(null);
       // 결제 완료 후 서버가 unlock row 를 가지고 있으므로 재제출
       mutation.mutate();

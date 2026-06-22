@@ -27,8 +27,10 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { apiErrorResponse } from '@/lib/errors/route-response';
 import { FeatureIdSchema, FEATURE_PRICES_KRW } from '@/lib/payments/feature-prices';
+import { materializeRelationSlot } from '@/lib/relations/materialize';
 import { getOrderStatus, resolveFeatureFromSku, isGrantableStatus, IapOrderError } from '@/lib/toss/iap';
 import type { MtlsTransport } from '@/types/toss';
+import type { FeatureId } from '@/lib/payments/feature-prices';
 
 // ---------------------------------------------------------------------------
 // Node runtime 필수 — mTLS 는 Edge runtime 불가 (§3.3)
@@ -57,6 +59,10 @@ export type IapUnlockRequest = z.infer<typeof UnlockSchema>;
 /** 성공 응답 */
 export interface IapUnlockResponse {
   unlocked: true;
+  delivery?: {
+    feature: 'relation_slot';
+    relation_id: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +71,45 @@ export interface IapUnlockResponse {
 
 /** payments.toss_order_id 에 IAP 주문임을 표시하는 접두어 */
 const IAP_ORDER_PREFIX = 'iap_';
+
+function parseRelationSlotPendingId(ref: string): string | null {
+  const prefix = 'relation_slot:';
+  if (!ref.startsWith(prefix)) return null;
+  const pendingId = ref.slice(prefix.length).trim();
+  return pendingId || null;
+}
+
+async function unlockedResponse(
+  service: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+  feature: FeatureId,
+  ref: string,
+): Promise<NextResponse> {
+  if (feature !== 'relation_slot') {
+    const response: IapUnlockResponse = { unlocked: true };
+    return NextResponse.json(response, { status: 200 });
+  }
+
+  const pendingId = parseRelationSlotPendingId(ref);
+  if (!pendingId) {
+    return apiErrorResponse('INVALID_BODY', 'relation_slot ref must be relation_slot:{pending_id}', 400);
+  }
+
+  try {
+    const relationId = await materializeRelationSlot(service, userId, pendingId);
+    if (!relationId) {
+      return apiErrorResponse('INTERNAL_ERROR', 'relation_slot delivery failed', 500);
+    }
+    const response: IapUnlockResponse = {
+      unlocked: true,
+      delivery: { feature: 'relation_slot', relation_id: relationId },
+    };
+    return NextResponse.json(response, { status: 200 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'relation_slot delivery failed';
+    return apiErrorResponse('INTERNAL_ERROR', message, 500);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // POST 핸들러
@@ -149,15 +194,24 @@ export async function POST(
     const svc = createServiceRoleClient();
     const { data: existingRow } = await svc
       .from('payments')
-      .select('id')
+      .select('id, feature_id, feature_ref')
       .eq('toss_order_id', `${IAP_ORDER_PREFIX}${orderId}`)
       .eq('user_id', user.id)
       .eq('status', 'confirmed')
       .maybeSingle();
 
     if (existingRow) {
-      const unlocked: IapUnlockResponse = { unlocked: true };
-      return NextResponse.json(unlocked, { status: 200 });
+      const existingFeature = (existingRow as { feature_id?: unknown }).feature_id;
+      if (existingFeature !== feature) {
+        return apiErrorResponse(
+          'IAP_SKU_FEATURE_MISMATCH',
+          `existing order unlocks '${String(existingFeature)}' but request claims '${feature}'`,
+          400,
+        );
+      }
+      const existingRef = (existingRow as { feature_ref?: unknown }).feature_ref;
+      const effectiveRef = ref.trim() || (typeof existingRef === 'string' ? existingRef : '');
+      return unlockedResponse(svc, user.id, feature, effectiveRef);
     }
   }
 
@@ -166,6 +220,9 @@ export async function POST(
   // 영원히 매칭되지 않으므로 서버에서 fail-closed 한다.
   if (!ref.trim()) {
     return apiErrorResponse('INVALID_BODY', 'feature ref required for new IAP grant', 400);
+  }
+  if (feature === 'relation_slot' && !parseRelationSlotPendingId(ref)) {
+    return apiErrorResponse('INVALID_BODY', 'relation_slot ref must be relation_slot:{pending_id}', 400);
   }
 
   // ------------------------------------------------------------------
@@ -249,15 +306,24 @@ export async function POST(
       // (타인 주문 행과의 충돌이면 이 사용자에겐 잠금해제하지 않음.)
       const { data: ownRow } = await service
         .from('payments')
-        .select('id')
+        .select('id, feature_id, feature_ref')
         .eq('toss_order_id', iapOrderId)
         .eq('user_id', user.id)
         .eq('status', 'confirmed')
         .maybeSingle();
 
       if (ownRow) {
-        const unlocked: IapUnlockResponse = { unlocked: true };
-        return NextResponse.json(unlocked, { status: 200 });
+        const existingFeature = (ownRow as { feature_id?: unknown }).feature_id;
+        if (existingFeature !== feature) {
+          return apiErrorResponse(
+            'IAP_SKU_FEATURE_MISMATCH',
+            `existing order unlocks '${String(existingFeature)}' but request claims '${feature}'`,
+            400,
+          );
+        }
+        const existingRef = (ownRow as { feature_ref?: unknown }).feature_ref;
+        const effectiveRef = ref.trim() || (typeof existingRef === 'string' ? existingRef : '');
+        return unlockedResponse(service, user.id, feature, effectiveRef);
       }
       // 타인 주문과 충돌 — 이 사용자에겐 권한 없음.
       return apiErrorResponse('IAP_ORDER_NOT_GRANTABLE', 'order belongs to another user', 402);
@@ -268,6 +334,5 @@ export async function POST(
   // ------------------------------------------------------------------
   // 6. 성공
   // ------------------------------------------------------------------
-  const response: IapUnlockResponse = { unlocked: true };
-  return NextResponse.json(response, { status: 200 });
+  return unlockedResponse(service, user.id, feature, ref);
 }

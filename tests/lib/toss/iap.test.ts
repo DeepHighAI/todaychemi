@@ -189,6 +189,20 @@ describe('buildSkuToFeatureMap', () => {
     expect(map.get('sku_rel')).toBe('relation_slot');
   });
 
+  it('JSON object 형식 → 클라이언트 SKU map 과 같은 값을 파싱한다', () => {
+    const raw = JSON.stringify({
+      hapcard: 'sku_hap',
+      whatif: 'sku_wif',
+      replay: 'sku_rep',
+      relation_slot: 'sku_rel',
+    });
+    const map = buildSkuToFeatureMap(raw);
+    expect(map.get('sku_hap')).toBe('hapcard');
+    expect(map.get('sku_wif')).toBe('whatif');
+    expect(map.get('sku_rep')).toBe('replay');
+    expect(map.get('sku_rel')).toBe('relation_slot');
+  });
+
   it('빈 문자열 → 빈 Map', () => {
     const map = buildSkuToFeatureMap('');
     expect(map.size).toBe(0);
@@ -205,6 +219,18 @@ describe('buildSkuToFeatureMap', () => {
     expect(map.size).toBe(2);
     expect(map.get('sku_hap')).toBe('hapcard');
   });
+
+  it('알 수 없는 feature 키와 빈 SKU 는 무시한다', () => {
+    const map = buildSkuToFeatureMap('hapcard:sku_hap,unknown:sku_bad,whatif:   ');
+    expect(map.size).toBe(1);
+    expect(map.get('sku_hap')).toBe('hapcard');
+    expect(map.get('sku_bad')).toBeUndefined();
+  });
+
+  it('깨진 JSON object 형식 → 빈 Map 으로 fail-closed 한다', () => {
+    const map = buildSkuToFeatureMap('{"hapcard":');
+    expect(map.size).toBe(0);
+  });
 });
 
 describe('resolveFeatureFromSku', () => {
@@ -219,6 +245,11 @@ describe('resolveFeatureFromSku', () => {
 
   it('미등록 SKU → null', () => {
     expect(resolveFeatureFromSku('sku_unknown', SKU_MAP)).toBeNull();
+  });
+
+  it('JSON 형식에서도 미등록 SKU → null', () => {
+    const jsonMap = '{"hapcard":"sku_hap"}';
+    expect(resolveFeatureFromSku('sku_other', jsonMap)).toBeNull();
   });
 
   it('빈 환경변수 → null', () => {

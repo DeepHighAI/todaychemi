@@ -16,7 +16,11 @@
  */
 
 import { useState, useCallback } from 'react';
-import { isIapSkuNotConfiguredError, purchaseFeature } from '@/lib/iap/purchase';
+import {
+  isIapSkuNotConfiguredError,
+  purchaseFeature,
+  type PurchaseFeatureResult,
+} from '@/lib/iap/purchase';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import type { PaymentRequiredInfo } from '@/lib/api/client';
 import type { IapFeature } from '@/lib/iap/sku';
@@ -27,7 +31,7 @@ import type { IapFeature } from '@/lib/iap/sku';
 
 export interface UseFeaturePurchaseOptions {
   /** 결제 + 서버 unlock 성공 후 호출 (쿼리 무효화 등) */
-  onSuccess?: () => void | Promise<void>;
+  onSuccess?: (result: PurchaseFeatureResult) => void | Promise<void>;
 }
 
 export interface UseFeaturePurchaseReturn {
@@ -82,9 +86,9 @@ export function useFeaturePurchase(
         amountKrw: info.amount_krw,
         token,
       })
-        .then(async () => {
+        .then(async (result) => {
           setIsPurchasing(false);
-          await onSuccess?.();
+          await onSuccess?.(result);
         })
         .catch((err: unknown) => {
           setIsPurchasing(false);
