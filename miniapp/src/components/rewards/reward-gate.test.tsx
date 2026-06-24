@@ -24,7 +24,7 @@ describe('RewardGate', () => {
   it('가입 보상 지급 시 화면을 막지 않는 보상 안내를 노출한다', async () => {
     vi.mocked(apiFetch).mockResolvedValue({
       ok: true,
-      reward: { awarded: true, reason: 'AWARDED', signup_awarded: true, daily_login_awarded: true, amount_awarded: 55 },
+      reward: { awarded: true, reason: 'AWARDED', signup_awarded: true, daily_login_awarded: true, amount_awarded: 110 },
     } as never);
 
     renderWithProviders(
@@ -35,7 +35,7 @@ describe('RewardGate', () => {
       { routerEntries: ['/'] },
     );
 
-    expect(await screen.findByRole('status')).toHaveTextContent('+55');
+    expect(await screen.findByRole('status')).toHaveTextContent('+110');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(apiFetch).toHaveBeenCalledWith('/api/rewards/session', { method: 'POST', token: 'tok' });
   });

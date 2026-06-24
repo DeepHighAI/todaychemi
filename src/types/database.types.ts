@@ -1123,6 +1123,33 @@ export type Database = {
           },
         ]
       }
+      reward_policy_settings: {
+        Row: {
+          amount: number
+          daily_cap: number | null
+          enabled: boolean
+          note: string
+          reward_key: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          daily_cap?: number | null
+          enabled?: boolean
+          note?: string
+          reward_key: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          daily_cap?: number | null
+          enabled?: boolean
+          note?: string
+          reward_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       token_ledger: {
         Row: {
           balance_after: number

@@ -39,6 +39,11 @@ const FUNCTIONS: FunctionCheck[] = [
     reason: 'credits signup/session bonus tokens',
   },
   {
+    name: 'award_rewarded_ad_talisman',
+    signaturePattern: String.raw`uuid`,
+    reason: 'credits Apps in Toss rewarded ad tokens',
+  },
+  {
     name: 'award_hapcard_share_reward',
     signaturePattern: String.raw`uuid\s*,\s*text\s*,\s*text`,
     reason: 'credits Kakao share reward tokens',

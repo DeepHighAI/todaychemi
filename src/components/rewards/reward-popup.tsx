@@ -3,7 +3,7 @@
 /**
  * reward-popup.tsx — 부적 지급 레이어 팝업 (항목 6/7, 웹)
  *
- * 가입(+50) / 매일 출석(+5) 부적 수령 시 획득 부적 수 + 사용 용도를 안내한다.
+ * 가입(+100) / 매일 출석(+10) 부적 수령 시 획득 부적 수 + 사용 용도를 안내한다.
  * FreeTalismanRewardGate 가 /api/rewards/session 응답으로 노출 여부를 결정한다.
  * 미니앱 포트: miniapp/src/components/rewards/reward-popup.tsx
  */

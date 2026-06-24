@@ -1,7 +1,7 @@
 /**
  * reward-gate.tsx — 부적 지급 트리거 (항목 6/7)
  *
- * 앱 진입 시 1회 POST /api/rewards/session 를 호출해 가입(+50)·매일 출석(+5) 부적을
+ * 앱 진입 시 1회 POST /api/rewards/session 를 호출해 가입(+100)·매일 출석(+10) 부적을
  * 지급받는다. 지급이 발생하면 비모달 RewardNotice 로 안내하고 지갑 쿼리를 무효화한다.
  *
  * - 온보딩 경로(/onboarding)에서는 호출하지 않는다(프로필 생성 전이라 PROFILE_REQUIRED).

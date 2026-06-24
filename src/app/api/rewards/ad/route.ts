@@ -6,13 +6,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { todayKST } from '@/lib/today/kst-date';
 
-const AD_REWARD_AMOUNT = 5;
-const AD_REWARD_DAILY_CAP = 3;
-
 interface AdReward {
   awarded?: boolean;
   reason?: string;
   amount_awarded?: number;
+  daily_cap?: number;
   balance_after?: number | null;
   remaining?: number;
 }
@@ -29,6 +27,20 @@ export async function GET() {
     }
 
     const today = todayKST();
+    const service = createServiceRoleClient();
+    const { data: policy, error: policyError } = await service
+      .from('reward_policy_settings')
+      .select('amount,daily_cap,enabled')
+      .eq('reward_key', 'rewarded_ad')
+      .maybeSingle();
+
+    if (policyError) {
+      return apiErrorResponse('INTERNAL_ERROR', policyError.message, 500);
+    }
+
+    const amount = policy?.enabled ? policy.amount : 0;
+    const dailyCap = policy?.enabled ? (policy.daily_cap ?? 0) : 0;
+
     const { count, error } = await supabase
       .from('token_ledger')
       .select('ledger_id', { count: 'exact', head: true })
@@ -44,10 +56,10 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       reward: {
-        amount_awarded: AD_REWARD_AMOUNT,
-        daily_cap: AD_REWARD_DAILY_CAP,
+        amount_awarded: amount,
+        daily_cap: dailyCap,
         awarded_today: awardedToday,
-        remaining: Math.max(0, AD_REWARD_DAILY_CAP - awardedToday),
+        remaining: Math.max(0, dailyCap - awardedToday),
       },
     });
   } catch (err) {

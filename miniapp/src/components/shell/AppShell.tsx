@@ -226,7 +226,7 @@ export function AppShell({ showNav = true }: AppShellProps) {
       {/* 하단 탭바 */}
       {showNav && <AppNav items={[...NAV_ITEMS]} />}
 
-      {/* 부적 지급 트리거 + 팝업 (가입 +50 / 매일 +5, 항목 6/7) */}
+      {/* 부적 지급 트리거 + 팝업 (가입 +100 / 매일 +10, 서버 정책 기준) */}
       <RewardGate />
       <AnalysisJobNotifier />
       <RewardNoticeHost />

@@ -15,6 +15,11 @@ const ledger = {
   eq: vi.fn(),
   like: vi.fn(),
 };
+const policy = {
+  select: vi.fn(),
+  eq: vi.fn(),
+  maybeSingle: vi.fn(),
+};
 
 function makeUserClient(user: { id: string } | null = { id: USER_ID }) {
   return {
@@ -33,18 +38,31 @@ beforeEach(() => {
   ledger.select.mockReturnValue(ledger);
   ledger.eq.mockReturnValue(ledger);
   ledger.like.mockResolvedValue({ count: 1, error: null });
+  policy.select.mockReturnValue(policy);
+  policy.eq.mockReturnValue(policy);
+  policy.maybeSingle.mockResolvedValue({
+    data: { amount: 10, daily_cap: 3, enabled: true },
+    error: null,
+  });
   rpc.mockResolvedValue({
     data: {
       awarded: true,
       reason: 'AWARDED',
-      amount_awarded: 5,
-      balance_after: 15,
+      amount_awarded: 10,
+      daily_cap: 3,
+      balance_after: 20,
       remaining: 2,
     },
     error: null,
   });
   vi.mocked(createClient).mockResolvedValue(makeUserClient() as never);
-  vi.mocked(createServiceRoleClient).mockReturnValue({ rpc } as never);
+  vi.mocked(createServiceRoleClient).mockReturnValue({
+    rpc,
+    from: vi.fn((table: string) => {
+      if (table !== 'reward_policy_settings') throw new Error(`unexpected service table ${table}`);
+      return policy;
+    }),
+  } as never);
 });
 
 describe('GET /api/rewards/ad', () => {
@@ -66,8 +84,10 @@ describe('GET /api/rewards/ad', () => {
     expect(ledger.eq).toHaveBeenCalledWith('user_id', USER_ID);
     expect(ledger.eq).toHaveBeenCalledWith('reason', 'bonus');
     expect(ledger.like).toHaveBeenCalledWith('reference_id', 'ad_reward:2026-06-24:%');
+    expect(policy.select).toHaveBeenCalledWith('amount,daily_cap,enabled');
+    expect(policy.eq).toHaveBeenCalledWith('reward_key', 'rewarded_ad');
     expect(body.reward).toEqual({
-      amount_awarded: 5,
+      amount_awarded: 10,
       daily_cap: 3,
       awarded_today: 1,
       remaining: 2,
@@ -105,8 +125,9 @@ describe('POST /api/rewards/ad', () => {
       reward: {
         awarded: true,
         reason: 'AWARDED',
-        amount_awarded: 5,
-        balance_after: 15,
+        amount_awarded: 10,
+        daily_cap: 3,
+        balance_after: 20,
         remaining: 2,
       },
     });

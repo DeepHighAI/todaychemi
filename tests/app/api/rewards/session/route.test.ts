@@ -30,8 +30,8 @@ beforeEach(() => {
       reason: 'AWARDED',
       signup_awarded: true,
       daily_login_awarded: true,
-      amount_awarded: 6,
-      balance_after: 6,
+      amount_awarded: 110,
+      balance_after: 110,
     },
     error: null,
   });
@@ -59,7 +59,7 @@ describe('POST /api/rewards/session', () => {
       p_policy_effective_at: '2026-05-25T00:00:00+09:00',
     });
     const body = await res.json();
-    expect(body.reward).toEqual(expect.objectContaining({ amount_awarded: 6 }));
+    expect(body.reward).toEqual(expect.objectContaining({ amount_awarded: 110 }));
   });
 
   it('returns profile-required as a non-fatal idempotent reward result', async () => {

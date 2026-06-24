@@ -752,4 +752,35 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
       policies: ['analysis_jobs_own_read', 'analysis_jobs_own_mark_notified'],
     },
   },
+  // 무료/이벤트 부적 지급 정책 — 서버 원격 설정 테이블 + 보상 RPC 설정화
+  {
+    index: 20260624020000,
+    file: '20260624020000_reward_policy_settings.sql',
+    kind: 'table',
+    tableName: 'reward_policy_settings',
+    columns: ['reward_key', 'amount', 'daily_cap', 'enabled', 'note', 'updated_at'],
+    checkEnums: [
+      { col: 'reward_key', values: ['signup', 'daily_login', 'rewarded_ad', 'kakao_share'] },
+    ],
+    foreignKeys: [],
+    rls: { enabled: true, policies: [] },
+  },
+  {
+    index: 20260624020001,
+    file: '20260624020000_reward_policy_settings.sql',
+    kind: 'function',
+    functionName: 'award_free_talisman_session_rewards',
+  },
+  {
+    index: 20260624020002,
+    file: '20260624020000_reward_policy_settings.sql',
+    kind: 'function',
+    functionName: 'award_rewarded_ad_talisman',
+  },
+  {
+    index: 20260624020003,
+    file: '20260624020000_reward_policy_settings.sql',
+    kind: 'function',
+    functionName: 'award_hapcard_share_reward',
+  },
 ];

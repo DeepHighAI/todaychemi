@@ -24,7 +24,10 @@ function makeRequest(body: unknown, init: { auth?: string; resourceId?: string }
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.KAKAO_ADMIN_KEY = 'test-admin-key';
-  rpc.mockResolvedValue({ data: { awarded: true, reason: 'AWARDED' }, error: null });
+  rpc.mockResolvedValue({
+    data: { awarded: true, reason: 'AWARDED', amount_awarded: 11, daily_cap: 5 },
+    error: null,
+  });
   vi.mocked(createServiceRoleClient).mockReturnValue({ rpc } as never);
 });
 
@@ -42,6 +45,8 @@ describe('POST /api/share/kakao/callback', () => {
       p_channel: 'kakao',
       p_webhook_resource_id: 'resource-001',
     });
+    const body = await res.json();
+    expect(body.reward).toEqual(expect.objectContaining({ amount_awarded: 11, daily_cap: 5 }));
   });
 
   it('401 for wrong admin key', async () => {
