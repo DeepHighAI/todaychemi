@@ -715,4 +715,11 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     kind: 'function',
     functionName: 'insert_relation_if_under_free_cap',
   },
+  // 앱인토스 보상형 광고 — KST 일 3회, 회당 부적 5개 bonus 지급
+  {
+    index: 20260624000000,
+    file: '20260624000000_rewarded_ad_talisman.sql',
+    kind: 'function',
+    functionName: 'award_rewarded_ad_talisman',
+  },
 ];

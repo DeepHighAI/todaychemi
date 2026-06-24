@@ -44,6 +44,7 @@ import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { AdBannerListItem } from '../../components/ads/ad-banner';
+import { RewardedAdCard } from '../../components/ads/rewarded-ad';
 
 import type { DailyHapCard } from '../../types/dailyHap';
 import type { FeedListItem, RelationChipItem } from '../../types/relation';
@@ -340,6 +341,9 @@ export function HomePage() {
 
       {/* 또 다른 나 진입 버튼 (차트 있을 때만) */}
       {card && chart && <WhatifTrigger />}
+
+      {/* 인앱토스 리워드 광고 — 사용자가 누를 때만 전면형 보상 광고 노출 */}
+      <RewardedAdCard />
 
       {/* 삭제 확인 다이얼로그 (공용 ConfirmDialog) */}
       <ConfirmDialog

@@ -70,6 +70,11 @@ describe('Database types', () => {
     }>();
   });
 
+  it('rewarded ad talisman RPC exposes expected args', () => {
+    type Args = Database['public']['Functions']['award_rewarded_ad_talisman']['Args'];
+    expectTypeOf<Args>().toEqualTypeOf<{ uid: string }>();
+  });
+
   it('legal_consents stores token_hash but no raw token', () => {
     type Row = Database['public']['Tables']['legal_consents']['Row'];
     expectTypeOf<Row>().toHaveProperty('token_hash');

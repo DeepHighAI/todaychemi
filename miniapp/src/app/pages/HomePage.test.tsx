@@ -40,6 +40,10 @@ vi.mock('@/components/ads/ad-banner', () => ({
   AdBannerListItem: () => null,
 }));
 
+vi.mock('@/components/ads/rewarded-ad', () => ({
+  RewardedAdCard: () => <section aria-label="리워드 광고" />,
+}));
+
 import { renderWithProviders } from '@/test/render';
 import { HomePage } from './HomePage';
 

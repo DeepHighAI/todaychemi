@@ -20,6 +20,17 @@
       "amount": "부적 {count}개",
       "usage": "부적으로 케미카드·또 다른 나·케미 다시 맞추기를 볼 수 있어요. 부적이 부족하면 결제로 이어볼 수 있어요.",
       "close": "보상 안내 닫기"
+    },
+    "ad": {
+      "sectionLabel": "리워드 광고",
+      "title": "광고 보고 부적 5개 받기",
+      "remaining": "오늘 {remaining}번 남았어요",
+      "loadFailed": "광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "showFailed": "광고를 보여주지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "granted": "부적 {count}개를 받았어요",
+      "limitReached": "오늘은 모두 받았어요",
+      "grantUnavailable": "보상 정보를 확인하지 못했어요.",
+      "grantFailed": "부적 지급에 실패했어요. 잠시 후 다시 시도해 주세요."
     }
   },
   "aiDisclosure": {

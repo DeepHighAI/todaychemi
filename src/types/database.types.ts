@@ -1301,6 +1301,10 @@ export type Database = {
         }
         Returns: Json
       }
+      award_rewarded_ad_talisman: {
+        Args: { uid: string }
+        Returns: Json
+      }
       award_hapcard_share_reward: {
         Args: {
           p_channel: string
