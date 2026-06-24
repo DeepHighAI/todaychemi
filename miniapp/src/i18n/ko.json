@@ -23,7 +23,7 @@
     },
     "ad": {
       "sectionLabel": "리워드 광고",
-      "title": "광고 보고 부적 5개 받기",
+      "title": "광고 보고 부적 10개 받기",
       "remaining": "오늘 {remaining}번 남았어요",
       "loadFailed": "광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
       "showFailed": "광고를 보여주지 못했어요. 잠시 후 다시 시도해 주세요.",

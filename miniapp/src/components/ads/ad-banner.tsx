@@ -3,7 +3,8 @@
  *
  * 토스 WebView SDK `TossAds.attachBanner` 로 리스트형 배너를 부착한다.
  * - 토스앱 5.241.0 미만/웹 dev 등 미지원 환경: `isSupported()` false → 아무것도 렌더하지 않음(빈 화면 방지).
- * - 광고 그룹 ID: env `VITE_TOSS_AD_GROUP_ID`(dev 미설정 시에만 테스트 ID `ait-ad-test-banner-id`).
+ * - 광고 그룹 ID: env `VITE_TOSS_AD_GROUP_ID` 만 사용한다(운영=.env.production, dev 테스트=.env.development).
+ *   소스에 테스트 ID 리터럴을 두지 않아 프로덕션 번들 인라인을 원천 차단한다(미설정 시 null → 미렌더).
  * - 컨테이너 내부는 비워둬야 하며(SDK 가 DOM 주입), width 100% + 고정 높이 96px.
  *
  * 토스 정책: 결제/인증 흐름에는 광고 금지, 다른 UI 와 겹치지 않게, SDK 기본 동작 변조 금지.
@@ -17,26 +18,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { TossAds } from '@apps-in-toss/web-framework';
 
-const TEST_AD_GROUP_ID = 'ait-ad-test-banner-id';
 const AD_BANNER_HEIGHT = 96;
 
 interface AdEnv {
   VITE_TOSS_AD_GROUP_ID?: string;
-  DEV?: boolean;
 }
 
 function readAdEnv(): AdEnv {
   return {
     VITE_TOSS_AD_GROUP_ID: import.meta.env.VITE_TOSS_AD_GROUP_ID,
-    DEV: import.meta.env.DEV,
   };
 }
 
-/** env 우선, 미설정 시 개발 환경에서만 테스트 광고 ID. */
+/** env 의 광고 그룹 ID 만 사용한다(소스 하드코딩 폴백 없음 — 프로덕션 번들 인라인 방지). */
 export function resolveAdGroupId(env: AdEnv = readAdEnv()): string | null {
   const fromEnv = env.VITE_TOSS_AD_GROUP_ID?.trim();
-  if (fromEnv && fromEnv.length > 0) return fromEnv;
-  return env.DEV ? TEST_AD_GROUP_ID : null;
+  return fromEnv && fromEnv.length > 0 ? fromEnv : null;
 }
 
 function adsSupported(): boolean {

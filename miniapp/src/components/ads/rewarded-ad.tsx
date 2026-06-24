@@ -15,13 +15,11 @@ import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { showRewardNotice } from '@/components/rewards/reward-notice-store';
 
-const TEST_REWARDED_AD_GROUP_ID = 'ait-ad-test-rewarded-id';
 const EXPECTED_REWARD_UNIT_TYPE = '부적';
-const EXPECTED_REWARD_AMOUNT = 5;
+const EXPECTED_REWARD_AMOUNT = 10;
 
 interface RewardedAdEnv {
   VITE_TOSS_REWARDED_AD_GROUP_ID?: string;
-  DEV?: boolean;
 }
 
 interface AdRewardStatusResponse {
@@ -50,14 +48,12 @@ type Cleanup = () => void;
 function readRewardedAdEnv(): RewardedAdEnv {
   return {
     VITE_TOSS_REWARDED_AD_GROUP_ID: import.meta.env.VITE_TOSS_REWARDED_AD_GROUP_ID,
-    DEV: import.meta.env.DEV,
   };
 }
 
 export function resolveRewardedAdGroupId(env: RewardedAdEnv = readRewardedAdEnv()): string | null {
   const fromEnv = env.VITE_TOSS_REWARDED_AD_GROUP_ID?.trim();
-  if (fromEnv && fromEnv.length > 0) return fromEnv;
-  return env.DEV ? TEST_REWARDED_AD_GROUP_ID : null;
+  return fromEnv && fromEnv.length > 0 ? fromEnv : null;
 }
 
 function fullScreenAdSupported(): boolean {

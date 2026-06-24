@@ -1,9 +1,38 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import aitDevtools from '@ait-co/devtools/unplugin';
 import path from 'path';
 
 import { assertNoDevBearerInBuild } from './scripts/assert-no-dev-bearer';
+import { findForbiddenAdMarkers } from './scripts/assert-no-test-ad-id';
+
+// 빌드 가드 플러그인: 산출물 청크에 앱인토스 테스트 광고 그룹 ID(ait-ad-test-*)가 인라인되면 빌드 실패.
+// dev-bearer 가드는 env 값을 검사하지만, 테스트 광고 ID 는 소스 리터럴이라 산출물 자체를 스캔해야 한다.
+// (앱인토스 콘솔은 번들에 테스트 광고 ID 가 있으면 출시를 반려한다.)
+function assertNoTestAdIdPlugin(): Plugin {
+  return {
+    name: 'assert-no-test-ad-id',
+    generateBundle(_options, bundle) {
+      for (const [fileName, output] of Object.entries(bundle)) {
+        const code =
+          output.type === 'chunk'
+            ? output.code
+            : typeof output.source === 'string'
+              ? output.source
+              : '';
+        if (!code) continue;
+        const hits = findForbiddenAdMarkers(code);
+        if (hits.length > 0) {
+          throw new Error(
+            `Test ad group ID marker(s) [${hits.join(', ')}] found in build output (${fileName}). ` +
+              'Apps in Toss rejects bundles containing test ad group IDs. ' +
+              'Set live ad group IDs in .env.production; dev test IDs belong in .env.development only.',
+          );
+        }
+      }
+    },
+  };
+}
 
 // P0 호환성 스파이크용 Vite 설정.
 // @/ 별칭 → src/ 루트 (웹앱 import 경로와 동일하게 유지)
@@ -14,7 +43,7 @@ export default defineConfig(({ command, mode }) => {
   assertNoDevBearerInBuild({ command, devBearer: loadEnv(mode, __dirname).VITE_DEV_BEARER });
 
   return {
-  plugins: [react(), aitDevtools.vite()],
+  plugins: [react(), aitDevtools.vite(), assertNoTestAdIdPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

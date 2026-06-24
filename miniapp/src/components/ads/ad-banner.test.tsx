@@ -113,42 +113,42 @@ afterEach(() => {
 });
 
 describe('resolveAdGroupId', () => {
-  it('개발 환경에서만 테스트 광고 ID 로 폴백한다', () => {
-    expect(resolveAdGroupId({ DEV: true, VITE_TOSS_AD_GROUP_ID: '' })).toBe('ait-ad-test-banner-id');
-    expect(resolveAdGroupId({ DEV: false, VITE_TOSS_AD_GROUP_ID: '' })).toBeNull();
+  it('env 미설정 시 null (소스 하드코딩 폴백 없음)', () => {
+    expect(resolveAdGroupId({ VITE_TOSS_AD_GROUP_ID: '' })).toBeNull();
+    expect(resolveAdGroupId({ VITE_TOSS_AD_GROUP_ID: undefined })).toBeNull();
   });
 
-  it('광고 그룹 ID 가 명시되면 환경과 무관하게 그 값을 사용한다', () => {
-    expect(resolveAdGroupId({ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe('ad-prod-123');
+  it('광고 그룹 ID 가 명시되면 그 값을 사용한다', () => {
+    expect(resolveAdGroupId({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe('ad-prod-123');
   });
 });
 
 describe('isAdSlotAvailable', () => {
   it('지원 + 광고 그룹 ID 가 있으면 true', () => {
     h.setSupported(true);
-    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: '' })).toBe(true);
+    expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(true);
   });
 
-  it('지원하지만 광고 그룹 ID 가 없으면 false (프로덕션 env 미설정 — 빈 래퍼 방지)', () => {
+  it('지원하지만 광고 그룹 ID 가 없으면 false (env 미설정 — 빈 래퍼 방지)', () => {
     h.setSupported(true);
-    expect(isAdSlotAvailable({ DEV: false, VITE_TOSS_AD_GROUP_ID: '' })).toBe(false);
+    expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: '' })).toBe(false);
   });
 
   it('미지원 환경이면 false', () => {
     h.setSupported(false);
-    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+    expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
   });
 
   it('initialize 미지원이면 attach 지원이어도 false', () => {
     h.setInitializeSupported(false);
     h.setAttachSupported(true);
-    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+    expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
   });
 
   it('attachBanner 미지원이면 initialize 지원이어도 false', () => {
     h.setInitializeSupported(true);
     h.setAttachSupported(false);
-    expect(isAdSlotAvailable({ DEV: true, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+    expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
   });
 });
 
@@ -178,14 +178,14 @@ describe('AdBanner', () => {
     expect(h.attachBanner).not.toHaveBeenCalled();
   });
 
-  it('지원 환경에서는 width 100% + 96px 컨테이너를 렌더하고 테스트 광고 ID 로 배너를 부착한다', () => {
-    render(<AdBanner />);
+  it('지원 환경에서는 width 100% + 96px 컨테이너를 렌더하고 env 광고 ID 로 배너를 부착한다', () => {
+    render(<AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
     const container = screen.getByTestId('ad-banner');
     expect(container).toBeInTheDocument();
     expect(container.style.width).toBe('100%');
     expect(container.style.height).toBe('96px');
     expect(h.attachBanner).toHaveBeenCalledWith(
-      'ait-ad-test-banner-id',
+      'ad-prod-123',
       container,
       expect.objectContaining({
         variant: 'expanded',
@@ -200,7 +200,7 @@ describe('AdBanner', () => {
   it('운영 env 광고 그룹 ID 를 attachBanner 에 그대로 전달한다', () => {
     render(
       <AdBanner
-        env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ait.v2.live.a36156fd5d3c461d' }}
+        env={{ VITE_TOSS_AD_GROUP_ID: 'ait.v2.live.a36156fd5d3c461d' }}
       />,
     );
     const container = screen.getByTestId('ad-banner');
@@ -216,8 +216,8 @@ describe('AdBanner', () => {
     // 인스턴스별 init 이라면 2번째 배너는 attach 누락 → 이 테스트가 실패한다.
     render(
       <>
-        <AdBanner />
-        <AdBanner />
+        <AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+        <AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
       </>,
     );
     // 싱글톤: 배너가 2개여도 initialize 는 정확히 1회.
@@ -227,7 +227,7 @@ describe('AdBanner', () => {
   });
 
   it('언마운트 시 배너를 destroy 한다', () => {
-    const { unmount } = render(<AdBanner />);
+    const { unmount } = render(<AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
     unmount();
     expect(h.destroy).toHaveBeenCalledTimes(1);
   });
@@ -237,7 +237,7 @@ describe('AdBanner', () => {
 
     render(
       <ul>
-        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+        <AdBannerListItem env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
       </ul>,
     );
 
@@ -262,7 +262,7 @@ describe('AdBanner', () => {
 
     render(
       <ul>
-        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+        <AdBannerListItem env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
       </ul>,
     );
 
@@ -286,7 +286,7 @@ describe('AdBanner', () => {
 
     render(
       <ul>
-        <AdBannerListItem env={{ DEV: false, VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
+        <AdBannerListItem env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />
       </ul>,
     );
 
