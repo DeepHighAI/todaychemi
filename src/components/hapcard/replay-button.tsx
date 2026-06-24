@@ -17,6 +17,10 @@ import {
 } from '@/components/ui/dialog';
 import { FeaturePaySheet } from '@/components/payments/feature-pay-sheet';
 import { ERROR_COPY, type ErrorCode } from '@/lib/errors/error-codes';
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '@/lib/paid-feature-attention';
 import type { HapcardResult } from '@/types/hapcard';
 
 interface Props {
@@ -56,10 +60,18 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const [payOpen, setPayOpen] = useState(false);
   const [payRef, setPayRef] = useState('');
   const [autoReplay, setAutoReplay] = useState(false);
+  const [showReplayDot, setShowReplayDot] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoFired = useRef(false);
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowReplayDot(shouldShowPaidFeatureAttention('replay'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: () => postReplay(hapcardId),
@@ -142,9 +154,19 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
       <Dialog open={open} onOpenChange={handleOpen}>
         <button
           role="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
+          onClick={() => {
+            markPaidFeatureClickedToday('replay');
+            setShowReplayDot(false);
+            setOpen(true);
+          }}
+          className="relative inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
         >
+          {showReplayDot && (
+            <span
+              aria-hidden="true"
+              className="absolute right-2 top-1.5 h-2.5 w-2.5 rounded-full bg-[var(--destructive)] shadow-[0_0_0_3px_var(--background)]"
+            />
+          )}
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           {t('replayButton.label')}
         </button>

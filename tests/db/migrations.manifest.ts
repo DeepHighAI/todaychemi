@@ -529,7 +529,7 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     rls: { enabled: true, policies: ['user owns snapshots'] },
   },
 
-  // §26 whatif_results — S-08 마이플레이 6종 LLM 캐시
+  // §26 whatif_results — S-08 오늘의 나는? 6종 LLM 캐시
   {
     index: 26,
     file: '0026_whatif_results.sql',
@@ -721,5 +721,35 @@ export const MIGRATIONS_MANIFEST: MigrationSpec[] = [
     file: '20260624000000_rewarded_ad_talisman.sql',
     kind: 'function',
     functionName: 'award_rewarded_ad_talisman',
+  },
+  // 미니앱 백그라운드 분석 완료/결제대기/실패 알림 상태
+  {
+    index: 20260624010000,
+    file: '20260624010000_analysis_jobs.sql',
+    kind: 'table',
+    tableName: 'analysis_jobs',
+    columns: [
+      'job_id',
+      'user_id',
+      'feature',
+      'ref',
+      'status',
+      'route_payload',
+      'result_path',
+      'error_code',
+      'started_at',
+      'updated_at',
+      'completed_at',
+      'notified_at',
+    ],
+    checkEnums: [
+      { col: 'feature', values: ['hapcard', 'whatif', 'replay'] },
+      { col: 'status', values: ['running', 'completed', 'payment_required', 'failed'] },
+    ],
+    foreignKeys: [{ col: 'user_id', refs: 'auth.users' }],
+    rls: {
+      enabled: true,
+      policies: ['analysis_jobs_own_read', 'analysis_jobs_own_mark_notified'],
+    },
   },
 ];

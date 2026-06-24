@@ -136,8 +136,14 @@ describe('GET /api/hapcards/[id]/replay/preflight', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({
+    expect(body).toMatchObject({
       mode: 'pay_required',
+      feature: 'replay',
+      ref: REF,
+      token_cost: FEATURE_PRICES_KRW.replay.token_cost,
+      amount_krw: FEATURE_PRICES_KRW.replay.amount_krw,
+      balance: 0,
+      shortage: FEATURE_PRICES_KRW.replay.token_cost,
       payment: {
         feature: 'replay',
         ref: REF,
@@ -157,7 +163,15 @@ describe('GET /api/hapcards/[id]/replay/preflight', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ mode: 'ready', payment: null });
+    expect(body).toMatchObject({
+      mode: 'token_required',
+      feature: 'replay',
+      ref: REF,
+      token_cost: FEATURE_PRICES_KRW.replay.token_cost,
+      balance: FEATURE_PRICES_KRW.replay.token_cost,
+      shortage: 0,
+      payment: null,
+    });
   });
 
   it('이미 결제됐지만 replay row 가 없으면 추가 결제 없이 ready 를 반환한다', async () => {
@@ -170,11 +184,17 @@ describe('GET /api/hapcards/[id]/replay/preflight', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ mode: 'ready', payment: null });
+    expect(body).toMatchObject({
+      mode: 'unlocked',
+      feature: 'replay',
+      ref: REF,
+      shortage: 0,
+      payment: null,
+    });
     expect(from).not.toHaveBeenCalledWith('token_ledger');
   });
 
-  it('선생성 replay row 가 있지만 미결제면 잔액 조회 없이 결제 필요를 반환한다', async () => {
+  it('선생성 replay row 가 있지만 미결제면 보유 부적을 먼저 확인한다', async () => {
     vi.mocked(createServerClient).mockResolvedValue(makeUserClient({ idempotencyRow: REPLAY_ROW }) as never);
     const { client, from } = makeServiceClient(FEATURE_PRICES_KRW.replay.token_cost);
     vi.mocked(createServiceRoleClient).mockReturnValue(client);
@@ -184,9 +204,9 @@ describe('GET /api/hapcards/[id]/replay/preflight', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.mode).toBe('pay_required');
-    expect(body.payment.ref).toBe(REF);
-    expect(from).not.toHaveBeenCalledWith('token_ledger');
+    expect(body.mode).toBe('token_required');
+    expect(body.ref).toBe(REF);
+    expect(from).toHaveBeenCalledWith('token_ledger');
   });
 
   it('새 replay 생성 전 LLM outage 중이면 결제 필요를 반환하지 않는다', async () => {

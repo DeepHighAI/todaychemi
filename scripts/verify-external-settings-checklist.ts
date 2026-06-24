@@ -65,6 +65,7 @@ const PLACEHOLDER_EVIDENCE = new Set([
   'project name/id prefix only',
   'project name only',
   'provider enabled',
+  'provider disabled',
   'public',
   'public anon',
   'tbd',

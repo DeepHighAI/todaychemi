@@ -18,7 +18,9 @@ import { AppNav } from './AppNav';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { restorePendingOrders } from '@/lib/iap/purchase';
 import { closeMiniappView } from '@/lib/navigation/close-view';
+import { AnalysisJobNotifier } from '@/components/analysis/analysis-job-notifier';
 import { RewardGate } from '@/components/rewards/reward-gate';
+import { RewardNoticeHost } from '@/components/rewards/reward-notice-host';
 
 // ---------------------------------------------------------------------------
 // 탭 정의
@@ -226,6 +228,8 @@ export function AppShell({ showNav = true }: AppShellProps) {
 
       {/* 부적 지급 트리거 + 팝업 (가입 +50 / 매일 +5, 항목 6/7) */}
       <RewardGate />
+      <AnalysisJobNotifier />
+      <RewardNoticeHost />
     </div>
   );
 }

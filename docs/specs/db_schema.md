@@ -681,7 +681,7 @@ create policy "feedback_own_read" on public.feedback_events
 
 ### 19. whatif_results
 
-마이플레이 6종 LLM 응답 캐시 (S-08, DiagnosticType). Self-anchor — relation 없음, scoring 없음.
+오늘의 나는? 6종 LLM 응답 캐시 (S-08, DiagnosticType). Self-anchor — relation 없음, scoring 없음.
 
 ```sql
 -- supabase/migrations/0026_whatif_results.sql

@@ -13,6 +13,12 @@ import { WhatifKeywords } from '@/components/whatif/whatif-keywords';
 import { WhatifDoFirst } from '@/components/whatif/whatif-do-first';
 import { WhatifFirstMeetTips } from '@/components/whatif/whatif-first-meet-tips';
 import { WhatifClassicCitation } from '@/components/whatif/whatif-classic-citation';
+import {
+  WhatifAvoidTodayCard,
+  WhatifSajuBasisCard,
+  WhatifSituationReadingCard,
+  WhatifTodayContextCard,
+} from '@/components/whatif/whatif-rich-sections';
 
 function getPaymentRef(e: unknown): string | null {
   const ref = (e as { ref?: unknown })?.ref;
@@ -81,7 +87,11 @@ export function WhatifView() {
     <main data-testid="whatif-view" className="space-y-4 p-4">
       <WhatifHero type={data.type} body={data.content.body} />
       <WhatifKeywords keywords={data.content.keywords} />
+      <WhatifTodayContextCard context={data.content.today_context} targetDate={data.target_date} />
+      <WhatifSajuBasisCard basis={data.content.saju_basis} />
+      <WhatifSituationReadingCard reading={data.content.situation_reading} />
       <WhatifDoFirst items={data.content.do_first} />
+      <WhatifAvoidTodayCard items={data.content.avoid_today} />
       {data.type === 'first_meet' && data.content.first_meet_tips && (
         <WhatifFirstMeetTips tips={data.content.first_meet_tips} />
       )}

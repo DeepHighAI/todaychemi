@@ -57,7 +57,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 });
 
 import { Step3ModeConsent } from './Step3ModeConsent';
-import { apiFetch, ApiError } from '@/lib/api/client';
+import { apiFetch } from '@/lib/api/client';
 
 const mockApiFetch = vi.mocked(apiFetch);
 
@@ -90,13 +90,20 @@ describe('Step3ModeConsent — relation_slot IAP delivery', () => {
   it('결제 성공 delivery 를 받으면 재제출 없이 /feed/:relationId 로 replace 이동한다', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    mockApiFetch.mockRejectedValueOnce(
-      new ApiError(402, 'PAYMENT_REQUIRED', 'payment required', {
+    mockApiFetch.mockResolvedValueOnce({
+      mode: 'pay_required',
+      feature: 'relation_slot',
+      ref: 'relation_slot:pending-001',
+      token_cost: 11,
+      amount_krw: 550,
+      balance: 10,
+      shortage: 1,
+      payment: {
         feature: 'relation_slot',
         ref: 'relation_slot:pending-001',
         amount_krw: 550,
-      }),
-    );
+      },
+    });
 
     renderWithProviders(
       <Step3ModeConsent
@@ -108,7 +115,7 @@ describe('Step3ModeConsent — relation_slot IAP delivery', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '등록하기' }));
-    expect(await screen.findByText('이 인연을 등록하려면 결제가 필요해요.')).toBeInTheDocument();
+    expect(await screen.findByText('부적이 부족해요')).toBeInTheDocument();
 
     const paywallConsent = screen.getAllByRole('checkbox').at(-1);
     expect(paywallConsent).toBeDefined();

@@ -72,7 +72,7 @@ Expert Mode 진입 화면 (더보기 탭 > Expert 만세력 모드):
 1. **적용 범위 = 시주(時支 판정)만.** 년/월/일주는 KASI·ssaju 진본 앵커 유지 — G0 게이트(KASI 100% 일치, ADR-018 모트)가 그대로 보존된다. 보정시가 자정·자시 경계를 넘어도 일간(시두법 기준 day stem)은 입력 날짜의 당일 일간 사용(조자시 통합 학파 유지).
 2. **보정식** = 벽시계(KST) + 경도항 `(birth_longitude − 135°) × 4분` + **균시차**(Spencer 1971, 양력 날짜 기반 — 결정형, ADR-035 적합). 서울 기본 −32.1분 ± 균시차(연중 −14~+16분). 구현: `src/lib/kasi/solar-time.ts`.
 3. **기본 경도 = 서울 126.978°E** (출생지 미입력 시). 인연 등록의 `birth_longitude` 입력값은 그대로 사용. 온보딩(본인) 경도 입력 **UI는 Phase 2 유지** (원결정의 UI 격리 부분은 존속).
-4. **버전 범프**: `DEFAULT_THEORY_PROFILE_VERSION 'v1' → 'v2'`. chart_hash 입력에 버전+경도가 포함되어 케미카드·또 다른 나·오늘 케미 캐시가 자연 분리. 기존 유저는 lazy 재계산(`ensure-user-chart.ts` / `lazy-relation-chart.ts`) + 1회성 백필(`scripts/recompute-charts-v2.ts`)로 재온보딩 없이 전환. *(이력 — 현행 버전은 v3(§6), v3 백필은 `scripts/recompute-charts-v3.ts`.)*
+4. **버전 범프**: `DEFAULT_THEORY_PROFILE_VERSION 'v1' → 'v2'`. chart_hash 입력에 버전+경도가 포함되어 케미카드·오늘의 나는?·오늘 케미 캐시가 자연 분리. 기존 유저는 lazy 재계산(`ensure-user-chart.ts` / `lazy-relation-chart.ts`) + 1회성 백필(`scripts/recompute-charts-v2.ts`)로 재온보딩 없이 전환. *(이력 — 현행 버전은 v3(§6), v3 백필은 `scripts/recompute-charts-v3.ts`.)*
 5. **음력 함정**: 균시차 날짜는 반드시 양력 — 음력 입력 출생자는 변환 후 날짜(compute.ts의 solYear/Month/Day)를 사용한다.
 
 ---

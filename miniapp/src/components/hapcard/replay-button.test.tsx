@@ -53,6 +53,9 @@ describe('HapcardReplayButton', () => {
       if (path === '/api/hapcards/h1/replay/preflight') {
         return {
           mode: 'pay_required',
+          token_cost: 9,
+          balance: 8,
+          shortage: 1,
           payment: { feature: 'replay', ref: 'replay:h1:2026-06-22', amount_krw: 440 },
         };
       }
@@ -63,7 +66,7 @@ describe('HapcardReplayButton', () => {
 
     await user.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
 
-    expect(await screen.findByText('케미 다시 맞추기는 ₩440이 필요해요.')).toBeInTheDocument();
+    expect((await screen.findAllByText('부적이 부족해요')).length).toBeGreaterThan(0);
     expect(screen.queryByText('처리 중…')).not.toBeInTheDocument();
     expect(api.apiFetch).toHaveBeenCalledTimes(1);
     expect(api.apiFetch).toHaveBeenCalledWith('/api/hapcards/h1/replay/preflight', {
@@ -78,6 +81,9 @@ describe('HapcardReplayButton', () => {
       if (path === '/api/hapcards/h1/replay/preflight') {
         return {
           mode: 'pay_required',
+          token_cost: 9,
+          balance: 8,
+          shortage: 1,
           payment: { feature: 'replay', ref: 'replay:h1:2026-06-22', amount_krw: 440 },
         };
       }
@@ -87,7 +93,7 @@ describe('HapcardReplayButton', () => {
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
 
     await user.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
-    await screen.findByText('케미 다시 맞추기는 ₩440이 필요해요.');
+    await screen.findAllByText('부적이 부족해요');
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: '₩440 결제하기' }));
 
@@ -98,12 +104,18 @@ describe('HapcardReplayButton', () => {
     });
   });
 
-  it('사용 가능한 부적이 있으면 즉시 replay POST 로 넘어가고 분석 중 안내를 보여준다', async () => {
+  it('사용 가능한 부적이 있으면 확인창 후 replay POST 로 넘어가고 분석 중 안내를 보여준다', async () => {
     const user = userEvent.setup();
     let replayResolve!: (value: unknown) => void;
     api.apiFetch.mockImplementation((path: string) => {
       if (path === '/api/hapcards/h1/replay/preflight') {
-        return Promise.resolve({ mode: 'ready', payment: null });
+        return Promise.resolve({
+          mode: 'token_required',
+          token_cost: 9,
+          balance: 9,
+          shortage: 0,
+          payment: null,
+        });
       }
       if (path === '/api/hapcards/h1/replay') {
         return new Promise((resolve) => {
@@ -116,6 +128,9 @@ describe('HapcardReplayButton', () => {
     renderWithProviders(<HapcardReplayButton {...DEFAULT_PROPS} />);
 
     await user.click(screen.getByRole('button', { name: '케미 다시 맞추기' }));
+
+    expect(await screen.findByText('부적 9개가 사용됩니다? 사용하시겠습니까?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '사용할께' }));
 
     expect(await screen.findByText(/부적을 사용해 분석 중이에요/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '닫기' })).not.toBeInTheDocument();

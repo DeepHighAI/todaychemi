@@ -515,7 +515,7 @@ export interface TossProduct {
 
 export const FEATURE_PRICES: Record<string, TossProduct> = {
   hapcard: { productId: 'hapcard', type: 'consumable', tokensGranted: 0, label: '케미카드 결제 (₩550)', amount: 550, currency: 'KRW' },
-  whatif:  { productId: 'whatif',  type: 'consumable', tokensGranted: 0, label: '또 다른 나 결제 (₩440)', amount: 440, currency: 'KRW' },
+  whatif:  { productId: 'whatif',  type: 'consumable', tokensGranted: 0, label: '오늘의 나는? 결제 (₩440)', amount: 440, currency: 'KRW' },
   replay:  { productId: 'replay',  type: 'consumable', tokensGranted: 0, label: '케미 다시 맞추기 결제 (₩440)', amount: 440, currency: 'KRW' },
   relation_slot: { productId: 'relation_slot', type: 'consumable', tokensGranted: 0, label: '인연 슬롯 결제 (₩550)', amount: 550, currency: 'KRW' },
 };

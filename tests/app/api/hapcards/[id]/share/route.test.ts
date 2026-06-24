@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/supabase/server');
 vi.mock('@/lib/supabase/service-role');
@@ -107,9 +107,14 @@ function makeRequest(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://hap.plae');
   insertedRows.length = 0;
   vi.mocked(createClient).mockResolvedValue(makeUserClient() as never);
   vi.mocked(createServiceRoleClient).mockReturnValue(makeServiceClient() as never);
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('POST /api/hapcards/[id]/share', () => {

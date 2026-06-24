@@ -13,10 +13,12 @@ interface RewardNoticeProps {
   amount: number;
   /** 가입 보상 포함 여부 (true=환영 카피, false=출석 카피) */
   isSignup: boolean;
+  /** 전역 호스트에서 직접 지정하는 제목(예: 리워드 광고 보상) */
+  title?: string;
   onClose: () => void;
 }
 
-export function RewardNotice({ amount, isSignup, onClose }: RewardNoticeProps) {
+export function RewardNotice({ amount, isSignup, title, onClose }: RewardNoticeProps) {
   const t = useTranslations('rewards.notice');
 
   return (
@@ -70,7 +72,7 @@ export function RewardNotice({ amount, isSignup, onClose }: RewardNoticeProps) {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-            {isSignup ? t('title.signup') : t('title.daily')}
+            {title ?? (isSignup ? t('title.signup') : t('title.daily'))}
           </p>
           <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.45, color: 'var(--text-secondary)' }}>
             {t('usage')}

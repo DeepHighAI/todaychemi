@@ -1,6 +1,6 @@
 # Google OAuth Runbook
 
-> Product names in this runbook follow the current UI copy: **오늘케미**, **오늘 케미**, **오늘의 케미**, **그럴리 없어! 다시**, **또 다른 나**.
+> Product names in this runbook follow the current UI copy: **오늘케미**, **오늘 케미**, **오늘의 케미**, **그럴리 없어! 다시**, **오늘의 나는?**.
 
 ## Current App Flow
 

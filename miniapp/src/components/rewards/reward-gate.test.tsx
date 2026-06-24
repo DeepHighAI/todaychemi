@@ -9,11 +9,14 @@ vi.mock('@/lib/auth/AuthProvider');
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { RewardGate } from './reward-gate';
+import { RewardNoticeHost } from './reward-notice-host';
+import { clearRewardNotice } from './reward-notice-store';
 
 const authed = { token: 'tok', isAuthed: true, isLoading: false, login: vi.fn(), logout: vi.fn() };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearRewardNotice();
   vi.mocked(useAuth).mockReturnValue(authed as never);
 });
 
@@ -24,7 +27,13 @@ describe('RewardGate', () => {
       reward: { awarded: true, reason: 'AWARDED', signup_awarded: true, daily_login_awarded: true, amount_awarded: 55 },
     } as never);
 
-    renderWithProviders(<RewardGate />, { routerEntries: ['/'] });
+    renderWithProviders(
+      <>
+        <RewardGate />
+        <RewardNoticeHost />
+      </>,
+      { routerEntries: ['/'] },
+    );
 
     expect(await screen.findByRole('status')).toHaveTextContent('+55');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

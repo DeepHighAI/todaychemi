@@ -34,39 +34,39 @@ describe('GaPurchaseTracker', () => {
     expect(trackEvent).not.toHaveBeenCalled();
   });
 
-  it('/hapcard + ?paid → purchase(hapcard, 500 KRW)', () => {
+  it('/hapcard + ?paid → purchase(hapcard, 550 KRW)', () => {
     setup('/hapcard/abc', { paid: 'cache-key-xyz' });
     render(<GaPurchaseTracker />);
     expect(trackEvent).toHaveBeenCalledWith({
       name: 'purchase',
-      params: { feature_id: 'hapcard', value: 500, currency: 'KRW' },
+      params: { feature_id: 'hapcard', value: 550, currency: 'KRW' },
     });
   });
 
-  it('/hapcard + ?replay=1&paid → purchase(replay, 300)', () => {
+  it('/hapcard + ?replay=1&paid → purchase(replay, 440)', () => {
     setup('/hapcard/abc', { replay: '1', paid: 'replay:abc:2026-06-13' });
     render(<GaPurchaseTracker />);
     expect(trackEvent).toHaveBeenCalledWith({
       name: 'purchase',
-      params: { feature_id: 'replay', value: 300, currency: 'KRW' },
+      params: { feature_id: 'replay', value: 440, currency: 'KRW' },
     });
   });
 
-  it('/whatif + ?paid → purchase(whatif, 400)', () => {
+  it('/whatif + ?paid → purchase(whatif, 440)', () => {
     setup('/whatif/work', { paid: 'cache-key-w' });
     render(<GaPurchaseTracker />);
     expect(trackEvent).toHaveBeenCalledWith({
       name: 'purchase',
-      params: { feature_id: 'whatif', value: 400, currency: 'KRW' },
+      params: { feature_id: 'whatif', value: 440, currency: 'KRW' },
     });
   });
 
-  it('/feed + ?paid → purchase(relation_slot, 500)', () => {
+  it('/feed + ?paid → purchase(relation_slot, 550)', () => {
     setup('/feed', { paid: 'relation_slot:pending-1' });
     render(<GaPurchaseTracker />);
     expect(trackEvent).toHaveBeenCalledWith({
       name: 'purchase',
-      params: { feature_id: 'relation_slot', value: 500, currency: 'KRW' },
+      params: { feature_id: 'relation_slot', value: 550, currency: 'KRW' },
     });
   });
 

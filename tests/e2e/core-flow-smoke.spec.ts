@@ -133,10 +133,29 @@ const mockWhatif = {
   id: 'whatif-launch-smoke',
   user_id: 'user-launch-smoke',
   type: 'work',
+  target_date: '2026-05-31',
   content: {
     body: '일할 때는 기준을 먼저 세우고 작게 합의하는 방식이 잘 맞아요. 오늘은 큰 결정보다 역할과 마감 기준을 한 줄로 정리하면 흐름이 안정됩니다.',
     keywords: ['정리', '기준', '협업', '속도', '확인'],
+    today_context: {
+      title: '오늘 일할 때 나는',
+      summary: '오늘은 기준을 먼저 세우면 협업 흐름이 안정됩니다.',
+      day_signal: '일운 기준으로 확인과 조율의 신호가 강합니다.',
+    },
+    saju_basis: {
+      day_master: '화',
+      dominant_sipsin: ['식상', '비겁'],
+      missing_sipsin: ['재성'],
+      sinkang: '중화',
+      yongsin_candidates: ['금', '수'],
+      notes: ['표현성이 드러납니다.', '실행을 작게 나누면 좋습니다.', '결과 정리를 보완하면 좋아요.'],
+    },
+    situation_reading: {
+      strength: ['먼저 정리하는 힘이 있어요.', '작은 합의를 만들기 좋아요.', '확인 메시지가 잘 맞아요.'],
+      caution: ['큰 결정을 서두르지 않기.', '조건을 다시 보기.', '혼자 결론내지 않기.'],
+    },
     do_first: ['할 일을 한 줄로 적기', '마감 기준을 먼저 묻기', '확인 메시지를 남기기'],
+    avoid_today: ['즉흥적으로 확정하기', '검토 없이 답장하기'],
     classic_citation: [
       {
         asset_id: 'classic-launch-smoke',

@@ -7,6 +7,7 @@ vi.mock('@/lib/whatif/query-text');
 vi.mock('@/lib/llm/clients');
 vi.mock('@/lib/payments/feature-gate');
 vi.mock('@/lib/payments/cash-gen-limit');
+vi.mock('@/lib/today/kst-date', () => ({ todayKST: () => '2026-06-24' }));
 
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -33,6 +34,7 @@ const WHATIF_RESULT: WhatifResult = {
   llm_model: 'gpt-5',
   cache_key: 'cachecachecachecachecachecachecachecachecachecachecachecachecach',
   chart_hash: MOCK_CHART_HASH,
+  target_date: '2026-06-24',
   created_at: '2026-05-09T00:00:00Z',
 };
 
@@ -276,6 +278,7 @@ describe('POST /api/whatif/[type]', () => {
     expect(input.type).toBe('love');
     expect(input.chart).toEqual(MOCK_CHART_CORE);
     expect(input.chart_hash).toBe(MOCK_CHART_HASH);
+    expect(input.target_date).toBe('2026-06-24');
   });
 
   it('buildWhatif deps — DB/RAG는 직접 전달하고 LLM 클라이언트는 lazy wrapper로 전달', async () => {
@@ -325,7 +328,7 @@ describe('POST /api/whatif/[type]', () => {
   });
 });
 
-describe('또 다른 나 유료 이용 (pay-per-use 모델 C)', () => {
+describe('오늘의 나는? 유료 이용 (pay-per-use 모델 C)', () => {
   function makeAuthedForPaidUse(opts?: Parameters<typeof makeAuthedClient>[0]) {
     const supabase = makeAuthedClient({});
     const client = opts ? makeAuthedClient(opts) : supabase;

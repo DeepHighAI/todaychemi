@@ -6,15 +6,18 @@ export interface WhatifCacheKeyInput {
   type: DiagnosticType;
   prompt_version: string;
   model_id: string;
+  target_date: string;
 }
 
-// llm_governance.md §1.3 — sha256(chart + type + prompt + model). whatif는 self-anchor (relation 없음, theory profile 비의존).
+// llm_governance.md §1.3 — sha256(chart + type + prompt + model + KST date).
+// whatif는 self-anchor (relation 없음, theory profile 비의존)이나 날짜별 콘텐츠라 target_date를 포함한다.
 export function deriveCacheKey(input: WhatifCacheKeyInput): string {
   const payload = JSON.stringify([
     input.chart_hash,
     input.type,
     input.prompt_version,
     input.model_id,
+    input.target_date,
   ]);
   return createHash('sha256').update(payload).digest('hex');
 }

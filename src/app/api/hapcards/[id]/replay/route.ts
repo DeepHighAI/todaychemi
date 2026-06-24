@@ -26,6 +26,12 @@ import {
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+import {
+  completeAnalysisJob,
+  failAnalysisJob,
+  paymentRequiredAnalysisJob,
+  startAnalysisJob,
+} from '@/lib/analysis-jobs';
 
 // 항목 8: 케미 다시 맞추기도 LLM 재해석이라 생성이 길어질 수 있다 — 케미카드와 동일하게
 // 함수 타임아웃을 확보해 백그라운드(클라 이탈 후에도 서버 완료) 보장을 지킨다.
@@ -126,6 +132,14 @@ export async function POST(
   const jinjin_date = todayKST();
   const ref = `replay:${id}:${jinjin_date}`;
   const serviceClient = createServiceRoleClient();
+  const resultPath = `/hapcard/${hapcard.relation_id}?mode=${encodeURIComponent(hapcard.mode)}`;
+  await startAnalysisJob(serviceClient, {
+    userId,
+    feature: 'replay',
+    ref,
+    routePayload: { hapcard_id: id },
+    resultPath,
+  });
 
   // 5. idempotency 체크 — 오늘 이미 replay 존재 시. 모델 C: 선생성된 row 가 미결제일 수 있으므로
   //    잠금 게이트(isFeatureUnlocked) 통과 시에만 본문 공개. 미결제면 재빌드 없이 결제 요구.
@@ -140,12 +154,37 @@ export async function POST(
   }
   if (idempotencyRes.data) {
     if (await isFeatureUnlocked(serviceClient, userId, 'replay', ref)) {
+      await completeAnalysisJob(serviceClient, {
+        userId,
+        feature: 'replay',
+        ref,
+        resultPath,
+      });
       return NextResponse.json(
         hydrateReplayResult(hapcard, idempotencyRes.data as unknown as ReplayDbRow),
         { status: 200 },
       );
     }
-    return paymentRequiredResponse('replay', ref, FEATURE_PRICES_KRW.replay.amount_krw);
+    const resolution = await resolveFeatureCharge(serviceClient, userId, 'replay', ref);
+    if (resolution.mode === 'pay_required') {
+      await paymentRequiredAnalysisJob(serviceClient, {
+        userId,
+        feature: 'replay',
+        ref,
+        resultPath,
+      });
+      return paymentRequiredResponse('replay', ref, FEATURE_PRICES_KRW.replay.amount_krw);
+    }
+    await completeAnalysisJob(serviceClient, {
+      userId,
+      feature: 'replay',
+      ref,
+      resultPath,
+    });
+    return NextResponse.json(
+      hydrateReplayResult(hapcard, idempotencyRes.data as unknown as ReplayDbRow),
+      { status: 200 },
+    );
   }
 
   // 6. LLM outage 게이트
@@ -178,10 +217,22 @@ export async function POST(
         );
       }
       await buildReplay(input, deps); // 선생성 — 본문 보류
+      await paymentRequiredAnalysisJob(serviceClient, {
+        userId,
+        feature: 'replay',
+        ref,
+        resultPath,
+      });
       return paymentRequiredResponse(resolution.price.feature_id, ref, resolution.price.amount_krw);
     }
 
     const result = await buildReplay(input, deps); // free | unlocked
+    await completeAnalysisJob(serviceClient, {
+      userId,
+      feature: 'replay',
+      ref,
+      resultPath,
+    });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     const message = toErrorMessage(err);
@@ -205,8 +256,22 @@ export async function POST(
       }
     }
     if (providersDown) {
+      await failAnalysisJob(serviceClient, {
+        userId,
+        feature: 'replay',
+        ref,
+        resultPath,
+        errorCode: 'REPLAY_DURING_OUTAGE',
+      });
       return apiErrorResponse('REPLAY_DURING_OUTAGE', safeMessage, 503);
     }
+    await failAnalysisJob(serviceClient, {
+      userId,
+      feature: 'replay',
+      ref,
+      resultPath,
+      errorCode: 'INTERNAL_ERROR',
+    });
     return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }
 }

@@ -17,7 +17,7 @@ const TONE_CLASS: Record<Tone, string> = {
   dark: 'bg-white/20 text-white',
 };
 
-// 생성형 결과(케미카드·오늘 케미·또 다른 나·케미 다시 맞추기)가 AI 생성물임을 알리는 배지 (ADR-038/1G)
+// 생성형 결과(케미카드·오늘 케미·오늘의 나는?·케미 다시 맞추기)가 AI 생성물임을 알리는 배지 (ADR-038/1G)
 export function AiDisclosureBadge({ tone = 'light', className = '' }: AiDisclosureBadgeProps) {
   const t = useTranslations('aiDisclosure');
   return (

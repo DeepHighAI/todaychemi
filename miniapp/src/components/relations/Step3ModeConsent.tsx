@@ -18,6 +18,12 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
+import {
+  shortageText,
+  tokenUseConfirmText,
+  type FeaturePreflightResponse,
+} from '@/lib/payments/preflight';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { DraftMode } from '@/lib/relations/draft-store';
 import type { FeedItem } from '@/types/relation';
 
@@ -55,6 +61,11 @@ interface RelationCreateResponse {
   relation_id?: string;
 }
 
+type RelationSubmitResult =
+  | RelationCreateResponse
+  | { ok: false; token_required: FeaturePreflightResponse }
+  | { ok: false; pay_required: FeaturePreflightResponse };
+
 interface Step3Props {
   /** draft 로부터 조립된 전체 body 파라미터 */
   createBody: Omit<RelationCreateBody, 'mode' | 'consent_confirmed'>;
@@ -78,6 +89,8 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     ref: string;
     amount_krw: number;
   } | null>(null);
+  const [slotPreflight, setSlotPreflight] = useState<FeaturePreflightResponse | null>(null);
+  const [tokenConfirm, setTokenConfirm] = useState<FeaturePreflightResponse | null>(null);
   const [refundConsent, setRefundConsent] = useState(false);
 
   function invalidateRelationViews(relationId: string) {
@@ -112,6 +125,29 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     },
   });
 
+  const confirmSlot = useMutation<RelationCreateResponse, ApiError, string>({
+    mutationFn: (ref) => apiFetch<RelationCreateResponse>('/api/relations/confirm-slot', {
+      method: 'POST',
+      body: { ref },
+      token,
+    }),
+    onSuccess: (data) => {
+      if (data.relation_id) invalidateRelationViews(data.relation_id);
+      onSuccess();
+      const target = data.relation_id ? `/feed?focus=${data.relation_id}` : '/feed';
+      navigate(target);
+    },
+    onError: (err) => {
+      if (err.status === 402 && err.payment) {
+        setPaywallInfo({
+          feature: err.payment.feature || 'relation_slot',
+          ref: err.payment.ref,
+          amount_krw: err.payment.amount_krw,
+        });
+      }
+    },
+  });
+
   // ['feed'] 캐시에서 현재 보유 인연 수를 추정 — 사전 고지 표시 결정
   const ownedCount = useMemo(() => {
     const entries = queryClient.getQueriesData<FeedItem[]>({ queryKey: ['feed'] });
@@ -122,7 +158,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
   }, [queryClient]);
   const showPaywallNotice = ownedCount !== null && ownedCount >= FREE_RELATION_SLOTS;
 
-  const mutation = useMutation<RelationCreateResponse, ApiError, void>({
+  const mutation = useMutation<RelationSubmitResult, ApiError, void>({
     mutationFn: async () => {
       if (!mode) throw new Error('mode required');
       const body: RelationCreateBody = {
@@ -130,6 +166,24 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
         mode: mode as Exclude<DraftMode, ''>,
         consent_confirmed: consent,
       };
+      const prepared = await apiFetch<FeaturePreflightResponse>('/api/relations/prepare-slot', {
+        method: 'POST',
+        body,
+        token,
+      });
+      if (prepared.mode === 'token_required') {
+        return { ok: false, token_required: prepared };
+      }
+      if (prepared.mode === 'pay_required') {
+        return { ok: false, pay_required: prepared };
+      }
+      if (prepared.mode === 'unlocked' && prepared.ref) {
+        return apiFetch<RelationCreateResponse>('/api/relations/confirm-slot', {
+          method: 'POST',
+          body: { ref: prepared.ref },
+          token,
+        });
+      }
       return apiFetch<RelationCreateResponse>('/api/relations', {
         method: 'POST',
         body,
@@ -137,6 +191,23 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
       });
     },
     onSuccess: (data) => {
+      if ('token_required' in data) {
+        setSlotPreflight(data.token_required);
+        setTokenConfirm(data.token_required);
+        return;
+      }
+      if ('pay_required' in data) {
+        setSlotPreflight(data.pay_required);
+        const payment = data.pay_required.payment;
+        if (payment) {
+          setPaywallInfo({
+            feature: payment.feature || 'relation_slot',
+            ref: payment.ref,
+            amount_krw: payment.amount_krw,
+          });
+        }
+        return;
+      }
       // 피드 캐시 무효화 — 새로 생성된 인연이 리스트에 반영되도록
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       onSuccess();
@@ -156,7 +227,7 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
     },
   });
 
-  const canSubmit = !!mode && consent && !mutation.isPending;
+  const canSubmit = !!mode && consent && !mutation.isPending && !confirmSlot.isPending && !isPurchasing;
 
   return (
     <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -253,8 +324,10 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
       {paywallInfo && (
         <FeaturePayCard
           tone="warn"
-          title={t('errors.payment')}
-          description={`인연 등록 비용: ${paywallInfo.amount_krw.toLocaleString()}원`}
+          title="부적이 부족해요"
+          description={slotPreflight
+            ? `${shortageText(slotPreflight.balance, slotPreflight.shortage)} 인연 등록 비용: ${paywallInfo.amount_krw.toLocaleString()}원`
+            : `인연 등록 비용: ${paywallInfo.amount_krw.toLocaleString()}원`}
           amountKrw={paywallInfo.amount_krw}
           consentChecked={refundConsent}
           onConsentChange={setRefundConsent}
@@ -269,6 +342,20 @@ export function Step3ModeConsent({ createBody, initialMode, initialConsent, onSu
           onClose={() => { clearIapError(); setPaywallInfo(null); }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!tokenConfirm}
+        title={tokenUseConfirmText(tokenConfirm?.token_cost ?? 0)}
+        confirmLabel="사용할께"
+        cancelLabel="나중에 볼께"
+        isPending={confirmSlot.isPending}
+        onConfirm={() => {
+          const ref = tokenConfirm?.ref;
+          setTokenConfirm(null);
+          if (ref) confirmSlot.mutate(ref);
+        }}
+        onCancel={() => setTokenConfirm(null)}
+      />
 
       {/* 고정 하단 버튼 */}
       <div

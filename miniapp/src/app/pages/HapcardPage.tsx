@@ -26,6 +26,11 @@ import { MoreHorizontal, Trash2, Edit2, Check, Share2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiFetch } from '@/lib/api/client';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
+import {
+  shortageText,
+  tokenUseConfirmText,
+  type FeaturePreflightResponse,
+} from '@/lib/payments/preflight';
 import { toEasyText } from '@/lib/glossary/easy-term-map';
 import { convertHanja } from '@/lib/glossary/post-process';
 import {
@@ -124,6 +129,22 @@ async function callHapcard(
   });
 }
 
+async function preflightHapcard(
+  relationId: string,
+  mode: string,
+  token: string | null,
+): Promise<FeaturePreflightResponse> {
+  return apiFetch<FeaturePreflightResponse>('/api/hapcards/preflight', {
+    method: 'POST',
+    token,
+    body: {
+      relation_id: relationId,
+      mode,
+      theory_profile_version: DEFAULT_THEORY_PROFILE_VERSION,
+    },
+  });
+}
+
 async function deleteRelation(id: string, token: string | null): Promise<void> {
   await apiFetch(`/api/relations/${id}`, { method: 'DELETE', token });
 }
@@ -196,11 +217,44 @@ export function HapcardPage() {
   const { token } = useAuth();
   const targetDate = todayKST();
 
+  const [canLoadHapcard, setCanLoadHapcard] = useState(false);
+  const [tokenConfirm, setTokenConfirm] = useState<FeaturePreflightResponse | null>(null);
+  const [preflightPay, setPreflightPay] = useState<FeaturePreflightResponse | null>(null);
+
+  useEffect(() => {
+    setCanLoadHapcard(false);
+    setTokenConfirm(null);
+    setPreflightPay(null);
+  }, [id, mode, targetDate]);
+
+  const preflight = useQuery<FeaturePreflightResponse>({
+    queryKey: ['hapcard-preflight', id, mode, targetDate],
+    queryFn: () => preflightHapcard(id!, mode!, token),
+    enabled: !!id && !!mode && !canLoadHapcard,
+    retry: false,
+  });
+
+  useEffect(() => {
+    const result = preflight.data;
+    if (!result) return;
+    if (result.mode === 'unlocked') {
+      setCanLoadHapcard(true);
+      return;
+    }
+    if (result.mode === 'token_required') {
+      setTokenConfirm(result);
+      return;
+    }
+    if (result.mode === 'pay_required') {
+      setPreflightPay(result);
+    }
+  }, [preflight.data]);
+
   // 케미카드 조회
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['hapcard', id, mode, targetDate],
     queryFn: () => callHapcard(id!, mode!, token),
-    enabled: !!id && !!mode,
+    enabled: !!id && !!mode && canLoadHapcard,
     retry: false,
   });
 
@@ -223,6 +277,8 @@ export function HapcardPage() {
   } = useFeaturePurchase({
     onSuccess: () => {
       setPayDismissed(false);
+      setPreflightPay(null);
+      setCanLoadHapcard(true);
       void refetch();
     },
   });
@@ -297,16 +353,67 @@ export function HapcardPage() {
     );
   }
 
+  if (tokenConfirm && !canLoadHapcard) {
+    const tokenCost = tokenConfirm.token_cost ?? 0;
+    return (
+      <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
+        <HapcardLoadingState />
+        <ConfirmDialog
+          open
+          title={tokenUseConfirmText(tokenCost)}
+          confirmLabel="사용할께"
+          cancelLabel="나중에 볼께"
+          onConfirm={() => {
+            setTokenConfirm(null);
+            setCanLoadHapcard(true);
+          }}
+          onCancel={() => {
+            setTokenConfirm(null);
+            navigate(-1);
+          }}
+        />
+      </main>
+    );
+  }
+
+  if (preflight.isLoading && !canLoadHapcard) {
+    return (
+      <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
+        <HapcardLoadingState />
+      </main>
+    );
+  }
+
+  if (preflight.isError && !canLoadHapcard) {
+    return (
+      <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
+        <ErrorCard code={getErrorCardCode(preflight.error)} onRetry={() => { void preflight.refetch(); }} />
+      </main>
+    );
+  }
+
+  if (!canLoadHapcard && !preflightPay) {
+    return (
+      <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
+        <HapcardLoadingState />
+      </main>
+    );
+  }
+
   // 402 결제 필요 — Toss IAP 시트 연결
-  if (isError && isPaymentRequiredError(error) && !payDismissed) {
-    const payInfo = (error as { payment?: { feature: string; ref: string; amount_krw: number } })?.payment;
+  if (((isError && isPaymentRequiredError(error)) || preflightPay) && !payDismissed) {
+    const payInfo = (error as { payment?: { feature: string; ref: string; amount_krw: number } })?.payment
+      ?? preflightPay?.payment
+      ?? undefined;
     // 고지가 = 서버 제공 실청구액(오픈 할인가) 우선, 없으면 표시가 단일출처 폴백.
     const amountKrw = payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.hapcard;
     return (
       <main style={{ minHeight: '100vh', padding: '32px 16px', backgroundColor: 'var(--bg-base)' }}>
         <FeaturePayCard
-          title={`케미카드는 ₩${amountKrw.toLocaleString()}이 필요해요`}
-          description="결제 후 바로 케미카드를 확인할 수 있어요."
+          title="부적이 부족해요"
+          description={preflightPay
+            ? `${shortageText(preflightPay.balance, preflightPay.shortage)} 결제 후 바로 케미카드를 확인할 수 있어요.`
+            : `케미카드는 ₩${amountKrw.toLocaleString()}이 필요해요. 결제 후 바로 확인할 수 있어요.`}
           amountKrw={amountKrw}
           consentChecked={refundConsent}
           onConsentChange={setRefundConsent}
@@ -904,63 +1011,85 @@ function ExpandPanel({
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
         borderRadius: 20,
-        overflow: 'hidden',
       }}
     >
-      <header
+      <div
         style={{
-          padding: '16px 16px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-card) 94%, transparent)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
-        <h2
-          id="hapcard-expand-panel-title"
-          style={{ font: 'var(--t-h2)', color: 'var(--text-primary)', margin: 0 }}
-        >
-          {t('title')}
-        </h2>
-        {/* G-5 쉽게 보기 토글 */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={easyMode}
-          aria-label={String(t('easyMode.label'))}
-          onClick={onToggleEasyMode}
+        <header
           style={{
-            display: 'inline-flex',
+            padding: '16px 16px 12px',
+            display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            borderRadius: 100,
-            padding: '6px 12px',
-            fontSize: 12,
-            fontWeight: 700,
-            border: easyMode ? 'none' : '1px solid var(--border)',
-            backgroundColor: easyMode ? 'var(--primary)' : 'var(--surface-1)',
-            color: easyMode ? 'white' : 'var(--text-secondary)',
-            cursor: 'pointer',
+            justifyContent: 'space-between',
+            gap: 8,
           }}
         >
-          {t('easyMode.label')}
-        </button>
-      </header>
+          <h2
+            id="hapcard-expand-panel-title"
+            style={{ font: 'var(--t-h2)', color: 'var(--text-primary)', margin: 0 }}
+          >
+            {t('title')}
+          </h2>
+          {/* G-5 쉽게 보기 토글 */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={easyMode}
+            aria-label={String(t('easyMode.label'))}
+            onClick={onToggleEasyMode}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 100,
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              border: easyMode ? 'none' : '1px solid var(--border)',
+              backgroundColor: easyMode ? 'var(--primary)' : 'var(--surface-1)',
+              color: easyMode ? 'white' : 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            {t('easyMode.label')}
+          </button>
+        </header>
 
-      {/* 탭 내비 (공용 Seg — .itabs accent 레시피) */}
-      <Seg
-        options={tabs}
-        value={tab}
-        onChange={onTab}
-        variant="segment"
-        accent
-        role="tablist"
-        size="sm"
-        ariaLabel={String(t('title'))}
-        style={{ margin: '0 16px 12px' }}
-      />
+        {/* 탭 내비 (공용 Seg — .itabs accent 레시피) */}
+        <div data-testid="hapcard-expand-tabs">
+          <Seg
+            options={tabs}
+            value={tab}
+            onChange={onTab}
+            variant="segment"
+            accent
+            role="tablist"
+            size="sm"
+            ariaLabel={String(t('title'))}
+            style={{ margin: '0 16px 12px' }}
+          />
+        </div>
+      </div>
 
-      <div style={{ padding: '0 16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div
+        style={{
+          padding: '0 16px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
         {/* 요약 탭 */}
         {tab === 'summary' && (
           <div data-testid="hapcard-expand-summary-text" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

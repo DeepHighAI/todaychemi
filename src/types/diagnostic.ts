@@ -29,13 +29,37 @@ export interface ClassicCitation {
   modern_translation: string;
 }
 
-// 마이플레이 LLM 출력 구조 (FGI §12.1)
-// body: 80-700자, keywords: 5개, do_first: 3개
+export interface WhatifTodayContext {
+  title: string;
+  summary: string;
+  day_signal: string;
+}
+
+export interface WhatifSajuBasis {
+  day_master: string;
+  dominant_sipsin: string[];
+  missing_sipsin: string[];
+  sinkang: string | null;
+  yongsin_candidates: string[];
+  notes: [string, string, string];
+}
+
+export interface WhatifSituationReading {
+  strength: [string, string, string];
+  caution: [string, string, string];
+}
+
+// 오늘의 나는? LLM 출력 구조 (FGI §12.1)
+// 날짜별 자기진단 결과: 요약 + 명리 근거 + 상황별 강점/주의 + 행동 카드
 // 처음 보는 나(first_meet)만 first_meet_tips 추가
 export interface WhatifContent {
   body: string;
   keywords: [string, string, string, string, string];
+  today_context?: WhatifTodayContext;
+  saju_basis?: WhatifSajuBasis;
+  situation_reading?: WhatifSituationReading;
   do_first: [string, string, string];
+  avoid_today?: [string, string];
   first_meet_tips?: [string, string, string];
   classic_citation?: ClassicCitation[];
 }
@@ -50,6 +74,7 @@ export interface WhatifResult {
   llm_model: string;
   cache_key: string;
   chart_hash: string;
+  target_date: string;
   created_at: string;
 }
 

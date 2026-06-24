@@ -10,7 +10,7 @@ import {
 } from '@/lib/payments/feature-prices';
 
 describe('feature-prices catalog (pay-per-use 단일 출처)', () => {
-  it('오픈초기 50% 할인 현금가: 케미카드 550 / 또 다른 나 440 / 케미 다시 맞추기 440 / 인연 등록 550', () => {
+  it('오픈초기 50% 할인 현금가: 케미카드 550 / 오늘의 나는? 440 / 케미 다시 맞추기 440 / 인연 등록 550', () => {
     expect(OPENING_DISCOUNT_PERCENT).toBe(50);
     expect(OPENING_DISCOUNT_LABEL).toBe('오픈초기 50% 할인');
     expect(FEATURE_PRICES_KRW.hapcard.amount_krw).toBe(550);

@@ -23,10 +23,7 @@ describe('getAllowedTossOrigins', () => {
   });
 
   it('TOSS_ALLOWED_ORIGINS 미설정 시 기본 오리진 2개 반환', () => {
-    vi.stubEnv('TOSS_ALLOWED_ORIGINS', '');
-    // 빈 문자열이면 filter(Boolean) 으로 빈 집합
-    // 실제 미설정(undefined)과 구분하기 위해 undefined 테스트
-    vi.unstubAllEnvs();
+    vi.stubEnv('TOSS_ALLOWED_ORIGINS', undefined);
     const origins = getAllowedTossOrigins();
     expect(origins.has('https://todaychemi.apps.tossmini.com')).toBe(true);
     expect(origins.has('https://todaychemi.private-apps.tossmini.com')).toBe(true);

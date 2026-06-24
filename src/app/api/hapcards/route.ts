@@ -24,6 +24,12 @@ import type { ChartCore } from '@/types/chart';
 import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-response';
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
+import {
+  completeAnalysisJob,
+  failAnalysisJob,
+  paymentRequiredAnalysisJob,
+  startAnalysisJob,
+} from '@/lib/analysis-jobs';
 
 // 항목 8: 케미카드 분석은 LLM 생성이 길어질 수 있다(~25-40s). Vercel 기본 함수 타임아웃에
 // 끊기면 캐시가 안 남아 백그라운드 보장이 깨진다. nodejs 런타임은 클라가 끊겨도 함수를
@@ -160,6 +166,19 @@ export async function POST(request: NextRequest) {
   try {
     const cacheKey = await getHapcardCacheKey(input, supabaseUserClient);
     billingRef = cacheKey;
+    const resultPath = `/hapcard/${body.relation_id}?mode=${encodeURIComponent(body.mode)}`;
+    await startAnalysisJob(serviceClient, {
+      userId,
+      feature: 'hapcard',
+      ref: cacheKey,
+      routePayload: {
+        relation_id: body.relation_id,
+        mode: body.mode,
+        theory_profile_version: body.theory_profile_version,
+        ...(body.question_slot ? { question_slot: body.question_slot } : {}),
+      },
+      resultPath,
+    });
 
     const resolution = await resolveFeatureCharge(serviceClient, userId, 'hapcard', cacheKey);
     charged = resolution.charged;
@@ -176,11 +195,23 @@ export async function POST(request: NextRequest) {
       }
       // 선생성(캐시 저장) — 성공해도 본문은 보류하고 402 로 결제 요구. 실패는 catch 에서 처리(charged=false → 환불 없음).
       await buildHapcard(input, deps);
+      await paymentRequiredAnalysisJob(serviceClient, {
+        userId,
+        feature: 'hapcard',
+        ref: cacheKey,
+        resultPath,
+      });
       return paymentRequiredResponse(resolution.price.feature_id, cacheKey, resolution.price.amount_krw);
     }
 
     // free | unlocked — 본문 공개 (buildHapcard 는 캐시 hit 시 재호출 없이 캐시 반환).
     const result = await buildHapcard(input, deps);
+    await completeAnalysisJob(serviceClient, {
+      userId,
+      feature: 'hapcard',
+      ref: cacheKey,
+      resultPath,
+    });
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const message = toErrorMessage(err);
@@ -203,7 +234,25 @@ export async function POST(request: NextRequest) {
       }
     }
     if (message.startsWith('GROUNDING_FAILED')) {
+      if (billingRef) {
+        await failAnalysisJob(serviceClient, {
+          userId,
+          feature: 'hapcard',
+          ref: billingRef,
+          resultPath: `/hapcard/${body.relation_id}?mode=${encodeURIComponent(body.mode)}`,
+          errorCode: 'GROUNDING_FAILED',
+        });
+      }
       return apiErrorResponse('GROUNDING_FAILED', safeMessage, 422);
+    }
+    if (billingRef) {
+      await failAnalysisJob(serviceClient, {
+        userId,
+        feature: 'hapcard',
+        ref: billingRef,
+        resultPath: `/hapcard/${body.relation_id}?mode=${encodeURIComponent(body.mode)}`,
+        errorCode: 'INTERNAL_ERROR',
+      });
     }
     return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }

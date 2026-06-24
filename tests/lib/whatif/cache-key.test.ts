@@ -7,6 +7,7 @@ const BASE = {
   type: 'work' as DiagnosticType,
   prompt_version: 'v0.1',
   model_id: 'gpt-5-mini',
+  target_date: '2026-06-24',
 };
 
 describe('deriveCacheKey (whatif) — 결정성 + 민감도', () => {
@@ -29,6 +30,12 @@ describe('deriveCacheKey (whatif) — 결정성 + 민감도', () => {
   it('다른 model_id → 다른 hash', () => {
     const a = deriveCacheKey(BASE);
     const b = deriveCacheKey({ ...BASE, model_id: 'gpt-5' });
+    expect(a).not.toBe(b);
+  });
+
+  it('다른 target_date → 다른 hash', () => {
+    const a = deriveCacheKey(BASE);
+    const b = deriveCacheKey({ ...BASE, target_date: '2026-06-25' });
     expect(a).not.toBe(b);
   });
 });

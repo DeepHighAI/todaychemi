@@ -19,9 +19,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiFetch } from '@/lib/api/client';
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '@/lib/paid-feature-attention';
 import { useFeaturePurchase } from '@/components/iap/use-feature-purchase';
 import { FeaturePayCard } from '@/components/iap/feature-pay-card';
 import { IAP_DISPLAY_PRICE_KRW } from '@/lib/iap/prices';
+import {
+  shortageText,
+  tokenUseConfirmText,
+  type FeaturePreflightResponse,
+} from '@/lib/payments/preflight';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -41,11 +50,11 @@ interface Props {
   targetDate: string;
 }
 
-type State = 'idle' | 'checking' | 'loading' | 'success' | 'error' | 'pay_required';
+type State = 'idle' | 'checking' | 'token_confirm' | 'loading' | 'success' | 'error' | 'pay_required';
 
 type ReplayPreflightResponse =
-  | { mode: 'ready'; payment: null }
-  | { mode: 'pay_required'; payment: PaymentRequiredInfo };
+  | FeaturePreflightResponse
+  | { mode: 'ready'; payment: null };
 
 /** 케미 다시 맞추기 호출 — apiFetch(중첩 { error:{code,message} } 봉투 + 402 payment 파싱). */
 async function postReplay(hapcardId: string, token: string | null): Promise<HapcardResult> {
@@ -75,8 +84,10 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // 결제 필요 상태 — IAP 연결용 payment 정보 보관
   const [payInfo, setPayInfo] = useState<PaymentRequiredInfo | null>(null);
+  const [preflightInfo, setPreflightInfo] = useState<FeaturePreflightResponse | null>(null);
   const [autoReplay, setAutoReplay] = useState(false);
   const [refundConsent, setRefundConsent] = useState(false);
+  const [showReplayDot, setShowReplayDot] = useState(false);
 
   // IAP 결제 훅 — 성공 시 replay 재시도 (unlock row 있으면 200, 재과금 없음)
   const {
@@ -96,6 +107,13 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   const autoFired = useRef(false);
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowReplayDot(shouldShowPaidFeatureAttention('replay'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: (): Promise<HapcardResult> => postReplay(hapcardId, token),
@@ -155,6 +173,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
     setErrorMsg(null);
     setAutoReplay(false);
     setPayInfo(null);
+    setPreflightInfo(null);
     clearIapError();
   }
 
@@ -174,6 +193,8 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   async function handleStart() {
     if (isBusy) return;
 
+    markPaidFeatureClickedToday('replay');
+    setShowReplayDot(false);
     setOpen(true);
     setState('checking');
     setErrorMsg(null);
@@ -183,8 +204,14 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
 
     try {
       const preflight = await preflightReplay(hapcardId, token);
+      if (preflight.mode === 'token_required') {
+        setPreflightInfo(preflight);
+        setState('token_confirm');
+        return;
+      }
       if (preflight.mode === 'pay_required') {
         setPayInfo(preflight.payment);
+        setPreflightInfo(preflight);
         setState('pay_required');
         return;
       }
@@ -206,6 +233,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   }
 
   function getTitle(): string {
+    if (state === 'token_confirm') return tokenUseConfirmText(preflightInfo?.token_cost ?? 0);
     if (state === 'checking' || state === 'loading') return t('replayButton.progressTitle');
     if (state === 'pay_required') return t('replayButton.payRequiredTitle');
     if (state === 'success') return t('replayButton.successTitle');
@@ -213,6 +241,7 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
   }
 
   function getDescription(): string {
+    if (state === 'token_confirm') return '';
     if (state === 'checking') return t('replayButton.checkingBody');
     if (state === 'loading') {
       return autoReplay ? t('replayButton.afterPayLoading') : t('replayButton.loadingBody');
@@ -243,8 +272,24 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
           cursor: 'pointer',
           width: '100%',
           justifyContent: 'center',
+          position: 'relative',
         }}
       >
+        {showReplayDot && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              right: 14,
+              top: 9,
+              width: 10,
+              height: 10,
+              borderRadius: 999,
+              backgroundColor: 'var(--destructive)',
+              boxShadow: '0 0 0 3px var(--bg-card)',
+            }}
+          />
+        )}
         <RefreshCw style={{ width: 16, height: 16 }} aria-hidden />
         {t('replayButton.label')}
       </button>
@@ -270,6 +315,31 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
             }}
           >
             {state === 'checking' ? t('replayButton.checkingStatus') : t('replayButton.loadingStatus')}
+          </div>
+        )}
+
+        {state === 'token_confirm' && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              style={{ flex: 1 }}
+              onClick={() => handleOpen(false)}
+            >
+              나중에 볼께
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              style={{ flex: 1 }}
+              onClick={() => {
+                setPreflightInfo(null);
+                startReplayMutation();
+              }}
+            >
+              사용할께
+            </Button>
           </div>
         )}
 
@@ -304,8 +374,10 @@ export function HapcardReplayButton({ hapcardId, relationId, mode, targetDate }:
         {/* 결제 필요 — Toss IAP 시트 연결 (공용 FeaturePayCard) */}
         {state === 'pay_required' && (
           <FeaturePayCard
-            title={`케미 다시 맞추기는 ₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()}이 필요해요.`}
-            description="결제 후 바로 새 케미카드를 확인할 수 있어요."
+            title="부적이 부족해요"
+            description={preflightInfo
+              ? `${shortageText(preflightInfo.balance, preflightInfo.shortage)} 결제 후 바로 새 케미카드를 확인할 수 있어요.`
+              : `케미 다시 맞추기는 ₩${(payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay).toLocaleString()}이 필요해요.`}
             amountKrw={payInfo?.amount_krw ?? IAP_DISPLAY_PRICE_KRW.replay}
             consentChecked={refundConsent}
             onConsentChange={setRefundConsent}

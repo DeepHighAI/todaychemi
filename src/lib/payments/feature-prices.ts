@@ -5,7 +5,7 @@ import { z } from 'zod';
 // order_name = Toss 결제창·영수증에 표시되는 정적 라벨 (PII 아님).
 // 2026-06-07 §1.1 D6 개정: 800/500/400 → 1,000/800/600 (앱인토스 IAP 수수료 반영, 웹·미니앱 통일).
 // 2026-06-14 §1.1 사용자 확정: 오픈초기 현금 결제 50% 할인 이벤트 적용. 무료 부적 차감량은 유지.
-// 2026-06-19 §1.1 개정: 정가 케미카드·인연슬롯 1,100 / 또다른나·다시맞추기 880,
+// 2026-06-19 §1.1 개정: 정가 케미카드·인연슬롯 1,100 / 오늘의 나는?·다시맞추기 880,
 //   오픈초기 현금가 550/440/440/550, 무료 부적 11/9/9/11 (부적도 비례, 1부적≈100원 유지; 880→9 반올림).
 // token_cost = 1부적 ≈ 100원 등가.
 // llm_generated: LLM 선생성 비용이 있는 피처 — cash-gen 일일 한도의 피처/reason
@@ -32,7 +32,7 @@ export const FEATURE_PRICES_KRW = {
     list_amount_krw: 880,
     amount_krw: openingDiscountAmount(880),
     discount_label: OPENING_DISCOUNT_LABEL,
-    order_name: '또 다른 나 보기',
+    order_name: '오늘의 나는? 보기',
     token_cost: 9,
     llm_generated: true,
   },

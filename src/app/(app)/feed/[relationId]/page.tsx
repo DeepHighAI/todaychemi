@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,10 @@ import { RelationTimeline } from '@/components/relation/relation-timeline';
 import { MemoList } from '@/components/memo/memo-list';
 import { MemoSheet } from '@/components/memo/memo-sheet';
 import { convertHanja } from '@/lib/glossary/post-process';
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '@/lib/paid-feature-attention';
 import {
   DETAILED_TEMPERATURE_PRECISION,
   formatTemperatureDeltaBetweenScores,
@@ -44,6 +48,14 @@ export default function RelationDetailPage() {
   // 메모 Sheet 로컬 상태
   const [memoSheetOpen, setMemoSheetOpen] = useState(false);
   const [editingMemo, setEditingMemo] = useState<MemoItem | null>(null);
+  const [showHapcardDot, setShowHapcardDot] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowHapcardDot(shouldShowPaidFeatureAttention('hapcard'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['relation-detail', relationId],
@@ -133,6 +145,8 @@ export default function RelationDetailPage() {
     : 0;
 
   function handleCta() {
+    markPaidFeatureClickedToday('hapcard');
+    setShowHapcardDot(false);
     router.push(`/hapcard/${relation.relation_id}?mode=${encodeURIComponent(relation.mode)}`);
   }
 
@@ -202,7 +216,13 @@ export default function RelationDetailPage() {
         </div>
 
         {/* CTA */}
-        <Button type="button" className="w-full h-12" onClick={handleCta}>
+        <Button type="button" className="relative w-full h-12" onClick={handleCta}>
+          {showHapcardDot && (
+            <span
+              aria-hidden="true"
+              className="absolute right-4 top-3 h-2.5 w-2.5 rounded-full bg-[var(--destructive)] shadow-[0_0_0_3px_var(--primary)]"
+            />
+          )}
           {t('cta')}
         </Button>
       </div>

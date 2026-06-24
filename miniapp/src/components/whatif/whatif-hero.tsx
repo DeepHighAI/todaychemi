@@ -1,5 +1,5 @@
 /**
- * whatif-hero.tsx — 또 다른 나 히어로 카드 (미니앱 포트)
+ * whatif-hero.tsx — 오늘의 나는? 히어로 카드 (미니앱 포트)
  *
  * 웹앱 원본: src/components/whatif/whatif-hero.tsx (next-intl + Tailwind)
  * 변경: 'use client' 제거, Tailwind → 인라인 스타일. .liquid cool 리퀴드글래스(회색 카드 대체).

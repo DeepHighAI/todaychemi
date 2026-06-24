@@ -51,7 +51,7 @@
   | D1 | 모노레포 내 **별도 Vite SPA 신규** + 컴포넌트 이식 (Next 미들웨어/서버컴포넌트/Image 의존 제거 후) |
   | D2 | 토스 로그인 scope = **`user_key`만** (PII 무수집, ADR-011 정합, 복호화 키 불필요) |
   | D3 | 결제 이원화 — 미니앱=**IAP**, 기존 웹=토스페이먼츠 pay-per-use **병행 유지** |
-  | D4 | 1차 출시 = **전체 8 플로우** (온보딩·인연등록·케미피드·케미카드·오늘케미·본명식·또다른나·다시맞추기 + 공유) |
+  | D4 | 1차 출시 = **전체 8 플로우** (온보딩·인연등록·케미피드·케미카드·오늘케미·본명식·오늘의 나는?·다시맞추기 + 공유) |
   | D5 | TDS 적용 깊이 = **채널톡 검수기준 확인 후 결정** (TDS는 공식상 *선택* — §5 게이트로 잔존) |
   | D6 | 가격 = 정가 **1,100 / 880 / 880 / 1,100원**, 현금가 **550 / 440 / 440 / 550원**(웹·미니앱 통일). 단일출처 `feature-prices.ts`. |
 - **잠금 ADR(비협상)**: ADR-002(자유채팅 X)·ADR-011(별명만)·ADR-035(점수 결정형, LLM 점수 개입 금지)·ADR-038(Hanja 노출 금지, `convertHanja()` 안전망 의무)·ADR-039(pay-per-use, 잠금 단일진실 `isFeatureUnlocked`)·ADR-040(파생/교차분석층).
@@ -85,9 +85,9 @@
 
 **플랫폼 정책 (검수 반려 사유):**
 - 로그인은 **토스 로그인만**. 미니앱에 Google OAuth·이메일/비번 로그인·가입 페이지 **포함 금지**.
-- 디지털 상품(케미카드·또다른나·다시맞추기) 결제는 **IAP만**. 토스페이먼츠 SDK·`feature-pay-sheet`·`/api/payments/feature/*`를 미니앱 경로에 **싣지 마라**.
+- 디지털 상품(케미카드·오늘의 나는?·다시맞추기) 결제는 **IAP만**. 토스페이먼츠 SDK·`feature-pay-sheet`·`/api/payments/feature/*`를 미니앱 경로에 **싣지 마라**.
 - **외부 링크/자사 앱·웹 유도 전면 금지** — 공유가 자사 웹으로 랜딩되는 것도 금지. terms/privacy/refund는 **링크가 아닌 인앱 정적 뷰**로.
-- **생성형 AI 고지/라벨은 법적 의무**(미이행 과태료 최대 3,000만원): 최초 사용 사전 고지 + 케미카드·오늘케미·또다른나 결과에 "AI 생성" 라벨. (웹의 `AiDisclosureBadge`/`AiDisclosureNotice` 자산 재사용.)
+- **생성형 AI 고지/라벨은 법적 의무**(미이행 과태료 최대 3,000만원): 최초 사용 사전 고지 + 케미카드·오늘케미·오늘의 나는? 결과에 "AI 생성" 라벨. (웹의 `AiDisclosureBadge`/`AiDisclosureNotice` 자산 재사용.)
 - iframe 금지(YouTube 임베드만 예외). 번들 100MB 이하. 서버 API는 **mTLS**, CORS 허용목록에 `*.apps.tossmini.com`/`*.private-apps.tossmini.com`.
 - 카테고리는 **라이프스타일/운세**로 — '소셜/만남' 선택 금지(데이팅 규제 회피). 돈합 카피의 투자자문/수익보장 오인 표현 점검.
 
@@ -124,12 +124,12 @@
 - 종료 게이트: 샌드박스에서 토스 로그인 → Bearer로 보호 API 200 + 연결끊기 콜백 멱등 처리.
 
 ### P4 — 8 플로우 화면 이식 (작업량 최대)
-- D4 전체: 온보딩 → 인연등록(relation_slot 무료2/유료 게이트 포함) → 케미피드 → 케미카드(13섹션) → 오늘케미 → 본명식 → 또다른나 → 다시맞추기. 공유 진입점 포함.
+- D4 전체: 온보딩 → 인연등록(relation_slot 무료2/유료 게이트 포함) → 케미피드 → 케미카드(13섹션) → 오늘케미 → 본명식 → 오늘의 나는? → 다시맞추기. 공유 진입점 포함.
 - 규칙: 화면은 백엔드 API를 **그대로 호출**(도메인 로직 재구현 금지). ADR-016 카드 컴포지션·ADR-038 convertHanja·ADR-040 근거 탭 유지. TDS 혼용 범위는 D5 결과 반영.
 - 종료 게이트: 8 플로우가 샌드박스에서 데이터·에러·빈상태까지 동작(결제 전 무료/잠금 분기 포함).
 
 ### P5 — IAP 결제 통합 (ADR-039 모델 C 유지)
-- SKU 4종(케미카드/또 다른 나/케미 다시 맞추기/인연 슬롯) + `getProductItemList` 노출 + `createOneTimePurchaseOrder({options:{sku, processProductGrant}})`.
+- SKU 4종(케미카드/오늘의 나는?/케미 다시 맞추기/인연 슬롯) + `getProductItemList` 노출 + `createOneTimePurchaseOrder({options:{sku, processProductGrant}})`.
 - `processProductGrant(orderId)` → **우리 서버 unlock API**(mTLS `order/get-order-status`로 `PURCHASED|PAYMENT_COMPLETED` 검증 → `isFeatureUnlocked` 해제 → true). **30초 내·멱등** 필수. IAP가 mTLS 검증 후 `payments`(status=confirmed) insert하면 기존 read-path 게이트·Model C 그대로 흡수(리뷰 §13 B9 확인).
 - 복원: 재진입 시 `getPendingOrders` → 재지급 → `completeProductGrant`. 환불: `getCompletedOrRefundedOrders`로 `REFUNDED` 감지 → 잠금 회수 정책.
 - `resolveFeatureCharge`의 `pay_required` 분기에서 402/토스페이먼츠 시트 대신 **IAP 시트**를 띄운다(웹은 불변).
@@ -175,7 +175,7 @@
 1. 콘솔 가입(만19세+ 워크스페이스) → 앱 등록 → **`appName` 확정**(영구). 로고/썸네일은 `public/apps-in-toss/` 재사용.
 2. **사업자 등록**(필수 — 미등록 시 로그인·결제 불가) + 정산용 사업자 공동인증서 + 팝빌 가입(세금계산서 역발행).
 3. mTLS 인증서 발급(콘솔) → cert/key PEM 전달.
-4. IAP SKU 4종 등록(케미카드/또 다른 나/케미 다시 맞추기/인연 슬롯, VAT 포함 판매가).
+4. IAP SKU 4종 등록(케미카드/오늘의 나는?/케미 다시 맞추기/인연 슬롯, VAT 포함 판매가).
 5. 토스 로그인 약관 등록 + scope=`user_key` + 연결끊기 콜백 URL + (scope 받을 경우만)복호화 키 수령.
 6. 앱 내 기능 ≥1개 등록(예: "오늘 케미 보기"→`/`).
 7. **채널톡 문의(B8)**: ①운세 카테고리 사전승인(돈합 오인) ②TDS 검수 포함 여부/범위 ③부적/가상통화 정책 ④`getAnonymousKey` 존재 ⑤Sentry/에러리포팅 ⑥주문조회 SLA(30초) ⑦user_key→email scope 링크 ⑧iframe/임베드 범위.
@@ -283,7 +283,7 @@ TDD(테스트 먼저) · 원자 커밋(`type: desc`, 한 변경) · 무관 리�
 
 ### ✅ P5 — IAP 결제 통합 (ADR-039 모델 C, 커밋 `8f3a29d`)
 - 서버 `POST /api/toss/iap/unlock`(runtime nodejs): mTLS `getOrderStatus` → PURCHASED/PAYMENT_COMPLETED 검증 + SKU↔feature 일치 가드(위변조 차단) + `payments status='confirmed'` 멱등 insert(`toss_order_id='iap_'+orderId`) → 기존 `isFeatureUnlocked` 게이트 무변경 재사용. `src/lib/toss/iap.ts`(order-status 8값 enum + SKU map).
-- 클라 `IAP.createOneTimePurchaseOrder`/`processProductGrant`(30초창) → 서버 unlock · `getPendingOrders`/`completeProductGrant` 복원(AppShell 마운트+포그라운드). feature→SKU = `VITE_TOSS_IAP_SKU_*` 단일출처. 4 결제지점(케미카드/또다른나/다시맞추기/인연슬롯) 402→IAP 시트.
+- 클라 `IAP.createOneTimePurchaseOrder`/`processProductGrant`(30초창) → 서버 unlock · `getPendingOrders`/`completeProductGrant` 복원(AppShell 마운트+포그라운드). feature→SKU = `VITE_TOSS_IAP_SKU_*` 단일출처. 4 결제지점(케미카드/오늘의 나는?/다시맞추기/인연슬롯) 402→IAP 시트.
 - **SDK 시그니처 4종 공식 MCP 문서 라이브 재확인 일치**(createOneTimePurchaseOrder/completeProductGrant 이중중첩/getPendingOrders/order-status). 백엔드 131 tests GREEN, tsc 0.
 
 ### ✅ P6 — 정책 요건 (커밋 `35a01d14`)

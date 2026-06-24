@@ -17,15 +17,82 @@ export function sanitizeWhatifBody(body: string): string {
     .trim();
 }
 
-// body 뿐 아니라 do_first / first_meet_tips 도 동일 LLM·프롬프트에서 생성되는 자유텍스트이므로
+function sanitizeTuple<T extends readonly string[]>(items: T): T {
+  return items.map(sanitizeWhatifBody) as unknown as T;
+}
+
+function sanitizeStringArray(items: readonly string[]): string[] {
+  return items.map(sanitizeWhatifBody);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sanitizeOptionalTuple<T extends readonly string[]>(
+  items: T | undefined,
+): T | undefined {
+  return items ? sanitizeTuple(items) : undefined;
+}
+
+function sanitizeOptionalStringArray(items: readonly string[] | undefined): string[] {
+  return Array.isArray(items) ? sanitizeStringArray(items) : [];
+}
+
+// body 뿐 아니라 구조화 섹션들도 동일 LLM·프롬프트에서 생성되는 자유텍스트이므로
 // 같은 파생필드 주석이 새어 들어올 수 있다 — 함께 정화한다 (keywords 는 토큰이라 제외).
 export function sanitizeWhatifContent(content: WhatifContent): WhatifContent {
+  const todayContext = isRecord(content.today_context) ? content.today_context : null;
+  const sajuBasis = isRecord(content.saju_basis) ? content.saju_basis : null;
+  const situationReading = isRecord(content.situation_reading) ? content.situation_reading : null;
+
   return {
     ...content,
     body: sanitizeWhatifBody(content.body),
-    do_first: content.do_first.map(sanitizeWhatifBody) as [string, string, string],
-    ...(content.first_meet_tips && {
-      first_meet_tips: content.first_meet_tips.map(sanitizeWhatifBody) as [string, string, string],
+    ...(todayContext && {
+      today_context: {
+        title: sanitizeWhatifBody(String(todayContext.title ?? '')),
+        summary: sanitizeWhatifBody(String(todayContext.summary ?? '')),
+        day_signal: sanitizeWhatifBody(String(todayContext.day_signal ?? '')),
+      },
+    }),
+    ...(sajuBasis && {
+      saju_basis: {
+        day_master: sanitizeWhatifBody(String(sajuBasis.day_master ?? '')),
+        dominant_sipsin: sanitizeOptionalStringArray(sajuBasis.dominant_sipsin as string[] | undefined),
+        missing_sipsin: sanitizeOptionalStringArray(sajuBasis.missing_sipsin as string[] | undefined),
+        sinkang: sajuBasis.sinkang ? sanitizeWhatifBody(String(sajuBasis.sinkang)) : null,
+        yongsin_candidates: sanitizeOptionalStringArray(sajuBasis.yongsin_candidates as string[] | undefined),
+        notes: sanitizeTuple(
+          (Array.isArray(sajuBasis.notes) && sajuBasis.notes.length === 3
+            ? sajuBasis.notes
+            : ['', '', '']) as [string, string, string],
+        ),
+      },
+    }),
+    ...(situationReading && {
+      situation_reading: {
+        strength: sanitizeTuple(
+          (Array.isArray(situationReading.strength) && situationReading.strength.length === 3
+            ? situationReading.strength
+            : ['', '', '']) as [string, string, string],
+        ),
+        caution: sanitizeTuple(
+          (Array.isArray(situationReading.caution) && situationReading.caution.length === 3
+            ? situationReading.caution
+            : ['', '', '']) as [string, string, string],
+        ),
+      },
+    }),
+    do_first: sanitizeTuple(content.do_first),
+    ...(content.avoid_today && {
+      avoid_today: sanitizeTuple(content.avoid_today),
+    }),
+    ...(sanitizeOptionalTuple(content.first_meet_tips) && {
+      first_meet_tips: sanitizeTuple(content.first_meet_tips!),
+    }),
+    ...(content.classic_citation && {
+      classic_citation: content.classic_citation,
     }),
   };
 }

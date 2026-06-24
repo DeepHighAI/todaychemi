@@ -590,7 +590,7 @@ interface CompletedOrRefundedOrdersResult {
 - 상품 타입: **소모품(consumable)** / 비소모품 / 구독(범위 밖). 오늘케미 pay-per-use → **소모품(1회 이용권)**.
 - **현금성·환가성·토스포인트 결합 상품 판매 금지** → **부적/talisman 을 현금성 토큰으로 판매 금지**, 피처 unlock 직접 판매.
 - **상품 수 cap: 비게임 30 / 게임 80.**
-- **공급가(VAT 제외) 400원 ~ 1,400,000원, 10원 단위.** 판매가 = 공급가 + VAT(자동). **2026-06-22 확정**: 오늘케미 IAP 판매가/공급가 = 케미카드 550/500, 또 다른 나 440/400, 케미 다시 맞추기 440/400, 인연 슬롯 550/500. 콘솔은 VAT 제외 공급가를 입력하고, `displayAmount`(`getProductItemList`)는 판매가 포맷을 표시한다.
+- **공급가(VAT 제외) 400원 ~ 1,400,000원, 10원 단위.** 판매가 = 공급가 + VAT(자동). **2026-06-22 확정**: 오늘케미 IAP 판매가/공급가 = 케미카드 550/500, 오늘의 나는? 440/400, 케미 다시 맞추기 440/400, 인연 슬롯 550/500. 콘솔은 VAT 제외 공급가를 입력하고, `displayAmount`(`getProductItemList`)는 판매가 포맷을 표시한다.
 - 수수료: 앱마켓 **15%** + 토스 **5%**.
 - **샌드박스 노출**: `getProductItemList()` 는 콘솔 노출상태=ON 상품만 반환.
 
@@ -711,7 +711,7 @@ function clearItems(): Promise<void>;
 - **자사 앱 설치 유도 금지**: 설치 유도 문구/배너/이미지, **앱 마켓 링크**, 설치 혜택 전부 금지.
 - **외부 링크 제한 허용**. **명시 금지 (이 슬라이스 직결)**: "**공유하기 기능의 링크가 자사 웹사이트로 랜딩되는 상태**" = 위반 → 공유 링크는 **`intoss://` 미니앱 딥링크로만** 해석, **`https://<오늘케미 자사 사이트>` 절대 금지**.
 - 허용: 법률상 고지/필수 안내, 공공/제휴 공식 페이지, 비-자사 정보 확인, 일부 미완결 특수 케이스.
-- **함의**: 공유는 항상 `getTossShareLink('intoss://<appName>/...')`. 핵심 피처(케미카드/또 다른 나 등)는 미니앱 내 완결. 법적 고지 페이지만 "법률상 고지" 허용 하 외부 링크 가능.
+- **함의**: 공유는 항상 `getTossShareLink('intoss://<appName>/...')`. 핵심 피처(케미카드/오늘의 나는? 등)는 미니앱 내 완결. 법적 고지 페이지만 "법률상 고지" 허용 하 외부 링크 가능.
 
 ### 5.8 버전 게이트
 - `isMinVersionSupported({ android, ios })` (doc `002d643c1135a4b7`):
@@ -752,19 +752,19 @@ function isMinVersionSupported(minVersions: {
 **남용 방지 (§3)**: 한 워크스페이스 내 "주제만 다르고 결과물만 다른 개별 미니앱" 금지 (예시: 'AI 여자 얼굴 만들기'/'AI 남자 얼굴 만들기'). → **6모드(일합/친구합/돈합/첫합/썸합/오래합)를 별도 미니앱 분리 금지, 한 앱 내 탑재.**
 
 ### 6.4 생성형 AI 고지 & 라벨링 — 법적 의무
-(doc `081ffe8972e1c703` §5). 오늘케미 케미카드/만약합/오늘케미 LLM 출력은 범위 내.
+(doc `081ffe8972e1c703` §5). 오늘케미 케미카드/오늘의 나는?/오늘케미 LLM 출력은 범위 내.
 
 **2 의무**:
 1. **사전 고지**: 서비스 최초 이용 또는 생성형 AI 기능 최초 사용 시점에 AI 활용 사실 고지.
 2. **표시 의무**: AI 생성 결과물임을 명확 인식 (**라벨/배지/워터마크 등 즉시 인식 가능 방식**).
 
 **처벌**: **관련 법령에 따라 최대 3,000만 원 과태료** + 자료 제출/현장 조사/서비스 중지/시정명령. 사전 법률 검토 권장.
-- **함의**: 오늘케미 기존 `AiDisclosureBadge`(케미카드/오늘케미/또 다른 나 hero) + `AiDisclosureNotice`(온보딩)가 사전 고지(최초 사용) + 표시 의무(결과별 배지) 충족. **Vite SPA 채널에 동일 컴포넌트/카피 이식 + 모든 AI 결과 표면(공유/OG 포함 AI 출력 렌더 시) 검증.**
+- **함의**: 오늘케미 기존 `AiDisclosureBadge`(케미카드/오늘케미/오늘의 나는? hero) + `AiDisclosureNotice`(온보딩)가 사전 고지(최초 사용) + 표시 의무(결과별 배지) 충족. **Vite SPA 채널에 동일 컴포넌트/카피 이식 + 모든 AI 결과 표면(공유/OG 포함 AI 출력 렌더 시) 검증.**
 
 ### 6.5 로그인/결제/광고 정책 (신규 채널 하드 제약)
 (doc `081ffe8972e1c703` §6; `6b96a54d7cb23c6b`)
 - **로그인**: "미니앱 로그인은 **토스 로그인만**. 그 외 소셜/간편 로그인 불가." → **기존 Supabase(Google/email) auth 는 미니앱 내 로그인 불가.** 옵션: (a) 토스 로그인(사업자 필요) (b) `getAnonymousKey`(비게임, SDK ≥2.4.5, 로그인 화면 미노출) — Toss 신원 ↔ Supabase user 브리지 결정.
-- **결제**: 실물→토스페이만(토스페이먼츠 PG 포함 기타 불가). **디지털 상품→인앱결제(IAP)만.** → **오늘케미 pay-per-use(케미카드 550 / 또 다른 나 440 / 케미 다시 맞추기 440 / 인연 슬롯 550원 IAP 판매가)는 디지털 콘텐츠 unlock → 미니앱 채널은 IAP 필수** (웹 채널은 토스페이먼츠 유지). = "토스 로그인/IAP 통합 작업"의 핵심.
+- **결제**: 실물→토스페이만(토스페이먼츠 PG 포함 기타 불가). **디지털 상품→인앱결제(IAP)만.** → **오늘케미 pay-per-use(케미카드 550 / 오늘의 나는? 440 / 케미 다시 맞추기 440 / 인연 슬롯 550원 IAP 판매가)는 디지털 콘텐츠 unlock → 미니앱 채널은 IAP 필수** (웹 채널은 토스페이먼츠 유지). = "토스 로그인/IAP 통합 작업"의 핵심.
 - **광고**: 앱인토스 전면형/보상형/배너만. 외부 광고망 금지.
 
 ### 6.6 IAP 디지털 상품 제약
@@ -928,7 +928,7 @@ await serviceClient.from('payments').insert({
 | feature | list_krw | amount_krw(50%↓) | token | order_name | llm_generated |
 |---|---|---|---|---|---|
 | hapcard | 1,100 | 550 | 11 | 케미카드 보기 | true |
-| whatif | 880 | 440 | 9 | 또 다른 나 보기 | true |
+| whatif | 880 | 440 | 9 | 오늘의 나는? 보기 | true |
 | replay | 880 | 440 | 9 | 케미 다시 맞추기 | true |
 | relation_slot | 1,100 | 550 | 11 | 인연 등록 | false |
 - `FREE_RELATION_SLOTS = 2` (line 74; ADR-039 Amended Model B — 3번째+ 유료). 게이트 `relations/route.ts:64` `insertFreeRelationIfUnderCap()`.
@@ -947,7 +947,7 @@ await serviceClient.from('payments').insert({
 | 케미카드 | Medium | 1 | 없음(stub) | **2~3일** | `useParams`·`useRouter`×4·`useSearchParams`; generateMetadata 제거; easyMode localStorage |
 | 오늘케미 | Medium | 1 | 없음 | **2일** | server `redirect()`+`createClient()`→클라 가드; `useRouter`×3 |
 | 본명식(me) | Low | 0 | 없음 | **1~2일** | `useRouter`×3; next-themes 보존 |
-| 또다른나 | Low | 0 | 없음 | **1일** | `useParams` (server 커플링 0) |
+| 오늘의 나는? | Low | 0 | 없음 | **1일** | `useParams` (server 커플링 0) |
 | 다시맞추기 | None | 0 | 없음 | **<1일** | 라우팅 0, useMutation 보존 |
 | (공유) | Low | 1 | **Yes** | **1~2일** | generateMetadata·next/image; OG 라우트 serverless |
 - **총 추정: 15~21일 (2~3주). 리스크 Medium (라우팅·결제 플로우 re-plumbing).**

@@ -4,13 +4,20 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 
 const api = vi.hoisted(() => ({
-  apiFetch: vi.fn(async () => {
-    throw {
-      status: 402,
-      code: 'PAYMENT_REQUIRED',
-      message: 'payment required',
-      payment: { feature: 'whatif', ref: 'whatif-cache-key', amount_krw: 440 },
-    };
+  apiFetch: vi.fn(async (path: string) => {
+    if (path === '/api/whatif/work/preflight') {
+      return {
+        mode: 'pay_required',
+        feature: 'whatif',
+        ref: 'whatif-cache-key',
+        token_cost: 9,
+        amount_krw: 440,
+        balance: 8,
+        shortage: 1,
+        payment: { feature: 'whatif', ref: 'whatif-cache-key', amount_krw: 440 },
+      };
+    }
+    throw new Error(`unexpected api call: ${path}`);
   }),
 }));
 

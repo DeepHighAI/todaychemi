@@ -17,9 +17,9 @@ beforeEach(() => {
 });
 
 describe('WhatifSheet', () => {
-  it('open=true 시 시트 제목 "또 다른 나" 표시', () => {
+  it('open=true 시 시트 제목 "오늘의 나는?" 표시', () => {
     renderWithProviders(<WhatifSheet open={true} onOpenChange={vi.fn()} />);
-    expect(screen.getByText('또 다른 나')).toBeInTheDocument();
+    expect(screen.getByText('오늘의 나는?')).toBeInTheDocument();
   });
 
   it('정확히 6개 행이 DIAGNOSTIC_TYPE 순서로 렌더', () => {
@@ -61,6 +61,6 @@ describe('WhatifSheet', () => {
 
   it('open=false 시 시트 제목 미렌더', () => {
     renderWithProviders(<WhatifSheet open={false} onOpenChange={vi.fn()} />);
-    expect(screen.queryByText('또 다른 나')).toBeNull();
+    expect(screen.queryByText('오늘의 나는?')).toBeNull();
   });
 });

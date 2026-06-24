@@ -18,6 +18,13 @@ import { apiErrorResponse, paymentRequiredResponse } from '@/lib/errors/route-re
 import { toErrorMessage } from '@/lib/errors/to-message';
 import { sanitizeErrorForLog } from '@/lib/errors/sanitize-log';
 import { fetchLatestUserChart } from '@/lib/chart/queries';
+import { todayKST } from '@/lib/today/kst-date';
+import {
+  completeAnalysisJob,
+  failAnalysisJob,
+  paymentRequiredAnalysisJob,
+  startAnalysisJob,
+} from '@/lib/analysis-jobs';
 
 interface ChartRow {
   chart_core: ChartCore;
@@ -83,11 +90,13 @@ export async function POST(
   const userChart = userChartRes.data as unknown as ChartRow;
 
   // 4. buildWhatif 호출 준비
+  const targetDate = todayKST();
   const input: BuildWhatifInput = {
     user_id: userId,
     type,
     chart: userChart.chart_core,
     chart_hash: userChart.chart_hash,
+    target_date: targetDate,
   };
   const serviceClient = createServiceRoleClient();
   const deps = createLazyWhatifDeps(supabaseUserClient, serviceClient);
@@ -99,6 +108,14 @@ export async function POST(
   try {
     const cacheKey = getWhatifCacheKey(input);
     billingRef = cacheKey;
+    const resultPath = `/whatif/${type}`;
+    await startAnalysisJob(serviceClient, {
+      userId,
+      feature: 'whatif',
+      ref: cacheKey,
+      routePayload: { type },
+      resultPath,
+    });
 
     const resolution = await resolveFeatureCharge(serviceClient, userId, 'whatif', cacheKey);
     charged = resolution.charged;
@@ -113,10 +130,22 @@ export async function POST(
         );
       }
       await buildWhatif(input, deps); // 선생성 — 본문 보류
+      await paymentRequiredAnalysisJob(serviceClient, {
+        userId,
+        feature: 'whatif',
+        ref: cacheKey,
+        resultPath,
+      });
       return paymentRequiredResponse(resolution.price.feature_id, cacheKey, resolution.price.amount_krw);
     }
 
     const { result } = await buildWhatif(input, deps);
+    await completeAnalysisJob(serviceClient, {
+      userId,
+      feature: 'whatif',
+      ref: cacheKey,
+      resultPath,
+    });
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const message = toErrorMessage(err);
@@ -139,7 +168,25 @@ export async function POST(
     }
     console.error('whatif_build_failed', { user_id: userId, type, error: safeMessage });
     if (message.startsWith('GROUNDING_FAILED')) {
+      if (billingRef) {
+        await failAnalysisJob(serviceClient, {
+          userId,
+          feature: 'whatif',
+          ref: billingRef,
+          resultPath: `/whatif/${type}`,
+          errorCode: 'GROUNDING_FAILED',
+        });
+      }
       return apiErrorResponse('GROUNDING_FAILED', safeMessage, 422);
+    }
+    if (billingRef) {
+      await failAnalysisJob(serviceClient, {
+        userId,
+        feature: 'whatif',
+        ref: billingRef,
+        resultPath: `/whatif/${type}`,
+        errorCode: 'INTERNAL_ERROR',
+      });
     }
     return apiErrorResponse('INTERNAL_ERROR', safeMessage, 500);
   }

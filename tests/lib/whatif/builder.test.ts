@@ -35,12 +35,14 @@ const BASE_INPUT = {
   type: 'work' as const,
   chart: MOCK_CHART_CORE,
   chart_hash: MOCK_CHART_HASH,
+  target_date: '2026-06-24',
 };
 const EXPECTED_CACHE_KEY = deriveCacheKey({
   chart_hash: MOCK_CHART_HASH,
   type: 'work',
   prompt_version: MOCK_PROMPT_VERSION,
   model_id: 'gpt-5-mini',
+  target_date: BASE_INPUT.target_date,
 });
 
 const MOCK_EMBEDDING = Array(1536).fill(0.1) as number[];
@@ -81,15 +83,31 @@ function makeMockUserClient(opts: {
   const insertSelectChain = { single };
   const insertChain = { select: vi.fn().mockReturnValue(insertSelectChain) };
   const insertFn = vi.fn().mockReturnValue(insertChain);
+  const birthMaybeSingle = vi.fn().mockResolvedValue({
+    data: {
+      birth_date: '1990-01-01',
+      birth_date_calendar: 'solar',
+      is_lunar_leap: false,
+      birth_time_knowledge: 'unknown',
+      birth_time: null,
+      gender: 'M',
+    },
+    error: null,
+  });
+  const birthEqChain = { maybeSingle: birthMaybeSingle };
+  const birthSelectChain = { eq: vi.fn().mockReturnValue(birthEqChain) };
 
   const from = vi.fn().mockImplementation((table: string) => {
     if (table === 'whatif_results') {
       return { select: selectFn, insert: insertFn };
     }
+    if (table === 'users') {
+      return { select: vi.fn().mockReturnValue(birthSelectChain) };
+    }
     return {};
   });
 
-  return { client: { from } as unknown as SupabaseClient, from, maybySingle, insertFn, single };
+  return { client: { from } as unknown as SupabaseClient, from, maybySingle, insertFn, single, birthMaybeSingle };
 }
 
 function makeMockServiceClient() {
@@ -217,7 +235,7 @@ describe('buildWhatif', () => {
     expect(content.body).not.toContain('yongsin_candidates');
   });
 
-  it('cache_key = deriveCacheKey(chart_hash, type, prompt_version, model_id)', async () => {
+  it('cache_key = deriveCacheKey(chart_hash, type, prompt_version, model_id, target_date)', async () => {
     const { client, insertFn } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
     const expectedKey = deriveCacheKey({
@@ -225,6 +243,7 @@ describe('buildWhatif', () => {
       type: 'work',
       prompt_version: MOCK_PROMPT_VERSION,
       model_id: 'gpt-5-mini',
+      target_date: BASE_INPUT.target_date,
     });
     const insertArgs = insertFn.mock.calls[0][0];
     expect(insertArgs.cache_key).toBe(expectedKey);
@@ -278,6 +297,19 @@ describe('buildWhatif', () => {
     expect(insertFn).toHaveBeenCalledTimes(1);
   });
 
+  it('RAG retrieval에 derived 기반 queryTags를 전달한다', async () => {
+    const { client } = makeMockUserClient({ cacheHit: false });
+    await buildWhatif(BASE_INPUT, makeDeps(client));
+
+    expect(mockRetrieveClassics).toHaveBeenCalledWith(
+      expect.anything(),
+      MOCK_EMBEDDING,
+      expect.objectContaining({
+        queryTags: expect.arrayContaining(['hidden_stems', 'daymaster_strength']),
+      }),
+    );
+  });
+
   it('callOpenAi에 supabaseServiceClient 전달', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     const serviceClient = makeMockServiceClient();
@@ -288,7 +320,15 @@ describe('buildWhatif', () => {
   it('ragQueryText가 input을 받아 string 반환', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
-    expect(ragQueryText).toHaveBeenCalledWith(expect.objectContaining({ type: 'work' }));
+    expect(ragQueryText).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'work',
+      target_date: BASE_INPUT.target_date,
+      chart: expect.objectContaining({
+        yunse: expect.objectContaining({
+          iliun: expect.objectContaining({ today_date: BASE_INPUT.target_date }),
+        }),
+      }),
+    }));
   });
 
   it('D4 race: INSERT 23505 → SELECT 재실행 → 기존 row 반환, callOpenAi 1회만', async () => {
@@ -401,18 +441,19 @@ describe('buildWhatif — PII 가드 (AGENTS.md §5)', () => {
     expect(JSON.stringify(callInput.userPayload)).not.toMatch(/birth_place/i);
   });
 
-  it('payloadWhitelist = {self_chart_core, type} — PII 키 포함 안 됨', async () => {
+  it('payloadWhitelist = {self_chart_core, type, time_context} — PII 키 포함 안 됨', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
     const callInput = mockCallOpenAi.mock.calls[0][0];
     const wl = callInput.payloadWhitelist as Set<string>;
     expect(wl.has('self_chart_core')).toBe(true);
     expect(wl.has('type')).toBe(true);
+    expect(wl.has('time_context')).toBe(true);
     expect(wl.has('birth_date')).toBe(false);
     expect(wl.has('nickname')).toBe(false);
     expect(wl.has('email')).toBe(false);
     expect(wl.has('name')).toBe(false);
-    expect(wl.size).toBe(2);
+    expect(wl.size).toBe(3);
   });
 });
 
@@ -444,18 +485,19 @@ describe('buildWhatif — derived 압축 projection (P3)', () => {
     expect(JSON.stringify(callInput.userPayload)).not.toMatch(/"score"/);
   });
 
-  it('cross_analysis 부재 + 화이트리스트 2키 불변 (자기진단 — 교차 대상 없음)', async () => {
+  it('cross_analysis 부재 + 화이트리스트 3키 불변 (자기진단 — 교차 대상 없음)', async () => {
     const { client } = makeMockUserClient({ cacheHit: false });
     await buildWhatif(BASE_INPUT, makeDeps(client));
     const callInput = mockCallOpenAi.mock.calls[0][0];
     const payload = callInput.userPayload as Record<string, unknown>;
-    expect(Object.keys(payload).sort()).toEqual(['self_chart_core', 'type']);
+    expect(Object.keys(payload).sort()).toEqual(['self_chart_core', 'time_context', 'type']);
+    expect(payload.time_context).toEqual({ target_date: BASE_INPUT.target_date });
     expect('cross_analysis' in payload).toBe(false);
     expect(
       'cross_analysis' in (payload.self_chart_core as Record<string, unknown>),
     ).toBe(false);
     const wl = callInput.payloadWhitelist as Set<string>;
-    expect(wl.size).toBe(2);
+    expect(wl.size).toBe(3);
     expect(wl.has('cross_analysis')).toBe(false);
   });
 });

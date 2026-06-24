@@ -55,23 +55,13 @@ describe('GET /auth/oauth', () => {
     );
   });
 
-  it('starts Kakao OAuth through the same server-side route', async () => {
-    mockSignInWithOAuth.mockResolvedValue({
-      data: { url: 'https://fake.supabase.co/auth/v1/authorize?provider=kakao' },
-      error: null,
-    });
-
+  it('blocks Kakao OAuth because web login is Google-only', async () => {
     const res = await GET(makeRequest('https://app.example.com/auth/oauth?provider=kakao'));
 
-    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
-      provider: 'kakao',
-      options: {
-        redirectTo: 'https://app.example.com/auth/callback?provider=kakao',
-      },
-    });
     expect(res.headers.get('location')).toBe(
-      'https://fake.supabase.co/auth/v1/authorize?provider=kakao',
+      'https://app.example.com/login?error=auth_callback_failed',
     );
+    expect(createServerClient).not.toHaveBeenCalled();
   });
 
   it('wires Supabase server storage cookie writes to the route cookie store', async () => {

@@ -72,7 +72,7 @@ This round adds two deterministic pure-function layers:
 
 ## Consequences
 
-**Positive:** richer, citable interpretation evidence in 케미카드/오늘 케미/또 다른 나;
+**Positive:** richer, citable interpretation evidence in 케미카드/오늘 케미/오늘의 나는?;
 hallucination surface shrinks (prompts now reference provided facts); v3 bump
 naturally rotates all chart caches.
 

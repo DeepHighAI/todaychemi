@@ -22,7 +22,7 @@
  *  - DELETE /api/relations/:id
  */
 
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -32,6 +32,10 @@ import { apiFetch } from '../../lib/api/client';
 import { useAuth } from '../../lib/auth/AuthProvider';
 import { useMeChart } from '../../lib/me/use-me-chart';
 import { todayKST } from '../../lib/today/kst-date';
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '../../lib/paid-feature-attention';
 import { formatTodayTemperature } from '../../lib/scoring/temperature';
 
 import { TodayAppBar } from '../../components/today/today-app-bar';
@@ -139,6 +143,14 @@ export function HomePage() {
   // -------------------------------------------------------------------------
 
   const [confirmDelete, setConfirmDelete] = useState<FeedListItem | null>(null);
+  const [showHapcardDot, setShowHapcardDot] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowHapcardDot(shouldShowPaidFeatureAttention('hapcard'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // 인증(미로그인)은 AuthProvider 자동 로그인 + AuthRetryGate 가, 프로필 미등록은
   // ProfileGate 가 전담한다. 따라서 홈에서 today 401 을 직접 리다이렉트하지 않는다.
@@ -214,6 +226,7 @@ export function HomePage() {
               ) : null
             }
           />
+          {chart && <WhatifTrigger />}
         </>
       )}
 
@@ -279,6 +292,8 @@ export function HomePage() {
                       navigate('/onboarding');
                       return;
                     }
+                    markPaidFeatureClickedToday('hapcard');
+                    setShowHapcardDot(false);
                     navigate(`/hapcard/${r.relation_id}?mode=${encodeURIComponent(r.mode ?? '썸합')}`);
                   }}
                 >
@@ -289,7 +304,23 @@ export function HomePage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
+                    position: 'relative',
                   }}>
+                    {showHapcardDot && (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: 'absolute',
+                          right: 10,
+                          top: 10,
+                          width: 10,
+                          height: 10,
+                          borderRadius: 999,
+                          backgroundColor: 'var(--destructive)',
+                          boxShadow: '0 0 0 3px var(--card)',
+                        }}
+                      />
+                    )}
                     {/* 아바타 */}
                     <div style={{
                       width: 40,
@@ -338,9 +369,6 @@ export function HomePage() {
 
       {/* 피할 말 + 좋은 행동 카드 */}
       {card && <AvoidActionCards card={card} />}
-
-      {/* 또 다른 나 진입 버튼 (차트 있을 때만) */}
-      {card && chart && <WhatifTrigger />}
 
       {/* 인앱토스 리워드 광고 — 사용자가 누를 때만 전면형 보상 광고 노출 */}
       <RewardedAdCard />

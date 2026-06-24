@@ -34,26 +34,44 @@ vi.mock('@/lib/auth/AuthProvider', () => ({
 import { renderWithProviders } from '@/test/render';
 import { HapcardPage } from './HapcardPage';
 
-function mockFetch402() {
+function mockFetchPreflightPayRequired() {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({
-      ok: false,
-      status: 402,
-      json: () =>
-        Promise.resolve({
-          // 서버 실제 응답 형태 — 오픈 할인가(amount_krw=500) 그대로.
-          error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
-          feature: 'hapcard',
-          ref: 'cache-key-abc',
-          amount_krw: 550,
-        }),
-    } as Response),
+    vi.fn((url: string) => {
+      if (url.includes('/api/hapcards/preflight')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              mode: 'pay_required',
+              feature: 'hapcard',
+              ref: 'cache-key-abc',
+              token_cost: 11,
+              amount_krw: 550,
+              balance: 10,
+              shortage: 1,
+              payment: { feature: 'hapcard', ref: 'cache-key-abc', amount_krw: 550 },
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 402,
+        json: () =>
+          Promise.resolve({
+            error: { code: 'PAYMENT_REQUIRED', message: 'payment required' },
+            feature: 'hapcard',
+            ref: 'cache-key-abc',
+            amount_krw: 550,
+          }),
+      } as Response);
+    }),
   );
 }
 
 beforeEach(() => {
-  mockFetch402();
+  mockFetchPreflightPayRequired();
 });
 
 afterEach(() => {
@@ -75,7 +93,7 @@ describe('HapcardPage 402 결제 흐름', () => {
     await screen.findByRole('checkbox');
 
     // 고지가는 서버 제공 실청구액(오픈 할인가 ₩550)을 표시해야 한다 — 하드코딩 정가 아님.
-    expect(screen.getByText(/₩550이 필요해요/)).toBeInTheDocument();
+    expect(screen.getByText(/부적 1개가 부족해 결제가 필요해요/)).toBeInTheDocument();
 
     const payButton = screen.getByRole('button', { name: /결제하기/ });
     // 동의 전: 비활성

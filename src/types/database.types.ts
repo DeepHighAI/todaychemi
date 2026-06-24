@@ -39,6 +39,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_jobs: {
+        Row: {
+          completed_at: string | null
+          error_code: string | null
+          feature: string
+          job_id: string
+          notified_at: string | null
+          ref: string
+          result_path: string | null
+          route_payload: Json
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_code?: string | null
+          feature: string
+          job_id?: string
+          notified_at?: string | null
+          ref: string
+          result_path?: string | null
+          route_payload?: Json
+          started_at?: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_code?: string | null
+          feature?: string
+          job_id?: string
+          notified_at?: string | null
+          ref?: string
+          result_path?: string | null
+          route_payload?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       anon_requests: {
         Row: {
           bucket_minute: string

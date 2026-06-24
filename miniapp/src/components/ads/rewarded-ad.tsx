@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { showRewardNotice } from '@/components/rewards/reward-notice-store';
 
 const TEST_REWARDED_AD_GROUP_ID = 'ait-ad-test-rewarded-id';
 const EXPECTED_REWARD_UNIT_TYPE = '부적';
@@ -166,7 +167,9 @@ export function RewardedAdCard({ env }: { env?: RewardedAdEnv } = {}) {
       await queryClient.invalidateQueries({ queryKey: ['me-wallet'] });
       await queryClient.invalidateQueries({ queryKey: ['rewarded-ad-status'] });
       if (reward?.awarded && (reward.amount_awarded ?? 0) > 0) {
-        setMessage(t('granted', { count: reward.amount_awarded ?? rewardAmount }));
+        const amount = reward.amount_awarded ?? rewardAmount;
+        setMessage(t('granted', { count: amount }));
+        showRewardNotice({ amount, title: `리워드 부적 ${amount}개를 받았어요` });
         return;
       }
       if (reward?.reason === 'DAILY_LIMIT_REACHED') {

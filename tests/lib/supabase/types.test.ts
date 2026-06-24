@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { Database } from '@/types/database.types';
 
 describe('Database types', () => {
-  it('has 22 tables in public schema (incl. classics, share rewards, legal consents)', () => {
+  it('has 23 tables in public schema (incl. classics, share rewards, legal consents, analysis jobs)', () => {
     type Tables = keyof Database['public']['Tables'];
     const expected: Tables[] = [
       'users',
@@ -28,8 +28,9 @@ describe('Database types', () => {
       'feedback_events',
       'legal_consents',
       'classics',
+      'analysis_jobs',
     ];
-    expect(expected).toHaveLength(22);
+    expect(expected).toHaveLength(23);
   });
 
   it('relations.Row has nickname (ADR-011: 별명만)', () => {

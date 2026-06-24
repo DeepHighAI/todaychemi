@@ -14,6 +14,7 @@
  * 케미카드 보기 CTA → /hapcard/:relationId?mode=...
  */
 
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +28,10 @@ import { MemoSection } from '@/components/feed/MemoSection';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { convertHanja } from '@/lib/glossary/post-process';
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '@/lib/paid-feature-attention';
 import {
   DETAILED_TEMPERATURE_PRECISION,
   formatTemperatureDeltaBetweenScores,
@@ -42,6 +47,14 @@ export function RelationDetailPage() {
   const tMode = useTranslations('relations.new.mode');
   const queryClient = useQueryClient();
   const { token } = useAuth();
+  const [showHapcardDot, setShowHapcardDot] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowHapcardDot(shouldShowPaidFeatureAttention('hapcard'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // relationId 없는 경우는 라우터가 보장하지만 TypeScript 안전 처리
   const id = relationId ?? '';
@@ -266,16 +279,36 @@ export function RelationDetailPage() {
         />
 
         {/* CTA — 케미카드 보기 (풀폭 pill 프라이머리, 글로우 강조) */}
-        <Button
-          type="button"
-          size="cta"
-          className="btn-cta"
-          onClick={() =>
-            navigate(`/hapcard/${relation.relation_id}?mode=${encodeURIComponent(relation.mode)}`)
-          }
-        >
-          {t('cta')}
-        </Button>
+        <div style={{ position: 'relative' }}>
+          {showHapcardDot && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                right: 18,
+                top: 10,
+                zIndex: 1,
+                width: 10,
+                height: 10,
+                borderRadius: 999,
+                backgroundColor: 'var(--destructive)',
+                boxShadow: '0 0 0 3px var(--primary)',
+              }}
+            />
+          )}
+          <Button
+            type="button"
+            size="cta"
+            className="btn-cta"
+            onClick={() => {
+              markPaidFeatureClickedToday('hapcard');
+              setShowHapcardDot(false);
+              navigate(`/hapcard/${relation.relation_id}?mode=${encodeURIComponent(relation.mode)}`);
+            }}
+          >
+            {t('cta')}
+          </Button>
+        </div>
       </div>
     </main>
   );

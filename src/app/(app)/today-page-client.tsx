@@ -25,6 +25,10 @@ import { WhatifTrigger } from '@/components/today/whatif-trigger';
 import { LoadingState } from '@/components/feedback/LoadingState';
 import { SwipeRow } from '@/components/layout/swipe-row';
 
+import {
+  markPaidFeatureClickedToday,
+  shouldShowPaidFeatureAttention,
+} from '@/lib/paid-feature-attention';
 import { formatTodayTemperature } from '@/lib/scoring/temperature';
 import { todayKST } from '@/lib/today/kst-date';
 import type { DailyHapCard } from '@/types/dailyHap';
@@ -103,6 +107,7 @@ export default function TodayPageClient() {
   });
 
   const [confirmDelete, setConfirmDelete] = useState<FeedListItem | null>(null);
+  const [showHapcardDot, setShowHapcardDot] = useState(false);
 
   const todayErrorMsg = todayQuery.error?.message;
   const showFallbackToday = todayQuery.isError && todayErrorMsg !== 'UNAUTHORIZED';
@@ -123,6 +128,13 @@ export default function TodayPageClient() {
   useEffect(() => {
     if (todayQuery.isError && todayErrorMsg === 'UNAUTHORIZED') router.push('/start');
   }, [todayQuery.isError, todayErrorMsg, router]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowHapcardDot(shouldShowPaidFeatureAttention('hapcard'));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const topRelations = relations.slice(0, TOP_N_RELATIONS);
 
@@ -171,6 +183,7 @@ export default function TodayPageClient() {
               ) : null
             }
           />
+          {chart && <WhatifTrigger />}
         </>
       )}
 
@@ -208,10 +221,18 @@ export default function TodayPageClient() {
                       router.push('/onboarding');
                       return;
                     }
+                    markPaidFeatureClickedToday('hapcard');
+                    setShowHapcardDot(false);
                     router.push(`/hapcard/${r.relation_id}?mode=${encodeURIComponent(r.mode ?? '썸합')}`);
                   }}
                 >
-                  <div className="bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3">
+                  <div className="relative bg-card rounded-[var(--r-md)] p-3 flex items-center gap-3">
+                    {showHapcardDot && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-[var(--destructive)] shadow-[0_0_0_3px_var(--card)]"
+                      />
+                    )}
                     <div className="w-10 h-10 rounded-[12px] flex items-center justify-center font-bold text-[13px] shrink-0"
                       style={{ background: 'var(--p-90)', color: 'var(--p-10)' }}>
                       {r.nickname.slice(0, 2)}
@@ -242,7 +263,6 @@ export default function TodayPageClient() {
       {card && (
         <>
           <AvoidActionCards card={card} />
-          {chart && <WhatifTrigger />}
         </>
       )}
 

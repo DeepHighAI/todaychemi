@@ -75,13 +75,13 @@ pnpm seed:test-user
 
 ## ⚠ LLM 비용 경고
 
-F5(케미카드)·F6(오늘 홈)·F8(만약에 우리)는 LLM API 호출이 발생한다.
+F5(케미카드)·F6(오늘 홈)·F8(오늘의 나는?)는 LLM API 호출이 발생한다.
 
 | Flow | 예상 비용/회 | 캐시 조건 |
 |---|---|---|
 | F5 케미카드 | ~$0.05 (GPT-5) | 같은 user+relation 의 `chart_hash` 가 동일하면 DB 캐시 hit → 재호출 무료 |
 | F6 오늘 홈 | ~$0.05 (GPT-5 mini) | 오늘 날짜(`jinjin_date`) 기준 DB 캐시. 같은 날 재접속 = 무료 |
-| F8 만약에 우리 | ~$0.05/모드 (GPT-5) | `cache_key`(chart_hash + type) 기준 캐시. 같은 날 같은 모드 재호출 = 무료 |
+| F8 오늘의 나는? | ~$0.05/모드 (GPT-5) | `cache_key`(chart_hash + type + target_date) 기준 캐시. 같은 날 같은 모드 재호출 = 무료 |
 
 한도: `LLM_DAILY_BUDGET_USD=20` (`.env.local` 설정값). 초과 시 503 응답.
 
@@ -302,7 +302,7 @@ F5(케미카드)·F6(오늘 홈)·F8(만약에 우리)는 LLM API 호출이 발�
 | DateLine | 오늘 날짜 (YYYY.MM.DD 형식) |
 | TodayHero | LLM 생성 오늘 운세 카드 (한 줄 결론 + 조언) |
 | AvoidActionCards | 오늘 피할 말 + 오늘 좋은 행동 |
-| WhatifTrigger | `이런건 어때 ✨` 버튼 (만약에 우리 진입) |
+| WhatifTrigger | `오늘의 나는?` spotlight CTA |
 | RecentFeedRows | 최근 인연 최대 5명 (합점수 표시) |
 
 ### Failure check
@@ -371,7 +371,7 @@ phases 배열에서 각 단계 ms 비교하여 병목 단계 식별 가능.
 
 ---
 
-## 9. F8 — 만약에 우리 6모드
+## 9. F8 — 오늘의 나는? 6모드
 
 **URL**: `/` 에서 WhatifSheet 진입 (또는 직접 `/whatif/[type]`)  
 **LLM**: 있음 (~$0.05/모드, GPT-5). 당일 same 모드 캐시 hit 시 무료.  
@@ -495,7 +495,7 @@ pnpm seed:prompts
 | F5 케미카드 | `/api/hapcards` (POST, 최초 생성) |
 | F6 오늘 홈 | `/api/today` |
 | F7 /me | `/api/me/chart` |
-| F8 만약에 우리 | `/api/whatif/[type]` |
+| F8 오늘의 나는? | `/api/whatif/[type]` |
 
 ---
 

@@ -102,8 +102,8 @@ const TEXT_CHECKS: TextCheck[] = [
   },
   {
     file: 'docs/runbooks/kakao_oauth_share.md',
-    label: 'Kakao OAuth/share runbook covers MVP production origin and secret-free evidence',
-    pattern: /NEXT_PUBLIC_APP_URL[\s\S]*https:\/\/<vercel-production-url>[\s\S]*https:\/\/<vercel-production-url>\/api\/share\/kakao\/callback[\s\S]*external_settings_checklist\.md/,
+    label: 'Kakao login removal and share runbook cover production callback and secret-free evidence',
+    pattern: /Kakao Login — Removed[\s\S]*Kakao Disabled[\s\S]*Production: `https:\/\/<vercel-production-url>\/api\/share\/kakao\/callback`[\s\S]*external_settings_checklist\.md/,
   },
   {
     file: 'docs/runbooks/launch_opening.md',

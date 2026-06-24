@@ -7,12 +7,12 @@ import { renderWithProviders } from '@/test/render';
 import { WhatifTrigger } from './whatif-trigger';
 
 describe('WhatifTrigger', () => {
-  it('주요 CTA 는 테마 안전 foreground 토큰을 사용한다', () => {
+  it('spotlight CTA 는 카드 배경과 텍스트 토큰을 사용한다', () => {
     renderWithProviders(<WhatifTrigger />);
-    const trigger = screen.getByRole('button', { name: '또 다른 나' });
+    const trigger = screen.getByRole('button', { name: '오늘의 나는?' });
 
-    expect(trigger.style.backgroundColor).toContain('var(--primary)');
-    expect(trigger.style.color).toContain('var(--primary-foreground)');
+    expect(trigger.style.backgroundColor).toContain('var(--bg-card)');
+    expect(trigger.style.color).toContain('var(--text-primary)');
   });
 
   it('vaul WhatifSheet 를 열고 선택한 모드 라우트로 이동한다', async () => {
@@ -24,7 +24,7 @@ describe('WhatifTrigger', () => {
       </Routes>,
     );
 
-    await user.click(screen.getByRole('button', { name: '또 다른 나' }));
+    await user.click(screen.getByRole('button', { name: '오늘의 나는?' }));
     await user.click(await screen.findByRole('button', { name: '일할 때 나' }));
 
     expect(await screen.findByText('WORK_SCREEN')).toBeInTheDocument();

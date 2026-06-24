@@ -1,5 +1,5 @@
 /**
- * diagnostic.ts — 또 다른 나(whatif) 타입 정의
+ * diagnostic.ts — 오늘의 나는?(whatif) 타입 정의
  *
  * 웹앱 원본: src/types/diagnostic.ts (read-only reference)
  * Zod 의존성이 없으므로 타입만 포트 (Zod 없이 순수 TS).
@@ -33,11 +33,35 @@ export interface ClassicCitation {
   modern_translation: string;
 }
 
-// 또 다른 나 LLM 출력 구조
+export interface WhatifTodayContext {
+  title: string;
+  summary: string;
+  day_signal: string;
+}
+
+export interface WhatifSajuBasis {
+  day_master: string;
+  dominant_sipsin: string[];
+  missing_sipsin: string[];
+  sinkang: string | null;
+  yongsin_candidates: string[];
+  notes: [string, string, string];
+}
+
+export interface WhatifSituationReading {
+  strength: [string, string, string];
+  caution: [string, string, string];
+}
+
+// 오늘의 나는? LLM 출력 구조
 export interface WhatifContent {
   body: string;
   keywords: [string, string, string, string, string];
+  today_context?: WhatifTodayContext;
+  saju_basis?: WhatifSajuBasis;
+  situation_reading?: WhatifSituationReading;
   do_first: [string, string, string];
+  avoid_today?: [string, string];
   first_meet_tips?: [string, string, string];
   classic_citation?: ClassicCitation[];
 }
@@ -52,5 +76,6 @@ export interface WhatifResult {
   llm_model: string;
   cache_key: string;
   chart_hash: string;
+  target_date: string;
   created_at: string;
 }

@@ -281,23 +281,25 @@ describe('POST /api/hapcards/[id]/replay', () => {
     expect(buildReplay).not.toHaveBeenCalled();
   });
 
-  it('402 → idempotency row 존재하나 미잠금(선생성 미결제) → 재빌드 없이 PAYMENT_REQUIRED', async () => {
+  it('200 → idempotency row 존재하나 미잠금이면 보유 부적 게이트 후 재빌드 없이 반환한다', async () => {
     const userClient = makeUserClient({ idempotencyRow: REPLAY_RESULT });
     const { client: svcClient } = makeServiceClient();
     vi.mocked(createServerClient).mockResolvedValue(userClient as never);
     vi.mocked(createServiceRoleClient).mockReturnValue(svcClient as never);
     vi.mocked(isFeatureUnlocked).mockResolvedValue(false);
+    vi.mocked(resolveFeatureCharge).mockResolvedValue({
+      mode: 'free',
+      price: FEATURE_PRICES_KRW.replay,
+      charged: true,
+    });
 
     const res = await POST(makeRequest({}), makeParams());
 
-    expect(res.status).toBe(402);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.error.code).toBe('PAYMENT_REQUIRED');
-    expect(body.feature).toBe('replay');
-    expect(body.ref).toBe(REF);
-    expect(body.amount_krw).toBe(440);
+    expect(body.replay_id).toBe('replay-uuid-001');
     expect(buildReplay).not.toHaveBeenCalled();
-    expect(resolveFeatureCharge).not.toHaveBeenCalled();
+    expect(resolveFeatureCharge).toHaveBeenCalledWith(svcClient, USER_ID, 'replay', REF);
   });
 
   it('402 → pay_required (잔액 부족) → 선생성 후 PAYMENT_REQUIRED', async () => {

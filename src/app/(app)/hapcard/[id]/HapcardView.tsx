@@ -611,38 +611,43 @@ function ExpandPanel({
       id="hapcard-expand-panel"
       aria-labelledby="hapcard-expand-panel-title"
       data-testid="hapcard-expand-panel"
-      className="bg-card border border-border rounded-[var(--r-xl)] overflow-hidden shadow-[var(--e-1)] animate-in fade-in slide-in-from-top-2"
+      className="bg-card border border-border rounded-[var(--r-xl)] shadow-[var(--e-1)] animate-in fade-in slide-in-from-top-2"
     >
-      <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-2">
-        <h2 id="hapcard-expand-panel-title" className="font-h2 text-foreground">{t('title')}</h2>
-        {/* G-5 (ADR-023 강화): 쉽게 보기 — 본문 명리 용어 평이어 전환 */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={easyMode}
-          aria-label={t('easyMode.label')}
-          onClick={onToggleEasyMode}
-          className={`inline-flex items-center gap-1.5 rounded-[var(--r-pill)] px-3 py-1.5 text-[12px] font-bold transition ${
-            easyMode
-              ? 'bg-[var(--p-40)] text-white'
-              : 'bg-[var(--surface-1)] text-muted-foreground border border-border'
-          }`}
-        >
-          {t('easyMode.label')}
-        </button>
-      </header>
-      <nav className="flex gap-0.5 bg-[var(--surface-1)] rounded-[12px] p-[3px] mx-4 mb-3">
-        {tabs.map(tb => (
-          <button key={tb.k} type="button" onClick={() => onTab(tb.k)}
-            className={`flex-1 py-2.5 rounded-[9px] text-[12px] font-semibold transition ${
-              tab === tb.k
-                ? 'bg-[var(--surface)] text-primary shadow-[var(--e-1)] font-extrabold'
-                : 'text-muted-foreground'
-            }`}>
-            {tb.label}
+      <div className="sticky top-0 z-20 rounded-t-[var(--r-xl)] border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85">
+        <header className="px-4 pt-4 pb-3 flex items-center justify-between gap-2">
+          <h2 id="hapcard-expand-panel-title" className="font-h2 text-foreground">{t('title')}</h2>
+          {/* G-5 (ADR-023 강화): 쉽게 보기 — 본문 명리 용어 평이어 전환 */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={easyMode}
+            aria-label={t('easyMode.label')}
+            onClick={onToggleEasyMode}
+            className={`inline-flex items-center gap-1.5 rounded-[var(--r-pill)] px-3 py-1.5 text-[12px] font-bold transition ${
+              easyMode
+                ? 'bg-[var(--p-40)] text-white'
+                : 'bg-[var(--surface-1)] text-muted-foreground border border-border'
+            }`}
+          >
+            {t('easyMode.label')}
           </button>
-        ))}
-      </nav>
+        </header>
+        <nav
+          data-testid="hapcard-expand-tabs"
+          className="flex gap-0.5 bg-[var(--surface-1)] rounded-[12px] p-[3px] mx-4 mb-3"
+        >
+          {tabs.map(tb => (
+            <button key={tb.k} type="button" onClick={() => onTab(tb.k)}
+              className={`flex-1 py-2.5 rounded-[9px] text-[12px] font-semibold transition ${
+                tab === tb.k
+                  ? 'bg-[var(--surface)] text-primary shadow-[var(--e-1)] font-extrabold'
+                  : 'text-muted-foreground'
+              }`}>
+              {tb.label}
+            </button>
+          ))}
+        </nav>
+      </div>
       <div className="px-4 pb-5 space-y-3">
         {tab === 'summary' && (
           <div data-testid="hapcard-expand-summary-text" className="space-y-4">

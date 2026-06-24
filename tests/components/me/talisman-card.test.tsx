@@ -74,7 +74,7 @@ describe('TalismanCard', () => {
 
     expect(screen.getByText('케미카드')).toBeInTheDocument();
     expect(screen.getByText('케미 다시 맞추기')).toBeInTheDocument();
-    expect(screen.getByText('또 다른 나')).toBeInTheDocument();
+    expect(screen.getByText('오늘의 나는?')).toBeInTheDocument();
   });
 
   it('증감 부호를 +/- 로 표기한다', () => {

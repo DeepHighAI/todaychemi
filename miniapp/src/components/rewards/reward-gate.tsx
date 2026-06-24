@@ -9,13 +9,13 @@
  * - 웹앱 FreeTalismanRewardGate(src/components/rewards) 와 동일 역할의 미니앱 포트.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { RewardNotice } from './reward-notice';
+import { showRewardNotice } from './reward-notice-store';
 
 interface SessionReward {
   awarded?: boolean;
@@ -35,7 +35,6 @@ export function RewardGate() {
   const { token, isAuthed } = useAuth();
   const queryClient = useQueryClient();
   const requestedRef = useRef(false);
-  const [notice, setNotice] = useState<{ amount: number; isSignup: boolean } | null>(null);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -51,7 +50,7 @@ export function RewardGate() {
         void queryClient.invalidateQueries({ queryKey: ['me-wallet'] });
         const amount = reward.amount_awarded ?? 0;
         if (amount > 0) {
-          setNotice({ amount, isSignup: Boolean(reward.signup_awarded) });
+          showRewardNotice({ amount, isSignup: Boolean(reward.signup_awarded) });
         }
       })
       .catch(() => {
@@ -60,12 +59,5 @@ export function RewardGate() {
       });
   }, [isAuthed, location.pathname, token, queryClient]);
 
-  if (!notice) return null;
-  return (
-    <RewardNotice
-      amount={notice.amount}
-      isSignup={notice.isSignup}
-      onClose={() => setNotice(null)}
-    />
-  );
+  return null;
 }

@@ -1,5 +1,5 @@
 /**
- * whatif-sheet.tsx — 또 다른 나 6모드 선택 드로어 (미니앱 포트)
+ * whatif-sheet.tsx — 오늘의 나는? 6모드 선택 드로어 (미니앱 포트)
  *
  * 웹앱 원본: src/components/whatif/whatif-sheet.tsx (next/navigation + Tailwind)
  * 변경: useRouter(next/navigation) → useNavigate(react-router-dom),

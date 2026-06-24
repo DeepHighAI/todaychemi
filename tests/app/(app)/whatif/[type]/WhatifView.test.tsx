@@ -33,14 +33,18 @@ describe('WhatifView', () => {
     expect(await screen.findByTestId('loading-state')).toBeInTheDocument();
   });
 
-  it('success(work) → whatif-view + hero/keywords/do-first 노출, first-meet-tips 미노출', async () => {
+  it('success(work) → whatif-view + 구조화 섹션 노출, first-meet-tips 미노출', async () => {
     const result = makeMockInsertedRow();
     mockFetch.mockResolvedValue({ ok: true, json: async () => result });
     renderWithProviders(<WhatifView />);
     expect(await screen.findByTestId('whatif-view')).toBeInTheDocument();
     expect(screen.getByTestId('whatif-hero')).toBeInTheDocument();
     expect(screen.getByTestId('whatif-keywords')).toBeInTheDocument();
+    expect(screen.getByTestId('whatif-today-context')).toBeInTheDocument();
+    expect(screen.getByTestId('whatif-saju-basis')).toBeInTheDocument();
+    expect(screen.getByTestId('whatif-situation-reading')).toBeInTheDocument();
     expect(screen.getByTestId('whatif-do-first')).toBeInTheDocument();
+    expect(screen.getByTestId('whatif-avoid-today')).toBeInTheDocument();
     expect(screen.queryByTestId('whatif-first-meet-tips')).toBeNull();
   });
 

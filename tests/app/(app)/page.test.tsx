@@ -268,14 +268,14 @@ describe('TodayPage (composition)', () => {
   it('chart 있을 때 WhatifTrigger 카드 렌더', async () => {
     setupRoutes({});
     await renderTodayPage();
-    expect(await screen.findByRole('button', { name: '또 다른 나' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '오늘의 나는?' })).toBeInTheDocument();
   });
 
   it('chart=null 이면 WhatifTrigger를 렌더하지 않는다', async () => {
     setupRoutes({ meChart: { ok: true, body: { ok: true, chart: null } } });
     await renderTodayPage();
     await screen.findByText('좋은 에너지가 흐르는 날');
-    expect(screen.queryByRole('button', { name: '또 다른 나' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '오늘의 나는?' })).toBeNull();
   });
 
   it('chart=null 이면 최근 인연 클릭 시 케미카드 대신 온보딩으로 안내한다', async () => {
