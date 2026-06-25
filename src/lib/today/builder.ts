@@ -2,6 +2,23 @@ import type { DailyHapCard, DailyHapResult } from '@/types/dailyHap';
 import type { ChartCore } from '@/types/chart';
 import type { Mode } from '@/types/mode';
 import { computeTodayCompatScore } from '@/lib/scoring/today';
+import { toErrorMessage } from '@/lib/errors/to-message';
+
+// 독립 fetch 의 결과 + 소요시간을 함께 캡처(병렬 실행용). reject 는 삼키고 ok=false 로 표시 —
+// 호출부가 canonical 순서로 phase 를 기록하고 throw 전파 시점을 직접 제어한다.
+type SettledFetch<T> =
+  | { ok: true; value: T; durationMs: number }
+  | { ok: false; error: unknown; durationMs: number };
+
+async function timedSettle<T>(fn: () => Promise<T>): Promise<SettledFetch<T>> {
+  const start = performance.now();
+  try {
+    const value = await fn();
+    return { ok: true, value, durationMs: performance.now() - start };
+  } catch (error) {
+    return { ok: false, error, durationMs: performance.now() - start };
+  }
+}
 
 export interface TodayRelationMeta {
   id: string;
@@ -128,14 +145,37 @@ export async function buildDailyHap(deps: BuildDailyHapDeps): Promise<DailyHapRe
     return cached;
   }
 
-  const selfChart = await measure('userChart', deps.fetchUserChart);
+  // userChart 와 relation 은 서로 독립 — 병렬 fetch 로 LLM 외 오버헤드를 줄인다.
+  // phases 는 canonical 순서(userChart→relation)로 기록하고, chart_null 단락 및
+  // throw 전파(기존 순차 measure 와 동일) 의미를 보존한다.
+  const [userChartSettled, relationSettled] = await Promise.all([
+    timedSettle(deps.fetchUserChart),
+    timedSettle(deps.fetchRelation),
+  ]);
+
+  phases.push({ name: 'userChart', durationMs: userChartSettled.durationMs });
+  if (!userChartSettled.ok) {
+    failedPhase = 'userChart';
+    errorMessage = toErrorMessage(userChartSettled.error);
+    throw userChartSettled.error;
+  }
+  const selfChart = userChartSettled.value;
   if (!selfChart) {
+    // chart_null 단락: relation 은 병렬로 fetch 됐지만 phase 기록 없이 TEMPLATE 반환(기존 동작 유지).
     await flushTrace({ failedPhase: 'userChart', errorMessage: 'chart_null' });
     return { ...TEMPLATE };
   }
 
-  // 인연 메타 + 인연 chart fetch (인연 0건 사용자면 모두 null)
-  const relation = await measure('relation', deps.fetchRelation);
+  // 인연 메타(병렬로 이미 fetch 완료) — canonical 순서로 phase 기록 후 처리.
+  phases.push({ name: 'relation', durationMs: relationSettled.durationMs });
+  if (!relationSettled.ok) {
+    failedPhase = 'relation';
+    errorMessage = toErrorMessage(relationSettled.error);
+    throw relationSettled.error;
+  }
+  const relation = relationSettled.value;
+
+  // 인연 chart fetch (relation.id 의존이라 순차 유지 — 인연 0건이면 null)
   const relationChart = relation
     ? await measure('relationChart', () => deps.fetchRelationChart(relation.id))
     : null;
