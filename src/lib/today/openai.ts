@@ -135,6 +135,9 @@ export async function callDailyHapLlm(
           // QA 2026-05-28 ISSUE-001: 800 한도에서 GPT-5 reasoning + JSON output 잘림 -> LLM_PARSE_FAIL.
           // 2000 으로 상향하여 'Unexpected end of JSON input' 회귀 차단. 비용 +10-20% 예상.
           maxCompletionTokens: 2000,
+          // 오늘 카드는 가벼운 일일 메시지 — GPT-5 유지하되 reasoning 'minimal' 로 생성시간 단축
+          // (14~26s 콜드 생성 → TEMPLATE 폴백 빈도↓). hapcard/replay 심층 해석은 'low' 유지.
+          reasoningEffort: 'minimal',
           timeoutMs: TODAY_LLM_TIMEOUT_MS,
         },
         {

@@ -544,6 +544,22 @@ describe('callOpenAi — GPT-5 클라이언트 래퍼', () => {
     expect(callArgs.max_completion_tokens).toBe(4000);
   });
 
+  it('reasoningEffort 지정 시 reasoning_effort 를 그 값으로 전달한다(today=minimal)', async () => {
+    const create = vi.fn().mockResolvedValue(makeOpenAiResponse(makeValidOutputJson()));
+    const { client: supabase } = makeMockServiceClient();
+
+    await callOpenAi(
+      { systemPrompt: '시스템', userPayload: makeValidPayload(), reasoningEffort: 'minimal' },
+      {
+        openaiClient: { chat: { completions: { create } } },
+        supabaseServiceRole: supabase,
+        bannedPhraseCatalog: EMPTY_CATALOG,
+      },
+    );
+
+    expect(create.mock.calls[0][0].reasoning_effort).toBe('minimal');
+  });
+
   it('5xx 에러 응답 → 재시도', async () => {
     const validJson = makeValidOutputJson();
     const create = vi

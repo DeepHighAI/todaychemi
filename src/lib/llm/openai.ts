@@ -97,6 +97,9 @@ export interface CallOpenAiInput<TOutput = HapcardLlmOutput> {
   model?: string;
   maxCompletionTokens?: number;
   timeoutMs?: number;
+  // GPT-5 reasoning 깊이. 미제공 시 'low'. today 카드는 'minimal' 로 생성시간 단축
+  // (hapcard/replay 같은 유료 심층 해석은 'low' 유지 — 호출부에서 명시).
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
 }
 
 export interface CallOpenAiResult<TOutput = HapcardLlmOutput> {
@@ -204,7 +207,7 @@ export async function callOpenAi<TOutput = HapcardLlmOutput>(
       ],
       response_format: { type: 'json_object' },
       store: false,
-      reasoning_effort: 'low',
+      reasoning_effort: input.reasoningEffort ?? 'low',
       max_completion_tokens: input.maxCompletionTokens ?? 4000,
     };
     const options = input.timeoutMs === undefined ? undefined : { timeout: input.timeoutMs };

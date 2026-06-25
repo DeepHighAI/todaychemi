@@ -170,11 +170,11 @@ describe('callDailyHapLlm — model + params (gpt-5)', () => {
     expect(mockCreate.mock.calls[0][0]).not.toHaveProperty('temperature');
   });
 
-  it('reasoning_effort: "low" 포함', async () => {
+  it('reasoning_effort: "minimal" 포함 (today 생성시간 단축, gpt-5 유지)', async () => {
     mockCreate.mockClear();
     const { callDailyHapLlm } = await import('@/lib/today/openai');
     await callDailyHapLlm(makeInput(), mockOpenai, mockSupabase, TEST_USER_ID);
-    expect(mockCreate.mock.calls[0][0].reasoning_effort).toBe('low');
+    expect(mockCreate.mock.calls[0][0].reasoning_effort).toBe('minimal');
   });
 
   it('LLM 응답 빈 필드 → 기본 fallback 채움', async () => {
@@ -306,6 +306,15 @@ describe('callDailyHapLlm — 3축 인연 종합 (G2)', () => {
     expect(userContent.chart_core).toBeDefined();
     expect(userContent.today_date).toBe('2026-05-28');
     expect(userContent.relation_chart_core ?? null).toBeNull();
+  });
+
+  it('today 카드는 reasoning_effort=minimal 로 호출한다(생성시간 단축, gpt-5 유지)', async () => {
+    mockCreate.mockClear();
+    const { callDailyHapLlm } = await import('@/lib/today/openai');
+    await callDailyHapLlm(makeInput(null), mockOpenai, mockSupabase, TEST_USER_ID);
+    const request = mockCreate.mock.calls[0][0];
+    expect(request.reasoning_effort).toBe('minimal');
+    expect(request.model).toBe('gpt-5');
   });
 
   it('relation_chart 존재 → user message 에 relation_chart_core 포함', async () => {
