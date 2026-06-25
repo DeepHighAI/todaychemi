@@ -96,9 +96,12 @@ export function Step4Review({ onSubmitSuccess }: Step4ReviewProps) {
       await apiFetch('/api/onboarding', { method: 'POST', token, body });
 
       // 3) 새 프로필 반영 — ProfileGate 가 갱신된 chart 를 보고 홈 입장을 허용하도록 캐시 무효화.
-      //    ['me-chart'] 는 await — navigate 시점에 stale-null 로 남아 방금 끝낸 온보딩으로
-      //    다시 튕기는 레이스를 막는다. today/relations 는 fire-and-forget.
-      await queryClient.invalidateQueries({ queryKey: ['me-chart'] });
+      //    ['me-chart'] 는 await + refetchType:'all' — onboarding 화면은 ProfileGate 밖이라
+      //    제출 시점에 ['me-chart'] 가 inactive 다. 기본 invalidateQueries 는 active 쿼리만
+      //    리페치·await 하므로 inactive 면 즉시 리졸브(리페치 X) → navigate 후 게이트가 stale-null
+      //    을 보고 방금 끝낸 온보딩으로 다시 튕긴다. refetchType:'all' 로 inactive 까지 리페치·await
+      //    해 navigate 전에 실제 chart 를 캐시에 채운다. today/relations 는 fire-and-forget.
+      await queryClient.invalidateQueries({ queryKey: ['me-chart'], refetchType: 'all' });
       void queryClient.invalidateQueries({ queryKey: ['today'] });
       void queryClient.invalidateQueries({ queryKey: ['relations'] });
 

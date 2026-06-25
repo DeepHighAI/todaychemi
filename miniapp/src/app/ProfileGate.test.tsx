@@ -37,10 +37,30 @@ describe('ProfileGate', () => {
     expect(screen.queryByText('ONBOARDING_STUB')).not.toBeInTheDocument();
   });
 
-  it('확정 미등록(chart=null) → /onboarding 으로 이동', () => {
-    mockUseMeChart.mockReturnValue({ data: null, isLoading: false, isError: false } as never);
+  it('확정 미등록(chart=null, 리페치 아님) → /onboarding 으로 이동', () => {
+    mockUseMeChart.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+    } as never);
     renderGate();
     expect(screen.getByText('ONBOARDING_STUB')).toBeInTheDocument();
+    expect(screen.queryByText('HOME_STUB')).not.toBeInTheDocument();
+  });
+
+  it('chart=null 이지만 리페치 진행 중(isFetching) → LoadingState (stale-null 바운스 방지)', () => {
+    // 온보딩 직후 invalidate 가 inactive ['me-chart'] 를 리페치하는 동안, 게이트가 캐시에 남은
+    // stale null 을 보고 방금 끝낸 온보딩으로 다시 튕기지 않도록 보류한다.
+    mockUseMeChart.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isFetching: true,
+      isError: false,
+    } as never);
+    renderGate();
+    expect(screen.getByTestId('loading-state')).toBeInTheDocument();
+    expect(screen.queryByText('ONBOARDING_STUB')).not.toBeInTheDocument();
     expect(screen.queryByText('HOME_STUB')).not.toBeInTheDocument();
   });
 

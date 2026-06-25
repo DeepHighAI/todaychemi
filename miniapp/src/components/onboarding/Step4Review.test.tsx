@@ -93,11 +93,13 @@ describe('Step4Review — 제출 흐름', () => {
     expect(onSubmitSuccess).toHaveBeenCalled();
   });
 
-  it('성공 시 ["me-chart"] 쿼리를 무효화한다(ProfileGate 재튕김 방지)', async () => {
+  it('성공 시 ["me-chart"] 쿼리를 refetchType:"all" 로 무효화한다(inactive 쿼리도 리페치 → ProfileGate 재튕김 방지)', async () => {
     renderWithProviders(<Step4Review onSubmitSuccess={vi.fn()} />);
     await checkAllConsents();
     await userEvent.click(screen.getByRole('button', { name: '시작하기' }));
-    await waitFor(() => expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['me-chart'] }));
+    await waitFor(() =>
+      expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['me-chart'], refetchType: 'all' }),
+    );
   });
 
   it('consent POST 의 body 는 terms/privacy/age 모두 true 다', async () => {

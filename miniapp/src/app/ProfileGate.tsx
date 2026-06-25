@@ -5,10 +5,11 @@
  * 탭에서도 온보딩으로 보낸다(완료 전 앱 사용 제한). /me 의 '등록하기' 버튼은 안전망으로 유지.
  *
  * 상태별 동작:
- *   - isLoading           → LoadingState (게이트 보류, 깜빡임 방지)
- *   - 확정 미등록(chart=null) → /onboarding 으로 replace (렌더형 Navigate)
- *   - 조회 실패(isError)  → Outlet 통과 (fail-open — 일시 장애에 사용자를 가두지 않음)
- *   - chart 있음          → Outlet 통과
+ *   - isLoading                  → LoadingState (게이트 보류, 깜빡임 방지)
+ *   - chart=null + 리페치 진행 중 → LoadingState (온보딩 직후 stale-null 바운스 방지)
+ *   - 확정 미등록(chart=null)     → /onboarding 으로 replace (렌더형 Navigate)
+ *   - 조회 실패(isError)         → Outlet 통과 (fail-open — 일시 장애에 사용자를 가두지 않음)
+ *   - chart 있음                 → Outlet 통과
  *
  * 온보딩 라우트는 이 게이트 밖(탭바 없는 그룹)이라 리다이렉트 루프가 생기지 않는다.
  * AuthProvider 가 인증 로딩 동안 children 을 렌더하지 않으므로 여기 도달 시 토큰은 항상 존재한다.
@@ -22,9 +23,11 @@ import { LoadingState } from '@/components/feedback/LoadingState';
 
 export function ProfileGate() {
   const { token } = useAuth();
-  const { data, isLoading, isError } = useMeChart(token);
+  const { data, isLoading, isFetching, isError } = useMeChart(token);
 
-  if (isLoading) {
+  // isLoading: 최초 로딩(데이터 없음). isFetching+null: 온보딩 직후 invalidate 가 inactive
+  // ['me-chart'] 를 리페치하는 중 — 캐시에 남은 stale null 로 바운스하지 않도록 보류한다.
+  if (isLoading || (!isError && data == null && isFetching)) {
     return (
       <div style={{ padding: '24px 16px' }}>
         <LoadingState />
