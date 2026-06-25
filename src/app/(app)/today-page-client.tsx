@@ -155,7 +155,13 @@ export default function TodayPageClient() {
       </section>
 
       {todayQuery.isLoading && (
-        <div className="px-4"><LoadingState /></div>
+        <div className="px-4">
+          <LoadingState
+            timeoutAfterMs={40_000}
+            timeoutMessage={t('loading.almost')}
+            timeoutTone="info"
+          />
+        </div>
       )}
 
       {card && (

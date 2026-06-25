@@ -309,7 +309,7 @@ F5(케미카드)·F6(오늘 홈)·F8(오늘의 나는?)는 LLM API 호출이 발
 
 | 증상 | 확인 |
 |---|---|
-| TodayHero 로딩 장시간 | `GET /api/today` 응답 시간 확인. LLM-only timeout 25s (`TODAY_LLM_TIMEOUT_MS`) — 그 이상 걸리면 KASI compute 또는 cache lookup 문제 |
+| TodayHero 로딩 장시간 | `GET /api/today` 응답 시간 확인. LLM-only timeout 45s (`TODAY_LLM_TIMEOUT_MS`, route maxDuration 60s) — 그 이상 걸리면 KASI compute 또는 cache lookup 문제 |
 | body 가 "오늘 메시지를 준비하지 못했어요" (TEMPLATE) | `error_events` 테이블 확인 — `error_code` IN ('LLM_TIMEOUT','LLM_PARSE_FAIL','USER_CHART_NOT_FOUND','TODAY_BUILD_FAIL') |
 | `TODAY_FETCH_FAILED` | OPENAI_API_KEY, 예산 한도, Supabase 연결 확인 |
 

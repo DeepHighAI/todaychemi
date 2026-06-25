@@ -196,7 +196,11 @@ export function HomePage() {
       {/* 로딩 */}
       {todayQuery.isLoading && (
         <div style={{ padding: '0 16px' }}>
-          <LoadingState />
+          <LoadingState
+            timeoutAfterMs={40_000}
+            timeoutMessage={t('loading.almost')}
+            timeoutTone="info"
+          />
         </div>
       )}
 

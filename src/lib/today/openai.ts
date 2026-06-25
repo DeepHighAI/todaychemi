@@ -11,9 +11,11 @@ import { computeCrossAnalysisSafe, projectCrossForToday } from '@/lib/saju/cross
 import type { AnthropicMessagesClient } from '@/lib/llm/anthropic';
 import type { BannedPhraseCategory } from '@/lib/llm/banned-phrases';
 
-// Task 1: 오늘카드 LLM-only timeout. 60s SDK 기본 → 25s 로 단축.
-// (전체 today 응답 시간 ≤ 30s 목표. KASI compute + DB save 가 약 5s 여유.)
-export const TODAY_LLM_TIMEOUT_MS = 25_000;
+// 오늘카드 LLM-only timeout. GPT-5 생성은 보통 14~26s 라 25s 한도에선 느린 콜드 생성이
+// LLM_TIMEOUT → TEMPLATE 폴백("오늘 메시지를 준비하지 못했어요")으로 새는 빈도가 높았다.
+// route.ts maxDuration=60(Hobby 상한) 안에서 45s 로 올려 느린 생성도 끝까지 기다려 완료·캐시한다
+// (KASI compute + DB save ~5-10s 여유). HomePage/today-page-client 의 안심 spinner(40s)와 정합.
+export const TODAY_LLM_TIMEOUT_MS = 45_000;
 
 // Task 2 / ADR-008: 인연 유무로 prompt_name 분기. canary 5% 라우팅은 loadPromptForUser 가 담당.
 const PROMPT_NAME_RELATION = 'today_with_relation';

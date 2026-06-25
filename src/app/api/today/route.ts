@@ -24,6 +24,11 @@ import { redactSensitiveLogText, sanitizeErrorForLog } from '@/lib/errors/saniti
 import type { DailyHapCard } from '@/types/dailyHap';
 import { DEFAULT_THEORY_PROFILE_VERSION, type ChartCore } from '@/types/chart';
 
+// 콜드스타트 LLM 생성(~25s) + KASI 가 Vercel 기본 함수 타임아웃에 끊겨 daily_haps 캐시가
+// 미기록되면 매 첫 로딩이 느린 경로를 반복한다. hapcards/route.ts:38 과 동일하게 여유 시간을
+// 확보한다(Hobby 상한 60s; nodejs 런타임은 클라가 끊겨도 함수를 끝까지 실행 → 캐시 persist).
+export const maxDuration = 60;
+
 // Task 1: builder trace 의 failedPhase + errorMessage 에서 error_events.error_code 추출.
 // openai.ts 가 LLM_TIMEOUT: / LLM_PARSE_FAIL: prefix 로 throw 하므로 그 패턴을 1순위로 매칭.
 function classifyTraceFailure(

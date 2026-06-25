@@ -58,4 +58,33 @@ describe('LoadingState', () => {
     });
     expect(onTimeout).toHaveBeenCalledOnce();
   });
+
+  it('timeoutAfterMs 를 늘리면 기본 20초에는 timeout 카드가 안 뜨고, 임계 이후 뜬다', () => {
+    renderWithProviders(<LoadingState timeoutAfterMs={40_000} />);
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(document.querySelector('[data-testid="loading-timeout-card"]')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(document.querySelector('[data-testid="loading-timeout-card"]')).not.toBeNull();
+  });
+
+  it('info 톤 + timeoutMessage 면 경고 카피 대신 안심 문구를 보여준다', () => {
+    renderWithProviders(
+      <LoadingState
+        timeoutAfterMs={40_000}
+        timeoutMessage="거의 다 됐어요. 잠시만 기다려 주세요."
+        timeoutTone="info"
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(40_000);
+    });
+    expect(screen.getByText('거의 다 됐어요. 잠시만 기다려 주세요.')).toBeInTheDocument();
+    expect(
+      screen.queryByText('AI가 많이 생각 중이에요. 잠시 후 다시 시도해주세요.'),
+    ).toBeNull();
+  });
 });

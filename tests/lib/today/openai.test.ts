@@ -275,7 +275,7 @@ describe('callDailyHapLlm — model + params (gpt-5)', () => {
     ).rejects.toThrow('LLM_TIMEOUT');
   });
 
-  it('전체 Today LLM 호출이 25초를 넘기면 LLM_TIMEOUT 으로 종료한다', async () => {
+  it('전체 Today LLM 호출이 타임아웃(TODAY_LLM_TIMEOUT_MS)을 넘기면 LLM_TIMEOUT 으로 종료한다', async () => {
     vi.useFakeTimers();
     try {
       mockCreate.mockImplementation(() => new Promise(() => {}));
