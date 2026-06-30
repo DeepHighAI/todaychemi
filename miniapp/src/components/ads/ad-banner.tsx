@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { TossAds } from '@apps-in-toss/web-framework';
+import { TossAds, getTossAppVersion } from '@apps-in-toss/web-framework';
 
 const AD_BANNER_HEIGHT = 96;
 
@@ -60,8 +60,50 @@ function notifyReady() {
   readyListeners.forEach((listener) => listener());
 }
 
+// ── 진단 로그(실기기 관측용) ─────────────────────────────────────────────────
+// 배너가 "공간조차 없이" 미렌더되는 원인(미지원 버전 / 광고ID 미인라인 / 배치 미도달)을
+// 실기기 로그(ait logs)에서 한눈에 가르도록 capability 를 앱 진입 시 1회 남긴다.
+let capabilityLogged = false;
+
+function safeGetTossAppVersion(): string | null {
+  try {
+    return getTossAppVersion();
+  } catch {
+    // 토스 WebView 밖(브라우저 dev 등)에서는 throw 할 수 있다 — 안전하게 null.
+    return null;
+  }
+}
+
+function logAdCapabilityOnce(): void {
+  if (capabilityLogged) return;
+  capabilityLogged = true;
+  let initSupported = false;
+  let attachSupported = false;
+  try {
+    initSupported = Boolean(TossAds?.initialize?.isSupported?.());
+  } catch {
+    initSupported = false;
+  }
+  try {
+    attachSupported = Boolean(TossAds?.attachBanner?.isSupported?.());
+  } catch {
+    attachSupported = false;
+  }
+  // initSupported/attachSupported=false → 토스앱 < 5.241.0 또는 미지원 환경.
+  // hasAdGroupId=false → 운영 ID 미인라인(.env.production 빌드 확인).
+  console.warn('[ads] capability', {
+    initSupported,
+    attachSupported,
+    hasAdGroupId: resolveAdGroupId() !== null,
+    tossAppVersion: safeGetTossAppVersion(),
+    bannerApiMinVersion: '5.241.0',
+  });
+}
+
 /** 토스 광고 SDK 를 1회만 초기화한다(이미 진행/완료 시 no-op). 앱 최상위에서 호출 권장. */
 export function ensureTossAdsInitialized(): void {
+  // 미지원이어도 capability 는 남겨 원인을 관측 가능하게 한다(early-return 보다 먼저).
+  logAdCapabilityOnce();
   if (!adsSupported()) return;
   if (initState === 'initializing' || initState === 'ready') return;
   initState = 'initializing';
@@ -115,6 +157,7 @@ export function useTossAdsReady(): boolean {
 export function __resetTossAdsForTest(): void {
   initState = 'idle';
   readyListeners.clear();
+  capabilityLogged = false;
 }
 
 interface AdBannerProps {
@@ -152,6 +195,20 @@ export function AdBanner({ env, onSlotUnavailable }: AdBannerProps = {}) {
           tone: 'blackAndWhite',
           variant: 'expanded',
           callbacks: {
+            // 진단 콜백 — 부착이 성공한 뒤의 노출 퍼널(rendered→impression→viewable)을
+            // 실기기 로그로 관측한다. SDK 기본 로직은 변조하지 않고 관측만 한다(SSP 정책 준수).
+            onAdRendered: (payload) => {
+              console.warn('[ads] rendered', { slotId: payload.slotId, adGroupId: payload.adGroupId });
+            },
+            onAdImpression: (payload) => {
+              console.warn('[ads] impression', { slotId: payload.slotId, adGroupId: payload.adGroupId });
+            },
+            onAdViewable: (payload) => {
+              console.warn('[ads] viewable', { slotId: payload.slotId, adGroupId: payload.adGroupId });
+            },
+            onAdClicked: (payload) => {
+              console.warn('[ads] clicked', { slotId: payload.slotId, adGroupId: payload.adGroupId });
+            },
             onNoFill: (payload) => {
               console.warn('[ads] TossAds.attachBanner no fill', {
                 slotId: payload.slotId,
@@ -198,5 +255,21 @@ export function AdBannerListItem({ env }: Pick<AdBannerProps, 'env'> = {}) {
     <li aria-label="광고">
       <AdBanner env={env} onSlotUnavailable={() => setSlotUnavailable(true)} />
     </li>
+  );
+}
+
+/**
+ * 리스트 밖(페이지 하단 등)에 단독 배치하는 보장 슬롯. 인연 수·인터리브 위치와 무관하게
+ * 항상 도달 가능하다(배치 미도달로 인한 미렌더 방지). 미지원/미설정/no-fill 시 자기 자신을 통째로 숨긴다.
+ */
+export function AdBannerSlot({ env }: Pick<AdBannerProps, 'env'> = {}) {
+  const [slotUnavailable, setSlotUnavailable] = useState(false);
+
+  if (slotUnavailable || !isAdSlotAvailable(env ?? readAdEnv())) return null;
+
+  return (
+    <div aria-label="광고">
+      <AdBanner env={env} onSlotUnavailable={() => setSlotUnavailable(true)} />
+    </div>
   );
 }

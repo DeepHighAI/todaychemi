@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Seg } from '@/components/ui/seg';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SwipeRow } from '@/components/layout/SwipeRow';
-import { AdBannerListItem } from '@/components/ads/ad-banner';
+import { AdBannerListItem, AdBannerSlot } from '@/components/ads/ad-banner';
 import { apiFetch } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatTemperatureDelta, formatTodayTemperature } from '@/lib/scoring/temperature';
@@ -539,6 +539,10 @@ export function FeedPage() {
           ))}
         </ul>
       )}
+
+      {/* 인앱 광고 배너 — 본문 하단 보장 슬롯(인연 수와 무관하게 도달, ATF 아님·결제/인증 흐름 아님).
+          인터리브 배너가 도달 못 하는 저인연 사용자에게도 배너를 노출한다. 미지원/미설정 시 자기 숨김. */}
+      {!isLoading && !isError && !selectionMode && <AdBannerSlot />}
 
       {/* 삭제 확인 다이얼로그 (공용 ConfirmDialog) */}
       <ConfirmDialog

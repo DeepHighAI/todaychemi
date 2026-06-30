@@ -10,9 +10,18 @@ const h = vi.hoisted(() => {
   let fireOnlyFirstInit = true;
   let attachThrows = false;
   let lastAdGroupId = 'ad-prod-123';
+  type BannerEventPayload = {
+    slotId: string;
+    adGroupId: string;
+    adMetadata: { creativeId: string; requestId: string };
+  };
   let lastAttachOptions:
     | {
         callbacks?: {
+          onAdRendered?: (payload: BannerEventPayload) => void;
+          onAdImpression?: (payload: BannerEventPayload) => void;
+          onAdViewable?: (payload: BannerEventPayload) => void;
+          onAdClicked?: (payload: BannerEventPayload) => void;
           onNoFill?: (payload: { slotId: string; adGroupId: string; adMetadata: {} }) => void;
           onAdFailedToRender?: (payload: {
             slotId: string;
@@ -39,10 +48,12 @@ const h = vi.hoisted(() => {
     }
   });
   (initialize as unknown as { isSupported: () => boolean }).isSupported = () => initializeSupported;
+  const getTossAppVersion = vi.fn(() => '5.241.0');
   return {
     destroy,
     attachBanner,
     initialize,
+    getTossAppVersion,
     setSupported: (v: boolean) => {
       initializeSupported = v;
       attachSupported = v;
@@ -67,6 +78,13 @@ const h = vi.hoisted(() => {
       lastAdGroupId = 'ad-prod-123';
       lastAttachOptions = undefined;
     },
+    fireBannerEvent: (name: 'onAdRendered' | 'onAdImpression' | 'onAdViewable' | 'onAdClicked') => {
+      lastAttachOptions?.callbacks?.[name]?.({
+        slotId: 'slot-1',
+        adGroupId: lastAdGroupId,
+        adMetadata: { creativeId: 'c1', requestId: 'r1' },
+      });
+    },
     triggerNoFill: () => {
       lastAttachOptions?.callbacks?.onNoFill?.({
         slotId: 'slot-1',
@@ -87,11 +105,14 @@ const h = vi.hoisted(() => {
 
 vi.mock('@apps-in-toss/web-framework', () => ({
   TossAds: { initialize: h.initialize, attachBanner: h.attachBanner, destroyAll: vi.fn() },
+  getTossAppVersion: h.getTossAppVersion,
 }));
 
 import {
   AdBanner,
   AdBannerListItem,
+  AdBannerSlot,
+  ensureTossAdsInitialized,
   isAdSlotAvailable,
   resolveAdGroupId,
   __resetTossAdsForTest,
@@ -103,6 +124,7 @@ beforeEach(() => {
   h.resetInitCalls();
   h.setFireOnlyFirstInit(true);
   h.resetAttachState();
+  h.getTossAppVersion.mockReturnValue('5.241.0');
   __resetTossAdsForTest();
 });
 
@@ -149,6 +171,49 @@ describe('isAdSlotAvailable', () => {
     h.setInitializeSupported(true);
     h.setAttachSupported(false);
     expect(isAdSlotAvailable({ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' })).toBe(false);
+  });
+});
+
+describe('ensureTossAdsInitialized capability log', () => {
+  it('미지원 환경에서도 capability 진단 로그를 1회 남긴다(버전·지원·광고ID 한눈에)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    h.setSupported(false);
+    h.getTossAppVersion.mockReturnValue('5.206.0');
+
+    ensureTossAdsInitialized();
+
+    expect(warn).toHaveBeenCalledWith(
+      '[ads] capability',
+      expect.objectContaining({
+        initSupported: false,
+        attachSupported: false,
+        tossAppVersion: '5.206.0',
+        bannerApiMinVersion: '5.241.0',
+      }),
+    );
+  });
+
+  it('capability 로그는 여러 번 호출해도 1회만 남긴다', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ensureTossAdsInitialized();
+    ensureTossAdsInitialized();
+    const calls = warn.mock.calls.filter(([msg]) => msg === '[ads] capability');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('getTossAppVersion 이 throw 해도 tossAppVersion=null 로 안전 처리한다', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    h.setSupported(false);
+    h.getTossAppVersion.mockImplementation(() => {
+      throw new Error('not in toss');
+    });
+
+    ensureTossAdsInitialized();
+
+    expect(warn).toHaveBeenCalledWith(
+      '[ads] capability',
+      expect.objectContaining({ tossAppVersion: null }),
+    );
   });
 });
 
@@ -208,6 +273,32 @@ describe('AdBanner', () => {
       'ait.v2.live.a36156fd5d3c461d',
       container,
       expect.objectContaining({ variant: 'expanded' }),
+    );
+  });
+
+  it('attachBanner 에 진단 콜백(onAdRendered/Impression/Viewable/Clicked)을 함께 전달한다', () => {
+    render(<AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
+    expect(h.attachBanner).toHaveBeenCalledWith(
+      'ad-prod-123',
+      expect.anything(),
+      expect.objectContaining({
+        callbacks: expect.objectContaining({
+          onAdRendered: expect.any(Function),
+          onAdImpression: expect.any(Function),
+          onAdViewable: expect.any(Function),
+          onAdClicked: expect.any(Function),
+        }),
+      }),
+    );
+  });
+
+  it('onAdRendered 발생 시 [ads] rendered 진단 로그를 남긴다', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<AdBanner env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
+    act(() => h.fireBannerEvent('onAdRendered'));
+    expect(warn).toHaveBeenCalledWith(
+      '[ads] rendered',
+      expect.objectContaining({ slotId: 'slot-1', adGroupId: 'ad-prod-123' }),
     );
   });
 
@@ -297,5 +388,35 @@ describe('AdBanner', () => {
       '[ads] TossAds.attachBanner threw',
       expect.objectContaining({ adGroupId: 'ad-prod-123' }),
     );
+  });
+});
+
+describe('AdBannerSlot (단독 보장 슬롯)', () => {
+  it('지원 + 광고 ID 가 있으면 배너 컨테이너를 렌더한다(인연 수 무관 도달)', () => {
+    render(<AdBannerSlot env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
+    expect(screen.getByTestId('ad-banner')).toBeInTheDocument();
+  });
+
+  it('미지원 환경이면 아무것도 렌더하지 않는다(빈 공간 방지)', () => {
+    h.setSupported(false);
+    render(<AdBannerSlot env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
+    expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+  });
+
+  it('광고 ID 가 없으면 아무것도 렌더하지 않는다', () => {
+    render(<AdBannerSlot env={{ VITE_TOSS_AD_GROUP_ID: '' }} />);
+    expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+  });
+
+  it('no-fill 발생 시 슬롯을 통째로 숨긴다(빈 컨테이너 잔존 없음)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<AdBannerSlot env={{ VITE_TOSS_AD_GROUP_ID: 'ad-prod-123' }} />);
+    expect(screen.getByTestId('ad-banner')).toBeInTheDocument();
+    act(() => {
+      h.triggerNoFill();
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId('ad-banner')).not.toBeInTheDocument();
+    });
   });
 });
