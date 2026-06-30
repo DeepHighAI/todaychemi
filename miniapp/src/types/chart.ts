@@ -40,6 +40,30 @@ export interface YunseCore {
 }
 
 // ---------------------------------------------------------------------------
+// 파생층 (ADR-040 SajuDerived) — 미니앱이 사용하는 부분만 추출한 느슨한 미러.
+// 루트 src/types/chart.ts 의 SajuDerived 전체 중 yongsin/sinkang 만 타입화한다.
+// (레거시 v2 차트는 derived 자체가 없을 수 있어 모든 필드 optional.)
+// ---------------------------------------------------------------------------
+
+export interface SajuDerivedYongsin {
+  readonly basis?: string;
+  readonly primary: OhaengElement;
+  readonly secondary?: ReadonlyArray<OhaengElement>;
+  readonly huisin?: OhaengElement;
+}
+
+export interface SajuDerivedSinkang {
+  readonly level: '신강' | '중화' | '신약';
+  readonly score?: number;
+}
+
+export interface SajuDerived {
+  readonly derived_version?: number;
+  readonly yongsin?: SajuDerivedYongsin;
+  readonly sinkang?: SajuDerivedSinkang;
+}
+
+// ---------------------------------------------------------------------------
 // 사주 계산 결과 (ChartCore — LLM 페이로드 허용 형태)
 // PII: birth_date / gender 원본은 포함 금지
 // ---------------------------------------------------------------------------
@@ -53,6 +77,6 @@ export interface ChartCore {
   five_elements_counts: Record<OhaengElement, number>;
   gender_normalized: 'M' | 'F';
   yunse: YunseCore;
-  // 파생층 — 미니앱에서는 직접 접근하지 않음 (LLM 페이로드용)
-  derived?: unknown;
+  // 파생층 (ADR-040) — 오늘의 부적은 yongsin/sinkang 만 읽는다. 레거시 v2 는 부재 가능.
+  derived?: SajuDerived | null;
 }

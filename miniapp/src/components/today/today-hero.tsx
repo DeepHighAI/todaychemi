@@ -18,7 +18,9 @@ import { useTranslations } from 'next-intl';
 import { convertHanja } from '../../lib/glossary/post-process';
 import { formatTemperatureDelta, scoreToTemperature } from '../../lib/scoring/temperature';
 import { AiDisclosureBadge } from '../ai-disclosure/ai-disclosure-badge';
+import { DailyTalismanRitual } from './daily-talisman-ritual';
 import type { DailyHapCard } from '../../types/dailyHap';
+import type { ChartCore } from '../../types/chart';
 
 interface TodayHeroProps {
   card: DailyHapCard;
@@ -26,9 +28,18 @@ interface TodayHeroProps {
   deltaVsYesterday?: number | null;
   /** F2.3 에서 RelationChip 주입 — 미주입 시 정적 텍스트 chip 폴백 */
   chipNode?: ReactNode;
+  chart?: ChartCore | null;
+  todayDate?: string;
 }
 
-export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHeroProps) {
+export function TodayHero({
+  card,
+  score,
+  deltaVsYesterday,
+  chipNode,
+  chart = null,
+  todayDate,
+}: TodayHeroProps) {
   const t = useTranslations('home');
 
   // G2: today_compat_score 가 합점수보다 우선 (매일 변동성이 본질)
@@ -173,6 +184,11 @@ export function TodayHero({ card, score, deltaVsYesterday, chipNode }: TodayHero
             {t('empty_relation.cta')}
           </Link>
         </div>
+      )}
+
+      {/* 오늘의 부적 리추얼 — 핵심 활성화(인연 등록 CTA) 아래 배치(ADR-010 위계). 미니앱 전용. */}
+      {chart && todayDate && (
+        <DailyTalismanRitual chart={chart} todayDate={todayDate} />
       )}
     </div>
   );

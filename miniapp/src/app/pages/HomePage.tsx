@@ -47,7 +47,7 @@ import { WhatifTrigger } from '../../components/today/whatif-trigger';
 import { SwipeRow } from '../../components/layout/SwipeRow';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import { AdBannerListItem } from '../../components/ads/ad-banner';
+import { AdBannerListItem, AdBannerSlot } from '../../components/ads/ad-banner';
 import { RewardedAdCard } from '../../components/ads/rewarded-ad';
 
 import type { DailyHapCard } from '../../types/dailyHap';
@@ -215,6 +215,8 @@ export function HomePage() {
             card={card}
             score={null}
             deltaVsYesterday={null}
+            chart={chart}
+            todayDate={todayDate}
             chipNode={
               card.relation_id && card.relation_nickname ? (
                 <RelationChip
@@ -373,6 +375,9 @@ export function HomePage() {
 
       {/* 피할 말 + 좋은 행동 카드 */}
       {card && <AvoidActionCards card={card} />}
+
+      {/* 인앱 광고 배너 — 본문 하단 보장 슬롯(최근 인연 수와 무관하게 도달). 미지원/미설정 시 자기 숨김. */}
+      <AdBannerSlot />
 
       {/* 인앱토스 리워드 광고 — 사용자가 누를 때만 전면형 보상 광고 노출 */}
       <RewardedAdCard />
