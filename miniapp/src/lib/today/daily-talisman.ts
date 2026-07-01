@@ -1,6 +1,7 @@
 import type { ChartCore, OhaengElement } from '@/types/chart';
 
 export type DailyTalismanTheme = 'emotion' | 'growth' | 'center' | 'boundary' | 'clarity';
+export type DailyTalismanStrokeCount = 3 | 4 | 5 | 6 | 7 | 8;
 
 export interface DailyTalisman {
   id: string;
@@ -9,6 +10,7 @@ export interface DailyTalisman {
   element: OhaengElement;
   theme: DailyTalismanTheme;
   glyph: string;
+  strokeCount: DailyTalismanStrokeCount;
   meaning: string;
   title: string;
   gapLabel: string;
@@ -29,6 +31,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'growth',
       glyph: '伸',
+      strokeCount: 7,
       meaning: '펴기',
       title: '시작 가드',
       gapLabel: '오늘은 먼저 말문을 여는 힘이 약해질 수 있어요',
@@ -38,6 +41,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'growth',
       glyph: '生',
+      strokeCount: 5,
       meaning: '살림',
       title: '새싹 가드',
       gapLabel: '오늘은 좋은 생각을 미루기 쉬운 흐름이에요',
@@ -46,27 +50,30 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'growth',
-      glyph: '進',
-      meaning: '나아감',
-      title: '한 걸음 가드',
-      gapLabel: '오늘은 시작을 자꾸 미루기 쉬운 흐름이에요',
-      guardLabel: '한 걸음 가드 ON',
-      actionText: '딱 한 걸음만 먼저 떼면 나머지가 한결 가벼워져요.',
-    },
-    {
-      theme: 'growth',
       glyph: '育',
+      strokeCount: 8,
       meaning: '키움',
       title: '온기 가드',
       gapLabel: '오늘은 관계를 키우는 말이 늦게 나올 수 있어요',
       guardLabel: '온기 가드 ON',
       actionText: '상대의 좋은 점 하나만 말로 짚어주면 사이가 자라나요.',
     },
+    {
+      theme: 'growth',
+      glyph: '芽',
+      strokeCount: 8,
+      meaning: '싹',
+      title: '한 걸음 가드',
+      gapLabel: '오늘은 시작을 자꾸 미루기 쉬운 흐름이에요',
+      guardLabel: '한 걸음 가드 ON',
+      actionText: '딱 한 걸음만 먼저 떼면 나머지가 한결 가벼워져요.',
+    },
   ],
   화: [
     {
       theme: 'emotion',
       glyph: '和',
+      strokeCount: 8,
       meaning: '화해',
       title: '감정 가드',
       gapLabel: '오늘은 말의 온도가 낮아 오해가 생기기 쉬워요',
@@ -76,6 +83,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'emotion',
       glyph: '忍',
+      strokeCount: 7,
       meaning: '참음',
       title: '말투 가드',
       gapLabel: '오늘은 감정이 늦게 올라와도 말이 먼저 나갈 수 있어요',
@@ -84,8 +92,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'emotion',
-      glyph: '溫',
-      meaning: '따뜻함',
+      glyph: '心',
+      strokeCount: 4,
+      meaning: '마음',
       title: '온도 가드',
       gapLabel: '오늘은 말의 온도가 차게 느껴지기 쉬워요',
       guardLabel: '온도 가드 ON',
@@ -93,8 +102,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'emotion',
-      glyph: '笑',
-      meaning: '웃음',
+      glyph: '休',
+      strokeCount: 6,
+      meaning: '쉼',
       title: '여유 가드',
       gapLabel: '오늘은 사소한 일에 표정이 굳기 쉬운 날이에요',
       guardLabel: '여유 가드 ON',
@@ -105,6 +115,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'center',
       glyph: '安',
+      strokeCount: 6,
       meaning: '안정',
       title: '중심 가드',
       gapLabel: '오늘은 마음의 중심이 흔들리기 쉬운 날이에요',
@@ -114,6 +125,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'center',
       glyph: '定',
+      strokeCount: 8,
       meaning: '정함',
       title: '정돈 가드',
       gapLabel: '오늘은 주변 말에 기준이 흐려질 수 있어요',
@@ -122,27 +134,30 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'center',
-      glyph: '厚',
-      meaning: '두터움',
-      title: '여백 가드',
-      gapLabel: '오늘은 마음의 여유가 얇아지기 쉬워요',
-      guardLabel: '여백 가드 ON',
-      actionText: '급한 답을 한 박자 미루면 중심이 두터워져요.',
-    },
-    {
-      theme: 'center',
       glyph: '平',
+      strokeCount: 5,
       meaning: '고름',
       title: '균형 가드',
       gapLabel: '오늘은 한쪽으로 마음이 기울기 쉬운 흐름이에요',
       guardLabel: '균형 가드 ON',
       actionText: '양쪽 입장을 한 줄씩 적어보면 마음이 고르게 서요.',
     },
+    {
+      theme: 'center',
+      glyph: '中',
+      strokeCount: 4,
+      meaning: '중심',
+      title: '여백 가드',
+      gapLabel: '오늘은 마음의 여유가 얇아지기 쉬워요',
+      guardLabel: '여백 가드 ON',
+      actionText: '급한 답을 한 박자 미루면 중심이 다시 서요.',
+    },
   ],
   금: [
     {
       theme: 'boundary',
       glyph: '守',
+      strokeCount: 6,
       meaning: '지킴',
       title: '경계 가드',
       gapLabel: '오늘은 내 선을 늦게 알아차리기 쉬워요',
@@ -152,6 +167,7 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     {
       theme: 'boundary',
       glyph: '正',
+      strokeCount: 5,
       meaning: '바름',
       title: '기준 가드',
       gapLabel: '오늘은 기준 없이 맞춰주다 지칠 수 있어요',
@@ -160,8 +176,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'boundary',
-      glyph: '斷',
-      meaning: '맺음',
+      glyph: '止',
+      strokeCount: 4,
+      meaning: '멈춤',
       title: '매듭 가드',
       gapLabel: '오늘은 거절을 미루다 일이 커질 수 있어요',
       guardLabel: '매듭 가드 ON',
@@ -169,8 +186,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'boundary',
-      glyph: '節',
-      meaning: '절제',
+      glyph: '分',
+      strokeCount: 4,
+      meaning: '나눔',
       title: '절제 가드',
       gapLabel: '오늘은 한 번에 다 맞춰주다 지치기 쉬워요',
       guardLabel: '절제 가드 ON',
@@ -180,8 +198,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
   수: [
     {
       theme: 'clarity',
-      glyph: '清',
-      meaning: '맑힘',
+      glyph: '明',
+      strokeCount: 8,
+      meaning: '밝힘',
       title: '생각 가드',
       gapLabel: '오늘은 생각이 빨리 차올라 말이 복잡해질 수 있어요',
       guardLabel: '생각 가드 ON',
@@ -189,8 +208,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'clarity',
-      glyph: '靜',
-      meaning: '고요',
+      glyph: '知',
+      strokeCount: 8,
+      meaning: '앎',
       title: '고요 가드',
       gapLabel: '오늘은 머릿속 소리가 많아 집중이 흩어질 수 있어요',
       guardLabel: '고요 가드 ON',
@@ -198,8 +218,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'clarity',
-      glyph: '慧',
-      meaning: '슬기',
+      glyph: '言',
+      strokeCount: 7,
+      meaning: '말',
       title: '정리 가드',
       gapLabel: '오늘은 생각이 많아 핵심이 흐려지기 쉬워요',
       guardLabel: '정리 가드 ON',
@@ -207,8 +228,9 @@ const TALISMAN_VARIANTS: Record<OhaengElement, Omit<DailyTalisman, 'id' | 'date'
     },
     {
       theme: 'clarity',
-      glyph: '流',
-      meaning: '흐름',
+      glyph: '水',
+      strokeCount: 4,
+      meaning: '물',
       title: '흐름 가드',
       gapLabel: '오늘은 말이 막혀 답답해지기 쉬운 날이에요',
       guardLabel: '흐름 가드 ON',

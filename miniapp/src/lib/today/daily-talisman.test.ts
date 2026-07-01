@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { advanceStreak, buildDailyTalisman, dailyTalismanStorageKey } from './daily-talisman';
-import type { ChartCore, SajuDerived } from '@/types/chart';
+import type { ChartCore, OhaengElement, SajuDerived } from '@/types/chart';
 
 function makeChart(overrides: Partial<ChartCore> = {}): ChartCore {
   return {
@@ -28,6 +28,13 @@ const YONGSIN: SajuDerived = {
   sinkang: { level: '신약', score: 38 },
 };
 
+const ELEMENTS: OhaengElement[] = ['목', '화', '토', '금', '수'];
+const RETIRED_HIGH_STROKE_GLYPHS = new Set(['進', '溫', '笑', '厚', '斷', '節', '清', '靜', '慧', '流']);
+
+function dateFromOffset(startMonthIndex: number, dayOffset: number): string {
+  return new Date(Date.UTC(2026, startMonthIndex, dayOffset)).toISOString().slice(0, 10);
+}
+
 describe('buildDailyTalisman', () => {
   it('같은 날짜와 차트에서는 같은 부적을 결정한다', () => {
     const chart = makeChart();
@@ -35,6 +42,48 @@ describe('buildDailyTalisman', () => {
     expect(buildDailyTalisman(chart, '2026-06-30')).toEqual(
       buildDailyTalisman(chart, '2026-06-30'),
     );
+  });
+
+  it('표본으로 반환되는 부적 글자는 모두 3-8획 범위다', () => {
+    for (const element of ELEMENTS) {
+      const chart = makeChart({
+        derived: {
+          ...YONGSIN,
+          yongsin: { ...YONGSIN.yongsin, primary: element },
+        },
+      });
+
+      for (let day = 1; day <= 80; day += 1) {
+        const date = dateFromOffset(6, day);
+        const talisman = buildDailyTalisman(chart, date);
+        expect(talisman).not.toBeNull();
+        expect(talisman?.strokeCount).toBeGreaterThanOrEqual(3);
+        expect(talisman?.strokeCount).toBeLessThanOrEqual(8);
+      }
+    }
+  });
+
+  it('따라쓰기 어려운 기존 고획수 글자는 더 이상 노출하지 않는다', () => {
+    const sampledGlyphs = new Set<string>();
+
+    for (const element of ELEMENTS) {
+      const chart = makeChart({
+        derived: {
+          ...YONGSIN,
+          yongsin: { ...YONGSIN.yongsin, primary: element },
+        },
+      });
+
+      for (let day = 1; day <= 120; day += 1) {
+        const date = dateFromOffset(7, day);
+        const talisman = buildDailyTalisman(chart, date);
+        if (talisman) sampledGlyphs.add(talisman.glyph);
+      }
+    }
+
+    for (const retired of RETIRED_HIGH_STROKE_GLYPHS) {
+      expect(sampledGlyphs).not.toContain(retired);
+    }
   });
 
   it('파생 용신(yongsin.primary)이 있으면 그 기운을 오늘의 기운으로 쓴다', () => {

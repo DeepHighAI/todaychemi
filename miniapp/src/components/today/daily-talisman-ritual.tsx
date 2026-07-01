@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import { PenLine, ShieldCheck, Sparkles } from 'lucide-react';
 
 import {
@@ -20,6 +28,45 @@ interface DailyTalismanRitualProps {
 const MIN_DRAW_MARKS = 10;
 // 키보드 1회 입력당 가산 마크 — 5회로 완성(MIN_DRAW_MARKS/STEP)되도록.
 const KEY_MARK_STEP = 2;
+const GLYPH_TOAST_MS = 1800;
+const GATHER_EFFECT_MS = 960;
+
+const GATHER_PARTICLES = [
+  { x: '-116px', y: '-54px', size: 7, delay: '0ms' },
+  { x: '-82px', y: '62px', size: 5, delay: '45ms' },
+  { x: '-34px', y: '-86px', size: 6, delay: '90ms' },
+  { x: '48px', y: '-76px', size: 5, delay: '135ms' },
+  { x: '96px', y: '42px', size: 7, delay: '180ms' },
+  { x: '122px', y: '-18px', size: 4, delay: '225ms' },
+  { x: '-126px', y: '16px', size: 4, delay: '270ms' },
+  { x: '12px', y: '88px', size: 6, delay: '315ms' },
+] as const;
+
+function TalismanGatherEffect() {
+  return (
+    <span
+      aria-hidden="true"
+      className="talisman-gather"
+      data-testid="talisman-gather-effect"
+    >
+      {GATHER_PARTICLES.map((particle, index) => (
+        <span
+          key={`${particle.x}:${particle.y}`}
+          className="talisman-gather__particle"
+          style={{
+            '--talisman-x': particle.x,
+            '--talisman-y': particle.y,
+            '--talisman-size': `${particle.size}px`,
+            '--talisman-delay': particle.delay,
+          } as CSSProperties}
+        >
+          {index % 3 === 0 ? '✦' : ''}
+        </span>
+      ))}
+      <span className="talisman-flare" />
+    </span>
+  );
+}
 
 function readStoredStatus(storageKey: string, talismanId: string): DailyTalismanStatus | null {
   try {
@@ -76,6 +123,8 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
   // P1: 진행 카운트는 ref 로 누적하고 진행률 state 는 rAF 로 코얼레스(매 pointermove 리렌더 방지).
   const marksRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const glyphToastTimerRef = useRef<number | null>(null);
+  const gatherEffectTimerRef = useRef<number | null>(null);
   const keyCursorRef = useRef(0);
   const viewedRef = useRef<string | null>(null);
 
@@ -83,12 +132,28 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<DailyTalismanStatus | null>(null);
   const [streak, setStreak] = useState<DailyTalismanStreak | null>(null);
+  const [showGlyphToast, setShowGlyphToast] = useState(false);
+  const [showGatherEffect, setShowGatherEffect] = useState(false);
   const completed = status !== null;
 
   function cancelRaf() {
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+    }
+  }
+
+  function clearGlyphToastTimer() {
+    if (glyphToastTimerRef.current != null) {
+      window.clearTimeout(glyphToastTimerRef.current);
+      glyphToastTimerRef.current = null;
+    }
+  }
+
+  function clearGatherEffectTimer() {
+    if (gatherEffectTimerRef.current != null) {
+      window.clearTimeout(gatherEffectTimerRef.current);
+      gatherEffectTimerRef.current = null;
     }
   }
 
@@ -114,6 +179,10 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
     keyCursorRef.current = 0;
     setProgress(0);
     setStarted(false);
+    setShowGlyphToast(false);
+    setShowGatherEffect(false);
+    clearGlyphToastTimer();
+    clearGatherEffectTimer();
     drawingRef.current = false;
 
     const restored = talisman ? readStoredStatus(storageKey, talisman.id) : null;
@@ -128,7 +197,11 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
   }, [storageKey, talismanId]);
 
   // 언마운트 시 보류 rAF 정리.
-  useEffect(() => () => cancelRaf(), []);
+  useEffect(() => () => {
+    cancelRaf();
+    clearGlyphToastTimer();
+    clearGatherEffectTimer();
+  }, []);
 
   // 그리기 진입 시 캔버스 크기/컨텍스트 설정(DPR 보정).
   useEffect(() => {
@@ -227,7 +300,22 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
 
   function handleStartClick() {
     trackTalismanEvent('talisman_start', { element: t.element, theme: t.theme });
+    clearGatherEffectTimer();
+    setShowGatherEffect(true);
+    gatherEffectTimerRef.current = window.setTimeout(() => {
+      setShowGatherEffect(false);
+      gatherEffectTimerRef.current = null;
+    }, GATHER_EFFECT_MS);
     setStarted(true);
+  }
+
+  function handleGlyphPreviewClick() {
+    clearGlyphToastTimer();
+    setShowGlyphToast(true);
+    glyphToastTimerRef.current = window.setTimeout(() => {
+      setShowGlyphToast(false);
+      glyphToastTimerRef.current = null;
+    }, GLYPH_TOAST_MS);
   }
 
   function completeRitual() {
@@ -409,6 +497,23 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
         padding: 14,
       }}
     >
+      {showGatherEffect && <TalismanGatherEffect />}
+      {showGlyphToast && (
+        <div
+          className="talisman-toast"
+          role="status"
+          aria-live="polite"
+          data-testid="talisman-glyph-toast"
+        >
+          <span className="talisman-toast__glyph" aria-hidden="true">
+            {t.glyph}
+          </span>
+          <span className="talisman-toast__body">
+            <span className="talisman-toast__title">{t.glyph} · {t.meaning}</span>
+            <span className="talisman-toast__meta">{t.strokeCount}획이라 손가락으로 따라쓰기 쉬워요</span>
+          </span>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.78)' }}>
@@ -418,11 +523,14 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
             {t.glyph} · {t.meaning}
           </p>
         </div>
-        <span
-          aria-hidden
+        <button
+          type="button"
+          aria-label={`부적 글자 ${t.glyph} 크게 보기`}
+          onClick={handleGlyphPreviewClick}
           style={{
             width: 54,
             height: 54,
+            border: 'none',
             borderRadius: 18,
             display: 'grid',
             placeItems: 'center',
@@ -433,10 +541,12 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
             fontWeight: 900,
             boxShadow: '0 10px 26px rgba(38,20,86,0.16)',
             flexShrink: 0,
+            cursor: 'pointer',
+            padding: 0,
           }}
         >
           {t.glyph}
-        </span>
+        </button>
       </div>
 
       <div

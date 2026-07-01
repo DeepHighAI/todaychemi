@@ -72,6 +72,25 @@ describe('DailyTalismanRitual', () => {
     expect(screen.getByText(/가드 ON/)).toBeInTheDocument();
   });
 
+  it('CTA 클릭 직후 기운이 모이는 이펙트 레이어를 보여준다', () => {
+    render(<DailyTalismanRitual chart={CHART} todayDate="2026-06-30" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '액땜 부적 받기' }));
+
+    expect(screen.getByTestId('talisman-gather-effect')).toBeInTheDocument();
+  });
+
+  it('한자 칩을 누르면 큰 글자와 획수 토스트를 보여준다', () => {
+    render(<DailyTalismanRitual chart={CHART} todayDate="2026-06-30" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '액땜 부적 받기' }));
+    fireEvent.click(screen.getByRole('button', { name: /부적 글자 .+ 크게 보기/ }));
+
+    const toast = screen.getByTestId('talisman-glyph-toast');
+    expect(toast).toHaveAttribute('role', 'status');
+    expect(toast).toHaveTextContent(/획이라 손가락으로 따라쓰기 쉬워요/);
+  });
+
   it('키보드(Enter)만으로도 포인터 없이 부적을 완성할 수 있다', () => {
     render(<DailyTalismanRitual chart={CHART} todayDate="2026-06-30" />);
 

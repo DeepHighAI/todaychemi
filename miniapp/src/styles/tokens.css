@@ -353,6 +353,171 @@ body {
 }
 
 /* ===========================================================================
+ * 오늘의 액땜 부적 — 한자 미리보기 토스트 + 기운 모으기 이펙트
+ *
+ * 3eyes 의 부적 쓰기 성공 감각을 새 의존성 없이 CSS 로 포팅한다.
+ * =========================================================================== */
+@keyframes talisman-gather-particle {
+  0% {
+    opacity: 0;
+    transform: translate(var(--talisman-x), var(--talisman-y)) scale(0.55);
+  }
+  18% {
+    opacity: 0.95;
+  }
+  72% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2);
+  }
+}
+
+@keyframes talisman-flare {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.32);
+  }
+  58% {
+    opacity: 0.86;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.55);
+  }
+}
+
+@keyframes talisman-toast-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.96);
+  }
+  16%, 82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -4px) scale(0.98);
+  }
+}
+
+.talisman-gather {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.talisman-gather__particle {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: var(--talisman-size);
+  height: var(--talisman-size);
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 9px;
+  line-height: 1;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0%, rgba(255, 222, 126, 0.92) 42%, rgba(255, 139, 61, 0.10) 78%);
+  box-shadow: 0 0 14px rgba(255, 229, 148, 0.62);
+  animation: talisman-gather-particle 0.88s cubic-bezier(0.2, 0.8, 0.16, 1) var(--talisman-delay) both;
+}
+
+.talisman-flare {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 118px;
+  height: 118px;
+  border-radius: var(--r-pill);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.76) 0%, rgba(255, 221, 132, 0.42) 38%, rgba(255, 255, 255, 0) 72%);
+  filter: blur(1px);
+  animation: talisman-flare 0.92s ease-out 0.16s both;
+}
+
+.talisman-toast {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  z-index: 4;
+  width: min(calc(100% - 28px), 292px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--p-20);
+  box-shadow: 0 18px 44px rgba(38, 20, 86, 0.22);
+  animation: talisman-toast-rise 1.8s cubic-bezier(0.2, 0.8, 0.16, 1) both;
+}
+
+.talisman-toast__glyph {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(246, 237, 255, 0.96), rgba(255, 244, 214, 0.92));
+  color: var(--p-30);
+  font-family: serif;
+  font-size: 39px;
+  font-weight: 900;
+}
+
+.talisman-toast__body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.talisman-toast__title {
+  font-size: 15px;
+  line-height: 1.24;
+  font-weight: 900;
+}
+
+.talisman-toast__meta {
+  font-size: 12px;
+  line-height: 1.38;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talisman-gather__particle,
+  .talisman-flare,
+  .talisman-toast {
+    animation: none !important;
+  }
+  .talisman-gather__particle {
+    opacity: 0;
+  }
+  .talisman-flare {
+    opacity: 0.3;
+  }
+  .talisman-toast {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ===========================================================================
  * 리퀴드글래스 시그니처(UIDesign .liquid)
  *
  * 4-stop 그라데이션 + radial 하이라이트(::before) + inset 글로스 rim(::after).
