@@ -405,6 +405,58 @@ body {
   }
 }
 
+@keyframes talisman-seal-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.28);
+  }
+  26% {
+    opacity: 0.88;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.48);
+  }
+}
+
+@keyframes talisman-seal-glyph {
+  0% {
+    opacity: 0;
+    transform: scale(0.58) rotate(-5deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.12) rotate(0deg);
+  }
+  70% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes talisman-seal-spark {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.42);
+  }
+  18% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 0.88;
+    transform: translate(var(--seal-x), var(--seal-y)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--seal-x), var(--seal-y)) scale(0.68);
+  }
+}
+
 .talisman-gather {
   position: absolute;
   inset: 0;
@@ -499,10 +551,73 @@ body {
   color: var(--text-secondary);
 }
 
+.talisman-seal-effect {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.talisman-seal-effect__ring {
+  position: absolute;
+  width: 116px;
+  height: 116px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, rgba(255, 227, 142, 0.22) 44%, rgba(255, 255, 255, 0) 68%);
+  box-shadow:
+    0 0 30px rgba(255, 232, 152, 0.48),
+    inset 0 0 24px rgba(255, 255, 255, 0.3);
+  animation: talisman-seal-ring 1.12s cubic-bezier(0.2, 0.82, 0.18, 1) both;
+}
+
+.talisman-seal-effect__glyph {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--p-30);
+  font-family: serif;
+  font-size: 42px;
+  font-weight: 900;
+  box-shadow:
+    0 16px 42px rgba(38, 20, 86, 0.2),
+    0 0 28px rgba(255, 231, 154, 0.62);
+  animation: talisman-seal-glyph 1.08s cubic-bezier(0.18, 0.82, 0.2, 1) 0.04s both;
+}
+
+.talisman-seal-effect__spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--seal-size);
+  height: var(--seal-size);
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 9px;
+  line-height: 1;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0%, rgba(255, 225, 130, 0.9) 48%, rgba(255, 255, 255, 0) 76%);
+  box-shadow: 0 0 14px rgba(255, 235, 165, 0.58);
+  animation: talisman-seal-spark 0.98s cubic-bezier(0.2, 0.78, 0.2, 1) var(--seal-delay) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .talisman-gather__particle,
   .talisman-flare,
-  .talisman-toast {
+  .talisman-toast,
+  .talisman-seal-effect__ring,
+  .talisman-seal-effect__glyph,
+  .talisman-seal-effect__spark {
     animation: none !important;
   }
   .talisman-gather__particle {
@@ -514,6 +629,17 @@ body {
   .talisman-toast {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+  .talisman-seal-effect__ring {
+    opacity: 0.28;
+    transform: scale(1);
+  }
+  .talisman-seal-effect__glyph {
+    opacity: 1;
+    transform: none;
+  }
+  .talisman-seal-effect__spark {
+    opacity: 0;
   }
 }
 

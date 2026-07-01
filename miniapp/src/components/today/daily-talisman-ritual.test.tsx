@@ -69,6 +69,7 @@ describe('DailyTalismanRitual', () => {
     fireEvent.click(sealButton);
 
     expect(screen.getByLabelText('오늘의 액땜 부적 완료')).toBeInTheDocument();
+    expect(screen.getByTestId('talisman-seal-effect')).toBeInTheDocument();
     expect(screen.getByText(/가드 ON/)).toBeInTheDocument();
   });
 
@@ -128,6 +129,7 @@ describe('DailyTalismanRitual', () => {
 
     expect(screen.queryByRole('button', { name: '액땜 부적 받기' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('오늘의 액땜 부적 완료')).toBeInTheDocument();
+    expect(screen.queryByTestId('talisman-seal-effect')).not.toBeInTheDocument();
   });
 
   it('차트에 오행 데이터가 없으면(크래시 가드) 아무것도 렌더하지 않는다', () => {

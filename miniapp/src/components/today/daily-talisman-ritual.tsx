@@ -30,6 +30,7 @@ const MIN_DRAW_MARKS = 10;
 const KEY_MARK_STEP = 2;
 const GLYPH_TOAST_MS = 1800;
 const GATHER_EFFECT_MS = 960;
+const SEAL_EFFECT_MS = 1280;
 
 const GATHER_PARTICLES = [
   { x: '-116px', y: '-54px', size: 7, delay: '0ms' },
@@ -40,6 +41,15 @@ const GATHER_PARTICLES = [
   { x: '122px', y: '-18px', size: 4, delay: '225ms' },
   { x: '-126px', y: '16px', size: 4, delay: '270ms' },
   { x: '12px', y: '88px', size: 6, delay: '315ms' },
+] as const;
+
+const SEAL_PARTICLES = [
+  { x: '-72px', y: '-30px', size: 5, delay: '0ms' },
+  { x: '-54px', y: '42px', size: 4, delay: '60ms' },
+  { x: '-12px', y: '-66px', size: 6, delay: '110ms' },
+  { x: '38px', y: '-50px', size: 4, delay: '160ms' },
+  { x: '70px', y: '22px', size: 5, delay: '210ms' },
+  { x: '20px', y: '60px', size: 4, delay: '260ms' },
 ] as const;
 
 function TalismanGatherEffect() {
@@ -64,6 +74,33 @@ function TalismanGatherEffect() {
         </span>
       ))}
       <span className="talisman-flare" />
+    </span>
+  );
+}
+
+function TalismanSealEffect({ glyph }: { glyph: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="talisman-seal-effect"
+      data-testid="talisman-seal-effect"
+    >
+      <span className="talisman-seal-effect__ring" />
+      <span className="talisman-seal-effect__glyph">{glyph}</span>
+      {SEAL_PARTICLES.map((particle, index) => (
+        <span
+          key={`${particle.x}:${particle.y}`}
+          className="talisman-seal-effect__spark"
+          style={{
+            '--seal-x': particle.x,
+            '--seal-y': particle.y,
+            '--seal-size': `${particle.size}px`,
+            '--seal-delay': particle.delay,
+          } as CSSProperties}
+        >
+          {index % 2 === 0 ? '✦' : ''}
+        </span>
+      ))}
     </span>
   );
 }
@@ -125,6 +162,7 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
   const rafRef = useRef<number | null>(null);
   const glyphToastTimerRef = useRef<number | null>(null);
   const gatherEffectTimerRef = useRef<number | null>(null);
+  const sealEffectTimerRef = useRef<number | null>(null);
   const keyCursorRef = useRef(0);
   const viewedRef = useRef<string | null>(null);
 
@@ -134,6 +172,7 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
   const [streak, setStreak] = useState<DailyTalismanStreak | null>(null);
   const [showGlyphToast, setShowGlyphToast] = useState(false);
   const [showGatherEffect, setShowGatherEffect] = useState(false);
+  const [showSealEffect, setShowSealEffect] = useState(false);
   const completed = status !== null;
 
   function cancelRaf() {
@@ -154,6 +193,13 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
     if (gatherEffectTimerRef.current != null) {
       window.clearTimeout(gatherEffectTimerRef.current);
       gatherEffectTimerRef.current = null;
+    }
+  }
+
+  function clearSealEffectTimer() {
+    if (sealEffectTimerRef.current != null) {
+      window.clearTimeout(sealEffectTimerRef.current);
+      sealEffectTimerRef.current = null;
     }
   }
 
@@ -181,8 +227,10 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
     setStarted(false);
     setShowGlyphToast(false);
     setShowGatherEffect(false);
+    setShowSealEffect(false);
     clearGlyphToastTimer();
     clearGatherEffectTimer();
+    clearSealEffectTimer();
     drawingRef.current = false;
 
     const restored = talisman ? readStoredStatus(storageKey, talisman.id) : null;
@@ -201,6 +249,7 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
     cancelRaf();
     clearGlyphToastTimer();
     clearGatherEffectTimer();
+    clearSealEffectTimer();
   }, []);
 
   // 그리기 진입 시 캔버스 크기/컨텍스트 설정(DPR 보정).
@@ -328,6 +377,12 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
     const nextStreak = advanceStreak(readDailyStreak(), todayDate);
     writeDailyStreak(nextStreak);
     trackTalismanEvent('talisman_complete', { element: t.element, theme: t.theme });
+    clearSealEffectTimer();
+    setShowSealEffect(true);
+    sealEffectTimerRef.current = window.setTimeout(() => {
+      setShowSealEffect(false);
+      sealEffectTimerRef.current = null;
+    }, SEAL_EFFECT_MS);
     setStatus(nextStatus);
     setStreak(nextStreak);
     setStarted(false);
@@ -351,8 +406,10 @@ export function DailyTalismanRitual({ chart, todayDate }: DailyTalismanRitualPro
           background: 'rgba(255,255,255,0.16)',
           border: '1px solid rgba(255,255,255,0.22)',
           padding: 12,
+          overflow: 'hidden',
         }}
       >
+        {showSealEffect && <TalismanSealEffect glyph={t.glyph} />}
         <span
           aria-hidden
           style={{
