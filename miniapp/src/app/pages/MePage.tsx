@@ -51,6 +51,11 @@ import YunseCard from '@/components/me/yunse-card';
 
 import type { WalletResponse } from '@/types/wallet';
 
+type AccountIdResponse = {
+  ok: boolean;
+  userId: string;
+};
+
 // ---------------------------------------------------------------------------
 // MePage
 // ---------------------------------------------------------------------------
@@ -83,6 +88,10 @@ export function MePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteRequestedAt, setDeleteRequestedAt] = useState<string | null>(null);
+  const [accountCopyMessage, setAccountCopyMessage] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // 계정 삭제 요청
   async function handleDeleteAccount() {
@@ -98,6 +107,17 @@ export function MePage() {
       setDeleteError(t('privacyControls.deleteError'));
     } finally {
       setDeleteLoading(false);
+    }
+  }
+
+  async function handleCopyAccountId() {
+    setAccountCopyMessage(null);
+    try {
+      const result = await apiFetch<AccountIdResponse>('/api/me/account-id', { token });
+      await copyTextToClipboard(result.userId);
+      setAccountCopyMessage({ tone: 'success', text: t('info.accountIdCopied') });
+    } catch {
+      setAccountCopyMessage({ tone: 'error', text: t('info.accountIdCopyError') });
     }
   }
 
@@ -178,8 +198,17 @@ export function MePage() {
           // 미니앱: 언어 KO 고정 — 추후 다국어 지원 시 시트로 교체 (TODO P5)
         }}
         onFontSize={() => setFontSheetOpen(true)}
+        onCopyAccountId={() => void handleCopyAccountId()}
         onDeleteAccount={() => setDeleteOpen(true)}
       />
+      {accountCopyMessage && (
+        <p
+          className={`account-copy-message account-copy-message--${accountCopyMessage.tone}`}
+          role={accountCopyMessage.tone === 'error' ? 'alert' : 'status'}
+        >
+          {accountCopyMessage.text}
+        </p>
+      )}
 
       {/* 글자 크기 선택 바텀시트 */}
       <FontSizeSheet open={fontSheetOpen} onOpenChange={setFontSheetOpen} />
@@ -238,4 +267,26 @@ export function MePage() {
       </Dialog>
     </div>
   );
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('COPY_FAILED');
 }

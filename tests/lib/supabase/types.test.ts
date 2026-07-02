@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { Database } from '@/types/database.types';
 
 describe('Database types', () => {
-  it('has 24 tables in public schema (incl. classics, share rewards, legal consents, analysis jobs, reward policy)', () => {
+  it('has 28 tables in public schema (incl. Apps in Toss auth/device and ops grant tables)', () => {
     type Tables = keyof Database['public']['Tables'];
     const expected: Tables[] = [
       'users',
@@ -30,8 +30,12 @@ describe('Database types', () => {
       'classics',
       'analysis_jobs',
       'reward_policy_settings',
+      'toss_connections',
+      'toss_device_connections',
+      'device_campaign_talisman_grants',
+      'user_campaign_talisman_grants',
     ];
-    expect(expected).toHaveLength(24);
+    expect(expected).toHaveLength(28);
   });
 
   it('relations.Row has nickname (ADR-011: 별명만)', () => {
@@ -75,6 +79,30 @@ describe('Database types', () => {
   it('rewarded ad talisman RPC exposes expected args', () => {
     type Args = Database['public']['Functions']['award_rewarded_ad_talisman']['Args'];
     expectTypeOf<Args>().toEqualTypeOf<{ uid: string }>();
+  });
+
+  it('device campaign talisman RPC exposes expected args', () => {
+    type Args = Database['public']['Functions']['award_device_campaign_talisman']['Args'];
+    expectTypeOf<Args>().toEqualTypeOf<{
+      p_amount: number;
+      p_campaign_key: string;
+      p_device_id_hash: string;
+    }>();
+  });
+
+  it('user campaign talisman RPC exposes expected args', () => {
+    type Args = Database['public']['Functions']['award_user_campaign_talisman']['Args'];
+    expectTypeOf<Args>().toEqualTypeOf<{
+      p_amount: number;
+      p_campaign_key: string;
+      p_user_id: string;
+    }>();
+  });
+
+  it('toss device connections store hashed device ids only', () => {
+    type Row = Database['public']['Tables']['toss_device_connections']['Row'];
+    expectTypeOf<Row>().toHaveProperty('device_id_hash');
+    expectTypeOf<Row>().not.toHaveProperty('device_id');
   });
 
   it('legal_consents stores token_hash but no raw token', () => {

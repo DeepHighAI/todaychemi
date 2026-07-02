@@ -337,6 +337,25 @@ body {
   opacity: 0.4;
 }
 
+/* 내 프로필: 운영 지원 ID 복사 결과 */
+.account-copy-message {
+  margin: calc(var(--s-2) * -1) var(--s-1) 0;
+  border-radius: var(--r-sm);
+  padding: var(--s-2) var(--s-3);
+  font: var(--t-sub);
+  font-weight: 700;
+}
+
+.account-copy-message--success {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.account-copy-message--error {
+  background-color: color-mix(in srgb, var(--destructive) 10%, transparent);
+  color: var(--destructive);
+}
+
 /* ===========================================================================
  * 로딩 애니메이션 — 스켈레톤 pulse / 스피너 spin
  *

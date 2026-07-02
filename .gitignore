@@ -70,6 +70,9 @@ twa-manifest.json
 # Claude Code session cache
 .claude/
 
+# Codex local workspace artifacts
+.codex/
+
 # Playwright MCP cache
 .playwright-mcp/
 

@@ -21,6 +21,7 @@ import { closeMiniappView } from '@/lib/navigation/close-view';
 import { AnalysisJobNotifier } from '@/components/analysis/analysis-job-notifier';
 import { RewardGate } from '@/components/rewards/reward-gate';
 import { RewardNoticeHost } from '@/components/rewards/reward-notice-host';
+import { TossDeviceGate } from '@/components/toss/device-gate';
 
 // ---------------------------------------------------------------------------
 // 탭 정의
@@ -227,6 +228,7 @@ export function AppShell({ showNav = true }: AppShellProps) {
       {showNav && <AppNav items={[...NAV_ITEMS]} />}
 
       {/* 부적 지급 트리거 + 팝업 (가입 +100 / 매일 +10, 서버 정책 기준) */}
+      <TossDeviceGate />
       <RewardGate />
       <AnalysisJobNotifier />
       <RewardNoticeHost />

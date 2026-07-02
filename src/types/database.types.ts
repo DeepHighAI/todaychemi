@@ -1150,6 +1150,125 @@ export type Database = {
         }
         Relationships: []
       }
+      toss_device_connections: {
+        Row: {
+          device_id_hash: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          device_id_hash: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          device_id_hash?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toss_device_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_campaign_talisman_grants: {
+        Row: {
+          amount_awarded: number
+          campaign_key: string
+          device_id_hash: string
+          grant_id: string
+          granted_at: string
+          ledger_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_awarded: number
+          campaign_key: string
+          device_id_hash: string
+          grant_id?: string
+          granted_at?: string
+          ledger_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_awarded?: number
+          campaign_key?: string
+          device_id_hash?: string
+          grant_id?: string
+          granted_at?: string
+          ledger_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_campaign_talisman_grants_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "token_ledger"
+            referencedColumns: ["ledger_id"]
+          },
+          {
+            foreignKeyName: "device_campaign_talisman_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_campaign_talisman_grants: {
+        Row: {
+          amount_awarded: number
+          campaign_key: string
+          grant_id: string
+          granted_at: string
+          ledger_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_awarded: number
+          campaign_key: string
+          grant_id?: string
+          granted_at?: string
+          ledger_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_awarded?: number
+          campaign_key?: string
+          grant_id?: string
+          granted_at?: string
+          ledger_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_campaign_talisman_grants_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "token_ledger"
+            referencedColumns: ["ledger_id"]
+          },
+          {
+            foreignKeyName: "user_campaign_talisman_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       token_ledger: {
         Row: {
           balance_after: number
@@ -1382,6 +1501,22 @@ export type Database = {
           p_channel: string
           p_share_id: string
           p_webhook_resource_id?: string
+        }
+        Returns: Json
+      }
+      award_device_campaign_talisman: {
+        Args: {
+          p_amount: number
+          p_campaign_key: string
+          p_device_id_hash: string
+        }
+        Returns: Json
+      }
+      award_user_campaign_talisman: {
+        Args: {
+          p_amount: number
+          p_campaign_key: string
+          p_user_id: string
         }
         Returns: Json
       }

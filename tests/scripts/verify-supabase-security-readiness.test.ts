@@ -12,6 +12,10 @@ describe('verify-supabase-security-readiness', () => {
     expect(source).toContain("name: 'confirm_feature_payment'");
     expect(source).toContain('confirms pay-per-use feature payments without crediting tokens');
     expect(source).toContain('legacyTokenPurchaseDropped');
+    expect(source).toContain("name: 'award_device_campaign_talisman'");
+    expect(source).toContain('credits Apps in Toss device-campaign bonus tokens');
+    expect(source).toContain("name: 'award_user_campaign_talisman'");
+    expect(source).toContain('credits userId-based operations campaign bonus tokens');
     expect(source).toContain('drop\\s+function\\s+if\\s+exists\\s+public\\.confirm_token_purchase');
     expect(source).toContain('Keep pnpm db:push:dry PASS');
     expect(source).not.toContain("name: 'confirm_token_purchase'");

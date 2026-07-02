@@ -49,6 +49,16 @@ const FUNCTIONS: FunctionCheck[] = [
     reason: 'credits Kakao share reward tokens',
   },
   {
+    name: 'award_device_campaign_talisman',
+    signaturePattern: String.raw`text\s*,\s*text\s*,\s*(?:int|integer)`,
+    reason: 'credits Apps in Toss device-campaign bonus tokens',
+  },
+  {
+    name: 'award_user_campaign_talisman',
+    signaturePattern: String.raw`text\s*,\s*uuid\s*,\s*(?:int|integer)`,
+    reason: 'credits userId-based operations campaign bonus tokens',
+  },
+  {
     name: 'match_classics',
     signaturePattern: String.raw`(?:public\.)?vector\s*,\s*(?:int|integer)\s*,\s*text\[\]`,
     reason: 'bypasses RLS for RAG classic retrieval',

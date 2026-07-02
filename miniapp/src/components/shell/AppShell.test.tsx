@@ -16,6 +16,7 @@ const closeView = vi.hoisted(() => ({
 }));
 
 vi.mock('@apps-in-toss/web-framework', () => ({
+  getDeviceId: vi.fn(() => 'device-1'),
   graniteEvent: {
     addEventListener: sdk.addEventListener,
   },
